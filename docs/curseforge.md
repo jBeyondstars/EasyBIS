@@ -1,10 +1,8 @@
-![Easy BIS](https://raw.githubusercontent.com/jBeyondstars/EasyBIS/main/docs/logo.png)
-
-# Easy BIS
+<p align="center"><img src="https://raw.githubusercontent.com/jBeyondstars/EasyBIS/main/docs/banner.png" alt="Easy BIS" width="420"></p>
 
 **The best gear for every class and spec of WoW Forever, in one window and in your item tooltips.**
 
-Easy BIS shows the best-in-slot (BIS) item of every slot at level 60, for PvE and PvP, with the alternatives behind it and where each piece comes from. It knows the enchants too, and it lays your spec's best set out as a character sheet.
+Easy BIS is a BIS list for every class and spec: the best-in-slot (BIS) item of every slot at level 60, for PvE and PvP, with the alternatives behind it and where each piece comes from. Plan your pre-BIS gear before the raids, follow your full BIS gear set as new phases open, and keep track of what to farm next. It knows the enchants too, and it lays your spec's best set out as a character sheet.
 
 The lists come from [ForeverDB.net](https://foreverdb.net), built for WoW Forever, so they include items that are new in Forever.
 
