@@ -1,0 +1,36 @@
+## Interface: 16001
+## Title: Easy BIS
+## Notes: Best-in-slot gear for every class and spec, in a window and in item tooltips. Type /easybis.
+## Notes-frFR: Le meilleur équipement (BIS) de chaque classe et spécialisation, dans une fenêtre et dans les infobulles d'objets. Tapez /easybis.
+## Version: 0.5.0
+## Author: jBeyondstars
+## X-License: GPL-3.0
+## X-Credits: Data from ForeverDB.net (https://foreverdb.net)
+## IconTexture: Interface\AddOns\EasyBIS\Media\Logo.tga
+## SavedVariables: EasyBISDB
+## SavedVariablesPerCharacter: EasyBISCharDB
+## AddonCompartmentFunc: EasyBIS_OnCompartmentClick
+## AddonCompartmentFuncOnEnter: EasyBIS_OnCompartmentEnter
+## AddonCompartmentFuncOnLeave: EasyBIS_OnCompartmentLeave
+
+Locales.lua
+Core.lua
+Catalog.lua
+Data\Meta.lua
+Data\Lists.lua
+Data\Items.lua
+Data\Enchants.lua
+Ladders.lua
+Items.lua
+Sources.lua
+Enchants.lua
+Custom.lua
+Index.lua
+Tooltip.lua
+UI\Rows.lua
+UI\Widgets.lua
+UI\AddItem.lua
+UI\Browser.lua
+UI\Character.lua
+UI\MinimapButton.lua
+Commands.lua

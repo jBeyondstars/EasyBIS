@@ -1,0 +1,840 @@
+"""Tests for the data generator.
+
+    python -P tests/test_generator.py
+
+The Lua test needs the `lupa` package and is skipped without it.
+"""
+from __future__ import annotations
+
+import copy
+import json
+import sys
+import tempfile
+import unittest
+from pathlib import Path
+
+TESTS = Path(__file__).resolve().parent
+BUILD = TESTS.parent
+sys.path.insert(0, str(BUILD))
+sys.path.insert(0, str(TESTS))
+
+import audit  # noqa: E402
+import capture  # noqa: E402
+import compare_site  # noqa: E402
+import corrections  # noqa: E402
+import fdb  # noqa: E402
+import ladders  # noqa: E402
+import luaout  # noqa: E402
+import phases  # noqa: E402
+
+try:
+    import lupa
+except ImportError:  # pragma: no cover
+    lupa = None
+
+CACHE = BUILD / "cache" / "ForeverDB"
+GOLDEN = TESTS / "golden" / "site_2026-11-14.json"
+
+# What the addon will do with a data file: run it with (addon name, namespace).
+LUA_READER = r"""
+local ns = {}
+local function run(source, name)
+    local chunk = assert(load(source, name))
+    chunk("EasyBIS", ns)
+end
+local function lists()
+    local out = {}
+    for cls, text in pairs(ns.data.lists) do
+        for line in text:gmatch("[^\n]+") do
+            local kind, spec, list, slot, entries = line:match("^(%a)\t(%d+)\t([^\t]*)\t([^\t]*)\t?(.*)$")
+            if kind == "L" then
+                for entry in entries:gmatch("%S+") do
+                    local id, score, flags, twin, limit = entry:match("^(%d+):(%d+):?([%a%d]*):?(%d*):?(.*)$")
+                    out[#out + 1] = table.concat({ cls, spec, list, slot, id, score, flags, twin, limit }, ",")
+                end
+            end
+        end
+    end
+    return table.concat(out, "\n")
+end
+local function items()
+    local out = {}
+    for line in ns.data.items:gmatch("[^\n]+") do
+        local id, name, groups, flags, sources = line:match("^(%d+)|([^|]*)|([^|]*)|([^|]*)|(.*)$")
+        out[#out + 1] = id .. "|" .. name
+    end
+    return table.concat(out, "\n")
+end
+local function enchants()
+    local count, missing = 0, 0
+    local known = {}
+    for line in ns.data.enchantInfo:gmatch("[^\n]+") do known[line:match("^([^|]+)|")] = true end
+    for _, text in pairs(ns.data.enchants) do
+        for line in text:gmatch("[^\n]+") do
+            local ids = line:match("^E\t%d+\t%w+\t(.*)$")
+            for token in ids:gmatch("%S+") do
+                local id = token:match("^([si]%d+):?%d*$")   -- "s20025", or "s20025:1" with the phase it needs
+                count = count + 1
+                if not id or not known[id] then missing = missing + 1 end
+            end
+        end
+    end
+    return count, missing
+end
+return run, lists, items, enchants, ns
+"""
+
+
+class GeneratorTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.db = fdb.load(CACHE)                        # what the build ranks: with the corrections in use
+        cls.published = fdb.load(CACHE, corrected=False)  # ForeverDB's data as the site has it
+        cls.full = {
+            (token, spec, mode, slot): ladders.full_ladder(cls.db, token, spec, mode, slot)
+            for token, data in cls.db.classes.items() for spec in data["specs"]
+            for mode in ladders.MODES for slot, _ in ladders.SLOTS}
+        cls.kept = ladders.build_all(cls.db)
+
+    def test_reads_every_class_and_spec(self):
+        self.assertEqual(len(self.db.classes), 9)
+        self.assertEqual(sum(len(data["specs"]) for data in self.db.classes.values()), 27)
+        for token, data in self.db.classes.items():
+            for spec in data["specs"].values():
+                self.assertEqual(set(spec["weights"]), {"lvl", "raid", "pvp"}, f"{token} {spec['name']}")
+        self.assertEqual(self.db.meta["cap"], 60)
+
+    def test_every_pool_item_is_described(self):
+        for token, data in self.db.classes.items():
+            for pool in data["pools"].values():
+                for item_id, _ in pool:
+                    self.assertIn(item_id, self.db.gear, f"{token}: no stats for {item_id}")
+                    self.assertIn(item_id, self.db.items, f"{token}: no source line for {item_id}")
+
+    def test_matches_the_site(self):
+        """Every slot of every page read from foreverdb.net/bis has the same picks."""
+        golden = json.loads(GOLDEN.read_text(encoding="utf-8"))
+        self.assertEqual(golden["build"], self.db.meta["build"],
+                         "the golden pages were read for another game build: read them again")
+        for page in golden["pages"]:
+            with self.subTest(cls=page["cls"], spec=page["spec"], mode=page["mode"]):
+                self.assertEqual(compare_site.compare(self.published, page), [])
+
+    def test_pve_leaves_pvp_rank_rewards_out(self):
+        for (token, spec, mode, slot), ladder in self.full.items():
+            for entry in ladder:
+                groups = self.db.items[entry.item_id]["groups"]
+                if mode == "pve":
+                    self.assertTrue(groups - {"p"}, f"{token} {spec} {slot}: {entry.item_id} is a PvP-rank reward")
+                self.assertEqual(entry.unsourced, not (groups - {"u"} - ({"p"} if mode == "pve" else set())))
+
+    def test_ladders_are_sorted_and_free_of_duplicates(self):
+        for key, ladder in self.full.items():
+            scores = [entry.score for entry in ladder]
+            self.assertEqual(scores, sorted(scores, reverse=True), key)
+            ids = [entry.item_id for entry in ladder]
+            self.assertEqual(len(ids), len(set(ids)), key)
+            twins = {entry.twin for entry in ladder if entry.twin}
+            self.assertFalse(twins & set(ids), f"{key}: both ids of a twin pair are listed")
+
+    def test_kept_ladder_shows_what_the_full_one_would(self):
+        """Under every filter the addon can apply, the shortened ladder gives the same picks."""
+        def shown(ladder_of, token, spec, mode, flt):
+            visible = {slot: [e for e in ladder_of(token, spec, mode, slot) if e.passes(flt)]
+                       for slot, _ in ladders.SLOTS}
+            others = [entries[:1 + ladders.ALTERNATIVES]
+                      for entries in ladders.other_weapons(visible["main"], visible["off"])]
+            visible["main"], visible["off"] = ladders.weapon_lists(visible["main"], visible["off"])
+            return {slot: ladders.picks(slot, entries) for slot, entries in visible.items()}, others
+
+        for token, data in self.db.classes.items():
+            for spec in data["specs"]:
+                for mode in ladders.MODES:
+                    for flt in ladders.FILTERS:
+                        full = shown(lambda *key: self.full[key], token, spec, mode, flt)
+                        kept = shown(lambda t, s, m, slot: self.kept[t][s][m][slot], token, spec, mode, flt)
+                        self.assertEqual(kept, full, f"{token} {spec} {mode} {flt}")
+
+    def test_every_spec_has_a_usable_list(self):
+        core = ("head", "neck", "shoulder", "back", "chest", "wrist", "hands", "waist", "legs", "feet",
+                "finger", "trinket", "main")
+        for token, specs in self.kept.items():
+            for spec, modes in specs.items():
+                for mode, slots in modes.items():
+                    for flt in ladders.FILTERS:
+                        if flt[2]:
+                            continue  # "seen in Forever only" may leave a slot empty
+                        for slot in core:
+                            visible = [e for e in slots[slot] if e.passes(flt)]
+                            self.assertTrue(visible, f"{token} {spec} {mode} {slot} {flt}: nothing to show")
+
+    def test_entry_encoding(self):
+        entry = ladders.Entry(item_id=22748, score=51.24, side="a", twin=22747, seen=True, new=False,
+                              unsourced=False, unique=False, two_hand=False, random=False, limit=None)
+        self.assertEqual(luaout.encode_entry(entry), "22748:512:as:22747")
+        plain = ladders.Entry(item_id=12587, score=44.2, side="", twin=None, seen=False, new=False,
+                              unsourced=False, unique=False, two_hand=False, random=False, limit=None)
+        self.assertEqual(luaout.encode_entry(plain), "12587:442")
+        ring = ladders.Entry(item_id=21205, score=38.3, side="", twin=None, seen=False, new=False,
+                             unsourced=False, unique=True, two_hand=False, random=False, limit="SignetRingoftheB",
+                             phase=phases.LATER)
+        self.assertEqual(luaout.encode_entry(ring), "21205:383:U9::SignetRingoftheB")
+        pendant = ladders.Entry(item_id=18404, score=30.0, side="", twin=None, seen=False, new=False,
+                                unsourced=False, unique=False, two_hand=False, random=False, limit=None, phase=1)
+        self.assertEqual(luaout.encode_entry(pendant), "18404:300:1")
+
+    # -- phases ------------------------------------------------------------------------------
+
+    def phase_of(self, item_id: int) -> int:
+        return phases.item_phase(self.db.items[item_id])
+
+    def test_phase_of_known_items(self):
+        before_the_raids = {
+            12587: "Eye of Rend, a dungeon boss",
+            22006: "a dungeon set 2 piece, from its quest chain",
+            12640: "Lionheart Helm, crafted from ordinary materials",
+            11302: "Uther's Strength: Onyxia has it, and so does the rest of the world",
+            16341: "a PvP rank reward",
+        }
+        for item_id, what in before_the_raids.items():
+            self.assertEqual(self.phase_of(item_id), phases.PRE_RAID, what)
+        first_raids = {18404: "Onyxia Tooth Pendant, for her head", 18348: "Quel'Serrar, forged in her breath"}
+        for item_id, what in first_raids.items():
+            self.assertEqual(self.phase_of(item_id), 1, what)
+        classic_raids = {
+            22589: "Atiesh", 19384: "Master Dragonslayer's Ring, for Nefarian's head", 21205: "a Brood of Nozdormu ring",
+            18543: "Ring of Entropy, from Lord Kazzak", 19140: "Cauterizing Band, from Molten Core's Flamewakers",
+            23025: "Seal of the Damned, from the Four Horsemen's chest", 19683: "Bloodvine Leggings, made of Bloodvine",
+            22670: "Icebane Gauntlets, made of Frozen Runes", 19167: "Blackfury, made of Molten Core's cores",
+        }
+        for item_id, what in classic_raids.items():
+            self.assertEqual(self.phase_of(item_id), phases.LATER, what)
+
+    def test_phases_are_consistent(self):
+        self.assertEqual(phases.PHASES[0], phases.PRE_RAID)
+        self.assertEqual(phases.PHASES[-1], phases.LATER)
+        self.assertEqual(list(phases.PHASES), sorted(set(phases.PHASES)))
+        self.assertIn(phases.CURRENT, phases.PHASES)
+        self.assertTrue(all(0 < phase < phases.LATER for phase in phases.RAID_PHASE.values()))
+        self.assertEqual(phases.unknown_raids(self.db), [], "the data has a raid phases.py does not name")
+        for ladder in self.full.values():
+            for entry in ladder:
+                self.assertIn(entry.phase, phases.PHASES)
+        # every crafted piece named in phases.py is spelled as the data spells it, when the data has it
+        crafted = {item["name"] for item in self.db.items.values() if any(s[0] == "c" for s in item["sources"])}
+        named = set(phases.RAID_CRAFTS)
+        self.assertGreater(len(named & crafted), 30, "few of the crafted pieces named in phases.py are in the data")
+
+    def test_a_list_before_the_raids_needs_no_raid(self):
+        """An item whose every listed source needs a raid, and that no other source group could
+        provide, is never counted as available before the raids."""
+        checked = 0
+        for ladder in self.full.values():
+            for entry in ladder:
+                item = self.db.items[entry.item_id]
+                raids = [phases.source_raid(source, item["name"]) for source in item["sources"]]
+                if raids and all(raids) and len(item["groups"] - {"u"}) == 1:
+                    self.assertGreater(entry.phase, phases.PRE_RAID, f"{item['name']} ({entry.item_id})")
+                    checked += 1
+        self.assertGreater(checked, 100)
+
+    def test_first_source_is_one_of_the_items_phase(self):
+        """The addon says an item's first source. It must not need a later phase than the item itself,
+        and a world drop is not named after a boss nobody can go and kill."""
+        late = []
+        for item_id in luaout.shown_ids(self.kept):
+            item = self.db.items.get(item_id)
+            if not item or not item["sources"]:
+                continue
+            first = phases.shown_sources(item)[0]
+            if phases.source_phase(first, item["name"]) > phases.item_phase(item):
+                late.append(item["name"])
+        self.assertEqual(late, [], "listed for a way the data does not spell out: shown_sources needs a rule for it")
+        uther = self.db.items[11302]
+        self.assertEqual([source[0] for source in uther["sources"]], ["d", "m"], "the data changed: pick another example")
+        self.assertEqual(phases.shown_sources(uther)[0], ["w", "0", "0", "k"],
+                         "Uther's Strength is a world drop: Onyxia has it, as every boss does")
+        self.assertEqual(phases.shown_sources(uther)[1][:3], ["d", "249", "Onyxia"])
+        text = luaout.items_file(self.db, self.kept)
+        self.assertIn("\n11302|Uther's Strength|rwx||w^0^0^k~d^249^Onyxia^", text)
+        self.assertNotIn("Colossus of", text)
+        # sources that agree with the item's phase keep the data's order
+        eye = self.db.items[12587]
+        self.assertEqual(phases.shown_sources(eye), eye["sources"])
+        # the phases themselves do not move: a world dropper was already taken for an ordinary creature
+        self.assertEqual(self.phase_of(11302), phases.PRE_RAID)
+
+    def test_later_phases_only_add_items(self):
+        for (token, spec, mode, slot), ladder in self.full.items():
+            previous = None
+            for phase in phases.PHASES:
+                visible = {e.item_id for e in ladder if e.passes(("a", True, False, phase))}
+                if previous is not None:
+                    self.assertLessEqual(previous, visible, f"{token} {spec} {mode} {slot} phase {phase}")
+                previous = visible
+
+    # -- the two weapon styles ---------------------------------------------------------------
+
+    def test_other_weapons_are_the_style_that_lost(self):
+        seen = {"one": 0, "two": 0, "none": 0}
+        for token, data in self.db.classes.items():
+            for spec in data["specs"]:
+                for mode in ladders.MODES:
+                    for flt in ladders.FILTERS:
+                        main = [e for e in self.full[(token, spec, mode, "main")] if e.passes(flt)]
+                        off = [e for e in self.full[(token, spec, mode, "off")] if e.passes(flt)]
+                        best_main, best_off = ladders.weapon_lists(main, off)
+                        other_main, other_off = ladders.other_weapons(main, off)
+                        self.assertFalse(set(best_main) & set(other_main))
+                        if not other_main:
+                            self.assertEqual(other_off, [])
+                            seen["none"] += 1
+                        elif best_main[0].two_hand:
+                            self.assertTrue(all(not e.two_hand for e in other_main))
+                            self.assertEqual(best_off, [])
+                            self.assertNotIn(other_main[0].item_id, [e.item_id for e in other_off])
+                            self.assertGreaterEqual(best_main[0].stored, other_main[0].stored
+                                                    + (off[0].stored if off else 0))
+                            seen["one"] += 1
+                        else:
+                            self.assertTrue(all(e.two_hand for e in other_main))
+                            self.assertEqual(other_off, [])
+                            seen["two"] += 1
+        self.assertTrue(all(seen.values()), f"a case never came up: {seen}")
+
+    def test_files_keep_the_credit_line(self):
+        for text in (luaout.meta_file(self.db), luaout.lists_file(self.db, self.kept),
+                     luaout.items_file(self.db, self.kept), luaout.enchants_file(self.db, self.kept)):
+            self.assertTrue(text.startswith(fdb.HEADER_PREFIX))
+            self.assertIn("see NOTICE.txt", text.split("\n", 1)[0])
+
+    def test_every_listed_item_has_a_line(self):
+        text = luaout.items_file(self.db, self.kept)
+        described = {int(line.split("|", 1)[0]) for line in text.split("\n") if line[:1].isdigit() and "|" in line}
+        missing = luaout.shown_ids(self.kept) - described
+        self.assertFalse(missing, f"no source line for {sorted(missing)[:10]}")
+
+    def enchant_ladder(self, token: str, spec: int) -> dict:
+        return luaout.enchant_ladders(self.db, token, spec, self.kept[token][spec])
+
+    def test_enchants_cover_every_spec(self):
+        for token, data in self.db.classes.items():
+            for spec in data["specs"]:
+                ladder = self.enchant_ladder(token, spec)
+                previous = None
+                for phase in phases.PHASES:
+                    best = luaout.best_enchants(ladder, phase)
+                    for key in ("chest", "wrist", "hands", "feet"):
+                        self.assertIn(key, best, f"{token} {spec} phase {phase}: no enchant for {key}")
+                    self.assertTrue({"w1h", "w2h"} & set(best), f"{token} {spec} phase {phase}: no weapon enchant")
+                    for key, enchants in best.items():
+                        self.assertLessEqual(len(enchants), luaout.ENCHANTS_PER_SLOT)
+                        needed = dict(ladder[key])
+                        self.assertTrue(all(needed[enchant] <= phase for enchant in enchants))
+                    if previous is not None:
+                        self.assertLessEqual(set(previous), set(best), "a later phase lost a slot's enchants")
+                    previous = best
+
+    def test_enchant_phases(self):
+        phase = lambda enchant: phases.enchant_phase(self.db, enchant)  # noqa: E731
+        before_the_raids = {
+            "s23800": "Enchant Weapon - Agility, sold by the Timbermaw",
+            "s23804": "Enchant Weapon - Mighty Intellect, sold by the Thorium Brotherhood",
+            "i18329": "Arcanum of Rapidity, a Dire Maul libram",
+            "s20023": "a formula that drops in Stratholme",
+            "i273593": "an enchant of Forever with no known source",
+        }
+        for enchant, what in before_the_raids.items():
+            self.assertEqual(phase(enchant), phases.PRE_RAID, what)
+        self.assertEqual(phase("s20025"), 1, "a formula the data says drops in Onyxia's Lair")
+        classic_raids = {
+            "i23548": "Might of the Scourge, from Sapphiron", "i19785": "Falcon's Call, from Zul'Gurub's idols",
+            "i20077": "a Zandalar signet", "s22749": "Enchant Weapon - Spell Power, a Molten Core formula",
+            "s25080": "Enchant Gloves - Superior Agility, an Ahn'Qiraj formula",
+        }
+        for enchant, what in classic_raids.items():
+            self.assertEqual(phase(enchant), phases.LATER, what)
+        # every enchant phases.py names that the data has is still one the data knows by that id
+        named = set(phases.RAID_ENCHANTS) & set(self.db.enchant_info)
+        self.assertGreater(len(named), 15, "few of the enchants named in phases.py are in the data")
+        # before the raids, no spec is shown an enchant that needs one
+        for token, data in self.db.classes.items():
+            for spec in data["specs"]:
+                for enchants in luaout.best_enchants(self.enchant_ladder(token, spec), phases.PRE_RAID).values():
+                    self.assertFalse(set(enchants) & set(phases.RAID_ENCHANTS), f"{token} {spec}")
+
+    def test_enchant_groups_fit_the_spec(self):
+        """A weapon, shield, held or ranged enchant is listed only for a spec whose PvE list holds such an item."""
+        specs = {(token, spec["name"]): set(self.enchant_ladder(token, index))
+                 for token, data in self.db.classes.items() for index, spec in data["specs"].items()}
+        shields = {key for key, keys in specs.items() if "shield" in keys}
+        self.assertEqual({token for token, _ in shields}, {"WARRIOR", "PALADIN", "SHAMAN"},
+                         "only three classes carry a shield")
+        self.assertIn(("WARRIOR", "Protection"), shields)
+        self.assertNotIn(("WARRIOR", "Arms"), shields)
+        for name in ("Beast Mastery", "Marksmanship", "Survival"):
+            self.assertFalse(specs[("HUNTER", name)] & {"shield", "held"}, f"Hunter {name}")
+            self.assertIn("rng", specs[("HUNTER", name)])
+        self.assertEqual(specs[("ROGUE", "Combat")] & {"w1h", "w2h", "shield", "held", "rng"}, {"w1h"})
+        self.assertIn("held", specs[("PRIEST", "Shadow")])
+        self.assertEqual({key for key, keys in specs.items() if "rng" in keys}, {k for k in specs if k[0] == "HUNTER"})
+        # the armor slots are everyone's
+        for key, keys in specs.items():
+            self.assertLessEqual({"chest", "wrist", "hands", "feet"}, keys, key)
+
+    @unittest.skipIf(lupa is None, "lupa is not installed")
+    def test_lua_reads_the_files_back(self):
+        """The files load as Lua and decode to exactly what was written."""
+        lua = lupa.LuaRuntime(unpack_returned_tuples=True)
+        run, lists, items, enchants, ns = lua.execute(LUA_READER)
+        files = {"Meta.lua": luaout.meta_file(self.db), "Lists.lua": luaout.lists_file(self.db, self.kept),
+                 "Items.lua": luaout.items_file(self.db, self.kept), "Enchants.lua": luaout.enchants_file(self.db, self.kept)}
+        for name, text in files.items():
+            run(text, "=" + name)
+
+        self.assertEqual(ns.data.meta.level, 60)
+        self.assertEqual(ns.data.meta.build, self.db.meta["build"])
+        self.assertEqual(ns.data.meta.credit, luaout.CREDIT)
+        self.assertEqual(list(ns.data.meta.phases.values()), list(phases.PHASES))
+        self.assertEqual(ns.data.meta.phase, phases.CURRENT)
+
+        expected = []
+        for token, specs in self.kept.items():
+            for spec, modes in specs.items():
+                for mode, slots in modes.items():
+                    for slot, entries in slots.items():
+                        for entry in entries:
+                            fields = (luaout.encode_entry(entry).split(":") + [""] * 5)[:5]
+                            expected.append(",".join([token, str(spec), mode, slot] + fields))
+        self.assertEqual(sorted(lists().split("\n")), sorted(expected))
+
+        read_items = dict(line.split("|", 1) for line in items().split("\n"))
+        for item_id in luaout.shown_ids(self.kept):
+            self.assertEqual(read_items[str(item_id)], self.db.items[item_id]["name"])
+
+        count, missing = enchants()
+        self.assertGreater(count, 27 * 8)
+        self.assertEqual(missing, 0)
+
+    def test_the_audit_runs_on_the_real_lists(self):
+        findings = audit.run(self.db, self.kept, read_in_game=frozenset(corrections.load()))
+        self.assertEqual(len(audit.report(findings)), len(findings) + len({f.kind for f in findings}))
+        for finding in findings:
+            self.assertIn(finding.kind, (audit.LOW, audit.POWERLESS, audit.LONELY))
+            self.assertEqual(finding.name, self.db.items[finding.item_id]["name"])
+            self.assertTrue(set(finding.phases) <= set(phases.PHASES))
+        self.assertLessEqual(len(audit.suspicious(findings)), len(findings))
+
+    def test_gear_keeps_the_required_level(self):
+        levels = [gear["req"] for gear in self.published.gear.values()]
+        self.assertTrue(all(0 <= level <= self.published.meta["cap"] for level in levels))
+        self.assertGreater(sum(1 for level in levels if level >= 50), 1000)
+
+    def test_the_capture_reads_the_pools_weapons(self):
+        ids = capture.weapon_ids(self.published)
+        self.assertEqual(ids, sorted(set(ids)))
+        self.assertGreater(len(ids), 1000)
+        for item_id in ids:
+            self.assertIn(self.published.gear[item_id]["inv"], corrections.WEAPONS)
+        ranked = {entry.item_id for (_, _, _, slot), ladder in self.full.items() if slot == "main" for entry in ladder}
+        self.assertLessEqual(ranked, set(ids), "a main-hand entry of a ladder is not on the capture's list")
+
+
+# -- a hole in the data: the audit that shows it, the corrections that fill it, the capture they come from --------
+
+SCEPTER, MACE, ROD, STAFF, WAND, ORB = 1, 2, 3, 7, 8, 9
+ROBE = 20   # a raid set piece the data has stats for and leaves out of its lists
+
+
+def tiny_db():
+    """A healer with four weapons, as ForeverDB's data has them: the level 28 scepter kept its healing,
+    the level 57 mace and the level 54 rod lost theirs, and so did the staff."""
+    db = fdb.Database()
+    db.header = fdb.HEADER_PREFIX + ", build 1.0.0.1."
+    db.meta = {"version": "test", "build": "1.0.0.1", "cap": 60}
+    weights = {41: 1.0, 45: 1.0, 5: 0.5, "dps": 0.1}
+    db.classes["PRIEST"] = {
+        "specs": {1: {"name": "Holy", "role": "Healer", "style": "any", "slug": "holy",
+                      "weights": {"lvl": weights, "raid": weights, "pvp": weights}}},
+        "pools": {"mh": [(SCEPTER, 28), (MACE, 57), (ROD, 54)], "2h": [(STAFF, 53)], "oh": [(ORB, 55)],
+                  "ranged": [(WAND, 50)]},
+        "min": {"raid": 1.0, "pvp": 1.0},
+    }
+
+    def gear(inv, req, stats, dps=0.0):
+        return {"inv": inv, "req": req, "stats": dict(stats), "dps": dps, "armor": 0.0, "wand": inv == 26}
+
+    db.gear = {
+        SCEPTER: gear(21, 28, {41: 68}, 21.4), MACE: gear(13, 57, {5: 13}, 45.0), ROD: gear(21, 54, {5: 5}, 38.7),
+        STAFF: gear(17, 53, {5: 18}, 49.6), WAND: gear(26, 50, {45: 9}, 40.0), ORB: gear(23, 55, {41: 20}),
+    }
+    names = {SCEPTER: "Low Scepter", MACE: "Odd Mace", ROD: "Lively Rod", STAFF: "Channeling Staff",
+             WAND: "Thin Wand", ORB: "Glowing Orb"}
+    db.items = {item_id: {"name": name, "groups": frozenset("d"), "flags": "", "side": "", "twin": None,
+                          "limit": None, "sources": [["d", "47", "A Boss", "20", "0", "k"]]}
+                for item_id, name in names.items()}
+    return db
+
+
+READ = {"build": "1.0.0.1", "date": "2026-11-15", "from": "tooltip"}
+IN_THE_GAME = {
+    MACE: {"name": "Odd Mace", "healing": 90, "damage": 90, "dps": 29.69, **READ},
+    ROD: {"name": "Lively Rod", "healing": 124, "damage": 41, "dps": 25.87, **READ},
+    SCEPTER: {"name": "Low Scepter", "healing": 68, "damage": 0, "dps": 14.29, **READ},
+}
+
+# The game's stand-ins the capture tool needs, and what the game "knows" about each item.
+CAPTURE_STUB = r"""
+local stub = { loaded = {}, never = {}, tooltips = {}, stats = {}, chat = {} }
+function print(text) stub.chat[#stub.chat + 1] = text end
+C_TooltipInfo = { GetItemByID = function(id)
+    if not stub.loaded[id] then return { lines = { { leftText = "Retrieving item information" } } } end
+    local lines = {}
+    for index, pair in ipairs(stub.tooltips[id]) do lines[index] = { leftText = pair[1], rightText = pair[2] } end
+    return { lines = lines }
+end }
+C_Item = {
+    IsItemDataCachedByID = function(id) return stub.loaded[id] == true end,
+    RequestLoadItemDataByID = function(id) if not stub.never[id] then stub.loaded[id] = true end end,
+    GetItemInfo = function(id) if stub.loaded[id] then return "a name" end end,
+    GetItemStats = function(link) return stub.stats[tonumber(link:match("%d+"))] end,
+}
+function GetBuildInfo() return "1.0.0", "1", "Nov 13 2026", 16001 end
+function GetLocale() return stub.locale or "enUS" end
+function InCombatLockdown() return stub.combat end
+function CreateFrame() return { SetScript = function(_, _, script) stub.script = script end } end
+function date() return "2026-11-15 12:30" end
+SlashCmdList = {}
+function stub.add(id, loaded, lines, stats)
+    stub.loaded[id], stub.tooltips[id], stub.stats[id] = loaded, lines, stats
+end
+function stub.run(source, ids)
+    local ns = { ids = ids }
+    assert(load(source, "=Capture.lua"))("EasyBIS_Capture", ns)
+    return ns
+end
+return stub
+"""
+
+
+def saved_variable(db) -> str:
+    """EasyBISCaptureDB as the game writes it to the saved variables file."""
+    def quoted(text):
+        return '"' + text.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n") + '"'
+    lines = ["", "EasyBISCaptureDB = {", f'["meta"] = {quoted(db.meta)},', f'["missing"] = {quoted(db.missing)},',
+             '["items"] = {']
+    lines += [f"[{item_id}] = {quoted(text)}," for item_id, text in sorted(db["items"].items())]
+    return "\n".join(lines + ["},", "}", ""])
+
+
+class HoleTest(unittest.TestCase):
+    def shown(self, db, phase=phases.PRE_RAID):
+        rows = audit.shown_rows(ladders.build_all(db)["PRIEST"][1]["pve"], ("a", False, False, phase))
+        return [entry.item_id for entry in rows["main"][0] + rows["main"][1]]
+
+    def test_the_audit_shows_a_hole(self):
+        db = tiny_db()
+        self.assertEqual(self.shown(db), [SCEPTER, MACE, ROD], "the level 28 scepter comes out first, as in the data")
+        findings = audit.run(db, ladders.build_all(db))
+        found = {(f.kind, f.slot, f.item_id): f for f in findings if f.mode == "pve"}
+        low = found[(audit.LOW, "main", SCEPTER)]
+        self.assertTrue(low.best)
+        self.assertIn("requires level 28", low.line())
+        self.assertEqual(low.phases, phases.PHASES)
+        self.assertIn((audit.POWERLESS, "main", MACE), found)
+        self.assertIn((audit.POWERLESS, "main", ROD), found)
+        self.assertIn((audit.LONELY, "main", SCEPTER), found)
+        self.assertNotIn((audit.POWERLESS, "off", ORB), found, "an orb is not a weapon, and this one has healing")
+        self.assertNotIn((audit.POWERLESS, "ranged", WAND), found)
+        self.assertEqual({f.item_id for f in audit.suspicious(findings)}, {SCEPTER, MACE, ROD})
+        self.assertIn("low level", audit.summary(findings))
+        # a weapon read in the game that shows no spell power there either is not a hole
+        confirmed = audit.run(db, ladders.build_all(db), read_in_game=frozenset({MACE}))
+        self.assertNotIn(MACE, {f.item_id for f in confirmed if f.kind == audit.POWERLESS})
+
+    def test_corrections_fill_the_hole(self):
+        db = tiny_db()
+        report = corrections.apply(db, IN_THE_GAME)
+        self.assertIs(db.corrected, report)
+        self.assertEqual(report.filled, [MACE, ROD])
+        self.assertEqual(db.gear[MACE]["stats"], {5: 13, 45: 90}, "equal healing and damage are one spell power stat")
+        self.assertEqual(db.gear[ROD]["stats"], {5: 5, 41: 124, 42: 41})
+        self.assertEqual(report.dps, [SCEPTER, MACE, ROD], "a caster weapon's damage per second is the game's")
+        self.assertEqual(db.gear[MACE]["dps"], 29.69)
+        self.assertEqual(report.agree, 1, "the scepter's healing was right in the data")
+        self.assertEqual(report.builds, {"1.0.0.1"})
+        self.assertEqual(self.shown(db), [ROD, MACE, SCEPTER], "the scepter is now behind the level 54 and 57 weapons")
+        findings = audit.run(db, ladders.build_all(db), read_in_game=frozenset(IN_THE_GAME))
+        self.assertEqual([f for f in audit.suspicious(findings) if f.slot == "main" and f.item_id != STAFF], [])
+
+    def test_corrections_only_fill_holes(self):
+        db = tiny_db()
+        before = copy.deepcopy(db.gear)
+        self.assertEqual(corrections.apply(db, {}).changed, set())
+        self.assertEqual(db.gear, before)
+
+        seen = {
+            SCEPTER: {"healing": 99, "damage": 0, "dps": 20.0, "build": "1.0.0.0"},   # read before the data's build
+            MACE: {"healing": 0, "damage": 0, "dps": 29.69},       # the game shows no spell power: nothing to add
+            ORB: {"healing": 50, "damage": 50, "dps": 0},          # not a weapon
+            404: {"healing": 10, "damage": 10, "dps": 5.0},        # not in the data
+        }
+        report = corrections.apply(db, seen)
+        self.assertEqual(db.gear, before)
+        self.assertEqual(report.differ, [(SCEPTER, (99, 0), (68, 0))])
+        self.assertEqual(report.unknown, [ORB, 404])
+        self.assertEqual((report.filled, report.dps, report.agree), ([], [], 0))
+        self.assertEqual(corrections.power_stats(0, 12), {42: 12})
+        self.assertEqual(corrections.power_stats(0, 0), {})
+
+    def test_the_game_wins_at_its_own_build(self):
+        """A value the data has, and that the game showed otherwise: the later of the two is the one to trust."""
+        for build, replaced in (("1.0.0.1", True), ("1.0.1.0", True), ("1.0.0.0", False), ("", False)):
+            db = tiny_db()
+            db.gear[MACE]["stats"] = {5: 13, 45: 25}   # as Classic had it; the game shows 99
+            report = corrections.apply(db, {MACE: {"healing": 99, "damage": 99, "dps": 0, "build": build}})
+            if replaced:
+                self.assertEqual((report.replaced, report.differ), ([MACE], []), build)
+                self.assertEqual(db.gear[MACE]["stats"], {5: 13, 45: 99})
+                self.assertIn(MACE, report.changed)
+            else:
+                self.assertEqual((report.replaced, report.differ), ([], [(MACE, (99, 99), (25, 25))]), build)
+                self.assertEqual(db.gear[MACE]["stats"], {5: 13, 45: 25})
+        # the damage per second too, for a weapon with no spell power at all, in either direction
+        for build, data, expected in (("1.0.0.1", 49.6, 36.79), ("1.0.0.1", 30.0, 36.79), ("1.0.0.1", 36.8, 36.8),
+                                      ("1.0.0.0", 49.6, 49.6)):
+            db = tiny_db()
+            db.gear[STAFF]["dps"] = data
+            report = corrections.apply(db, {STAFF: {"healing": 0, "damage": 0, "dps": 36.79, "build": build}})
+            self.assertEqual(db.gear[STAFF]["dps"], expected, (build, data))
+            self.assertEqual(report.dps, [STAFF] if expected != data else [])
+        db = tiny_db()
+        db.gear[ROD]["stats"] = {5: 5, 45: 41, 41: 83}   # healing 124 and damage 41, written the other way
+        report = corrections.apply(db, {ROD: {"healing": 124, "damage": 41, "dps": 0, "build": "1.0.0.1"}})
+        self.assertEqual((report.agree, report.replaced), (1, []))
+
+    def test_corrections_are_kept_in_a_file(self):
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "sub" / "weapons.json"
+            self.assertEqual(corrections.load(path), {})
+            corrections.save(IN_THE_GAME, path)
+            self.assertEqual(corrections.load(path), IN_THE_GAME)
+            text = path.read_bytes()
+            self.assertNotIn(b"\r", text)
+            self.assertEqual(text.count(b"\n"), len(IN_THE_GAME) + 5, "one weapon per line")
+            self.assertLess(text.index(b'"1":'), text.index(b'"2":'))
+
+    def test_the_lists_say_what_was_corrected(self):
+        db = tiny_db()
+        plain = luaout.lists_file(db, ladders.build_all(db))
+        self.assertNotIn("Changed from ForeverDB's data", plain)
+        corrections.apply(db, IN_THE_GAME)
+        text = luaout.lists_file(db, ladders.build_all(db))
+        self.assertTrue(text.startswith(fdb.HEADER_PREFIX))
+        self.assertIn("-- Changed from ForeverDB's data: 3 caster weapons", text)
+        self.assertIn("build 1.0.0.1", text)
+
+    # -- the capture ---------------------------------------------------------------------------
+
+    def test_the_tool_is_installed_with_its_list(self):
+        db = tiny_db()
+        self.assertEqual(capture.weapon_ids(db), [SCEPTER, MACE, ROD, STAFF])
+        db.gear[ROBE] = {"inv": 20, "req": 60, "stats": {7: 20}, "dps": 0.0, "armor": 0.0, "wand": False}
+        db.gear[404] = dict(db.gear[ROBE], req=30)   # left out of the lists, and of too low a level to matter
+        self.assertEqual(capture.capture_ids(db), {"weapons": [SCEPTER, MACE, ROD, STAFF], "pool": [WAND, ORB],
+                                                   "unlisted": [ROBE]})
+        with tempfile.TemporaryDirectory() as folder:
+            target, counts = capture.write_tool(db, folder)
+            self.assertEqual((target.name, counts), ("EasyBIS_Capture", {"weapons": 4, "pool": 2, "unlisted": 1}))
+            self.assertEqual(sorted(path.name for path in target.iterdir()),
+                             ["Capture.lua", "EasyBIS_Capture.toc", "Ids.lua"])
+            self.assertIn("\n1 2 3 7 8 9 20\n", (target / "Ids.lua").read_text(encoding="utf-8"))
+            listed = [line for line in (target / "EasyBIS_Capture.toc").read_text(encoding="utf-8").splitlines()
+                      if line and not line.startswith("#")]
+            self.assertEqual(listed, ["Ids.lua", "Capture.lua"])
+            for path in target.iterdir():
+                self.assertNotIn(b"\r", path.read_bytes(), path.name)
+
+    def test_a_saved_capture_is_understood(self):
+        text = "\n".join([
+            "", "EasyBISCaptureDB = {", '["meta"] = "1|1.0.0|1|enUS|2026-11-15 12:30",', '["missing"] = "7 404",',
+            '["items"] = {',
+            r'[2] = "|cffa335eeOdd Mace|r\nBinds when equipped\nOne-Hand\tMace\n33 - 62 Damage\tSpeed 1.60\n'
+            r'(29.69 damage per second)\n+13 Intellect\nEquip: Increases damage and healing done by magical spells '
+            r'and effects by up to 90.\nChance on hit: a \"quoted\" word.\n#stats ITEM_MOD_INTELLECT_SHORT=13",',
+            r'[3] = "Lively Rod\nMain Hand\tMace\n(25.87 damage per second)\nEquip: Increases healing done by up to 124 '
+            r'and damage done by up to 41 for all magical spells and effects.\n(2) Set : Increases damage and healing '
+            r'done by magical spells and effects by up to 23.\n#stats ",',
+            r'[1] = "Low Scepter\n(14.29 damage per second)\nEquip: Increases healing done by magical spells and '
+            r'effects by up to 68.\nEquip: Increases damage done by Shadow spells and effects by up to 28.\n'
+            r'Equip: Increases healing done by Holy Light by up to 30.\n#stats ",',
+            r'[9] = "Glowing Orb\nHeld In Off-hand\n#stats ",',
+            "},", "}", ""])
+        parsed = capture.parse_saved(text)
+        self.assertEqual((parsed["game"], parsed["locale"], parsed["date"]), ("1.0.0.1", "enUS", "2026-11-15"))
+        self.assertEqual(parsed["missing"], [7, 404])
+        self.assertEqual(parsed["items"][2][0][0], "Odd Mace", "the colour of the name is left out")
+        self.assertEqual(parsed["items"][2][1], {"ITEM_MOD_INTELLECT_SHORT": 13.0})
+
+        result = capture.read_capture(tiny_db(), text)
+        self.assertEqual((result.read, result.weapons, result.with_power, result.missing), (4, 3, 3, 2))
+        seen = result.observations
+        self.assertEqual(seen[MACE], IN_THE_GAME[MACE])
+        self.assertEqual((seen[ROD]["healing"], seen[ROD]["damage"]), (124, 41), "a set bonus is not the item's")
+        self.assertEqual((seen[SCEPTER]["healing"], seen[SCEPTER]["damage"]), (68, 0), "one school is not all of them")
+        self.assertEqual(dict(result.unread), {"Equip: Increases healing done by Holy Light by up to N.": 1})
+        self.assertEqual(result.other_names, [])
+        self.assertNotIn(ORB, seen)
+
+        with self.assertRaises(ValueError):
+            capture.parse_saved("EasyBISCaptureDB = nil\n")
+        with self.assertRaises(ValueError):
+            capture.parse_saved(text.replace('"1|1.0.0', '"2|1.0.0'))
+
+    def test_the_game_is_compared_with_the_data_stat_by_stat(self):
+        text = "\n".join([
+            "EasyBISCaptureDB = {", '["meta"] = "1|1.0.0|1|enUS|2026-11-15 12:30",', '["missing"] = "7",',
+            '["items"] = {',
+            r'[2] = "Odd Mace\nOne-Hand\tMace\n#stats ITEM_MOD_DAMAGE_PER_SECOND_SHORT=29.6875;'
+            r'ITEM_MOD_INTELLECT_SHORT=13;ITEM_MOD_SPELL_POWER_SHORT=90;ITEM_MOD_STRANGE_SHORT=4",',
+            r'[1] = "Low Scepter\nMain Hand\tMace\n#stats ITEM_MOD_DAMAGE_PER_SECOND_SHORT=21.4;'
+            r'ITEM_MOD_SPELL_HEALING_DONE_SHORT=68;ITEM_MOD_HEALTH_REGEN_SHORT=12",',
+            r'[9] = "Glowing Orb\nHeld In Off-hand\n#stats ITEM_MOD_SPELL_HEALING_DONE_SHORT=22;'
+            r'ITEM_MOD_FIRE_RESISTANCE_SHORT=5;RESISTANCE2_NAME=5",',
+            r'[8] = "Thin Wand\nRanged\tWand\n#stats ",',   # no stat table: not compared
+            r'[20] = "Robe of Tests\nBinds when picked up\nChest\tCloth\n120 Armor\n+20 Stamina\nClasses: Priest, Mage\n'
+            r'Requires Level 60\n\nVestments of Tests (0/8)\n  Crown of Tests\n#stats ITEM_MOD_STAMINA_SHORT=20;'
+            r'RESISTANCE0_NAME=120",',
+            "},", "}", ""])
+        db = tiny_db()
+        db.gear[ROBE] = {"inv": 20, "req": 60, "stats": {7: 20}, "dps": 0.0, "armor": 120.0, "wand": False}
+        check = capture.check_capture(db, text)
+        self.assertEqual(check.asked, {"weapons": 4, "pool": 2, "unlisted": 1})
+        self.assertEqual(check.read, {"weapons": 2, "pool": 2, "unlisted": 1})
+        self.assertEqual(check.compared, 4)
+        self.assertEqual(dict(check.families["healing"]), {"missing": 1, "same": 1, "differs": 1})
+        self.assertEqual(check.examples[("healing", "missing")], [(MACE, "Odd Mace", 90, 0)])
+        self.assertEqual(check.examples[("healing", "differs")], [(ORB, "Glowing Orb", 22, 20)])
+        self.assertEqual(dict(check.families["spell damage"]), {"missing": 1})
+        self.assertEqual(dict(check.families["damage per second"]), {"differs": 1, "same": 1})
+        self.assertEqual(dict(check.families["intellect"]), {"same": 1})
+        self.assertEqual(dict(check.families["health per 5 sec"]), {"missing": 1})
+        self.assertEqual(dict(check.families["fire resistance"]), {"missing": 1}, "counted once, though under two keys")
+        self.assertEqual(dict(check.families["stamina"]), {"same": 1})
+        self.assertEqual(dict(check.families["armor"]), {"same": 1})
+        self.assertEqual(check.problems("healing"), 2)
+        self.assertEqual(dict(check.other_keys), {"ITEM_MOD_STRANGE_SHORT": 1})
+        self.assertEqual(check.unlisted, {ROBE: {"name": "Robe of Tests", "slot": "Chest", "kind": "Cloth",
+                                                 "classes": ["Priest", "Mage"], "set": "Vestments of Tests",
+                                                 "req": 60}})
+        # with the corrections in use, the mace's hole is filled: only what is left shows
+        corrections.apply(db, IN_THE_GAME)
+        fixed = capture.check_capture(db, text)
+        self.assertEqual(dict(fixed.families["spell damage"]), {"same": 1})
+        self.assertEqual(dict(fixed.families["damage per second"]), {"same": 1, "differs": 1})
+
+    def test_another_language_falls_back_on_the_stat_table(self):
+        lines = ["Masse étrange", "(29.69 dégâts par seconde)", "Équipé : Augmente les dégâts et les soins."]
+        french, unread = capture.observe(lines, {"ITEM_MOD_SPELL_POWER_SHORT": 90.0, "ITEM_MOD_DAMAGE_PER_SECOND_SHORT": 29.69},
+                                         "frFR")
+        self.assertEqual((french["healing"], french["damage"], french["dps"], unread), (90, 90, 29.69, []))
+        self.assertEqual(french["from"], "stats")
+        # in English too, when the tooltip has no line the generator knows: the line is reported, the table used
+        english, unread = capture.observe(["Odd Mace", "+90 Spell Power"], {"ITEM_MOD_SPELL_POWER_SHORT": 90.0}, "enUS")
+        self.assertEqual((english["healing"], english["damage"], english["from"]), (90, 90, "stats"))
+        self.assertEqual(unread, ["+N Spell Power"])
+        plain, unread = capture.observe(["Odd Mace", "+13 Intellect"], {"ITEM_MOD_INTELLECT_SHORT": 13.0}, "enUS")
+        self.assertEqual((plain["healing"], plain["damage"], plain["from"], unread), (0, 0, "tooltip", []))
+        split, _ = capture.observe(lines, {"ITEM_MOD_SPELL_HEALING_DONE_SHORT": 124.0,
+                                           "ITEM_MOD_SPELL_DAMAGE_DONE_SHORT": 41.0}, "frFR")
+        self.assertEqual((split["healing"], split["damage"]), (124, 41))
+
+    def test_an_import_merges_and_refuses_an_empty_capture(self):
+        def capture_of(*rows):
+            return "\n".join(["EasyBISCaptureDB = {", '["meta"] = "1|1.0.0|1|enUS|2026-11-15 12:30",',
+                              '["missing"] = "",', '["items"] = {', *rows, "},", "}", ""])
+        mace = (r'[2] = "Odd Mace\n(29.69 damage per second)\nEquip: Increases damage and healing done by magical '
+                r'spells and effects by up to 90.\n#stats ",')
+        rod = r'[3] = "Lively Rod\n(25.87 damage per second)\n#stats ",'
+        with tempfile.TemporaryDirectory() as folder:
+            saved, kept = Path(folder) / "EasyBIS_Capture.lua", Path(folder) / "weapons.json"
+            saved.write_text(capture_of(rod), encoding="utf-8")
+            with self.assertRaises(ValueError):
+                capture.import_capture(tiny_db(), saved, kept)   # no weapon with spell power: nothing understood
+            self.assertFalse(kept.exists())
+            corrections.save({SCEPTER: IN_THE_GAME[SCEPTER], MACE: {"name": "Odd Mace", "healing": 1, "damage": 1}}, kept)
+            saved.write_text(capture_of(mace, rod), encoding="utf-8")
+            result = capture.import_capture(tiny_db(), saved, kept)
+            self.assertEqual((result.weapons, result.with_power), (2, 1))
+            merged = corrections.load(kept)
+            self.assertEqual(sorted(merged), [SCEPTER, MACE, ROD])
+            self.assertEqual(merged[MACE]["healing"], 90, "a weapon read again replaces what was kept")
+            self.assertEqual(merged[ROD]["healing"], 0, "a weapon the game shows no spell power for is kept as such")
+            self.assertEqual(merged[SCEPTER], IN_THE_GAME[SCEPTER])
+
+    @unittest.skipIf(lupa is None, "lupa is not installed")
+    def test_the_tool_reads_tooltips_and_the_generator_reads_its_capture(self):
+        """Capture.lua runs against stand-ins of the game; its saved variable goes through the importer."""
+        lua = lupa.LuaRuntime(unpack_returned_tuples=True)
+        stub = lua.execute(CAPTURE_STUB)
+        table = lua.table_from
+
+        def tooltip(*pairs):
+            return table([table(list(pair)) for pair in pairs])
+
+        stub.add(MACE, True, tooltip(("Odd Mace",), ("One-Hand", "Mace"), ("33 - 62 Damage", "Speed 1.60"),
+                                     ("(29.69 damage per second)",),
+                                     ("Equip: Increases damage and healing done by magical spells and effects by up to 90.",)),
+                 table({"ITEM_MOD_INTELLECT_SHORT": 13}))
+        stub.add(ROD, False, tooltip(("Lively Rod",), ("(25.87 damage per second)",),
+                                     ("Equip: Increases healing done by up to 124 and damage done by up to 41 "
+                                      "for all magical spells and effects.",)), None)
+        stub.add(STAFF, False, tooltip(("Channeling Staff",), ("Two-Hand", "Staff")), None)
+        stub.never[STAFF] = True   # the game never shows it
+        source = (BUILD / "capture_addon" / "Capture.lua").read_text(encoding="utf-8")
+        stub.run(source, "2 3\n7")
+        slash = lua.globals().SlashCmdList.EASYBISCAPTURE
+
+        def play():
+            for _ in range(200):
+                if stub.script is None:
+                    return
+                stub.script(None, 1.0)
+            self.fail("the capture never ended")
+
+        stub.combat = True
+        slash("")
+        self.assertIsNone(stub.script, "a capture started in combat")
+        stub.combat = False
+        slash("")
+        play()
+        db = lua.globals().EasyBISCaptureDB
+        self.assertEqual(db.meta, "1|1.0.0|1|enUS|2026-11-15 12:30")
+        self.assertEqual(sorted(db["items"].keys()), [MACE, ROD], "the rod was asked for, then read")
+        self.assertEqual(db.missing, "7")
+        self.assertIn("One-Hand\tMace\n33 - 62 Damage\tSpeed 1.60\n", db["items"][MACE])
+        self.assertTrue(db["items"][MACE].endswith("\n#stats ITEM_MOD_INTELLECT_SHORT=13")
+                        or db["items"][MACE].endswith("\n#stats ITEM_MOD_INTELLECT_SHORT=13.0"))
+        chat = "\n".join(stub.chat.values())
+        self.assertIn("2 items read now, 2 in all, 1 the game did not show", chat)
+        self.assertIn("--check-capture", chat)
+
+        # going on where it stopped: only the staff is asked for again, and what was read is kept
+        slash("")
+        play()
+        self.assertEqual(sorted(lua.globals().EasyBISCaptureDB["items"].keys()), [MACE, ROD])
+        slash("status")
+        self.assertIn("2 items kept", stub.chat[len(stub.chat)])
+
+        result = capture.read_capture(tiny_db(), saved_variable(lua.globals().EasyBISCaptureDB))
+        self.assertEqual((result.game, result.weapons, result.with_power, result.missing), ("1.0.0.1", 2, 2, 1))
+        self.assertEqual(result.observations[MACE], IN_THE_GAME[MACE])
+        self.assertEqual((result.observations[ROD]["healing"], result.observations[ROD]["damage"],
+                          result.observations[ROD]["dps"]), (124, 41, 25.87))
+        db = tiny_db()
+        corrections.apply(db, result.observations)
+        self.assertEqual(self.shown(db), [ROD, MACE, SCEPTER])
+
+
+if __name__ == "__main__":
+    unittest.main(verbosity=1)

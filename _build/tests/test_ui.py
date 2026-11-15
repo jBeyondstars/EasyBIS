@@ -1,0 +1,1337 @@
+"""Tests for the window, its filters and the minimap button, outside the game.
+
+    python -P tests/test_ui.py
+
+Needs the `lupa` package. The frames are stand-ins (wowstub.lua) that only
+answer to real widget methods; what they are asked to show is compared with
+what the generator's rules give.
+"""
+from __future__ import annotations
+
+import math
+import re
+import sys
+import unittest
+from pathlib import Path
+
+TESTS = Path(__file__).resolve().parent
+BUILD = TESTS.parent
+sys.path.insert(0, str(BUILD))
+sys.path.insert(0, str(TESTS))
+
+import fdb  # noqa: E402
+import ladders  # noqa: E402
+import phases  # noqa: E402
+import test_addon  # noqa: E402
+from test_addon import (  # noqa: E402
+    ATIESH, EVERYTHING, SAGEBLADE, VAULTED_SECRETS, Game, default_filter, strip_colors)
+
+lupa = test_addon.lupa
+
+EYE_OF_REND = 12587
+TIMBERMAW_TUNIC = 252484        # crafted, Leatherworking 300
+GRAND_MARSHALS_SUNDERER = 18830  # PvP rank 14
+GENERALS_GREAVES = 231656       # no known source
+ENHANCEMENT = "EasyBISCharDB = { class = 'SHAMAN', spec = 2, list = 'pve' }"
+FIRE_MAGE = "EasyBISCharDB = { class = 'MAGE', spec = 2, list = 'pve' }"   # a spec with both weapon styles
+OLD_CLIENT = "C_XMLUtil = nil; MenuUtil = nil; MenuResponse = nil"
+
+# The window's sizes (UI\Browser.lua): its width, a row on two lines and on one, a slot's header, a note,
+# the score bar
+WIDTH, ROW, ONE_LINE, HEADER, NOTE, BAR = 960, 54, 36, 38, 28, 52
+
+
+def plain(text: str) -> str:
+    """A text without its colors and its pictures."""
+    return re.sub(r"\|T[^|]*\|t\s*", "", strip_colors(text))
+
+
+def find(menu, text):
+    """The entry of a context menu whose text contains `text`."""
+    for item in menu["items"].values():   # ["items"]: .items is the Lua table wrapper's own method
+        if item.text and text in plain(item.text):
+            return item
+    raise AssertionError(f"no menu entry contains {text!r}: {texts(menu)}")
+
+
+def texts(menu) -> list[str]:
+    return [plain(item.text) for item in menu["items"].values() if item.text]
+
+
+def label(control) -> str:
+    """What a filter's button, or a plain button, reads."""
+    button = control.button or control
+    return strip_colors(button.text.text)
+
+
+def look(control) -> str:
+    """How a button is painted: idle, lit or active (gold)."""
+    return (control.button or control).look
+
+
+@unittest.skipIf(lupa is None, "lupa is not installed")
+class WindowTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.db = fdb.load(BUILD / "cache" / "ForeverDB")
+        cls.kept = ladders.build_all(cls.db)
+
+    # -- reference ------------------------------------------------------------------------------
+
+    @staticmethod
+    def gap(score: float, reference: float) -> int:
+        return math.floor((score - reference) / reference * 100 + 0.5)
+
+    def reference_rows(self, token, spec, mode, flt=None, only_slot=None, alts=True) -> list[tuple]:
+        """(kind, id, slot, bis, gap) for every row the window should list, from the generator's rules.
+        alts: False with the alternatives switched off."""
+        flt = flt or default_filter()
+        side = flt[0]
+        visible = {slot: [e for e in self.kept[token][spec][mode][slot] if e.passes(flt)]
+                   for slot, _ in ladders.SLOTS}
+        two = [e for e in visible["main"] if e.two_hand]
+        one = [e for e in visible["main"] if not e.two_hand]
+        two_hand = bool(two) and (not one or two[0].stored >= one[0].stored
+                                  + (visible["off"][0].stored if visible["off"] else 0))
+        shown = 1 + ladders.ALTERNATIVES
+        other = {slot: entries[:shown] for slot, entries in
+                 zip(("main", "off"), ladders.other_weapons(visible["main"], visible["off"]))}
+        visible["main"], visible["off"] = ladders.weapon_lists(visible["main"], visible["off"])
+
+        def other_gap(slot, entry) -> int:
+            """A set against a set: one-hander + off hand against the two-hander, or the reverse."""
+            best_main, best_off = visible["main"][0], visible["off"][:1]
+            if two_hand:
+                partner = other["off" if slot == "main" else "main"][:1]
+                return self.gap(entry.stored / 10 + (partner[0].stored / 10 if partner else 0), best_main.stored / 10)
+            return self.gap(entry.stored / 10, best_main.stored / 10 + (best_off[0].stored / 10 if best_off else 0))
+
+        rows = []
+        for slot, _ in ladders.SLOTS:
+            if only_slot and slot != only_slot:
+                continue
+            best, alternatives = ladders.picks(slot, visible[slot])
+            for entry in best:
+                rows.append(("item", entry.shown(side), slot, True, 0))
+            for entry in alternatives if alts else []:
+                rows.append(("item", entry.shown(side), slot, False, self.gap(entry.stored / 10, best[0].stored / 10)))
+            if alts and other.get(slot):
+                rows.append(("note", None, slot, None, None))
+                for entry in other[slot]:
+                    rows.append(("item", entry.shown(side), slot, False, other_gap(slot, entry)))
+            elif slot == "off" and two_hand:
+                rows.append(("note", None, slot, None, None))
+        return rows
+
+    @staticmethod
+    def shown_rows(game) -> list[tuple]:
+        rows = []
+        for row in game.ns.Browser.window.rowData.values():
+            if row.kind == "header":
+                continue
+            if row.kind == "item":
+                rows.append(("item", row.id, row.slot, bool(row.bis), row.gap))
+            elif row.kind == "note":
+                rows.append(("note", None, row.slot, None, None))
+            else:
+                rows.append(("enchant", row.enchant.id, row.key, bool(row.bis), None))
+        return rows
+
+    @staticmethod
+    def frames(game) -> list:
+        """The row frames in use, top to bottom, without the slot headers."""
+        window = game.ns.Browser.window
+        return [window.rows[index] for index in range(1, len(window.rowData) + 1)
+                if window.rowData[index].kind != "header"]
+
+    @staticmethod
+    def all_frames(game) -> list:
+        """Every row frame in use, headers included."""
+        window = game.ns.Browser.window
+        return [window.rows[index] for index in range(1, len(window.rowData) + 1)]
+
+    def open(self, **options) -> Game:
+        game = Game(**options)
+        game.ns.Browser.Open()
+        return game
+
+    # -- opening ------------------------------------------------------------------------------
+
+    def test_opens_on_the_players_class(self):
+        game = self.open(cls="MAGE")
+        window, state = game.ns.Browser.window, game.ns.Browser.state
+        self.assertTrue(window.shown)
+        self.assertEqual((state["class"], state.spec, state.list, state.tab), ("MAGE", 1, "pve", "items"))
+        self.assertEqual(self.shown_rows(game), self.reference_rows("MAGE", 1, "pve"))
+        self.assertEqual(label(window.spec), "Mage Arcane")
+        self.assertIn("EasyBISWindow", list(game.lua.globals().UISpecialFrames.values()), "Escape will not close it")
+        self.assertIn("ForeverDB.net", window.credit.text)
+        self.assertIn(self.db.meta["build"], window.credit.text)
+
+    def test_every_spec_and_list_shows_the_generators_rows(self):
+        game = self.open()
+        state = game.ns.Browser.state
+        for token in test_addon.CLASSES:
+            for spec in self.kept[token]:
+                for mode in ladders.MODES:
+                    state["class"], state.spec, state.list = token, spec, mode
+                    game.ns.SetOption(game.ns, "minimap", not game.ns.db.minimap)  # any option change refreshes
+                    self.assertEqual(self.shown_rows(game), self.reference_rows(token, spec, mode),
+                                     f"{token} {spec} {mode}")
+
+    def test_remembers_the_last_spec_and_list(self):
+        game = self.open(saved="EasyBISCharDB = { class = 'ROGUE', spec = 2, list = 'pvp' }")
+        state = game.ns.Browser.state
+        self.assertEqual((state["class"], state.spec, state.list), ("ROGUE", 2, "pvp"))
+        self.assertEqual(self.shown_rows(game), self.reference_rows("ROGUE", 2, "pvp"))
+
+    def test_bad_saved_choice_falls_back(self):
+        game = self.open(cls="DRUID", saved="EasyBISCharDB = { class = 'DEATHKNIGHT', spec = 9, list = 'arena' }")
+        state = game.ns.Browser.state
+        self.assertEqual((state["class"], state.spec, state.list), ("WARRIOR", 1, "pve"))
+
+    def test_slash_command_opens_and_closes(self):
+        game = Game()
+        game.slash("")
+        self.assertTrue(game.ns.Browser.window.shown)
+        game.slash("")
+        self.assertFalse(game.ns.Browser.window.shown)
+
+    # -- what a row says --------------------------------------------------------------------
+
+    def test_item_row_texts(self):
+        game = Game(saved=ENHANCEMENT)
+        game.stub.itemNames[EYE_OF_REND] = "Eye of Rend"
+        game.ns.Browser.Open()
+        row = self.frames(game)[0]
+        # one line: name, score bar and rank, type, then a picture and the words for where it comes from
+        self.assertEqual(row.name.text, "|cffa335eeEye of Rend|r", "the name wears the quality color, and nothing else")
+        self.assertEqual(strip_colors(row.rank.text), "BIS")
+        self.assertTrue(row.bar.shown)
+        self.assertEqual(row.bar.width, BAR, "the best pick's bar is full")
+        self.assertEqual(row.sub.text, "Mail", "the header names the slot, the row says the item's type")
+        self.assertEqual(row.sourceIcon.texture, "Interface\\TargetingFrame\\UI-RaidTargetingIcon_8")
+        self.assertFalse(row.kind.shown, "on one line the picture stands for the category")
+        self.assertEqual(strip_colors(row.detail.text), "Warchief Rend Blackhand - Blackrock Spire (17%) *",
+                         "Classic data is a sign, not two words on every row")
+        self.assertEqual(row.height, ONE_LINE)
+        self.assertFalse(row.remove.shown)
+
+        second = self.frames(game)[1]
+        self.assertEqual(strip_colors(second.name.text), "Mask of the Unforgiven")
+        self.assertRegex(strip_colors(second.rank.text), r"^-\d+%$")
+        self.assertLess(second.bar.width, BAR, "an alternative's bar is shorter")
+        self.assertEqual(second.sub.text, "", "the item type is not known before the game loads the item")
+
+        # what was seen in Forever or read in its files wears no sign
+        for frame in self.frames(game):
+            if frame.data.kind == "item" and frame.data.source.origin in ("f", "s"):
+                self.assertNotIn("*", strip_colors(frame.detail.text))
+                self.assertNotIn("Forever", strip_colors(frame.detail.text))
+
+        # on two lines the category is written next to its picture
+        game.ns.SetOption(game.ns, "compact", False)
+        self.assertEqual(row.height, ROW)
+        self.assertTrue(row.kind.shown)
+        self.assertEqual(strip_colors(row.kind.text), "Dungeon *")
+        self.assertEqual(row.detail.text, "Warchief Rend Blackhand - Blackrock Spire (17%)")
+        self.assertEqual(strip_colors(row.rank.text), "BIS")
+
+    def test_rows_use_larger_fonts(self):
+        """A row's texts are the game's own fonts made larger, so the list reads at a glance."""
+        game = Game(saved=ENHANCEMENT)
+        game.ns.Browser.Open()
+        fonts = game.lua.globals()
+
+        def size(text):
+            return fonts[text.fontObject].fontSize
+
+        row = self.frames(game)[0]
+        self.assertEqual((size(row.name), size(row.sub), size(row.rank), size(row.detail), size(row.header)),
+                         (14, 12, 12, 12, 18))
+        self.assertEqual(fonts[row.name.fontObject].fontFile, fonts.GameFontNormal.fontFile, "the game's own face")
+        self.assertGreater(size(row.name), fonts.GameFontNormal.fontSize)
+        self.assertGreater(size(row.detail), fonts.GameFontHighlightSmall.fontSize)
+        self.assertGreater(size(row.header), fonts.GameFontNormalLarge.fontSize)
+        self.assertEqual((row.icon.width, row.icon.height), (30, 30), "the picture grows with the row")
+        game.ns.SetOption(game.ns, "compact", False)
+        self.assertEqual((row.icon.width, row.icon.height), (44, 44))
+
+        # a client without CreateFont keeps the game's fonts
+        old = Game(saved="CreateFont = nil; " + ENHANCEMENT)
+        old.ns.Browser.Open()
+        row = self.frames(old)[0]
+        self.assertEqual((row.name.fontObject, row.detail.fontObject), ("GameFontNormal", "GameFontHighlightSmall"))
+
+    def test_item_types(self):
+        """Necklaces, rings and trinkets have no type worth a word; a two-hander says it once on one line."""
+        game = Game(cls="MAGE", saved=FIRE_MAGE)
+        game.ns.SetPhase(game.ns, EVERYTHING)
+        game.stub.itemNames[ATIESH] = "Atiesh"
+        game.stub.itemTypes[ATIESH] = game.lua.table("Staves", "INVTYPE_2HWEAPON", 2, 10)
+        game.ns.Browser.Open()
+        rows = {frame.data.id: frame for frame in self.frames(game) if frame.data.kind == "item"}
+        self.assertEqual(rows[ATIESH].sub.text, "Staves")
+        neck = next(frame for frame in self.frames(game) if frame.data.slot == "neck")
+        game.stub.itemNames[neck.data.id] = "A necklace"
+        game.stub.itemTypes[neck.data.id] = game.lua.table("Miscellaneous", "INVTYPE_NECK", 4, 0)
+        cloak = next(frame for frame in self.frames(game) if frame.data.slot == "back")
+        game.stub.itemNames[cloak.data.id] = "A cloak"
+        game.stub.itemTypes[cloak.data.id] = game.lua.table("Miscellaneous", "INVTYPE_CLOAK", 4, 0)
+        game.ns.SetOption(game.ns, "compact", False)
+        self.assertEqual(rows[ATIESH].sub.text, "Two-Hand - Staves")
+        self.assertEqual(neck.sub.text, "")
+        self.assertEqual(cloak.sub.text, "", "the armor type Miscellaneous says nothing, whatever the slot")
+
+    def test_rows_are_grouped_by_slot(self):
+        """A header before each slot's rows, taller rows after it, nothing overlapping."""
+        game = self.open(saved=ENHANCEMENT)
+        window = game.ns.Browser.window
+        data = list(window.rowData.values())
+        reference = self.reference_rows("SHAMAN", 2, "pve")
+        slots_in_order = list(dict.fromkeys(row[2] for row in reference))
+        headers = [row for row in data if row.kind == "header"]
+        self.assertEqual([row.group for row in headers], slots_in_order)
+        self.assertEqual(headers[0].text, "Head")
+        self.assertEqual(len(data), len(reference) + len(slots_in_order))
+        self.assertEqual(data[0].kind, "header", "the list starts with a header")
+        current = None
+        for row in data:
+            if row.kind == "header":
+                current = row.group
+            else:
+                self.assertEqual(row.slot, current, "a row sits under another slot's header")
+
+        offset = 0
+        for frame in self.all_frames(game):
+            header, note = frame.data.kind == "header", frame.data.kind == "note"
+            self.assertEqual(frame.points[1][5], -offset)
+            self.assertEqual(frame.height, HEADER if header else NOTE if note else ONE_LINE)
+            self.assertEqual(frame.header.shown, header)
+            self.assertEqual(frame.note.shown, note)
+            self.assertEqual(frame.icon.shown, not (header or note))
+            self.assertEqual(frame.name.shown, not (header or note))
+            if header:
+                self.assertEqual(frame.header.text, game.ns.SlotName(frame.data.group))
+            offset += frame.height
+        self.assertEqual(window.child.height, offset)
+
+        # a frame that was a header is reused as an item row when the list changes
+        game.stub.run(window.slot.button, "OnClick")
+        find(game.stub.menu, "Legs").pick()
+        kinds = [frame.data.kind for frame in self.all_frames(game)]
+        self.assertEqual(kinds, ["header", "item", "item", "item"])
+        self.assertTrue(self.all_frames(game)[1].icon.shown)
+        self.assertFalse(self.all_frames(game)[1].header.shown)
+
+    def test_enchants_are_grouped_by_slot(self):
+        game = self.open(saved=ENHANCEMENT)
+        window = game.ns.Browser.window
+        game.stub.run(window.tabs.buttons[2], "OnClick")
+        data = list(window.rowData.values())
+        headers = [row.text for row in data if row.kind == "header"]
+        keys = list(dict.fromkeys(row.key for row in data if row.kind == "enchant"))
+        self.assertEqual(headers, [game.ns.Enchants.KeyName(key) for key in keys])
+        self.assertIn("Two-handed weapon", headers)
+        self.assertEqual(data[0].kind, "header")
+
+    def test_two_hander_note(self):
+        game = self.open(saved=ENHANCEMENT)
+        notes = [frame for frame in self.frames(game) if frame.data.kind == "note"]
+        self.assertEqual(len(notes), 1)
+        self.assertEqual(notes[0].note.text, "none, the two-hander wins")
+        frames = self.all_frames(game)
+        position = next(index for index, frame in enumerate(frames) if frame.data.kind == "note")
+        self.assertEqual(frames[position - 1].data.kind, "header")
+        self.assertEqual(frames[position - 1].header.text, "Off hand")
+
+    def test_both_weapon_styles_are_listed(self):
+        game = Game(cls="MAGE", saved=FIRE_MAGE)
+        game.stub.itemNames[SAGEBLADE] = "Sageblade"
+        game.stub.itemTypes[SAGEBLADE] = game.lua.table("One-Handed Swords", "INVTYPE_WEAPON")
+        game.ns.Browser.Open()
+        window = game.ns.Browser.window
+
+        def rows_of(slot):
+            return [frame for frame in self.all_frames(game) if frame.data.slot == slot]
+
+        # before the raids a one-hander and an off hand are best: the two-handers follow, under a note
+        main = rows_of("main")
+        self.assertEqual([frame.data.kind for frame in main], ["item"] * 3 + ["note"] + ["item"] * 3)
+        self.assertEqual(main[0].data.id, SAGEBLADE)
+        self.assertEqual(main[0].sub.text, "One-Hand - One-Handed Swords")
+        self.assertEqual(main[3].note.text, "Or a two-hander")
+        self.assertFalse(main[3].icon.shown)
+        self.assertEqual([bool(frame.data.other) for frame in main if frame.data.kind == "item"],
+                         [False] * 3 + [True] * 3)
+        for frame in main[4:]:
+            self.assertFalse(frame.data.bis)
+            self.assertRegex(strip_colors(frame.rank.text), r"^(-\d+%|<1%|Tied)$")
+            self.assertLessEqual(frame.data.gap, 0)
+        self.assertEqual([frame.data.kind for frame in rows_of("off")], ["item"] * 3)
+
+        # with everything the data holds a staff is best: the one-handers and their off hands follow
+        game.ns.SetPhase(game.ns, EVERYTHING)
+        main, off = rows_of("main"), rows_of("off")
+        self.assertEqual(main[0].data.id, ATIESH)
+        self.assertEqual([frame.data.kind for frame in main], ["item"] * 3 + ["note"] + ["item"] * 3)
+        self.assertEqual(main[3].note.text, "Or a one-hander with an off hand")
+        self.assertEqual(main[4].data.id, VAULTED_SECRETS, "the best one-hander once every raid counts")
+        self.assertEqual(off[0].note.text, "With a one-hander, in place of the two-hander")
+        self.assertEqual([frame.data.kind for frame in off], ["note"] + ["item"] * 3)
+        self.assertTrue(all(frame.data.other and not frame.data.bis for frame in off[1:]))
+        # the best one-hander and the best off hand make one set: the same gap behind the staff
+        self.assertEqual(main[4].data.gap, off[1].data.gap)
+        self.assertLess(main[4].data.gap, 0)
+        self.assertEqual(self.shown_rows(game),
+                         self.reference_rows("MAGE", 2, "pve", default_filter(phase=EVERYTHING)))
+
+        # a source filter keeps the items and drops the notes
+        game.ns.Browser.state.source = "quest"
+        game.ns.SetOption(game.ns, "minimap", False)
+        self.assertTrue(all(row.kind != "note" for row in window.rowData.values()))
+
+    def test_row_tooltip_and_link(self):
+        game = Game(saved=ENHANCEMENT)
+        game.stub.itemNames[EYE_OF_REND] = "Eye of Rend"
+        game.ns.Browser.Open()
+        row, tooltip = self.frames(game)[0], game.lua.globals().GameTooltip
+        compare = game.lua.globals().ShoppingTooltip1
+        game.stub.run(row, "OnEnter")
+        self.assertEqual(tooltip.item, EYE_OF_REND)
+        self.assertTrue(tooltip.shown)
+        self.assertFalse(compare.shown, "the comparison with the gear worn waits for Shift")
+        game.stub.shift = True
+        game.stub.fire("MODIFIER_STATE_CHANGED", "LSHIFT", 1)
+        self.assertTrue(compare.shown)
+        game.stub.shift = False
+        game.stub.fire("MODIFIER_STATE_CHANGED", "LSHIFT", 0)
+        self.assertFalse(compare.shown)
+        game.stub.shift = True
+        game.stub.run(row, "OnLeave")
+        game.stub.run(row, "OnEnter")
+        self.assertTrue(compare.shown, "Shift already held: the comparison comes with the tooltip")
+        game.stub.shift = False
+        compare.Show(compare)
+        game.stub.run(tooltip, "OnUpdate")
+        self.assertFalse(compare.shown, "the game setting it again does not last")
+        game.stub.run(row, "OnLeave")
+        self.assertFalse(tooltip.shown)
+        compare.Show(compare)
+        game.stub.fire("MODIFIER_STATE_CHANGED", "LSHIFT", 0)
+        game.stub.run(tooltip, "OnUpdate")
+        self.assertTrue(compare.shown, "another addon's tooltip keeps its comparison")
+        compare.Hide(compare)
+
+        game.stub.run(row, "OnClick")
+        self.assertIsNone(game.stub.linked, "a plain click must not link the item")
+        game.stub.modifier = True
+        game.stub.run(row, "OnClick")
+        self.assertIn(f"item:{EYE_OF_REND}", game.stub.linked)
+
+    def test_names_arrive_later(self):
+        game = self.open(saved=ENHANCEMENT)
+        row = self.frames(game)[0]
+        self.assertEqual(strip_colors(row.name.text), "Eye of Rend")   # the data's English name
+        game.stub.itemNames[EYE_OF_REND] = "Oeil de Rend"
+        game.stub.fire("GET_ITEM_INFO_RECEIVED", EYE_OF_REND, True)
+        game.stub.fire("GET_ITEM_INFO_RECEIVED", EYE_OF_REND, True)
+        while game.stub.runTimers():
+            pass
+        self.assertEqual(strip_colors(row.name.text), "Oeil de Rend")
+        game.ns.Browser.Close()
+        game.stub.itemNames[EYE_OF_REND] = "Eye"
+        game.stub.fire("GET_ITEM_INFO_RECEIVED", EYE_OF_REND, True)
+        self.assertEqual(game.stub.runTimers(), 0, "a closed window keeps listening")
+
+    # -- filters ------------------------------------------------------------------------------
+
+    def test_spec_menu(self):
+        game = self.open(cls="SHAMAN")
+        window, state = game.ns.Browser.window, game.ns.Browser.state
+        game.stub.run(window.spec.button, "OnClick")
+        menu = game.stub.menu
+        self.assertEqual(texts(menu)[0], "Shaman", "the player's class comes first")
+        self.assertEqual(len(texts(menu)), 9)
+        self.assertEqual(texts(find(menu, "Shaman")), ["Elemental", "Enhancement", "Restoration"])
+        self.assertTrue(find(find(menu, "Shaman"), "Elemental").selected())
+
+        fury = find(find(menu, "Warrior"), "Fury")
+        fury.pick()
+        self.assertEqual((state["class"], state.spec), ("WARRIOR", 2))
+        self.assertTrue(fury.selected())
+        self.assertEqual(label(window.spec), "Warrior Fury")
+        self.assertEqual(self.shown_rows(game), self.reference_rows("WARRIOR", 2, "pve"))
+        saved = game.lua.globals().EasyBISCharDB
+        self.assertEqual((saved["class"], saved.spec, saved.list), ("WARRIOR", 2, "pve"))
+
+    def test_list_buttons(self):
+        game = self.open(saved=ENHANCEMENT)
+        window = game.ns.Browser.window
+        game.stub.run(window.list.buttons[2], "OnClick")
+        self.assertEqual(game.ns.Browser.state.list, "pvp")
+        self.assertEqual(self.shown_rows(game), self.reference_rows("SHAMAN", 2, "pvp"))
+        self.assertEqual(game.lua.globals().EasyBISCharDB.list, "pvp")
+
+    def test_phase_filter(self):
+        game = self.open(cls="MAGE", saved=FIRE_MAGE)
+        window = game.ns.Browser.window
+        self.assertEqual(window.phase.label.text, "Phase")
+        self.assertEqual(label(window.phase), "Pre-raid")
+        self.assertNotIn(ATIESH, [row[1] for row in self.shown_rows(game)])
+
+        game.stub.run(window.phase.button, "OnClick")
+        menu = game.stub.menu
+        self.assertEqual(texts(menu), ["Pre-raid", "Phase 1", "Everything, Classic raids included"])
+        self.assertTrue(find(menu, "Pre-raid").selected())
+        find(menu, "Everything").pick()
+        self.assertTrue(find(menu, "Everything").selected())
+        self.assertEqual(label(window.phase), "Everything")
+        self.assertEqual(game.lua.globals().EasyBISCharDB.phase, EVERYTHING)
+        self.assertEqual(self.shown_rows(game), self.reference_rows("MAGE", 2, "pve", default_filter(phase=EVERYTHING)))
+        self.assertIn(ATIESH, [row[1] for row in self.shown_rows(game)])
+
+        find(menu, "Phase 1").pick()
+        self.assertEqual(label(window.phase), "Phase 1")
+        self.assertEqual(self.shown_rows(game), self.reference_rows("MAGE", 2, "pve", default_filter(phase=1)))
+        self.assertNotIn(ATIESH, [row[1] for row in self.shown_rows(game)])
+
+        # the choice comes back with the character
+        again = self.open(cls="MAGE", saved="EasyBISCharDB = { class = 'MAGE', spec = 2, list = 'pve', phase = 9 }")
+        self.assertEqual(label(again.ns.Browser.window.phase), "Everything")
+        self.assertIn(ATIESH, [row[1] for row in self.shown_rows(again)])
+
+    def test_every_phase_shows_the_generators_rows(self):
+        game = self.open()
+        state = game.ns.Browser.state
+        for phase in phases.PHASES:
+            game.ns.SetPhase(game.ns, phase)
+            for token in test_addon.CLASSES:
+                for spec in self.kept[token]:
+                    for mode in ladders.MODES:
+                        state["class"], state.spec, state.list = token, spec, mode
+                        game.ns.SetOption(game.ns, "minimap", not game.ns.db.minimap)
+                        self.assertEqual(self.shown_rows(game),
+                                         self.reference_rows(token, spec, mode, default_filter(phase=phase)),
+                                         f"{token} {spec} {mode} phase {phase}")
+
+    def test_slot_filter(self):
+        game = self.open(saved=ENHANCEMENT)
+        window = game.ns.Browser.window
+        game.stub.run(window.slot.button, "OnClick")
+        self.assertEqual(texts(game.stub.menu)[:3], ["All", "Head", "Neck"])
+        self.assertEqual(len(texts(game.stub.menu)), 16)
+        find(game.stub.menu, "Finger").pick()
+        self.assertEqual(self.shown_rows(game), self.reference_rows("SHAMAN", 2, "pve", only_slot="finger"))
+        self.assertEqual(len(self.shown_rows(game)), 4, "two rings and two alternatives")
+        self.assertEqual(label(window.slot), "Finger")
+        self.assertEqual(look(window.slot), "active", "a filter that narrows the list is gold")
+        self.assertEqual(look(window.source), "idle")
+        self.assertEqual(look(window.spec), "idle", "the spec and the phase always have a value: never gold")
+        find(game.stub.menu, "All").pick()
+        self.assertEqual(look(window.slot), "idle")
+        self.assertEqual(self.shown_rows(game), self.reference_rows("SHAMAN", 2, "pve"))
+
+    def test_source_and_zone_filters(self):
+        game = self.open(saved=ENHANCEMENT)
+        window, state = game.ns.Browser.window, game.ns.Browser.state
+        everything = self.shown_rows(game)
+
+        game.stub.run(window.source.button, "OnClick")
+        offered = texts(game.stub.menu)
+        self.assertEqual(offered[0], "All")
+        self.assertIn("Dungeon", offered)
+        self.assertIn("Crafted", offered)
+        find(game.stub.menu, "Crafted").pick()
+        rows = [row for row in window.rowData.values() if row.kind == "item"]
+        self.assertTrue(rows)
+        self.assertTrue(all(row.source.category == "crafted" for row in rows))
+        self.assertLess(len(rows), len(everything))
+        self.assertEqual(label(window.source), "Crafted")
+        self.assertIn("|T", find(game.stub.menu, "Crafted").text, "the menu shows each category's picture")
+        find(game.stub.menu, "All").pick()
+
+        game.stub.run(window.zone.button, "OnClick")
+        zones = texts(game.stub.menu)
+        self.assertEqual(zones[0], "All")
+        self.assertIn("Blackrock Spire", zones)
+        self.assertEqual(zones[1:], sorted(zones[1:]))
+        find(game.stub.menu, "Blackrock Spire").pick()
+        rows = [row for row in window.rowData.values() if row.kind == "item"]
+        self.assertTrue(rows)
+        self.assertTrue(all(row.source.zone == "Blackrock Spire" for row in rows))
+        self.assertIn(EYE_OF_REND, [row.id for row in rows])
+
+        # another spec may not have that zone: the filter goes back to "all"
+        state["class"], state.spec = "PRIEST", 2
+        state.zone = "A zone nobody has"
+        game.ns.SetOption(game.ns, "minimap", False)
+        self.assertIsNone(state.zone)
+        self.assertEqual(self.shown_rows(game), self.reference_rows("PRIEST", 2, "pve"))
+
+    def test_nothing_to_show(self):
+        game = self.open(saved=ENHANCEMENT)
+        window = game.ns.Browser.window
+        self.assertFalse(window.empty.shown)
+        game.ns.SetOption(game.ns, "seenOnly", True)
+        find_slot = "ranged"   # an Enhancement Shaman has no ranged pick
+        game.ns.Browser.state.slot = find_slot
+        game.ns.SetOption(game.ns, "seenOnly", False)
+        self.assertEqual(len(window.rowData), 0)
+        self.assertTrue(window.empty.shown)
+        self.assertEqual(window.empty.text, "Nothing matches these filters.")
+
+    # -- enchants -----------------------------------------------------------------------------
+
+    def test_enchants_tab(self):
+        import luaout
+        game = self.open(saved=ENHANCEMENT)
+        window = game.ns.Browser.window
+        ladder = luaout.enchant_ladders(self.db, "SHAMAN", 2, self.kept["SHAMAN"][2])
+        best = luaout.best_enchants(ladder, phases.CURRENT)
+        wanted = next(enchant for enchant in best["chest"][1:] if enchant.startswith("s"))
+        game.stub.spellNames[int(wanted[1:])] = "A chest enchant"
+        game.stub.run(window.tabs.buttons[2], "OnClick")
+        rows = self.shown_rows(game)
+        self.assertEqual(len(rows), sum(len(ids) for ids in best.values()))
+        self.assertTrue(all(row[0] == "enchant" for row in rows))
+        chest = [row for row in rows if row[2] == "chest"]
+        self.assertEqual([row[1] for row in chest], best["chest"])
+        self.assertEqual([row[3] for row in chest], [True] + [False] * (len(chest) - 1))
+        # the two lists, the item sources and adding an item do not apply; the phase does
+        for control in (window.list, window.listLabel, window.source, window.zone, window.add):
+            self.assertFalse(control.shown)
+        self.assertTrue(window.slot.shown)
+        self.assertTrue(window.phase.shown)
+
+        frames = {frame.data.enchant.id: frame for frame in self.frames(game)}
+        spell = frames[wanted]
+        self.assertEqual(spell.name.text, "A chest enchant")
+        self.assertEqual(strip_colors(spell.rank.text), "Alt")
+        self.assertFalse(spell.bar.shown, "an enchant has no score: only the best one gets a bar")
+        self.assertEqual(spell.height, ROW, "an enchant always takes two lines")
+        self.assertEqual(spell.sub.text, self.db.enchant_info[wanted][1])
+        self.assertTrue(strip_colors(spell.kind.text).startswith("Enchanting ("))
+        first = frames[best["chest"][0]]
+        self.assertEqual(strip_colors(first.rank.text), "BIS")
+        self.assertTrue(first.bar.shown)
+        game.stub.run(spell, "OnEnter")
+        tooltip = game.lua.globals().GameTooltip
+        self.assertEqual(tooltip.spell, int(wanted[1:]))
+        self.assertGreater(len(tooltip.lines), 1, "the effect and the source are added to the tooltip")
+
+        game.stub.run(window.slot.button, "OnClick")
+        find(game.stub.menu, "Main hand").pick()
+        self.assertEqual({row[2] for row in self.shown_rows(game)}, {"w2h"},
+                         "a spec that fights with a two-hander is not shown one-hander or shield enchants")
+
+        game.stub.run(window.tabs.buttons[1], "OnClick")
+        self.assertTrue(window.source.shown)
+        self.assertEqual(self.shown_rows(game), self.reference_rows("SHAMAN", 2, "pve", only_slot="main"))
+
+    def test_enchants_follow_the_phase(self):
+        import luaout
+        game = self.open(cls="HUNTER", saved="EasyBISCharDB = { class = 'HUNTER', spec = 2, list = 'pve' }")
+        window = game.ns.Browser.window
+        ladder = luaout.enchant_ladders(self.db, "HUNTER", 2, self.kept["HUNTER"][2])
+        game.stub.run(window.tabs.buttons[2], "OnClick")
+        for phase in phases.PHASES:
+            game.ns.SetPhase(game.ns, phase)
+            best = luaout.best_enchants(ladder, phase)
+            rows = self.shown_rows(game)
+            self.assertEqual([row[1] for row in rows],
+                             [enchant for key in game.ns.Enchants.KEYS.values() for enchant in best.get(key, [])],
+                             f"phase {phase}")
+        before = luaout.best_enchants(ladder, phases.PRE_RAID)
+        self.assertNotIn("i23548", [e for ids in before.values() for e in ids], "Might of the Scourge needs Naxxramas")
+        self.assertIn("i23548", luaout.best_enchants(ladder, EVERYTHING)["shoulder"])
+        # a hunter carries no shield and holds nothing in the off hand
+        keys = {row[2] for row in self.shown_rows(game)}
+        self.assertFalse(keys & {"shield", "held"})
+        self.assertIn("rng", keys)
+
+    def test_enchant_sources_in_a_few_words(self):
+        game = Game()
+        info, kind, detail = game.ns.Enchants.Info, game.ns.Enchants.Kind, game.ns.Enchants.Detail
+        cloak = info("s1219587")
+        self.assertEqual((kind(cloak), detail(cloak)),
+                         ("Enchanting (300)", "Formula sold by Alynsia (Redridge Mountains), or a scroll"))
+        boots = info("s20023")
+        self.assertEqual(detail(boots), "Formula drops in Stratholme, or a scroll")
+        strength = info("s1248668")
+        self.assertEqual(detail(strength), "Formula, source unknown")
+        kit = info("i15564")
+        self.assertEqual((kind(kit), detail(kit)), ("Leatherworking (225)", "Taught by trainers"))
+        scourge = info("i23548")
+        self.assertEqual((kind(scourge), detail(scourge)), ("Item to apply", "Unknown source"))
+        # every sentence of the data is one this reads
+        for enchant, fields in self.db.enchant_info.items():
+            record = info(enchant)
+            if record is None:
+                continue   # not among the enchants the addon lists
+            read = record.trainer or record.recipe or fields[2] == "where it comes from isn't known yet"
+            self.assertTrue(read, f"{enchant}: {fields[2]!r} is a sentence Enchants.lua does not read")
+
+        french = Game(locale="frFR")
+        cloak = french.ns.Enchants.Info("s1219587")
+        self.assertEqual(french.ns.Enchants.Kind(cloak), "Enchantement (300)")
+        self.assertEqual(french.ns.Enchants.Detail(cloak),
+                         "Formule : en vente chez Alynsia (Redridge Mountains), ou un parchemin")
+
+    # -- options ------------------------------------------------------------------------------
+
+    def test_alternatives_switch(self):
+        game = self.open(cls="MAGE", saved=FIRE_MAGE)
+        window = game.ns.Browser.window
+        self.assertEqual(look(window.alts), "lit")
+        game.stub.run(window.alts, "OnClick")
+        self.assertFalse(game.ns.db.listAlts)
+        self.assertEqual(look(window.alts), "idle")
+        self.assertEqual(self.shown_rows(game), self.reference_rows("MAGE", 2, "pve", alts=False))
+        self.assertTrue(all(row[3] for row in self.shown_rows(game)), "only best picks are left")
+        # the enchants follow the switch
+        game.stub.run(window.tabs.buttons[2], "OnClick")
+        self.assertTrue(all(row[3] for row in self.shown_rows(game)))
+        game.stub.run(window.alts, "OnClick")
+        self.assertTrue(game.ns.db.listAlts)
+        self.assertFalse(all(row[3] for row in self.shown_rows(game)))
+        # the choice comes back
+        again = self.open(saved="EasyBISDB = { listAlts = false }; " + ENHANCEMENT)
+        self.assertEqual(self.shown_rows(again), self.reference_rows("SHAMAN", 2, "pve", alts=False))
+        self.assertEqual(len([row for row in self.shown_rows(again) if row[0] == "note"]), 1,
+                         "the off hand still says the two-hander wins")
+
+    def test_options_menu(self):
+        game = self.open(saved="EasyBISCharDB = { class = 'SHAMAN', spec = 2, list = 'pvp' }")
+        window = game.ns.Browser.window
+        self.assertEqual(self.shown_rows(game), self.reference_rows("SHAMAN", 2, "pvp"))
+        game.stub.run(window.options, "OnClick")
+        menu = game.stub.menu
+        self.assertEqual(texts(menu), ["Options", "BIS lines in item tooltips", "Tooltips show my class only",
+                                       "Tooltips show alternatives too", "Items with no known source",
+                                       "Only items seen in Forever", "Compact rows", "Minimap button"])
+        tooltips = find(menu, "BIS lines")
+        self.assertTrue(tooltips.selected())
+        tooltips.pick()
+        self.assertFalse(game.ns.db.tooltip)
+        self.assertEqual(game.tooltip(EYE_OF_REND), [])
+        tooltips.pick()
+        unsourced = find(menu, "no known source")
+        self.assertFalse(unsourced.selected())
+        unsourced.pick()
+        self.assertTrue(unsourced.selected())
+        self.assertTrue(game.ns.db.unsourced)
+        self.assertEqual(self.shown_rows(game), self.reference_rows("SHAMAN", 2, "pvp", default_filter(unsourced=True)))
+
+    def test_minimap_button(self):
+        game = Game()
+        button = game.lua.globals().EasyBISMinimapButton
+        self.assertIsNotNone(button, "no minimap button after login")
+        self.assertTrue(button.shown)
+        game.stub.run(button, "OnClick")
+        self.assertTrue(game.ns.Browser.window.shown)
+        game.stub.run(button, "OnClick")
+        self.assertFalse(game.ns.Browser.window.shown)
+        game.stub.run(button, "OnEnter")
+        self.assertEqual(game.lua.globals().GameTooltip.text, "Easy BIS")
+
+        game.ns.SetOption(game.ns, "minimap", False)
+        self.assertFalse(button.shown)
+        hidden = Game(saved="EasyBISDB = { minimap = false }")
+        self.assertIsNone(hidden.lua.globals().EasyBISMinimapButton, "the button was made although it is switched off")
+
+    def test_addon_menu_entry(self):
+        game = Game()
+        game.lua.globals().EasyBIS_OnCompartmentClick()
+        self.assertTrue(game.ns.Browser.window.shown)
+        game.lua.globals().EasyBIS_OnCompartmentEnter(None, game.lua.globals().UIParent)
+        self.assertEqual(game.lua.globals().GameTooltip.text, "Easy BIS")
+        game.lua.globals().EasyBIS_OnCompartmentLeave()
+
+    # -- sources ------------------------------------------------------------------------------
+
+    def test_sources_in_words(self):
+        game = Game()
+        describe, line = game.ns.Sources.Describe, game.ns.Sources.Line
+        eye = describe(EYE_OF_REND)
+        self.assertEqual((eye.category, eye.detail, eye.zone, eye.percent, eye.origin),
+                         ("dungeon", "Warchief Rend Blackhand", "Blackrock Spire", "17%", "k"))
+        tunic = describe(TIMBERMAW_TUNIC)
+        self.assertEqual((tunic.category, line(tunic), tunic.origin), ("crafted", "Leatherworking (300)", "f"))
+        rank = describe(GRAND_MARSHALS_SUNDERER)
+        self.assertEqual((rank.category, line(rank)), ("pvp", "Rank 14"))
+        unknown = describe(GENERALS_GREAVES)
+        self.assertEqual((unknown.category, line(unknown)), ("unknown", ""))
+        pauldrons = describe(271955)   # sold by a vendor the data only knows by its number
+        self.assertEqual((pauldrons.category, pauldrons.detail, line(pauldrons)), ("vendor", "", "Map 1413"))
+        uther = describe(11302)   # a world epic the data knows two bosses for: a world drop, not Onyxia's
+        self.assertEqual((uther.category, line(uther), uther.origin), ("world", "", "k"))
+        self.assertEqual(game.ns.Sources.Short(uther), "World drop")
+        self.assertEqual(game.ns.Sources.CategoryName("unknown"), "Unknown source")
+        self.assertEqual(game.ns.Sources.OriginName("k"), "Classic data")
+        self.assertEqual(game.ns.Sources.OriginMark("k"), "*")
+        self.assertEqual(game.ns.Sources.OriginRemark("k"), "* Source from Classic's data, not confirmed in Forever.")
+        self.assertEqual((game.ns.Sources.OriginMark("s"), game.ns.Sources.OriginRemark("s")), ("", None))
+        # a picture per category; a crafted item gets its profession's
+        self.assertEqual(game.ns.Sources.Icon("vendor"), ("Interface\\GossipFrame\\VendorGossipIcon", False))
+        self.assertEqual(game.ns.Sources.Icon(tunic.category, tunic.profession),
+                         ("Interface\\Icons\\Trade_LeatherWorking", True))
+        self.assertEqual(game.ns.Sources.Icon("something new"), game.ns.Sources.Icon("unknown"))
+        for category in game.ns.Sources.CATEGORIES.values():
+            self.assertTrue(game.ns.Sources.Icon(category)[0].startswith("Interface\\"), category)
+            self.assertNotEqual(game.ns.Sources.CategoryName(category), "SRC_" + category)
+        self.assertEqual(game.ns.Sources.OriginName("c"), "Clue, unconfirmed")
+        for letter in ("s", "f", ""):
+            self.assertIsNone(game.ns.Sources.OriginName(letter), f"origin {letter!r} needs no remark")
+
+    def test_every_listed_item_can_be_described(self):
+        import luaout
+        game = Game()
+        categories = set(game.ns.Sources.CATEGORIES.values())
+        seen = set()
+        for item_id in luaout.shown_ids(self.kept):
+            source = game.ns.Sources.Describe(item_id)
+            self.assertIn(source.category, categories, f"item {item_id}")
+            self.assertIsInstance(game.ns.Sources.Line(source), str)
+            seen.add(source.category)
+        self.assertGreaterEqual(len(seen), 10, f"only {sorted(seen)} were met")
+
+    def test_sources_in_french(self):
+        game = Game(locale="frFR")
+        game.stub.zoneNames[229] = "Pic Rochenoire"
+        eye = game.ns.Sources.Describe(EYE_OF_REND)
+        self.assertEqual(game.ns.Sources.Line(eye), "Warchief Rend Blackhand - Pic Rochenoire (17 %)")
+        self.assertEqual(game.ns.Sources.CategoryName(eye.category), "Donjon")
+        self.assertEqual(game.ns.Sources.Line(game.ns.Sources.Describe(TIMBERMAW_TUNIC)), "Travail du cuir (300)")
+        game.ns.Browser.Open()
+        self.assertEqual(game.ns.Browser.window.slot.label.text, "Emplacement")
+        self.assertEqual(game.ns.Browser.window.empty.text, "Rien ne correspond à ces filtres.")
+
+    # -- ties, the tooltip's place, the window's height ---------------------------------------
+
+    def a_tie(self) -> tuple:
+        """(class, spec, slot, item): the first alternative of the PvE lists that scores exactly as its
+        slot's best pick. Weapons, rings and trinkets are left out: their best picks are sets."""
+        for token in test_addon.CLASSES:
+            for spec, modes in self.kept[token].items():
+                for slot, _ in ladders.SLOTS:
+                    if slot in ("main", "off") or slot in ladders.PAIRED:
+                        continue
+                    visible = [e for e in modes["pve"][slot] if e.passes(default_filter())]
+                    if len(visible) > 1 and visible[0].stored == visible[1].stored:
+                        return token, spec, slot, visible[1].shown("a")
+        self.fail("no tie in the PvE lists: this test needs another example")
+
+    def test_ties_read_as_equals(self):
+        """An alternative that scores exactly as the best pick is its equal, in the window and in tooltips."""
+        token, spec, slot, item_id = self.a_tie()
+        game = self.open(cls=token, saved=f"EasyBISCharDB = {{ class = '{token}', spec = {spec}, list = 'pve' }}")
+        row = next(frame for frame in self.frames(game) if frame.data.kind == "item" and frame.data.id == item_id)
+        self.assertTrue(row.data.tie)
+        self.assertFalse(row.data.bis)
+        self.assertEqual(strip_colors(row.rank.text), "Tied")
+        self.assertEqual(row.bar.width, BAR)
+        mine =[right for left, right in game.lines(item_id) if token.capitalize() in left]
+        self.assertTrue(mine and all("BIS" in right for right in mine), "a tie is as good as the best in tooltips")
+
+    def test_tooltip_opens_beside_the_window(self):
+        game = Game(saved=ENHANCEMENT)
+        game.stub.itemNames[EYE_OF_REND] = "Eye of Rend"
+        game.ns.Browser.Open()
+        window, tooltip = game.ns.Browser.window, game.lua.globals().GameTooltip
+        rows = self.frames(game)
+        game.stub.run(rows[0], "OnEnter")
+        self.assertEqual(tooltip.anchor, "ANCHOR_NONE")
+        self.assertEqual((tooltip.points[1][1], tooltip.points[1][2].name, tooltip.points[1][3]),
+                         ("TOPLEFT", "EasyBISWindow", "TOPRIGHT"))
+        first = (tooltip.points[1][4], tooltip.points[1][5])
+        game.stub.run(rows[5], "OnEnter")
+        self.assertEqual((tooltip.points[1][4], tooltip.points[1][5]), first, "it does not move from row to row")
+        self.assertEqual(len(tooltip.points), 1)
+        # no room on the right: it opens on the left
+        game.lua.globals().UIParent.right, window.right = 1600, 1500
+        game.stub.run(rows[0], "OnEnter")
+        self.assertEqual((tooltip.points[1][1], tooltip.points[1][3]), ("TOPRIGHT", "TOPLEFT"))
+        # what the row shortens is in the tooltip in full
+        lines = [strip_colors(line[1]) for line in tooltip.lines.values()]
+        self.assertIn("Source: Dungeon - Warchief Rend Blackhand - Blackrock Spire (17%)", lines)
+        self.assertIn("* Source from Classic's data, not confirmed in Forever.", lines)
+        game.stub.run(rows[1], "OnEnter")
+        lines = [strip_colors(line[1]) for line in tooltip.lines.values()]
+        self.assertTrue(any(re.match(r"Score for this slot: \d+% of the best pick's\.", line) for line in lines), lines)
+
+    def test_window_height_is_kept(self):
+        game = self.open()
+        window = game.ns.Browser.window
+        self.assertEqual((window.width, window.height), (WIDTH, 620))
+        self.assertIsNotNone(window.grip)
+        window.height = 803.6
+        game.stub.run(window.grip, "OnMouseUp")
+        self.assertEqual(game.lua.globals().EasyBISDB.windowHeight, 804)
+        again = self.open(saved="EasyBISDB = { windowHeight = 804 }")
+        self.assertEqual((again.ns.Browser.window.width, again.ns.Browser.window.height), (WIDTH, 804))
+        tiny = self.open(saved="EasyBISDB = { windowHeight = 12 }")
+        self.assertEqual(tiny.ns.Browser.window.height, 620, "a height too small to use is not restored")
+
+    # -- items added by hand --------------------------------------------------------------------
+
+    def test_add_an_item_by_hand(self):
+        crown, blade, potion = 990001, 990002, 990003
+        game = Game(saved=ENHANCEMENT)
+        stub = game.stub
+        stub.equipLocs[crown], stub.itemNames[crown] = "INVTYPE_HEAD", "Crown of Tests"
+        stub.equipLocs[blade], stub.itemNames[blade] = "INVTYPE_WEAPON", "Blade of Tests"
+        stub.equipLocs[potion], stub.itemNames[potion] = "", "Potion of Tests"
+        stub.equipLocs[EYE_OF_REND] = "INVTYPE_HEAD"
+        game.ns.Browser.Open()
+        window, add = game.ns.Browser.window, game.ns.AddItem
+        self.assertEqual(label(window.add), "+ Add an item")
+        game.stub.run(window.add, "OnClick")
+        dialog = add.dialog
+        self.assertTrue(dialog.shown)
+        self.assertEqual(dialog.target.text, "To the list of Shaman Enhancement, PvE")
+        self.assertTrue(dialog.box.focused)
+
+        # typed: an ID that does not exist, something that is not worn, an item the list already has
+        dialog.box.text = "424242"
+        game.stub.run(dialog.box, "OnEnterPressed")
+        self.assertIn("No such item", dialog.result.text)
+        self.assertFalse(add.Submit(str(potion))[0])
+        self.assertIn("is not something to wear", dialog.result.text)
+        self.assertFalse(add.Submit(str(EYE_OF_REND))[0])
+        self.assertIn("is already in this list", dialog.result.text)
+        self.assertEqual(self.shown_rows(game), self.reference_rows("SHAMAN", 2, "pve"))
+
+        # typed by name, with the button
+        dialog.box.text = "Crown of Tests"
+        game.stub.run(dialog.add, "OnClick")
+        self.assertIn("added to Shaman Enhancement, PvE (Head)", strip_colors(dialog.result.text))
+        self.assertEqual(dialog.box.text, "", "the box is emptied for the next item")
+        self.assertEqual(game.lua.globals().EasyBISDB.custom["SHAMAN:2:pve"].head[1], crown)
+        head = [frame for frame in self.frames(game) if frame.data.slot == "head"]
+        self.assertEqual([frame.data.id for frame in head][-1], crown, "it comes after the slot's picks")
+        row = head[-1]
+        self.assertTrue(row.data.custom)
+        self.assertEqual(strip_colors(row.rank.text), "Added")
+        self.assertFalse(row.bar.shown, "an item added by hand has no score")
+        self.assertTrue(row.remove.shown)
+        self.assertEqual(row.data.source.category, "manual")
+        self.assertEqual(row.detail.text, "Added by hand")
+        self.assertFalse(add.Submit(str(crown))[0], "the same item twice")
+
+        # a Shift-click anywhere while the box has the focus, then an item dropped on the dialog
+        game.lua.globals().ChatEdit_InsertLink(f"|cffa335ee|Hitem:{blade}::::::::60|h[Blade of Tests]|h|r")
+        main = [frame.data.id for frame in self.frames(game) if frame.data.slot == "main"]
+        self.assertEqual(main[-1], blade, "a one-handed weapon goes to the main hand")
+        dialog.box.focused = False
+        game.lua.globals().ChatEdit_InsertLink(f"|Hitem:{potion}|h[Potion of Tests]|h")
+        self.assertIn("Blade of Tests", dialog.result.text, "a link is not for the dialog when its box has no focus")
+
+        # the tooltip names the spec it was added for, and the Source filter knows the category
+        self.assertIn(("<classicon-shaman> Shaman Enhancement", "Added PvE"), game.lines(crown))
+        game.stub.run(window.source.button, "OnClick")
+        find(game.stub.menu, "Added by hand").pick()
+        self.assertEqual({row[1] for row in self.shown_rows(game)}, {crown, blade})
+        find(game.stub.menu, "All").pick()
+
+        # the red button takes it out again
+        game.stub.run(row.remove, "OnClick")
+        self.assertNotIn(crown, [r[1] for r in self.shown_rows(game)])
+        self.assertEqual(game.lines(crown), [])
+        game.ns.Custom.Remove("SHAMAN", 2, "pve", blade)
+        self.assertEqual(self.shown_rows(game), self.reference_rows("SHAMAN", 2, "pve"))
+
+        # dropped on the dialog; with the window on the off hand, a one-hander goes there
+        game.ns.Browser.state.slot = "off"
+        stub.cursor = game.lua.table("item", blade)
+        game.stub.run(dialog, "OnReceiveDrag")
+        self.assertIsNone(stub.cursor, "the item is put down")
+        self.assertEqual(list(game.ns.Custom.List("SHAMAN", 2, "pve", "off").values()), [blade])
+        self.assertEqual([r[1] for r in self.shown_rows(game) if r[0] == "item"], [blade])
+
+        # another spec has its own list; the dialog follows the window, and closes with it
+        game.ns.Browser.state.slot = None
+        game.stub.run(window.list.buttons[2], "OnClick")
+        self.assertEqual(dialog.target.text, "To the list of Shaman Enhancement, PvP")
+        self.assertNotIn(blade, [r[1] for r in self.shown_rows(game)])
+        game.ns.Browser.Close()
+        self.assertFalse(dialog.shown)
+
+    def test_shift_click_on_a_newer_client(self):
+        """Where the game hands links to ChatFrameUtil.InsertLink, the dialog listens there."""
+        game = Game(saved="ChatFrameUtil = { InsertLink = function() return false end }; " + ENHANCEMENT)
+        game.stub.equipLocs[990001] = "INVTYPE_HEAD"
+        game.ns.Browser.Open()
+        game.stub.run(game.ns.Browser.window.add, "OnClick")
+        game.lua.globals().ChatFrameUtil.InsertLink("|Hitem:990001|h[Crown of Tests]|h")
+        self.assertEqual(list(game.ns.Custom.List("SHAMAN", 2, "pve", "head").values()), [990001])
+        game.lua.globals().ChatEdit_InsertLink("|Hitem:990001|h[Crown of Tests]|h")
+        self.assertNotIn("already", game.ns.AddItem.dialog.result.text, "the link was read twice")
+
+    def test_added_items_come_back(self):
+        saved = "EasyBISDB = { custom = { ['SHAMAN:2:pve'] = { head = { 990001 }, junk = 4 }, other = 'x' } }; "
+        game = Game(saved=saved + ENHANCEMENT)
+        game.ns.Browser.Open()
+        head = [frame for frame in self.frames(game) if frame.data.slot == "head"]
+        self.assertEqual(head[-1].data.id, 990001)
+        self.assertTrue(head[-1].data.custom)
+        self.assertEqual(strip_colors(head[-1].name.text), "#990001", "an item the game has not loaded yet")
+        self.assertIn(("<classicon-shaman> Shaman Enhancement", "Added PvE"), game.lines(990001))
+        # with the alternatives switched off, the hand-added items stay
+        game.ns.SetOption(game.ns, "listAlts", False)
+        self.assertIn(990001, [frame.data.id for frame in self.frames(game) if frame.data.kind == "item"])
+
+    # -- the character sheet --------------------------------------------------------------------
+
+    SHEET = [("left", "head", 1), ("left", "neck", 1), ("left", "shoulder", 1), ("left", "back", 1),
+             ("left", "chest", 1), ("left", "wrist", 1),
+             ("right", "hands", 1), ("right", "waist", 1), ("right", "legs", 1), ("right", "feet", 1),
+             ("right", "finger", 1), ("right", "finger", 2), ("right", "trinket", 1), ("right", "trinket", 2),
+             ("bottom", "main", 1), ("bottom", "off", 1), ("bottom", "ranged", 1)]
+    UNSEEN = ("neck", "finger", "trinket")   # what does not show on a character
+    NO_MODEL = ("local make = CreateFrame; function CreateFrame(kind, ...) "
+                "if kind == 'DressUpModel' then error('Unknown frame type') end return make(kind, ...) end")
+
+    def reference_sheet(self, token, spec, mode, flt=None) -> list[tuple]:
+        """(place, slot, rank, id) for every cell of the character sheet, from the generator's rules."""
+        best = {}
+        for kind, item_id, slot, bis, _ in self.reference_rows(token, spec, mode, flt, alts=False):
+            if kind == "item" and bis:
+                best.setdefault(slot, []).append(item_id)
+        return [(place, slot, rank, (best.get(slot, []) + [None, None])[rank - 1])
+                for place, slot, rank in self.SHEET]
+
+    @staticmethod
+    def sheet(game) -> list[tuple]:
+        return [(cell.data.place, cell.data.slot, cell.data.rank, cell.data.id)
+                for cell in game.ns.Character.view.cells.values()]
+
+    def open_sheet(self, **options) -> tuple:
+        """The game, and the cells of its character sheet by (slot, rank)."""
+        game = self.open(**options)
+        game.stub.run(game.ns.Browser.window.tabs.buttons[3], "OnClick")
+        return game, {(cell.data.slot, cell.data.rank): cell for cell in game.ns.Character.view.cells.values()}
+
+    def test_character_tab(self):
+        game = Game(saved=ENHANCEMENT)
+        game.stub.itemNames[EYE_OF_REND] = "Eye of Rend"
+        game.ns.Browser.Open()
+        window = game.ns.Browser.window
+        self.assertEqual([label(button) for button in window.tabs.buttons.values()],
+                         ["Items", "Enchants", "Character"])
+        self.assertIsNone(game.ns.Character.view, "the sheet is made when it is first asked for")
+        game.stub.run(window.tabs.buttons[3], "OnClick")
+        view = game.ns.Character.view
+        self.assertTrue(view.shown)
+        self.assertFalse(window.scroll.shown)
+        self.assertFalse(window.empty.shown)
+        self.assertEqual(look(window.tabs.buttons[3]), "lit")
+        # only the spec, the list and the phase apply
+        for control in (window.spec, window.list, window.listLabel, window.phase):
+            self.assertTrue(control.shown)
+        for control in (window.slot, window.source, window.zone, window.add, window.alts):
+            self.assertFalse(control.shown)
+        self.assertEqual(strip_colors(view.title.text), "Shaman Enhancement")
+        self.assertEqual(view.subtitle.text, "Level 60 PvE - Pre-raid")
+        self.assertEqual(self.sheet(game), self.reference_sheet("SHAMAN", 2, "pve"))
+
+        cells = list(view.cells.values())
+        self.assertEqual(len(cells), 17)
+        head = cells[0]
+        self.assertEqual(head.name.text, "|cffa335eeEye of Rend|r", "the name wears the quality color")
+        self.assertIn("UI-RaidTargetingIcon_8", head.where.text, "a picture says what kind of source it is")
+        self.assertEqual(plain(head.where.text), "Blackrock Spire *", "the place, in a few words")
+        self.assertTrue(head.icon.shown)
+        self.assertFalse(head.mirrored)
+        self.assertEqual(head.points[1][1], "TOPLEFT")
+        hands = cells[6]
+        self.assertTrue(hands.mirrored, "the right column has its pictures on the outside, as in the game")
+        self.assertEqual(hands.points[1][1], "TOPRIGHT")
+        # an Enhancement Shaman's two-hander leaves the off hand empty, and its list has nothing at range
+        off, ranged = cells[15], cells[16]
+        self.assertTrue(off.data.twoHand)
+        self.assertFalse(off.icon.shown)
+        self.assertEqual((strip_colors(off.name.text), off.where.text), ("Off hand", "Taken by the two-hander"))
+        self.assertIsNone(ranged.data.id)
+        self.assertEqual((strip_colors(ranged.name.text), ranged.where.text), ("Ranged or relic", "Nothing listed"))
+
+        # back to the list: the sheet goes, the rows and their filters come back
+        game.stub.run(window.tabs.buttons[1], "OnClick")
+        self.assertFalse(view.shown)
+        self.assertTrue(window.scroll.shown)
+        for control in (window.slot, window.source, window.zone, window.add, window.alts):
+            self.assertTrue(control.shown)
+        self.assertEqual(self.shown_rows(game), self.reference_rows("SHAMAN", 2, "pve"))
+
+    def test_character_sheet_of_every_spec(self):
+        game = self.open()
+        state = game.ns.Browser.state
+        game.stub.run(game.ns.Browser.window.tabs.buttons[3], "OnClick")
+        for phase in (phases.CURRENT, EVERYTHING):
+            game.ns.SetPhase(game.ns, phase)
+            for token in test_addon.CLASSES:
+                for spec in self.kept[token]:
+                    for mode in ladders.MODES:
+                        state["class"], state.spec, state.list = token, spec, mode
+                        game.ns.SetOption(game.ns, "minimap", not game.ns.db.minimap)
+                        self.assertEqual(self.sheet(game),
+                                         self.reference_sheet(token, spec, mode, default_filter(phase=phase)),
+                                         f"{token} {spec} {mode} phase {phase}")
+
+    def test_character_enchants(self):
+        import luaout
+        game, cells = self.open_sheet(saved=ENHANCEMENT)
+        best = luaout.best_enchants(luaout.enchant_ladders(self.db, "SHAMAN", 2, self.kept["SHAMAN"][2]),
+                                    phases.CURRENT)
+        chest = cells[("chest", 1)]
+        self.assertEqual(chest.data.enchant.id, best["chest"][0])
+        self.assertTrue(chest.enchant.shown)
+        self.assertTrue(chest.enchant.text.startswith("+ "))
+        self.assertEqual(chest.name.points[1][5], -1, "three lines fill the cell")
+        # a two-hander takes a two-hander's enchant; a belt, a ring and a trinket take none
+        self.assertEqual(cells[("main", 1)].data.enchant.id, best["w2h"][0])
+        for slot in ("waist", "finger", "trinket"):
+            self.assertIsNone(cells[(slot, 1)].data.enchant)
+            self.assertFalse(cells[(slot, 1)].enchant.shown)
+        self.assertEqual(cells[("waist", 1)].name.points[1][5], -6, "two lines sit in the cell's middle")
+        # the sheet follows the phase, as the Enchants tab does
+        game.ns.SetPhase(game.ns, EVERYTHING)
+        later = luaout.best_enchants(luaout.enchant_ladders(self.db, "SHAMAN", 2, self.kept["SHAMAN"][2]),
+                                     EVERYTHING)
+        for key in ("head", "shoulder", "chest", "legs"):
+            enchant = cells[(key, 1)].data.enchant
+            self.assertEqual(enchant.id if enchant else None, later.get(key, [None])[0], key)
+
+        # a one-hander takes a one-hander's enchant; what the off hand takes depends on what it is
+        mage, cells = self.open_sheet(cls="MAGE", saved=FIRE_MAGE)
+        best = luaout.best_enchants(luaout.enchant_ladders(self.db, "MAGE", 2, self.kept["MAGE"][2]),
+                                    phases.CURRENT)
+        self.assertEqual(cells[("main", 1)].data.enchant.id, best["w1h"][0])
+        off, wand = cells[("off", 1)], cells[("ranged", 1)]
+        self.assertIsNone(off.data.enchant, "the game has not said what the item is yet")
+        mage.stub.equipLocs[off.data.id] = "INVTYPE_HOLDABLE"
+        mage.stub.equipLocs[wand.data.id] = "INVTYPE_RANGEDRIGHT"
+        mage.stub.itemTypes[wand.data.id] = mage.lua.table("Wands", "INVTYPE_RANGEDRIGHT", 2, 19)
+        mage.ns.SetOption(mage.ns, "minimap", False)
+        self.assertEqual(off.data.enchant.id if off.data.enchant else None, best.get("held", [None])[0])
+        self.assertIsNone(wand.data.enchant, "nothing goes on a wand")
+        key = mage.ns.Enchants.KeyOf
+        self.assertEqual(key("off", off.data.id, False), "held")
+        self.assertIsNone(key("ranged", wand.data.id, False))
+        mage.stub.itemTypes[wand.data.id] = mage.lua.table("Guns", "INVTYPE_RANGEDRIGHT", 2, 3)
+        self.assertEqual(key("ranged", wand.data.id, False), "rng")
+        self.assertEqual((key("main", 1, True), key("main", 1, False), key("legs", 1, False)), ("w2h", "w1h", "legs"))
+        self.assertIsNone(key("off", 424242, False), "an item the game does not know")
+
+        # an enchant's name, cut down to what sets it apart
+        short = mage.ns.Enchants.ShortName
+        record = mage.lua.table(kind="spell", number=990009, name="Enchant Chest - Greater Stats")
+        self.assertEqual(short(record), "Greater Stats")
+        mage.stub.spellNames[990009] = "Enchantement de plastron (Caractéristiques supérieures)"
+        self.assertEqual(short(record), "Caractéristiques supérieures", "the game's name, in its language")
+        self.assertEqual(short(mage.lua.table(kind="item", number=990010, name="Lesser Arcanum of Voracity")),
+                         "Lesser Arcanum of Voracity")
+
+    def test_character_ties(self):
+        token, spec, slot, item_id = self.a_tie()
+        saved = f"EasyBISCharDB = {{ class = '{token}', spec = {spec}, list = 'pve' }}"
+        game, cells = self.open_sheet(cls=token, saved=saved)
+        game.stub.itemNames[item_id] = "An equal"
+        cell = cells[(slot, 1)]
+        self.assertIn(item_id, list(cell.data.ties.values()))
+        self.assertRegex(strip_colors(cell.name.text), r" \+\d$")
+        game.stub.run(cell, "OnEnter")
+        lines = [strip_colors(line[1]) for line in game.lua.globals().GameTooltip.lines.values()]
+        self.assertTrue(any(line.startswith("Tied with: ") and "An equal" in line for line in lines), lines)
+        untied = next(c for c in cells.values() if c.data.id and len(c.data.ties) == 0)
+        self.assertNotRegex(strip_colors(untied.name.text), r" \+\d$")
+
+    def test_character_cell_tooltip_and_click(self):
+        game = Game(saved=ENHANCEMENT)
+        game.stub.itemNames[EYE_OF_REND] = "Eye of Rend"
+        game.ns.Browser.Open()
+        window, state, tooltip = game.ns.Browser.window, game.ns.Browser.state, game.lua.globals().GameTooltip
+        game.stub.run(window.tabs.buttons[3], "OnClick")
+        cells = list(game.ns.Character.view.cells.values())
+        head, chest, ring, off = cells[0], cells[4], cells[10], cells[15]
+
+        game.stub.run(head, "OnEnter")
+        self.assertEqual(tooltip.item, EYE_OF_REND)
+        self.assertTrue(tooltip.shown)
+        self.assertEqual((tooltip.anchor, tooltip.points[1][2].name), ("ANCHOR_NONE", "EasyBISWindow"),
+                         "the left column's opens beside the window, as a row's does")
+        right = next(cell for cell in cells if cell.mirrored and cell.data.id)
+        game.stub.run(right, "OnEnter")
+        point = tooltip.points[1]
+        same = game.lua.eval("rawequal")(point[2], right)
+        self.assertEqual((point[1], same, point[3]), ("TOPRIGHT", True, "TOPLEFT"),
+                         "the right column's opens on its left, over the model")
+        self.assertFalse(game.lua.globals().ShoppingTooltip1.shown)
+        game.stub.run(head, "OnEnter")
+        lines = [strip_colors(line[1]) for line in tooltip.lines.values()]
+        self.assertIn("Source: Dungeon - Warchief Rend Blackhand - Blackrock Spire (17%)", lines)
+        self.assertIn("* Source from Classic's data, not confirmed in Forever.", lines)
+        self.assertEqual(lines[-1], "Click to see this slot's other picks.")
+        self.assertFalse(any(line.startswith("Score for this slot") for line in lines))
+        game.stub.run(chest, "OnEnter")
+        lines = [strip_colors(line[1]) for line in tooltip.lines.values()]
+        self.assertTrue(any(line.startswith("Enchant: ") for line in lines), lines)
+        game.stub.run(off, "OnEnter")
+        self.assertIsNone(tooltip.item)
+        self.assertEqual(tooltip.text, "Off hand")
+        self.assertEqual([line[1] for line in tooltip.lines.values()],
+                         ["Taken by the two-hander", "Click to see this slot's other picks."])
+        game.stub.run(off, "OnLeave")
+        self.assertFalse(tooltip.shown)
+
+        # Shift-click links the item and stays on the sheet; a plain click opens the slot's list
+        game.stub.modifier = True
+        game.stub.run(head, "OnClick")
+        self.assertIn(f"item:{EYE_OF_REND}", game.stub.linked)
+        self.assertEqual(state.tab, "character")
+        game.stub.modifier = False
+        game.stub.run(ring, "OnClick")
+        self.assertEqual((state.tab, state.slot), ("items", "finger"))
+        self.assertFalse(game.ns.Character.view.shown)
+        self.assertEqual(self.shown_rows(game), self.reference_rows("SHAMAN", 2, "pve", only_slot="finger"))
+        self.assertEqual(look(window.slot), "active")
+        self.assertEqual(look(window.tabs.buttons[1]), "lit")
+        # an empty slot opens its list too
+        game.stub.run(window.tabs.buttons[3], "OnClick")
+        game.stub.run(off, "OnClick")
+        self.assertEqual((state.tab, state.slot), ("items", "off"))
+
+    def test_character_model_wears_the_set(self):
+        game, _ = self.open_sheet(saved=ENHANCEMENT)
+        window, model = game.ns.Browser.window, game.ns.Character.view.model
+        while game.stub.runTimers():
+            pass
+        self.assertEqual((model.kind, model.unit), ("DressUpModel", "player"))
+        hands = {"main": "MAINHANDSLOT", "off": "SECONDARYHANDSLOT"}
+
+        def worn(token, spec, mode):
+            """The armour in the sheet's order, then the weapons: the off hand's before the main hand's."""
+            shown = [(slot, item) for _, slot, _, item in self.reference_sheet(token, spec, mode)
+                     if item and slot not in self.UNSEEN and slot != "ranged"]
+            shown.sort(key=lambda pair: {"off": 1, "main": 2}.get(pair[0], 0))   # stable: the armour keeps its order
+            return [(f"item:{item}", hands.get(slot)) for slot, item in shown]
+
+        def tried():
+            return [(entry[1], entry[2]) for entry in model.tried.values()]
+
+        self.assertEqual(tried(), worn("SHAMAN", 2, "pve"), "what shows on a character, each weapon in its hand")
+        self.assertEqual(model.undressed, 1, "the same set is not put on twice")
+        game.ns.SetOption(game.ns, "minimap", False)
+        self.assertEqual(model.undressed, 1)
+        # an item the game has just loaded can be tried on at last
+        game.stub.itemNames[EYE_OF_REND] = "Eye of Rend"
+        game.stub.fire("GET_ITEM_INFO_RECEIVED", EYE_OF_REND, True)
+        while game.stub.runTimers():
+            pass
+        self.assertEqual(model.undressed, 2)
+        self.assertEqual(tried(), worn("SHAMAN", 2, "pve"))
+        # another list, another set
+        game.stub.run(window.list.buttons[2], "OnClick")
+        self.assertEqual(model.undressed, 3)
+        self.assertEqual(tried(), worn("SHAMAN", 2, "pvp"))
+        # a model that was hidden is dressed again when it comes back
+        game.stub.run(window.tabs.buttons[1], "OnClick")
+        game.stub.run(window.tabs.buttons[3], "OnClick")
+        self.assertEqual(model.undressed, 4)
+
+        # dragging turns the character, and the turn outlives a change of set
+        game.stub.cursorX = 100
+        game.stub.run(model, "OnMouseDown", "LeftButton")
+        game.stub.cursorX = 150
+        game.stub.run(model, "OnUpdate")
+        self.assertAlmostEqual(model.facing, 0.6)
+        game.stub.mouseDown = False   # let go outside the model: the next move does not turn it
+        game.stub.cursorX = 400
+        game.stub.run(model, "OnUpdate")
+        self.assertAlmostEqual(model.facing, 0.6)
+        game.stub.run(window.list.buttons[1], "OnClick")
+        self.assertAlmostEqual(model.facing, 0.6)
+
+    def test_character_model_holds_what_the_class_fights_with(self):
+        """The model holds the weapon tried on last, and a bow takes the melee weapons' place in its hands:
+        a warrior is shown with the melee weapons, a hunter with the bow. The model is the player's own
+        character, which without Dual Wield keeps one of two one-handers: the main hand's comes last."""
+        for token, spec, at_range in (("WARRIOR", 2, False), ("HUNTER", 1, True)):
+            game, _ = self.open_sheet(cls=token, saved=f"EasyBISCharDB = {{ class = '{token}', spec = {spec}, list = 'pve' }}")
+            sheet = {slot: item for _, slot, rank, item in self.reference_sheet(token, spec, "pve") if rank == 1}
+            self.assertTrue(sheet.get("ranged") and sheet.get("main"), f"{token}: a melee weapon and a ranged one")
+            tried = [entry[1] for entry in game.ns.Character.view.model.tried.values()]
+            main, ranged = f"item:{sheet['main']}", f"item:{sheet['ranged']}"
+            weapons = [link for link in tried if link in (main, ranged) or link == f"item:{sheet.get('off')}"]
+            if at_range:
+                self.assertEqual(tried[-1], ranged, f"{token}: the ranged weapon is tried on last")
+                self.assertEqual(tried[-2], main)
+            else:
+                self.assertNotIn(ranged, tried, f"{token}: the ranged weapon is not tried on")
+                self.assertTrue(sheet.get("off"), f"{token}: two weapons")
+                self.assertEqual(weapons, [f"item:{sheet['off']}", main], f"{token}: the off hand, then the main hand")
+                self.assertEqual(tried[-1], main)
+
+    def test_character_without_a_model(self):
+        """A client that cannot make the model shows the class's icon; the cells are the same."""
+        game, _ = self.open_sheet(cls="PRIEST", saved=self.NO_MODEL + "; " + ENHANCEMENT)
+        view = game.ns.Character.view
+        self.assertIsNone(view.model)
+        self.assertTrue(view.crest.shown)
+        self.assertEqual(self.sheet(game), self.reference_sheet("SHAMAN", 2, "pve"))
+        game.lua.globals().CLASS_ICON_TCOORDS = None
+        game.ns.SetOption(game.ns, "minimap", False)
+        self.assertFalse(view.crest.shown, "no icon to show: the middle stays empty")
+
+    def test_character_sheet_fits_the_window(self):
+        game, _ = self.open_sheet(saved=ENHANCEMENT)
+        window, view = game.ns.Browser.window, game.ns.Character.view
+        cells = list(view.cells.values())
+        self.assertEqual((view.scale, view.width, view.height), (1, WIDTH - 32, 472))
+        self.assertEqual([cells[index].points[1][5] for index in (0, 1, 5)], [0, -52, -260], "the left column")
+        self.assertEqual([cells[index].points[1][5] for index in (6, 13)], [0, -364], "the right column")
+        self.assertEqual([(cells[index].points[1][1], cells[index].points[1][4]) for index in (14, 15, 16)],
+                         [("BOTTOMLEFT", 0), ("BOTTOMLEFT", 332), ("BOTTOMLEFT", 664)], "the weapons, under them")
+        # a taller window gives the cells more air, up to a point
+        window.height = 900
+        game.stub.run(window.grip, "OnMouseUp")
+        self.assertEqual((view.scale, view.height, cells[1].points[1][5]), (1, 752, -60))
+        # too short for the sheet: it is drawn smaller, whole
+        window.height = 380
+        game.stub.run(window.grip, "OnMouseUp")
+        self.assertAlmostEqual(view.scale, 232 / 424)
+        self.assertEqual((view.height, cells[1].points[1][5]), (424, -46))
+
+    def test_character_in_french(self):
+        game, cells = self.open_sheet(locale="frFR", saved=ENHANCEMENT)
+        self.assertEqual(label(game.ns.Browser.window.tabs.buttons[3]), "Personnage")
+        self.assertEqual(game.ns.Character.view.subtitle.text, "Niveau 60 JcE - Pré-raid")
+        self.assertEqual(cells[("off", 1)].where.text, "Prise par l'arme à deux mains")
+        self.assertEqual(cells[("ranged", 1)].where.text, "Rien dans la liste")
+
+    # -- a client without the newer frames and menus ---------------------------------------
+
+    def test_older_client(self):
+        game = Game(saved=OLD_CLIENT + "; " + ENHANCEMENT)
+        game.ns.Browser.Open()
+        window, state = game.ns.Browser.window, game.ns.Browser.state
+        self.assertEqual(window.template, "BackdropTemplate")
+        self.assertEqual(self.shown_rows(game), self.reference_rows("SHAMAN", 2, "pve"))
+        self.assertFalse(window.options.shown, "the options menu needs the menu API")
+        # without menus, a click moves to the next choice
+        game.stub.run(window.slot.button, "OnClick")
+        self.assertEqual(state.slot, "head")
+        game.stub.run(window.slot.button, "OnClick")
+        self.assertEqual(state.slot, "neck")
+        game.stub.run(window.spec.button, "OnClick")
+        self.assertEqual((state["class"], state.spec), ("SHAMAN", 3))
+        game.stub.run(window.source.button, "OnClick")
+        game.stub.run(window.zone.button, "OnClick")
+        game.stub.run(window.phase.button, "OnClick")
+        self.assertEqual(game.ns.Phase(), 1, "without menus, a click on the phase moves to the next one")
+        game.stub.run(window.tabs.buttons[3], "OnClick")
+        self.assertEqual(self.sheet(game), self.reference_sheet("SHAMAN", 3, "pve", default_filter(phase=1)))
+
+
+if __name__ == "__main__":
+    unittest.main(verbosity=1)

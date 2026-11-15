@@ -1,0 +1,9 @@
+package-as: EasyBIS
+
+# What the release zip leaves out: the generator, its tests and the pictures of the project page
+# stay in the repository, as the game does not need them.
+ignore:
+  - _build
+  - docs
+  - README.md
+  - .gitignore

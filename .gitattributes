@@ -1,0 +1,6 @@
+# LF everywhere: the cached ForeverDB files are checked against their SHA-256.
+* text=auto eol=lf
+*.tga binary
+*.png binary
+*.jpg binary
+*.webp binary

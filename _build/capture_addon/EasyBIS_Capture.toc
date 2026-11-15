@@ -1,0 +1,9 @@
+## Interface: 16001
+## Title: Easy BIS Capture (developer tool)
+## Notes: Reads weapon tooltips for Easy BIS's data generator. Not needed to use Easy BIS. Type /ebiscapture.
+## Version: 1
+## X-License: GPL-3.0
+## SavedVariables: EasyBISCaptureDB
+
+Ids.lua
+Capture.lua

@@ -1,0 +1,3 @@
+-- Data: ForeverDB.net (https://foreverdb.net), build 1.60.1.70938. Reuse requires this credit: see NOTICE.txt (GPL-3.0 section 7(b)).
+local _, ns = ...
+ns.meta = {version="2026-11-14.852e11f0",built=1794619085,build="1.60.1.70938",cap=60,site="https://foreverdb.net",addon="0.60.4"}
