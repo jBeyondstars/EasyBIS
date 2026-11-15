@@ -642,10 +642,10 @@ class HoleTest(unittest.TestCase):
         db.gear[ROBE] = {"inv": 20, "req": 60, "stats": {7: 20}, "dps": 0.0, "armor": 0.0, "wand": False}
         db.gear[404] = dict(db.gear[ROBE], req=30)   # left out of the lists, and of too low a level to matter
         self.assertEqual(capture.capture_ids(db), {"weapons": [SCEPTER, MACE, ROD, STAFF], "pool": [WAND, ORB],
-                                                   "unlisted": [ROBE]})
+                                                   "unlisted": [ROBE], "twins": []})
         with tempfile.TemporaryDirectory() as folder:
             target, counts = capture.write_tool(db, folder)
-            self.assertEqual((target.name, counts), ("EasyBIS_Capture", {"weapons": 4, "pool": 2, "unlisted": 1}))
+            self.assertEqual((target.name, counts), ("EasyBIS_Capture", {"weapons": 4, "pool": 2, "unlisted": 1, "twins": 0}))
             self.assertEqual(sorted(path.name for path in target.iterdir()),
                              ["Capture.lua", "EasyBIS_Capture.toc", "Ids.lua"])
             self.assertIn("\n1 2 3 7 8 9 20\n", (target / "Ids.lua").read_text(encoding="utf-8"))
@@ -709,8 +709,8 @@ class HoleTest(unittest.TestCase):
         db = tiny_db()
         db.gear[ROBE] = {"inv": 20, "req": 60, "stats": {7: 20}, "dps": 0.0, "armor": 120.0, "wand": False}
         check = capture.check_capture(db, text)
-        self.assertEqual(check.asked, {"weapons": 4, "pool": 2, "unlisted": 1})
-        self.assertEqual(check.read, {"weapons": 2, "pool": 2, "unlisted": 1})
+        self.assertEqual(check.asked, {"weapons": 4, "pool": 2, "unlisted": 1, "twins": 0})
+        self.assertEqual(check.read, {"weapons": 2, "pool": 2, "unlisted": 1, "twins": 0})
         self.assertEqual(check.compared, 4)
         self.assertEqual(dict(check.families["healing"]), {"missing": 1, "same": 1, "differs": 1})
         self.assertEqual(check.examples[("healing", "missing")], [(MACE, "Odd Mace", 90, 0)])

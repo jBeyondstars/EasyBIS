@@ -112,6 +112,8 @@ def capture_ids(db) -> dict[str, list[int]]:
     pool      every other piece of its pools: armor, jewelry, off hands, ranged weapons
     unlisted  the pieces it has stats for and leaves out of its lists, of required level UNLISTED_FROM to
               the cap: raid sets and raid drops mostly, read to learn what they are and who can wear them
+    twins     the other faction's version of a pooled piece (the lists show it to that faction), when it is
+              not pooled itself: read to learn whether the server has it at all
     """
     weapons = weapon_ids(db)
     pooled = set()
@@ -121,7 +123,9 @@ def capture_ids(db) -> dict[str, list[int]]:
     cap = db.meta["cap"]
     unlisted = [item_id for item_id, gear in db.gear.items()
                 if item_id not in db.items and UNLISTED_FROM <= gear["req"] <= cap]
-    return {"weapons": weapons, "pool": sorted(pooled - set(weapons)), "unlisted": sorted(unlisted)}
+    twins = {db.items[item_id]["twin"] for item_id in pooled if db.items[item_id].get("twin")} - pooled
+    return {"weapons": weapons, "pool": sorted(pooled - set(weapons)), "unlisted": sorted(unlisted),
+            "twins": sorted(twins - set(unlisted))}
 
 
 def write_tool(db, addons_dir) -> tuple[Path, dict[str, int]]:
