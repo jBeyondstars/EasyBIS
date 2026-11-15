@@ -4,8 +4,6 @@
 
 Easy BIS is a BIS list for every class and spec: the best-in-slot (BIS) item of every slot at level 60, for PvE and PvP, with the alternatives behind it and where each piece comes from. Plan your pre-BIS gear before the raids, follow your full BIS gear set as new phases open, and keep track of what to farm next. It knows the enchants too, and it lays your spec's best set out as a character sheet.
 
-The lists come from [ForeverDB.net](https://foreverdb.net), built for WoW Forever, so they include items that are new in Forever.
-
 ## The window
 
 Type `/easybis` (or `/ebis`), or click the minimap button.
