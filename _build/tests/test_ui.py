@@ -1003,6 +1003,10 @@ class WindowTest(unittest.TestCase):
         self.assertEqual(names(), ["Black Dragonscale Leggings", "Black Dragonscale Helm",
                                    "Black Dragonscale Shoulders", "Black Dragonscale Breastplate"])
         self.assertEqual(suggest.rows[1].slot.text, "Head")
+        self.assertTrue(suggest.rows[1].name.text.startswith("|cffffffff"), "white until the game has the item")
+        stub.itemNames[legs] = "Black Dragonscale Leggings"
+        stub.fire("GET_ITEM_INFO_RECEIVED", legs)
+        self.assertTrue(suggest.rows[1].name.text.startswith("|cffa335ee"), "then in its quality's color")
         self.assertFalse(suggest.more.shown)
         self.assertEqual(selected(), [1], "the first one is chosen")
 
@@ -1025,6 +1029,14 @@ class WindowTest(unittest.TestCase):
         stub.run(suggest.rows[1], "OnEnter")
         tooltip = game.lua.globals().GameTooltip
         self.assertEqual((tooltip.item, tooltip.shown), (shoulders, True))
+        compare = game.lua.globals().ShoppingTooltip1
+        self.assertFalse(compare.shown, "the comparison with the gear worn waits for Shift")
+        stub.shift = True
+        stub.fire("MODIFIER_STATE_CHANGED", "LSHIFT", 1)
+        self.assertTrue(compare.shown)
+        stub.shift = False
+        stub.fire("MODIFIER_STATE_CHANGED", "LSHIFT", 0)
+        self.assertFalse(compare.shown)
         stub.run(suggest.rows[1], "OnClick")
         self.assertIn(shoulders, list(game.ns.Custom.List("SHAMAN", 2, "pve", "head").values()))
 

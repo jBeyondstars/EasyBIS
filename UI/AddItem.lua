@@ -67,10 +67,12 @@ end
 -- The name in the item's quality color once the game has the item, and the slot it goes in.
 local function FillRow(row, id)
     row.id = id
-    local name, link = GetInfo and GetInfo(id)
-    local color = type(link) == "string" and link:match("^|c(%x%x%x%x%x%x%x%x)")
-    name = name or ns.Items.Name(id)
-    row.name:SetText(color and ("|c" .. color .. name .. "|r") or name)
+    -- the quality, not the link's color: newer links write it as |cnIQ4: rather than |cffa335ee
+    local name, _, quality = nil, nil, nil
+    if GetInfo then name, _, quality = GetInfo(id) end
+    if not quality and C_Item and C_Item.GetItemQualityByID then quality = C_Item.GetItemQualityByID(id) end
+    local _, _, _, hex = ns.QualityColor(quality)
+    row.name:SetText(hex .. (name or ns.Items.Name(id)) .. "|r")
     local _, _, _, equipLoc, icon
     if GetInstant then _, _, _, equipLoc, icon = GetInstant(id) end
     row.icon:SetTexture(icon or 134400)
@@ -171,7 +173,7 @@ local function BuildSuggestions(box)
             GameTooltip:ClearAllPoints()
             GameTooltip:SetPoint("TOPLEFT", suggest, "TOPRIGHT", 4, 0)
             GameTooltip:SetItemByID(self.id)
-            GameTooltip:Show()
+            ns.Browser.ShowTooltip(suggest)   -- the comparison with the gear worn waits for Shift
         end)
         row:SetScript("OnLeave", function() GameTooltip:Hide() end)
         row:SetScript("OnClick", function(self)

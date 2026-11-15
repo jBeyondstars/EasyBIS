@@ -27,8 +27,9 @@ opens beside the window; Shift-click links the item in chat.
                                   it; side "LEFT": against the owner's left edge, inside the window
   Browser.ItemTooltip(owner, data, side)   an item's tooltip there, with where it comes from in full;
                                   data: an item row, or anything with id and source
-  Browser.ShowTooltip()           shows it once its lines are set (the caller does): the comparison with
-                                  the gear worn waits for Shift
+  Browser.ShowTooltip(owner)      shows it once its lines are set (the caller does): the comparison with
+                                  the gear worn waits for Shift; owner: a frame outside the window whose
+                                  tooltip follows the same rule (the add dialog's suggestions)
   Browser.ModifiedClick(id)       Shift-click, Ctrl-click on an item: true when a modifier key was held
   Browser.state, Browser.window   (the tests read them)
 ]]
@@ -423,7 +424,8 @@ local function PlaceTooltip(owner, side)
 end
 
 -- Shows the tooltip once its lines are set, without the comparison unless Shift is held.
-local function ShowTooltip()
+local function ShowTooltip(owner)
+    if owner then tipOwner = owner end
     GameTooltip:Show()
     if ShiftDown() then FollowShift() else HideComparison() end
 end
