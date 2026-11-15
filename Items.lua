@@ -10,6 +10,7 @@ What Easy BIS knows about the listed items besides what the game says
   Items.Find(text, limit)
                    the worn items whose name holds text (Data\Names.lua), best matches first:
                    a list of at most limit ids, and how many items match in all
+  Items.missing    [id] = true: the server said it has no such item (Forever left it out); Find skips it
 ]]
 
 local Items = {}
@@ -84,6 +85,8 @@ local IsCached = C_Item and C_Item.IsItemDataCachedByID
 
 local english   -- [id] = the English name, as written
 
+Items.missing = {}
+
 local function Names()
     if names then return names end
     names, english = {}, {}
@@ -122,7 +125,7 @@ function Items.Find(text, limit)
         end
         local other = entry[4] and Match(entry[4], query)
         if other and (not rank or other < rank) then rank = other end
-        if rank then found[#found + 1] = { entry, rank } end
+        if rank and not Items.missing[entry[1]] then found[#found + 1] = { entry, rank } end
     end
     -- the closest matches first, then the highest required level, then the newest item
     table.sort(found, function(a, b)

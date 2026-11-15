@@ -1053,6 +1053,30 @@ class WindowTest(unittest.TestCase):
         stub.run(box, "OnEscapePressed")
         self.assertFalse(dialog.shown)
 
+    def test_name_search_twins_and_missing_items(self):
+        classic, forever = 23464, 234551
+        game = Game(saved=ENHANCEMENT)
+        stub = game.stub
+        stub.equipLocs[classic], stub.equipLocs[forever] = "INVTYPE_WEAPON", "INVTYPE_WEAPONMAINHAND"
+        stub.itemNames[forever] = "High Warlord's Battle Mace"
+        game.lua.globals().INVTYPE_WEAPONMAINHAND = "Main Hand"
+        game.ns.Browser.Open()
+        stub.run(game.ns.Browser.window.add, "OnClick")
+        dialog = game.ns.AddItem.dialog
+        box, suggest = dialog.box, dialog.suggest
+        box.text = "high warlord's battle mace"
+        stub.run(box, "OnTextChanged", True)
+        rows = {row.id: row.slot.text for row in suggest.rows.values() if row.shown and row.id in (classic, forever)}
+        # two items of one name: the item level once the game has it, the ID until then
+        self.assertEqual(rows, {forever: "item level 60  Main Hand", classic: "ID 23464  One-Hand"})
+
+        # the server has no such item: it leaves the list, and the next searches
+        stub.fire("GET_ITEM_INFO_RECEIVED", classic, False)
+        self.assertNotIn(classic, [row.id for row in suggest.rows.values() if row.shown])
+        self.assertIn(("Main Hand"), [row.slot.text for row in suggest.rows.values() if row.id == forever],
+                      "no twin left to tell apart")
+        self.assertEqual(list(game.ns.Items.Find("battle mace")[0].values()).count(classic), 0)
+
     def test_name_search_in_the_games_language(self):
         """On a French game, the game's names count too, for the items the game already has."""
         game = Game(locale="frFR", saved="C_Item = { IsItemDataCachedByID = function(id) return id == 15052 end }; "
