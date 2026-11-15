@@ -1,4 +1,4 @@
-<p align="center"><img src="https://raw.githubusercontent.com/jBeyondstars/EasyBIS/main/docs/banner.png" alt="Easy BIS" width="420"></p>
+<p style="text-align:center"><img src="https://raw.githubusercontent.com/jBeyondstars/EasyBIS/main/docs/banner.png" alt="Easy BIS" width="400"></p>
 
 **The best gear for every class and spec of WoW Forever, in one window and in your item tooltips.**
 
