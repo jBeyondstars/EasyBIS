@@ -968,6 +968,88 @@ class WindowTest(unittest.TestCase):
         game.lua.globals().ChatEdit_InsertLink("|Hitem:990001|h[Crown of Tests]|h")
         self.assertNotIn("already", game.ns.AddItem.dialog.result.text, "the link was read twice")
 
+    def test_add_an_item_by_name_search(self):
+        legs, helm, shoulders, chest = 15052, 252605, 15051, 15050
+        game = Game(saved=ENHANCEMENT)
+        stub = game.stub
+        for item in (legs, helm, shoulders, chest):
+            stub.equipLocs[item] = "INVTYPE_HEAD"
+        game.ns.Browser.Open()
+        stub.run(game.ns.Browser.window.add, "OnClick")
+        dialog = game.ns.AddItem.dialog
+        box, suggest = dialog.box, dialog.suggest
+        self.assertFalse(suggest.shown)
+
+        def type_text(text, typed=True):
+            box.text = text
+            stub.run(box, "OnTextChanged", typed)
+
+        def names():
+            return [strip_colors(row.name.text) for row in suggest.rows.values() if row.shown]
+
+        def selected():
+            return [i for i, row in enumerate(suggest.rows.values(), 1) if row.selected.shown]
+
+        # a single letter, an ID or a text set by the addon asks for nothing
+        for text in ("b", "15052"):
+            type_text(text)
+            self.assertFalse(suggest.shown, text)
+        type_text("black dragonscale", typed=False)
+        self.assertFalse(suggest.shown)
+
+        # the names that start with the text, the highest required level first; the slot on the right
+        type_text("Black Dragonscale")
+        self.assertTrue(suggest.shown)
+        self.assertEqual(names(), ["Black Dragonscale Leggings", "Black Dragonscale Helm",
+                                   "Black Dragonscale Shoulders", "Black Dragonscale Breastplate"])
+        self.assertEqual(suggest.rows[1].slot.text, "Head")
+        self.assertFalse(suggest.more.shown)
+        self.assertEqual(selected(), [1], "the first one is chosen")
+
+        # the arrows and Tab move the choice, round the list
+        stub.run(box, "OnArrowPressed", "UP")
+        self.assertEqual(selected(), [4])
+        stub.run(box, "OnArrowPressed", "DOWN")
+        stub.run(box, "OnTabPressed")
+        self.assertEqual(selected(), [2])
+
+        # Enter adds the one chosen, and the list goes away
+        stub.run(box, "OnEnterPressed")
+        self.assertIn("[Black Dragonscale Helm] added", strip_colors(dialog.result.text))
+        self.assertFalse(suggest.shown)
+        self.assertEqual(list(game.ns.Custom.List("SHAMAN", 2, "pve", "head").values()), [helm])
+
+        # a click on a row adds it too; a word inside the name is found
+        type_text("black dragonscale shoul")
+        self.assertEqual(names(), ["Black Dragonscale Shoulders"])
+        stub.run(suggest.rows[1], "OnEnter")
+        tooltip = game.lua.globals().GameTooltip
+        self.assertEqual((tooltip.item, tooltip.shown), (shoulders, True))
+        stub.run(suggest.rows[1], "OnClick")
+        self.assertIn(shoulders, list(game.ns.Custom.List("SHAMAN", 2, "pve", "head").values()))
+
+        # more matches than rows: the line under them says how many more
+        type_text("of the")
+        self.assertEqual(len(names()), 8)
+        self.assertTrue(suggest.more.shown)
+        self.assertRegex(suggest.more.text, r"^and \d+ more")
+
+        # Escape closes the list first, then the dialog
+        stub.run(box, "OnEscapePressed")
+        self.assertFalse(suggest.shown)
+        self.assertTrue(dialog.shown)
+        stub.run(box, "OnEscapePressed")
+        self.assertFalse(dialog.shown)
+
+    def test_name_search_in_the_games_language(self):
+        """On a French game, the game's names count too, for the items the game already has."""
+        game = Game(locale="frFR", saved="C_Item = { IsItemDataCachedByID = function(id) return id == 15052 end }; "
+                    + ENHANCEMENT)
+        game.stub.itemNames[15052] = "Jambières en écailles de dragon noir"
+        find = game.ns.Items.Find
+        self.assertEqual(list(find("jambières")[0].values()), [15052])
+        self.assertEqual(list(find("Black Dragonscale Leg")[0].values()), [15052], "English names still count")
+
     def test_added_items_come_back(self):
         saved = "EasyBISDB = { custom = { ['SHAMAN:2:pve'] = { head = { 990001 }, junk = 4 }, other = 'x' } }; "
         game = Game(saved=saved + ENHANCEMENT)

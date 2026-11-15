@@ -19,6 +19,7 @@ Catalog.lua
 Data\Meta.lua
 Data\Lists.lua
 Data\Items.lua
+Data\Names.lua
 Data\Enchants.lua
 Ladders.lua
 Items.lua

@@ -164,6 +164,19 @@ def items_file(db, all_ladders) -> str:
     return "\n".join(lines) + "\n"
 
 
+def names_file(db) -> str:
+    """Every item ForeverDB knows that is worn, for the add dialog's search by name."""
+    rows = []
+    for item_id in sorted(db.items):
+        gear, name = db.gear.get(item_id), db.items[item_id].get("name")
+        if gear is None or not name:
+            continue
+        rows.append("|".join((str(item_id), str(gear["req"] or ""), _field(name))))
+    lines = _header(db, "The items to wear, for the search by name: id|required level|English name")
+    lines.append(f"ns.data.names = {_block(rows)}")
+    return "\n".join(lines) + "\n"
+
+
 # The enchant keys that go on one kind of item only: (Easy BIS slots to look in, what the item has to be).
 # ForeverDB lists them for every class; a spec keeps the ones its lists hold an item for.
 _ENCHANT_GOES_ON = {
@@ -263,7 +276,7 @@ def meta_file(db) -> str:
 
 
 def write_all(db, all_ladders, out_dir) -> dict[str, int]:
-    """Write the four data files; returns {file name: size in bytes}."""
+    """Write the five data files; returns {file name: size in bytes}."""
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     files = {
@@ -271,6 +284,7 @@ def write_all(db, all_ladders, out_dir) -> dict[str, int]:
         "Lists.lua": lists_file(db, all_ladders),
         "Items.lua": items_file(db, all_ladders),
         "Enchants.lua": enchants_file(db, all_ladders),
+        "Names.lua": names_file(db),
     }
     sizes = {}
     for name, text in files.items():
