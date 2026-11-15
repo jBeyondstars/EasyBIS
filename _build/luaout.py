@@ -63,12 +63,19 @@ def encode_entry(entry: ladders.Entry) -> str:
 
 def _corrections_note(db) -> tuple:
     """Says what the lists rank differently from ForeverDB's data, when a correction is in use (corrections.py)."""
+    lines = []
     fixes = db.corrected
-    if not fixes or not fixes.changed:
-        return ()
-    return (f"Changed from ForeverDB's data: {len(fixes.changed)} caster weapons are ranked with the healing, spell "
-            f"damage and damage per second read in the game (build {', '.join(sorted(fixes.builds))}),",
-            "which the data lacks; see _build/corrections.py.")
+    if fixes and fixes.changed:
+        lines += [f"Changed from ForeverDB's data: {len(fixes.changed)} caster weapons are ranked with the healing, "
+                  f"spell damage and damage per second read in the game (build {', '.join(sorted(fixes.builds))}),",
+                  "which the data lacks; see _build/corrections.py."]
+    game = getattr(db, "aligned", None)
+    if game and game.changed:
+        lines += [f"Changed from ForeverDB's lists, from what the game showed (build {game.build}): {len(game.dropped)} "
+                  f"items the game does not have are left out,",
+                  f"and {len(game.added)} pieces it has that ForeverDB does not list are added, flagged u (no known "
+                  "source) and 9 (counted once every phase is)."]
+    return tuple(lines)
 
 
 def lists_file(db, all_ladders) -> str:
@@ -171,6 +178,8 @@ def names_file(db) -> str:
         gear, name = db.gear.get(item_id), db.items[item_id].get("name")
         if gear is None or not name:
             continue
+        if db.items[item_id].get("phase") is not None:
+            continue  # a piece added from the game (corrections.align): the search is still ForeverDB's names
         rows.append("|".join((str(item_id), str(gear["req"] or ""), _field(name))))
     lines = _header(db, "The items to wear, for the search by name: id|required level|English name")
     lines.append(f"ns.data.names = {_block(rows)}")
@@ -191,7 +200,9 @@ _ENCHANT_GOES_ON = {
 def enchant_fits(db, key: str, spec_ladders: dict) -> bool:
     """Whether the spec's PvE list ({mode: {slot: [Entry]}}) holds an item this enchant key goes on.
 
-    The enchants are ForeverDB's PvE ("raid") ones, so the PvE list decides.
+    The enchants are ForeverDB's PvE ("raid") ones, so the PvE list decides. A piece added from the game
+    (corrections.align) does not count: it shows only with the items of no known source, and an enchant
+    row is shown whatever the options.
     """
     if key not in _ENCHANT_GOES_ON:
         return True  # an armor slot: every spec fills it
@@ -199,7 +210,7 @@ def enchant_fits(db, key: str, spec_ladders: dict) -> bool:
     for slot in slots:
         for entry in spec_ladders["pve"][slot]:
             gear = db.gear.get(entry.item_id)
-            if gear and fits(gear):
+            if gear and fits(gear) and db.items.get(entry.item_id, {}).get("phase") is None:
                 return True
     return False
 

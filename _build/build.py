@@ -82,6 +82,21 @@ def build(cache_dir: Path = CACHE, out_dir: Path = OUT, details: bool = False) -
             print(f"  {item_id} {db.items.get(item_id, {}).get('name', '?')}: healing and damage {in_game} in the game, "
                   f"{in_data} in the data")
 
+    game = db.aligned
+    if not game or not game.build:
+        print("Game: not read yet. Which items the game has is not known (--capture-tool, /ebiscapture, --import-capture).")
+    else:
+        print(f"Game (build {game.build}): {game.absent} items of the data are not in the game, {len(game.dropped)} of "
+              f"them left out of the lists; {len(game.added)} pieces the game has and ForeverDB does not list are "
+              f"added, with no known source and for the last phase"
+              + (f"; {len(game.listed)} more are listed by ForeverDB now" if game.listed else "")
+              + (f"; {len(game.withheld)} more that no player gets are not (corrections.NOT_FOR_PLAYERS, withdrawn)"
+                 if game.withheld else "")
+              + ".")
+        if game.stale:
+            print(f"  The data is of game build {db.meta['build']}, later than that reading: read the game again "
+                  "(/ebiscapture all).")
+
     findings = audit.run(db, all_ladders, read_in_game=frozenset(observed))
     suspicious = audit.suspicious(findings)
     print(f"Audit: {audit.summary(findings)}." + ("" if details or not findings else " Details: build.py --audit"))
@@ -95,6 +110,15 @@ def check_report(check) -> list[str]:
     """What capture.check_capture found, as lines to print."""
     lines = [f"Capture of game build {check.game} ({check.locale}): the game showed "
              + ", ".join(f"{check.read[name]} of {count} {name}" for name, count in check.asked.items()) + "."]
+    if any(check.absent.values()):
+        lines.append("Not in the game's own item table, so not asked for: "
+                     + ", ".join(f"{len(rows)} {name}" for name, rows in check.absent.items() if rows) + "."
+                     + (f" Of {check.sample[0]} of them asked for all the same, {check.sample[1]} answered."
+                        if check.sample else ""))
+        for name, rows in check.absent.items():
+            if rows:
+                lines.append(f"  {name}: " + ", ".join(f"{label or '?'} ({item_id})" for item_id, label in rows[:8])
+                             + (", ..." if len(rows) > 8 else ""))
     lines.append(f"The game against the data the build ranks, {check.compared} items compared:")
     lines.append(f"  {'stat':20s} {'same':>6} {'missing':>8} {'only in data':>13} {'differs':>8}")
     for family, counts in sorted(check.families.items(), key=lambda kv: -check.problems(kv[0])):
@@ -164,8 +188,10 @@ def main(argv=None) -> int:
         if saved is None or not saved.exists():
             print(f"No {capture.SAVED} under {GAME / 'WTF'}: run /ebiscapture in the game, then /reload.")
             return 1
+        print(f"Capture: {saved}")
         try:
-            check = capture.check_capture(fdb.load(CACHE), saved.read_text(encoding="utf-8", errors="replace"))
+            check = capture.check_capture(fdb.load(CACHE), saved.read_text(encoding="utf-8", errors="replace"),
+                                          groups=capture.capture_ids(fdb.load(CACHE, corrected=False)))
         except ValueError as error:
             print(f"{saved.name}: {error}")
             return 1
@@ -177,6 +203,7 @@ def main(argv=None) -> int:
         if saved is None or not saved.exists():
             print(f"No {capture.SAVED} under {GAME / 'WTF'}: run /ebiscapture in the game, then /reload.")
             return 1
+        print(f"Capture: {saved}")
         try:
             result = capture.import_capture(fdb.load(CACHE, corrected=False), saved)
         except ValueError as error:
@@ -191,6 +218,14 @@ def main(argv=None) -> int:
         for template, count in result.unread.most_common(5):
             print(f"  Not understood ({count} weapons): {template}")
         print(f"Kept in {corrections.FILE.relative_to(HERE.parent)}.")
+        if result.reading:
+            print(f"The capture holds {result.shown} of the {result.listed} items of its list: the {len(result.reading['absent'])} "
+                  f"others are taken as items the game does not have, and the {len(result.reading['unlisted'])} pieces "
+                  f"it showed that ForeverDB does not list are kept. In {corrections.GAME_FILE.relative_to(HERE.parent)}.")
+        else:
+            print(f"The capture holds {result.shown} of the {result.listed} items of its list, in {result.locale}: not "
+                  f"enough to say which items the game has ({capture.COMPLETE:.0%} in English are needed). "
+                  f"{corrections.GAME_FILE.name} is left as it is.")
     suspicious = build(details=args.audit)
     return 1 if args.audit and suspicious else 0
 

@@ -20,14 +20,30 @@ for the damage per second of any weapon (the staves that carry the damage of
 one school only are too high in the data as well). Read at an older build,
 the capture may be out of date: the data's values are kept and the difference
 is reported, which means the weapons are to be read again (/ebiscapture).
+
+The same capture says which items the game has (corrections/game.json, align):
+  - ForeverDB's data holds items the game does not show, mostly numbers left
+    from another version of the game. The capture asked for each of them four
+    times and got nothing: they are dropped from the lists. A few may be
+    pieces of an event or a phase to come, which the server keeps to itself
+    until then: the game is to be read again when one opens (/ebiscapture all).
+  - ForeverDB's lists leave out pieces it has stats for and the game does have
+    (raid sets and raid drops mostly). They are added to the pools of the
+    classes that already hold that kind of piece, as items with no known
+    source, counted only once every phase is: nothing says where they are from.
+A piece ForeverDB comes to list is no longer added: that part retires by itself.
 """
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
+import phases
+
 FILE = Path(__file__).resolve().parent / "corrections" / "weapons.json"
+GAME_FILE = FILE.with_name("game.json")
 ABOUT = ("Weapon stats read in the game with the EasyBIS_Capture tool (_build/capture_addon), laid over "
          "ForeverDB's data by _build/corrections.py. Written by `python build.py --import-capture`: do not edit.")
 
@@ -125,4 +141,123 @@ def apply(db, observations: dict[int, dict]) -> Report:
             report.builds.add(seen.get("build", ""))
     report.builds.discard("")
     db.corrected = report
+    return report
+
+
+# -- the items the game has -----------------------------------------------------------------------------
+
+GAME_ABOUT = ("What the game showed of the items of ForeverDB's data, read with the EasyBIS_Capture tool "
+              "(_build/capture_addon): the ids it does not have, and the pieces it has that ForeverDB's lists leave "
+              "out. Laid over the data by _build/corrections.py. Written by `python build.py --import-capture`: "
+              "do not edit.")
+# Chest and robe go to the same pool, and so do the three kinds of ranged weapon.
+_FAMILY = {5: "chest", 20: "chest", 15: "ranged", 25: "ranged", 26: "ranged"}
+
+# Pieces the game shows that no player gets: they are not added. Written by hand, and only what is
+# certain; `build.py --audit` names the added pieces that come out far ahead of everything else.
+NOT_FOR_PLAYERS = {
+    17142: "Shard of the Defiler: a dagger with 15% critical strike and 15% haste, never given out",
+}
+# ... and the ones the game itself names as withdrawn ("Mandokir's Sting DEPRECATED").
+_WITHDRAWN = re.compile(r"\b(DEPRECATED|DEP|OLD|UNUSED|TEST)\b|^Monster - ")
+
+
+@dataclass
+class Alignment:
+    """What align() did with the reading of the game."""
+    build: str = ""                               # the game build it was read at
+    absent: int = 0                               # ids of the data the game does not have
+    dropped: list = field(default_factory=list)   # of which ForeverDB's pools held: left out of the lists
+    added: list = field(default_factory=list)     # pieces the game has, added to the pools with no known source
+    listed: list = field(default_factory=list)    # pieces of the reading ForeverDB lists by now: left to its data
+    withheld: list = field(default_factory=list)  # pieces no player gets (NOT_FOR_PLAYERS, withdrawn): not added
+    stale: bool = False                           # the data is of a later game build than the reading
+
+    @property
+    def changed(self) -> bool:
+        return bool(self.dropped or self.added)
+
+
+def load_game(path=GAME_FILE) -> dict:
+    """{"build", "date", "listed", "read", "absent": [ids], "unlisted": {id: {"name", "classes", "unique",
+    "limit"}}}, empty without a file."""
+    path = Path(path)
+    if not path.exists():
+        return {}
+    data = json.loads(path.read_text(encoding="utf-8"))
+    data["unlisted"] = {int(item_id): record for item_id, record in data.get("unlisted", {}).items()}
+    return data
+
+
+def save_game(game: dict, path=GAME_FILE) -> None:
+    """One piece per line, in id order, so another capture reads as a short difference."""
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    absent = sorted(game["absent"])
+    rows = [", ".join(map(str, absent[start:start + 16])) for start in range(0, len(absent), 16)]
+    pieces = [f'    "{item_id}": {json.dumps(game["unlisted"][item_id], ensure_ascii=False, sort_keys=True)}'
+              for item_id in sorted(game["unlisted"])]
+    head = {name: game[name] for name in ("build", "date", "listed", "read")}
+    text = ("{\n" + f'  "about": {json.dumps(GAME_ABOUT)},\n'
+            + "".join(f'  "{name}": {json.dumps(value)},\n' for name, value in head.items())
+            + '  "absent": [\n' + ",\n".join("    " + row for row in rows) + "\n  ],\n"
+            + '  "unlisted": {\n' + ",\n".join(pieces) + "\n  }\n}\n")
+    path.write_bytes(text.encode("utf-8"))
+
+
+def _kind(gear: dict) -> tuple:
+    """What tells whether a pool takes a piece: where it is worn, and the game's kind of item."""
+    return _FAMILY.get(gear["inv"], gear["inv"]), gear.get("kind")
+
+
+def align(db, game: dict) -> Alignment:
+    """Drop the items the game does not have, add the pieces it has that the lists leave out; the report is
+    kept as db.aligned.
+
+    A piece goes to every pool that already holds its kind of piece (a plate chest to the chest pool of
+    the classes that have plate chests in theirs), but for the classes its tooltip leaves out. An item
+    the game does not have leaves the pools, and stays in db.items: the search by name (Names.lua) is
+    still ForeverDB's list of names.
+    """
+    report = Alignment(build=game.get("build", ""))
+    db.aligned = report
+    if not game:
+        return report
+    report.stale = _build_number(db.meta.get("build", "")) > _build_number(report.build)
+    absent = set(game.get("absent", ()))
+    report.absent = len(absent)
+    holds = {(cls, pool): {_kind(db.gear[item_id]) for item_id, _ in entries if item_id in db.gear}
+             for cls, data in db.classes.items() for pool, entries in data["pools"].items()}
+
+    dropped = set()
+    for data in db.classes.values():
+        for pool, entries in data["pools"].items():
+            dropped.update(item_id for item_id, _ in entries if item_id in absent)
+            data["pools"][pool] = [entry for entry in entries if entry[0] not in absent]
+    for item in db.items.values():
+        if item["twin"] in absent:
+            item["twin"] = None   # the other faction has no such piece
+    report.dropped = sorted(dropped)
+
+    for item_id in sorted(game.get("unlisted", {})):
+        seen, gear = game["unlisted"][item_id], db.gear.get(item_id)
+        if gear is None:
+            continue   # the data no longer has it
+        if item_id in db.items:
+            report.listed.append(item_id)
+            continue
+        if item_id in NOT_FOR_PLAYERS or _WITHDRAWN.search(seen["name"]):
+            report.withheld.append(item_id)
+            continue
+        allowed = {word.upper() for word in seen.get("classes", ())}
+        kind, placed = _kind(gear), False
+        for (cls, pool), kinds in holds.items():
+            if kind in kinds and (not allowed or cls in allowed):
+                db.classes[cls]["pools"][pool].append((item_id, gear["req"]))
+                placed = True
+        if placed:
+            db.items[item_id] = {
+                "name": seen["name"], "groups": frozenset("u"), "flags": "U" if seen.get("unique") else "",
+                "side": "", "twin": None, "limit": seen.get("limit"), "sources": [], "phase": phases.LATER}
+            report.added.append(item_id)
     return report

@@ -126,6 +126,7 @@ ns.data.items = [==[
 13252|Cloudrunner Girdle|d||d^229^Quartermaster Zigris^16^0^k
 13253|Hands of Power|d||d^229^Quartermaster Zigris^14^0^k
 13259|Ribsteel Footguards|d||d^229^Urok Doomhowl^25^0^k
+13262|Ashbringer|u|U|
 13282|Ogreseer Tower Boots|d||d^229^^33.33^0^k
 13314|Alanna's Embrace|d||d^289^Ras Frostwhisperer^2^0^k
 13340|Cape of the Black Baron|d||d^329^Baron Rivendare^14.14^0^k
@@ -176,7 +177,6 @@ ns.data.items = [==[
 14539|Bone Ring Helm|d||d^289^Rattlegore^14^0^k
 14552|Stockade Pauldrons|u||
 14553|Sash of Mercy|w||w^0^0^k
-14558|Lady Maye's Pendant|w||w^0^0^k
 14604|Warden's Wizard Hat|w|s|m^12219^Barbed Lasher^0^s
 14615|Bloodmail Gauntlets|d||d^289^Lord Alexei Barov^3.7^0^k~d^289^Instructor Malicia^1.11^0^k
 14616|Bloodmail Boots|d||d^289^Lord Alexei Barov^3.7^0^k~d^289^Instructor Malicia^1.11^0^k
@@ -296,6 +296,7 @@ ns.data.items = [==[
 16998|Sacred Protector|q||q^6148^The Scarlet Oracle, Demetria^56^h^k~q^6187^Order Must Be Restored^56^a^k
 17039|Skullbreaker|Q|s|q^6521^An Unholy Alliance^31^h^s
 17043|Zealot's Robe|Q|s|q^6521^An Unholy Alliance^31^h^s
+17182|Sulfuras, Hand of Ragnaros|u|U|
 17193|Sulfuron Hammer|c||c^Blacksmithing^300^21161^f
 17578|Field Marshal's Coronal|p|U|p^13^a^f
 17579|Marshal's Dreadweave Leggings|p|U|p^12^a^f
@@ -405,7 +406,9 @@ ns.data.items = [==[
 18696|Intricately Runed Shield|d||d^289^Ras Frostwhisperer^16.67^0^k
 18701|Innervating Band|w||w^0^0^k
 18702|Belt of the Ordained|w||w^0^0^k
+18715|Lok'delar, Stave of the Ancient Keepers|u|U|
 18716|Ash Covered Boots|d||d^329^Archivist Galford^22^0^k
+18717|Hammer of the Grand Crusader|u||
 18720|Shroud of the Nathrezim|d||d^329^Balnazzar^20^0^k
 18723|Animated Chain Necklace|d||d^329^Ramstein the Gorger^14.67^0^k
 18725|Peacemaker|d||d^329^Magistrate Barthilas^16.67^0^k
@@ -415,6 +418,7 @@ ns.data.items = [==[
 18737|Bone Slicing Hatchet|d||d^329^Maleki the Pallid^20^0^k
 18738|Carapace Spine Crossbow|d||d^329^Nerub'enkan^20^0^k
 18761|Oblivion's Touch|w||m^14516^Death Knight Darkreaver^25^k
+18814|Choker of the Fire Lord|u||
 18825|Grand Marshal's Aegis|p||p^14^a^f
 18826|High Warlord's Shield Wall|p||p^14^h^f
 18827|Grand Marshal's Handaxe|p||p^14^a^f
@@ -443,6 +447,7 @@ ns.data.items = [==[
 18874|High Warlord's War Staff|p||p^14^h^f
 18876|Grand Marshal's Claymore|p||p^14^a^f
 18877|High Warlord's Greatsword|p||p^14^h^f
+18879|Heavy Dark Iron Ring|u|U|
 19044|Might of the Timbermaw|c||c^Leatherworking^265^23703^f
 19047|Wisdom of the Timbermaw|c||c^Tailoring^255^23662^f
 19049|Timbermaw Brawlers|c||c^Leatherworking^295^23704^f
@@ -494,9 +499,18 @@ ns.data.items = [==[
 19324|The Lobotomizer|vw|sU|v^13217^Thanthaldis Snowgleam^1416^39.5^81.7^1256618^^s~m^13218^Grunnda Wolfheart^0.02^k
 19325|Don Julio's Band|vw|sU|v^13217^Thanthaldis Snowgleam^1416^39.5^81.7^755555^^s~m^13218^Grunnda Wolfheart^0.02^k
 19366|Master Dragonslayer's Orb|q||q^7782^The Lord of Blackrock^60^a^k~q^7784^The Lord of Blackrock^60^h^k
+19376|Archimtiros' Ring of Reckoning|u|U|
+19377|Prestor's Talisman of Connivery|u||
+19379|Neltharion's Tear|u|U|
+19382|Pure Elementium Band|u|U|
 19383|Master Dragonslayer's Medallion|q|U|q^7782^The Lord of Blackrock^60^a^k~q^7784^The Lord of Blackrock^60^h^k
 19384|Master Dragonslayer's Ring|q|U|q^7782^The Lord of Blackrock^60^a^k~q^7784^The Lord of Blackrock^60^h^k
+19395|Rejuvenating Gem|u|U|
+19403|Band of Forced Concentration|u|U|
+19406|Drake Fang Talisman|u|U|
 19426|Orb of the Darkmoon|v|s|v^14828^Gelvas Grimegate^1429^41.5^69^0^^s
+19431|Styleen's Impeding Scarab|u|U|
+19434|Band of Dark Dominion|u|U|
 19491|Amulet of the Darkmoon|v|s|v^14828^Gelvas Grimegate^1429^41.5^69^0^^s
 19510|Legionnaire's Band|v|U|v^14754^Kelm Hargunth^1413^46.7^8.4^75000^h^s
 19511|Legionnaire's Band|v|U|v^14754^Kelm Hargunth^1413^46.7^8.4^60000^h^s
@@ -574,6 +588,7 @@ ns.data.items = [==[
 19846|Zandalar Illusionist's Wraps|Q||q^8060^Paragons of Power: The Illusionist's Wraps^60^^k
 19848|Zandalar Demoniac's Wraps|Q||q^8059^Paragons of Power: The Demoniac's Wraps^60^^k
 19849|Zandalar Demoniac's Mantle|Q||q^8076^Paragons of Power: The Demoniac's Mantle^60^^k
+19884|Jin'do's Judgement|u||
 19992|Devilsaur Tooth|q|U|q^8232^The Green Drake^50^^k
 20033|Zandalar Demoniac's Robe|Q||q^8077^Paragons of Power: The Demoniac's Robes^60^^k
 20034|Zandalar Illusionist's Robe|Q||q^8069^Paragons of Power: The Illusionist's Robes^60^^k
@@ -666,6 +681,8 @@ ns.data.items = [==[
 20717|Desert Bloom Gloves|q||q^8379^Armaments of War^58^^k
 21115|Defiler's Talisman|ev||v^15126^Rutherford Twing^1417^73.4^29.7^28230^h^k
 21117|Talisman of Arathor|ev|s|v^15127^Samuel Hawke^1417^46^45.4^28230^a^s~r^509^4^The League of Arathor^f
+21126|Death's Sting|u|U|
+21134|Dark Edge of Insanity|u|U|
 21198|Signet Ring of the Bronze Dragonflight|eq|U|q^8749^The Path of the Protector^60^^k~r^910^5^Brood of Nozdormu^f
 21199|Signet Ring of the Bronze Dragonflight|eq|U|q^8750^The Path of the Protector^60^^k~r^910^6^Brood of Nozdormu^f
 21200|Signet Ring of the Bronze Dragonflight|eq|U|q^8751^The Protector of Kalimdor^60^^k~r^910^7^Brood of Nozdormu^f
@@ -673,7 +690,48 @@ ns.data.items = [==[
 21204|Signet Ring of the Bronze Dragonflight|eq|U|q^8755^The Path of the Conqueror^60^^k~r^910^6^Brood of Nozdormu^f
 21205|Signet Ring of the Bronze Dragonflight|eq|U|q^8756^The Qiraji Conqueror^60^^k~r^910^7^Brood of Nozdormu^f
 21210|Signet Ring of the Bronze Dragonflight|eq|U|q^8761^The Grand Invoker^60^^k~r^910^7^Brood of Nozdormu^f
+21242|Blessed Qiraji War Axe|u||
+21244|Blessed Qiraji Pugio|u||
+21268|Blessed Qiraji War Hammer|u||
+21269|Blessed Qiraji Bulwark|u|U|
+21272|Blessed Qiraji Musket|u|U|
+21273|Blessed Qiraji Acolyte Staff|u|U|
+21275|Blessed Qiraji Augur Staff|u|U|
 21278|Stormshroud Gloves|c||c^Leatherworking^290^26279^f
+21329|Conqueror's Crown|u||
+21330|Conqueror's Spaulders|u||
+21331|Conqueror's Breastplate|u||
+21332|Conqueror's Legguards|u||
+21333|Conqueror's Greaves|u||
+21334|Doomcaller's Robes|u||
+21335|Doomcaller's Mantle|u||
+21336|Doomcaller's Trousers|u||
+21337|Doomcaller's Circlet|u||
+21343|Enigma Robes|u||
+21344|Enigma Boots|u||
+21345|Enigma Shoulderpads|u||
+21346|Enigma Leggings|u||
+21347|Enigma Circlet|u||
+21348|Tiara of the Oracle|u||
+21351|Vestments of the Oracle|u||
+21352|Trousers of the Oracle|u||
+21353|Genesis Helm|u||
+21356|Genesis Trousers|u||
+21357|Genesis Vest|u||
+21359|Deathdealer's Boots|u||
+21360|Deathdealer's Helm|u||
+21361|Deathdealer's Spaulders|u||
+21362|Deathdealer's Leggings|u||
+21364|Deathdealer's Vest|u||
+21365|Striker's Footguards|u||
+21366|Striker's Diadem|u||
+21368|Striker's Leggings|u||
+21370|Striker's Hauberk|u||
+21372|Stormcaller's Diadem|u||
+21374|Stormcaller's Hauberk|u||
+21375|Stormcaller's Leggings|u||
+21376|Stormcaller's Pauldrons|u||
+21389|Avenger's Breastplate|u||
 21392|Sickle of Unyielding Strength|Q||q^8558^Sickle of Unyielding Strength^60^^k
 21394|Drape of Unyielding Strength|Q||q^8557^Drape of Unyielding Strength^60^^k
 21398|Hammer of the Gathering Storm|Q||q^8706^Hammer of the Gathering Storm^60^h^k
@@ -700,10 +758,54 @@ ns.data.items = [==[
 21527|Darkwater Robes|q||q^8729^The Wrath of Neptulon^60^^k
 21532|Drudge Boots|q||q^8736^The Nightmare Manifests^60^^k
 21563|Don Rodrigo's Band|v|sU|v^13217^Thanthaldis Snowgleam^1416^39.5^81.7^755555^^s
+21581|Gauntlets of Annihilation|u||
+21582|Grasp of the Old God|u||
+21583|Cloak of Clarity|u||
+21584|Bracers of Eternal Reckoning|u||
+21585|Dark Storm Gauntlets|u||
+21586|Belt of Never-ending Agony|u||
+21587|Wristguards of Castigation|u||
+21588|Wristguards of Elemental Fury|u||
+21594|Bracers of the Fallen Son|u||
+21596|Ring of the Godslayer|u|U|
+21597|Royal Scepter of Vek'lor|u||
+21598|Royal Qiraji Belt|u||
+21600|Boots of Epiphany|u||
+21601|Ring of Emperor Vek'lor|u|U|
+21602|Qiraji Execution Bracers|u||
+21604|Bracelets of Royal Redemption|u||
+21605|Gloves of the Hidden Temple|u||
+21608|Amulet of Vek'nilash|u||
+21609|Regenerating Belt of Vek'nilash|u||
+21610|Wormscale Blocker|u||
+21611|Burrower Bracers|u||
+21613|Wormhide Boots|u||
+21615|Don Rigoberto's Lost Hat|u||
+21616|Huhuran's Stinger|u||
+21618|Hive Defiler Wristguards|u||
+21619|Gloves of the Messiah|u||
+21620|Ring of the Martyr|u|U|
+21622|Sharpened Silithid Femur|u|U|
+21624|Gauntlets of Kalimdor|u||
+21639|Pauldrons of the Unrelenting|u||
+21645|Hive Tunneler's Boots|u||
+21650|Ancient Qiraji Ripper|u||
+21663|Robes of the Guardian Saint|u||
+21664|Barbed Choker|u||
+21665|Mantle of Wicked Revenge|u||
+21672|Gloves of Enforcement|u||
+21674|Gauntlets of Steadfast Determination|u||
+21677|Ring of the Qiraji Fury|u|U|
+21693|Guise of the Devourer|u||
+21694|Ternary Mantle|u||
+21695|Angelista's Touch|u|U|
+21700|Pendant of the Qiraji Guardian|u||
 21709|Ring of the Fallen God|Q|U|q^8802^The Savior of Kalimdor^60^^k
 21710|Cloak of the Fallen God|Q||q^8802^The Savior of Kalimdor^60^^k
 21712|Amulet of the Fallen God|Q||q^8802^The Savior of Kalimdor^60^^k
+21809|Fury of the Forgotten Swarm|u||
 21836|Ritssyn's Ring of Chaos|w|U|m^15249^Qiraji Lasher^0.31^k
+21839|Scepter of the False Prophet|u||
 21994|Belt of Heroism|q||q^8937^Just Compensation^58^a^k~q^8944^Just Compensation^58^h^k
 21995|Boots of Heroism|q||q^8959^Anthion's Parting Words^58^a^k~q^9022^Anthion's Parting Words^58^h^k
 21996|Bracers of Heroism|q||q^8912^An Earnest Proposition^58^a^k~q^8920^An Earnest Proposition^58^h^k
@@ -733,6 +835,7 @@ ns.data.items = [==[
 22096|Boots of The Five Thunders|q||q^8957^Anthion's Parting Words^58^h^k
 22097|Coif of The Five Thunders|q||q^9011^Saving the Best for Last^58^h^k
 22102|Vest of The Five Thunders|q||q^9011^Saving the Best for Last^58^h^k
+22149|Beads of Ogre Mojo|Q||q^8949^Falrin's Vendetta^58^^k
 22150|Beads of Ogre Might|Q||q^8949^Falrin's Vendetta^58^^k
 22191|Obsidian Mail Tunic|c||c^Blacksmithing^300^27590^f
 22196|Thick Obsidian Breastplate|c||c^Blacksmithing^300^27587^f
@@ -762,7 +865,79 @@ ns.data.items = [==[
 22408|Ritssyn's Wand of Bad Mojo|d||d^329^Baron Rivendare^20^0^k
 22409|Tunic of the Crescent Moon|d||d^329^Baron Rivendare^20^0^k
 22411|Helm of the Executioner|d||d^329^Baron Rivendare^20^0^k
+22416|Dreadnaught Breastplate|u||
+22417|Dreadnaught Legplates|u||
+22418|Dreadnaught Helmet|u||
+22419|Dreadnaught Pauldrons|u||
+22420|Dreadnaught Sabatons|u||
+22421|Dreadnaught Gauntlets|u||
+22422|Dreadnaught Waistguard|u||
+22423|Dreadnaught Bracers|u||
+22424|Redemption Wristguards|u||
+22425|Redemption Tunic|u||
+22426|Redemption Handguards|u||
+22427|Redemption Legguards|u||
+22428|Redemption Headpiece|u||
+22429|Redemption Spaulders|u||
+22430|Redemption Boots|u||
+22431|Redemption Girdle|u||
 22433|Don Mauricio's Band of Domination|d||d^289^Darkmaster Gandling^14.29^0^k
+22436|Cryptstalker Tunic|u||
+22437|Cryptstalker Legguards|u||
+22438|Cryptstalker Headpiece|u||
+22439|Cryptstalker Spaulders|u||
+22440|Cryptstalker Boots|u||
+22441|Cryptstalker Handguards|u||
+22442|Cryptstalker Girdle|u||
+22443|Cryptstalker Wristguards|u||
+22464|Earthshatter Tunic|u||
+22465|Earthshatter Legguards|u||
+22466|Earthshatter Headpiece|u||
+22467|Earthshatter Spaulders|u||
+22468|Earthshatter Boots|u||
+22469|Earthshatter Handguards|u||
+22470|Earthshatter Girdle|u||
+22471|Earthshatter Wristguards|u||
+22476|Bonescythe Breastplate|u||
+22477|Bonescythe Legplates|u||
+22478|Bonescythe Helmet|u||
+22479|Bonescythe Pauldrons|u||
+22480|Bonescythe Sabatons|u||
+22481|Bonescythe Gauntlets|u||
+22482|Bonescythe Waistguard|u||
+22483|Bonescythe Bracers|u||
+22488|Dreamwalker Tunic|u||
+22489|Dreamwalker Legguards|u||
+22490|Dreamwalker Headpiece|u||
+22491|Dreamwalker Spaulders|u||
+22492|Dreamwalker Boots|u||
+22493|Dreamwalker Handguards|u||
+22494|Dreamwalker Girdle|u||
+22495|Dreamwalker Wristguards|u||
+22496|Frostfire Robe|u||
+22497|Frostfire Leggings|u||
+22498|Frostfire Circlet|u||
+22499|Frostfire Shoulderpads|u||
+22500|Frostfire Sandals|u||
+22501|Frostfire Gloves|u||
+22502|Frostfire Belt|u||
+22503|Frostfire Bindings|u||
+22504|Plagueheart Robe|u||
+22505|Plagueheart Leggings|u||
+22506|Plagueheart Circlet|u||
+22507|Plagueheart Shoulderpads|u||
+22508|Plagueheart Sandals|u||
+22509|Plagueheart Gloves|u||
+22510|Plagueheart Belt|u||
+22511|Plagueheart Bindings|u||
+22512|Robe of Faith|u||
+22513|Leggings of Faith|u||
+22514|Circlet of Faith|u||
+22515|Shoulderpads of Faith|u||
+22516|Sandals of Faith|u||
+22517|Gloves of Faith|u||
+22518|Belt of Faith|u||
+22519|Bindings of Faith|u||
 22589|Atiesh, Greatstaff of the Guardian|q||q^9270^Atiesh, Greatstaff of the Guardian^60^^k
 22630|Atiesh, Greatstaff of the Guardian|q||q^9271^Atiesh, Greatstaff of the Guardian^60^^k
 22631|Atiesh, Greatstaff of the Guardian|q||q^9257^Atiesh, Greatstaff of the Guardian^60^^k
@@ -781,6 +956,7 @@ ns.data.items = [==[
 22673|Outrider's Chain Leggings|v||v^14754^Kelm Hargunth^1413^46.7^8.4^250460^h^s
 22676|Outrider's Mail Leggings|v|s|v^14754^Kelm Hargunth^1413^46.7^8.4^253253^h^s
 22699|Icebane Leggings|Q||q^9232^The Only Song I Know...^60^^k
+22732|Mark of C'Thun|u||
 22740|Outrider's Leather Pants|v||v^14754^Kelm Hargunth^1413^46.7^8.4^219678^h^s
 22741|Outrider's Lizardhide Pants|v||v^14754^Kelm Hargunth^1413^46.7^8.4^220461^h^s
 22747|Outrider's Silk Leggings|v|U|v^14754^Kelm Hargunth^1413^46.7^8.4^167633^h^s
@@ -812,8 +988,35 @@ ns.data.items = [==[
 22884|Legionnaire's Dreadweave Tunic|p|U|p^8^h^f
 22886|Legionnaire's Silk Tunic|p|U|p^8^h^f
 22887|Legionnaire's Mail Legguards|p|U|p^8^h^f
+22939|Band of Unanswered Prayers|u|U|
+22943|Malice Stone Pendant|u||
+22954|Kiss of the Spider|u|U|
+22961|Band of Reanimation|u|U|
+22981|Gluth's Missing Collar|u|U|
+23001|Eye of Diminution|u|U|
+23018|Signet of the Fallen Defender|u|U|
+23019|Icebane Helmet|u||
+23023|Sadist's Collar|u||
 23025|Seal of the Damned|w|U|o^Four Horsemen Chest^16.67^k
 23027|Warmth of Forgiveness|w|U|o^Four Horsemen Chest^16.67^k
+23031|Band of the Inevitable|u|U|
+23036|Necklace of Necropsy|u||
+23038|Band of Unnatural Forces|u|U|
+23040|Glyph of Deflection|u|U|
+23041|Slayer's Crest|u|U|
+23046|The Restrained Essence of Sapphiron|u|U|
+23047|Eye of the Dead|u|U|
+23053|Stormrage's Talisman of Seething|u||
+23057|Gem of Trapped Innocents|u||
+23058|Life Channeling Necklace|u||
+23059|Ring of the Dreadnaught|u|U|
+23060|Bonescythe Ring|u|U|
+23061|Ring of Faith|u|U|
+23062|Frostfire Ring|u|U|
+23063|Plagueheart Ring|u|U|
+23064|Ring of the Dreamwalker|u|U|
+23065|Ring of the Earthshatterer|u|U|
+23066|Ring of Redemption|u|U|
 23125|Chains of the Lich|d||d^329^^33.33^0^k
 23237|Ring of the Eternal Flame|w|U|w^60^63^k
 23243|Champion's Plate Shoulders|p|U|p^10^h^f
@@ -872,19 +1075,17 @@ ns.data.items = [==[
 23466|High Warlord's Spellblade|p||p^14^h^f
 23468|High Warlord's Tome of Destruction|p||p^14^h^f
 23469|High Warlord's Tome of Mending|p||p^14^h^f
+23557|Larvae of the Great Worm|u||
 226772|Feralheart Sash|u||
 226774|Feralheart Galoshes|u||
+226777|Feralheart Hands|u||
 226781|Feralheart Sandals|u||
 226782|Feralheart Bindings|u||
-226783|Feralheart Embrace|u||
-226786|Feralheart Headdress|u||
 226796|Feralheart Wristguards|u||
 226797|Feralheart Waistguard|u||
 226799|Feralheart Legguards|u||
-226801|Feralheart Faceguard|u||
 226802|Feralheart Grips|u||
 226803|Feralheart Treads|u||
-226804|Feralheart Armor|u||
 226831|Darkmantle Footpads|u||
 226857|Battleboots of Heroism|u||
 226865|Wristguards of Heroism|u||
@@ -895,62 +1096,32 @@ ns.data.items = [==[
 226871|Sabatons of Heroism|u||
 226872|Chestguard of Heroism|u||
 226881|Beastmaster's Treads|u||
+226930|Sorcerer's Gauntlets|u||
 226931|Sorcerer's Sandals|u||
 226955|Virtuous Epaulets|u||
-226957|Virtuous Cowl|u||
+226958|Virtuous Hands|u||
 226959|Virtuous Slippers|u||
 226977|Soulforge Bindings|u||
-226981|Soulforge Crown|u||
-226984|Soulforge Embrace|u||
 226985|Soulforge Wristguards|u||
 226988|Soulforge Legguards|u||
-226989|Soulforge Faceguard|u||
 226991|Soulforge Sabatons|u||
-226992|Soulforge Chestguards|u||
 227007|Slippers of The Five Thunders|u||
-227013|Crown of The Five Thunders|u||
-227016|Tunic of The Five Thunders|u||
-227170|Blood Guard's Mail Boots|u||
-227187|Blood Guard's Dragonhide Gloves|u||
-227198|Knight-Lieutenant's Dragonhide Gauntlets|u||
-231569|General's Chain Grips|u||
-231575|General's Chain Vices|u||
-231578|Marshal's Chain Vices|u||
-231599|General's Silk Gauntlets|u||
-231600|General's Silk Handwraps|u||
-231608|Marshal's Silk Gauntlets|u||
-231609|Marshal's Silk Handwraps|u||
-231613|General's Satin Grips|u||
-231617|Marshal's Satin Grips|u||
-231623|Marshal's Satin Handwraps|u||
-231633|General's Satin Handwraps|u||
-231650|Marshal's Lamellar Gauntlets|u||
-231656|General's Mail Greaves|u||
-231661|General's Mail Sabatons|u||
-231676|General's Dragonhide Gauntlets|u||
-231688|General's Dragonhide Grips|u||
-231694|Marshal's Dragonhide Grips|u||
-231700|Marshal's Dragonhide Gloves|u||
-234548|High Warlord's Pig Poker|u||
-234551|High Warlord's Battle Mace|u||
-234570|Grand Marshal's Polearm|u||
-234576|Grand Marshal's Warhammer|u||
-235473|Grand Marshal's Barricade|u||
-235474|High Warlord's Barricade|u||
-235476|High Warlord's Hacker|u||
-235477|High Warlord's Bonecracker|u||
-235478|High Warlord's Shiv|u||
-235479|Grand Marshal's Shiv|u||
-235480|Grand Marshal's Bonecracker|u||
-235481|Grand Marshal's Hacker|u||
-239565|Garb of Revelation|u||
-239572|Boots of Revelation|u||
-239574|Hands of Revelation|u||
-239575|Crown of Revelation|u||
-239577|Pants of Revelation|u||
-239581|Mantle of Revelation|u||
-239582|Girdle of Revelation|u||
-239583|Wrists of Revelation|u||
+240020|Inquisition Legguards|u||
+240021|Inquisition Spaulders|u||
+240022|Inquisition Boots|u||
+240023|Inquisition Vambraces|u||
+240024|Inquisition Belt|u||
+240025|Inquisition Shoulderplates|u||
+240026|Inquisition Leggings|u||
+240027|Inquisition Helmet|u||
+240028|Inquisition Gloves|u||
+240029|Inquisition Greaves|u||
+240030|Inquisition Breastplate|u||
+240039|Inquisition Tunic|u||
+240040|Inquisition Headpiece|u||
+240041|Inquisition Handguards|u||
+240042|Inquisition Wristguards|u||
+240043|Inquisition Girdle|u||
 249469|Frozen Heart of the Mountain|c|n|c^Enchanting^265^1249107^f
 250520|Protector's Silvered Chain Shirt|c|sn|c^Blacksmithing^110^1252269^f
 250522|Crusader's Silvered Chain Shirt|c|sn|c^Blacksmithing^110^1252271^f
@@ -987,6 +1158,7 @@ ns.data.items = [==[
 254125|Earthenweave Leggings|c|n|c^Tailoring^245^1257488^f
 254131|Earthenweave Cuffs|c|n|c^Tailoring^255^1257491^f
 254137|Earthenweave Crown|c|n|c^Tailoring^260^1257494^f
+254679|Stillwind String|u||
 260212|Bad Hat|u|n|
 260216|Ouroboros Ring|u|n|
 260217|Eagle's Head Signet|u|n|
@@ -1065,6 +1237,7 @@ ns.data.items = [==[
 272439|Serenity Field|v|sn|v^227853^Pix Xizzix^1434^28.5^75.8^0^h^s
 272440|Defender's Grip Stabilizer|v|sn|v^227853^Pix Xizzix^1434^28.5^75.8^0^h^s
 272452|Premier High Warlord's Blade|u||v^14581^Sergeant Thunderhorn^1454^36.9^67.1^0^^s
+272455|Premier Magus Gloves|u|n|
 272465|Premier Shadowhide Armguards|v|sn|v^12792^Lady Palanseer^1454^37.2^64.7^0^^s
 272467|Premier Shadowhide Vices|v|sn|v^12792^Lady Palanseer^1454^37.2^64.7^0^^s
 272468|Premier Shadowhide Girdle|v|sn|v^12792^Lady Palanseer^1454^37.2^64.7^0^^s
@@ -1078,6 +1251,7 @@ ns.data.items = [==[
 272502|Premier Legionnaire's Magus Sash|u||
 272503|Premier Legionnaire's Magus Cuffs|u||
 272504|Premier Centurion's Magus Boots|u||
+272505|Premier Champion's Magus Handguards|u||
 272506|Premier Warlord's Mortarplate Armor|u||
 272507|Premier Warlord's Mortarplate Headpiece|u||
 272508|Premier General's Mortarplate Leggings|u||
@@ -1127,6 +1301,7 @@ ns.data.items = [==[
 272561|Premier General's Felweave Pants|u||
 272570|Premier Centurion's Satin Boots|u||
 272571|Premier Legionnaire's Satin Bracers|u||
+272572|Premier Champion's Satin Gloves|u||
 272573|Premier Legionnaire's Satin Cinch|u||
 272574|Premier General's Satin Mantle|u||
 272575|Premier Warlord's Satin Cowl|u||
@@ -1138,10 +1313,13 @@ ns.data.items = [==[
 272593|Premier High Warlord's Battle Axe|u||v^14581^Sergeant Thunderhorn^1454^36.9^67.1^0^^s
 272594|Premier High Warlord's Recurve|u||v^14581^Sergeant Thunderhorn^1454^36.9^67.1^0^^s
 272595|Premier High Warlord's Crossbow|u||v^14581^Sergeant Thunderhorn^1454^36.9^67.1^0^^s
+272596|Premier High Warlord's Razor|u||v^14581^Sergeant Thunderhorn^1454^36.9^67.1^0^^s
 272599|Premier High Warlord's Street Sweeper|u||v^14581^Sergeant Thunderhorn^1454^36.9^67.1^0^^s
 272601|Premier High Warlord's Pulverizer|u||v^14581^Sergeant Thunderhorn^1454^36.9^67.1^0^^s
+272602|Premier High Warlord's Pig Sticker|u||v^14581^Sergeant Thunderhorn^1454^36.9^67.1^0^^s
 272603|Premier High Warlord's War Staff|u||v^14581^Sergeant Thunderhorn^1454^36.9^67.1^0^^s
 272608|Premier Shadowhide Walkers|v|sn|v^12792^Lady Palanseer^1454^37.2^64.7^0^^s
+272626|Premier Kodohide Chestpiece|u|n|
 272681|Premier High Warlord's Battle Mace|u||v^14581^Sergeant Thunderhorn^1454^36.9^67.1^0^^s
 272682|Premier High Warlord's Destroyer|u||v^14581^Sergeant Thunderhorn^1454^36.9^67.1^0^^s
 272683|Premier High Warlord's Spellblade|u||v^14581^Sergeant Thunderhorn^1454^36.9^67.1^0^^s
@@ -1157,6 +1335,7 @@ ns.data.items = [==[
 272746|Premier Knight-Champion's Silk Footwraps|u|n|
 272747|Premier Knight-Captain's Silk Bracers|u|n|
 272748|Premier Knight-Captain's Silk Sash|u|n|
+272749|Premier Lieutenant Commander's Silk Gloves|u|n|
 272750|Premier Field Marshal's Silk Coronet|u|n|
 272751|Premier Marshal's Silk Leggings|u|n|
 272752|Premier Field Marshal's Silk Vestments|u|n|
@@ -1214,14 +1393,17 @@ ns.data.items = [==[
 272821|Premier Field Marshal's Voidcloth Vestments|u|n|
 272822|Premier Knight-Captain's Voidcloth Bracers|u|n|
 272823|Premier Knight-Champion's Voidcloth Sandals|u|n|
+272824|Premier Lieutenant Commander's Voidcloth Gloves|u|n|
 272825|Premier Knight-Captain's Voidcloth Sash|u|n|
 272828|Premier Plate Wristguards|v|sn|v^12777^Captain Dirgehammer^1453^76^66.8^0^^s
 272838|Premier Grand Marshal's Aegis|u|n|
 272840|Premier Grand Marshal's Sunderer|u|n|
 272841|Premier Grand Marshal's Bullseye|u|n|
 272842|Premier Grand Marshal's Repeater|u|n|
+272843|Premier Grand Marshal's Dirk|u|n|
 272846|Premier Grand Marshal's Hand Cannon|u|n|
 272848|Premier Grand Marshal's Battle Hammer|u|n|
+272849|Premier Grand Marshal's Glaive|u|n|
 272850|Premier Grand Marshal's Stave|u|n|
 272856|Premier Grand Marshal's Mageblade|u|n|
 272857|Premier Grand Marshal's Warhammer|u|n|
@@ -1267,6 +1449,7 @@ ns.data.items = [==[
 273350|Premier General's Ringmail Leggings|u||
 273351|Premier General's Ringmail Spaulders|u||
 273365|Premier Luminous Sabatons|u|n|
+273368|Premier Lunarhide Gloves|u|n|
 273389|Premier Knight-Captain's Lunarhide Bracers|u|n|
 273390|Premier Knight-Captain's Lunarhide Waistguard|u|n|
 273391|Premier Lieutenant Commander's Lunarhide Gauntlets|u|n|
@@ -1430,6 +1613,7 @@ ns.data.items = [==[
 280010|Gargantuan Wristguards|u|n|
 280013|Frostfang Mail Vest|u|n|
 280021|Tooth of the Matriarch|u|n|
+280056|Flameslash Crescent|u|n|
 280057|Robes of Dark Summons|u|n|
 280060|Lucky Shovelnose Tuft|d|n|d^329^^0^0^c
 280061|Spike Crested Bracers|d|n|d^329^^0^0^c
@@ -1451,6 +1635,7 @@ ns.data.items = [==[
 286989|Violet Sorcerer's Wraps|w|sn|m^246993^NPC 246993^0^s~m^247001^NPC 247001^0^s
 286994|Tattered Kirin Tor Cloak|w|sn|m^255070^NPC 255070^0^s
 287033|Furbolg Berserker's Boots|u|n|
+287034|Grove Subjugator's Blade|u|n|
 287036|Satyr's Touch|u|n|
 287040|Dinosaur Hide Belt|u|n|
 ]==]

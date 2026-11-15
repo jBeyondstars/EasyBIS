@@ -8,10 +8,13 @@ from __future__ import annotations
 
 import copy
 import json
+import os
+import re
 import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 TESTS = Path(__file__).resolve().parent
 BUILD = TESTS.parent
@@ -19,6 +22,7 @@ sys.path.insert(0, str(BUILD))
 sys.path.insert(0, str(TESTS))
 
 import audit  # noqa: E402
+import build  # noqa: E402
 import capture  # noqa: E402
 import compare_site  # noqa: E402
 import corrections  # noqa: E402
@@ -420,7 +424,7 @@ class GeneratorTest(unittest.TestCase):
         findings = audit.run(self.db, self.kept, read_in_game=frozenset(corrections.load()))
         self.assertEqual(len(audit.report(findings)), len(findings) + len({f.kind for f in findings}))
         for finding in findings:
-            self.assertIn(finding.kind, (audit.LOW, audit.POWERLESS, audit.LONELY))
+            self.assertIn(finding.kind, (audit.LOW, audit.POWERLESS, audit.LONELY, audit.ADDED))
             self.assertEqual(finding.name, self.db.items[finding.item_id]["name"])
             self.assertTrue(set(finding.phases) <= set(phases.PHASES))
         self.assertLessEqual(len(audit.suspicious(findings)), len(findings))
@@ -437,13 +441,49 @@ class GeneratorTest(unittest.TestCase):
         for item_id in ids:
             self.assertIn(self.published.gear[item_id]["inv"], corrections.WEAPONS)
         ranked = {entry.item_id for (_, _, _, slot), ladder in self.full.items() if slot == "main" for entry in ladder}
-        self.assertLessEqual(ranked, set(ids), "a main-hand entry of a ladder is not on the capture's list")
+        read = set(ids) | set(capture.capture_ids(self.published)["unlisted"])   # the weapons added from the game
+        self.assertLessEqual(ranked, read, "a main-hand entry of a ladder is not on the capture's list")
+
+    def test_the_lists_follow_what_the_game_has(self):
+        """corrections.align on the real data: with the default options the lists only lose what the game lacks."""
+        game = self.db.aligned
+        if not game.build:
+            self.skipTest("the game was not read yet (corrections/game.json)")
+        pooled = {item_id for data in self.db.classes.values() for pool in data["pools"].values() for item_id, _ in pool}
+        absent = set(corrections.load_game()["absent"])
+        self.assertFalse(pooled & absent, "an item the game does not have is still in a pool")
+        self.assertLessEqual(set(game.dropped), absent)
+        for item_id in game.added:
+            self.assertNotIn(item_id, self.published.items)
+            self.assertIn(item_id, pooled)
+            self.assertEqual((self.db.items[item_id]["groups"], self.db.items[item_id]["phase"]), (frozenset("u"), phases.LATER))
+        self.assertFalse(set(game.added) & set(corrections.NOT_FOR_PLAYERS))
+        shown = luaout.shown_ids(self.kept)
+        self.assertFalse(shown & absent, "an item the game does not have is in a list, or is a list item's twin")
+        self.assertTrue(shown & set(game.added), "no added piece makes a list")
+
+        before = fdb.load(CACHE, corrected=False)
+        corrections.apply(before, corrections.load())   # the weapons' stats, not the game's items
+        was = ladders.build_all(before)
+        gone = set(game.dropped)
+        for token, specs in self.kept.items():
+            for spec, modes in specs.items():
+                for mode, slots in modes.items():
+                    for flt in ladders.FILTERS:
+                        if flt[1]:
+                            continue   # with the items of no known source: the added pieces show there
+                        now, then = audit.shown_rows(slots, flt), audit.shown_rows(was[token][spec][mode], flt)
+                        for slot in now:
+                            if now[slot] != then[slot]:
+                                lost = {entry.item_id for rows in then[slot] for entry in rows} & gone
+                                self.assertTrue(lost, f"{token} {spec} {mode} {slot} {flt} changed with nothing dropped")
 
 
 # -- a hole in the data: the audit that shows it, the corrections that fill it, the capture they come from --------
 
 SCEPTER, MACE, ROD, STAFF, WAND, ORB = 1, 2, 3, 7, 8, 9
 ROBE = 20   # a raid set piece the data has stats for and leaves out of its lists
+VEST = 30   # a cloth chest of the lists, for the tests that need a chest pool
 
 
 def tiny_db():
@@ -485,7 +525,7 @@ IN_THE_GAME = {
 
 # The game's stand-ins the capture tool needs, and what the game "knows" about each item.
 CAPTURE_STUB = r"""
-local stub = { loaded = {}, never = {}, tooltips = {}, stats = {}, chat = {} }
+local stub = { loaded = {}, never = {}, asked = {}, unknown = {}, tooltips = {}, stats = {}, chat = {}, requests = 0 }
 function print(text) stub.chat[#stub.chat + 1] = text end
 C_TooltipInfo = { GetItemByID = function(id)
     if not stub.loaded[id] then return { lines = { { leftText = "Retrieving item information" } } } end
@@ -495,8 +535,17 @@ C_TooltipInfo = { GetItemByID = function(id)
 end }
 C_Item = {
     IsItemDataCachedByID = function(id) return stub.loaded[id] == true end,
-    RequestLoadItemDataByID = function(id) if not stub.never[id] then stub.loaded[id] = true end end,
+    RequestLoadItemDataByID = function(id)
+        stub.requests = stub.requests + 1
+        if stub.never[id] or stub.unknown[id] then return end
+        if stub.quota then   -- the server answers that many requests, then none
+            if stub.quota <= 0 then return end
+            stub.quota = stub.quota - 1
+        end
+        if stub.slow then stub.asked[#stub.asked + 1] = id else stub.loaded[id] = true end
+    end,
     GetItemInfo = function(id) if stub.loaded[id] then return "a name" end end,
+    GetItemInfoInstant = function(id) if not stub.unknown[id] then return id end end,
     GetItemStats = function(link) return stub.stats[tonumber(link:match("%d+"))] end,
 }
 function GetBuildInfo() return "1.0.0", "1", "Nov 13 2026", 16001 end
@@ -507,6 +556,14 @@ function date() return "2026-11-15 12:30" end
 SlashCmdList = {}
 function stub.add(id, loaded, lines, stats)
     stub.loaded[id], stub.tooltips[id], stub.stats[id] = loaded, lines, stats
+end
+-- With stub.slow the game answers a moment after it is asked, as the real one does: what was asked for arrives.
+function stub.arrive()
+    for _, id in ipairs(stub.asked) do stub.loaded[id] = true end
+    stub.asked = {}
+end
+function stub.pieces(first, last)
+    for id = first, last do stub.add(id, false, { { "Piece " .. id }, { "Chest", "Cloth" } }, nil) end
 end
 function stub.run(source, ids)
     local ns = { ids = ids }
@@ -521,8 +578,9 @@ def saved_variable(db) -> str:
     """EasyBISCaptureDB as the game writes it to the saved variables file."""
     def quoted(text):
         return '"' + text.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n") + '"'
-    lines = ["", "EasyBISCaptureDB = {", f'["meta"] = {quoted(db.meta)},', f'["missing"] = {quoted(db.missing)},',
-             '["items"] = {']
+    lines = ["", "EasyBISCaptureDB = {", f'["meta"] = {quoted(db.meta)},', f'["missing"] = {quoted(db.missing)},']
+    lines += [f'["{name}"] = {quoted(db[name])},' for name in ("absent", "sample", "log") if db[name] is not None]
+    lines.append('["items"] = {')
     lines += [f"[{item_id}] = {quoted(text)}," for item_id, text in sorted(db["items"].items())]
     return "\n".join(lines + ["},", "}", ""])
 
@@ -648,12 +706,32 @@ class HoleTest(unittest.TestCase):
             self.assertEqual((target.name, counts), ("EasyBIS_Capture", {"weapons": 4, "pool": 2, "unlisted": 1, "twins": 0}))
             self.assertEqual(sorted(path.name for path in target.iterdir()),
                              ["Capture.lua", "EasyBIS_Capture.toc", "Ids.lua"])
-            self.assertIn("\n1 2 3 7 8 9 20\n", (target / "Ids.lua").read_text(encoding="utf-8"))
+            # the raid piece first, the weapons last: the game may stop answering before the end
+            self.assertIn("\n20 8 9 1 2 3 7\n", (target / "Ids.lua").read_text(encoding="utf-8"))
             listed = [line for line in (target / "EasyBIS_Capture.toc").read_text(encoding="utf-8").splitlines()
                       if line and not line.startswith("#")]
             self.assertEqual(listed, ["Ids.lua", "Capture.lua"])
             for path in target.iterdir():
                 self.assertNotIn(b"\r", path.read_bytes(), path.name)
+
+    def test_the_saved_capture_is_the_newest_that_holds_one(self):
+        with tempfile.TemporaryDirectory() as folder:
+            game = Path(folder)
+            self.assertIsNone(capture.find_saved(game))
+            written = {}
+            for age, (account, text) in enumerate((
+                    ("C", "\nEasyBISCaptureDB = nil\n"),    # an account that logged in and read nothing
+                    ("B", '\nEasyBISCaptureDB = {\n["meta"] = "1|1.0.0|1|enUS|2026-11-15 12:30",\n}\n'),
+                    ("A", '\nEasyBISCaptureDB = {\n["meta"] = "1|1.0.0|1|enUS|2026-11-14 09:00",\n}\n'))):
+                path = game / "WTF" / "Account" / account / "SavedVariables" / "EasyBIS_Capture.lua"
+                path.parent.mkdir(parents=True)
+                path.write_text(text, encoding="utf-8")
+                os.utime(path, (1_800_000_000 - age * 60, 1_800_000_000 - age * 60))
+                written[account] = path
+            self.assertEqual(capture.find_saved(game), written["B"])
+            written["A"].unlink()
+            written["B"].unlink()
+            self.assertEqual(capture.find_saved(game), written["C"], "an empty one is still named, to say so")
 
     def test_a_saved_capture_is_understood(self):
         text = "\n".join([
@@ -693,7 +771,8 @@ class HoleTest(unittest.TestCase):
 
     def test_the_game_is_compared_with_the_data_stat_by_stat(self):
         text = "\n".join([
-            "EasyBISCaptureDB = {", '["meta"] = "1|1.0.0|1|enUS|2026-11-15 12:30",', '["missing"] = "7",',
+            "EasyBISCaptureDB = {", '["meta"] = "1|1.0.0|1|enUS|2026-11-15 12:30",', '["missing"] = "3 7",',
+            '["absent"] = "7",', '["sample"] = "1:0",', '["log"] = "12:30 10:4:5:0:0 20:5:6:1:0",',
             '["items"] = {',
             r'[2] = "Odd Mace\nOne-Hand\tMace\n#stats ITEM_MOD_DAMAGE_PER_SECOND_SHORT=29.6875;'
             r'ITEM_MOD_INTELLECT_SHORT=13;ITEM_MOD_SPELL_POWER_SHORT=90;ITEM_MOD_STRANGE_SHORT=4",',
@@ -711,6 +790,12 @@ class HoleTest(unittest.TestCase):
         check = capture.check_capture(db, text)
         self.assertEqual(check.asked, {"weapons": 4, "pool": 2, "unlisted": 1, "twins": 0})
         self.assertEqual(check.read, {"weapons": 2, "pool": 2, "unlisted": 1, "twins": 0})
+        # the staff is not in the game's own item table: it was not asked for, and the report names it
+        self.assertEqual(check.absent, {"weapons": [(STAFF, "Channeling Staff")], "pool": [], "unlisted": [], "twins": []})
+        self.assertEqual(check.sample, (1, 0))
+        report = "\n".join(build.check_report(check))
+        self.assertIn("Not in the game's own item table, so not asked for: 1 weapons. Of 1 of them asked for all "
+                      "the same, 0 answered.\n  weapons: Channeling Staff (7)\n", report)
         self.assertEqual(check.compared, 4)
         self.assertEqual(dict(check.families["healing"]), {"missing": 1, "same": 1, "differs": 1})
         self.assertEqual(check.examples[("healing", "missing")], [(MACE, "Odd Mace", 90, 0)])
@@ -726,7 +811,7 @@ class HoleTest(unittest.TestCase):
         self.assertEqual(dict(check.other_keys), {"ITEM_MOD_STRANGE_SHORT": 1})
         self.assertEqual(check.unlisted, {ROBE: {"name": "Robe of Tests", "slot": "Chest", "kind": "Cloth",
                                                  "classes": ["Priest", "Mage"], "set": "Vestments of Tests",
-                                                 "req": 60}})
+                                                 "req": 60, "unique": False, "limit": None}})
         # with the corrections in use, the mace's hole is filled: only what is left shows
         corrections.apply(db, IN_THE_GAME)
         fixed = capture.check_capture(db, text)
@@ -771,6 +856,136 @@ class HoleTest(unittest.TestCase):
             self.assertEqual(merged[MACE]["healing"], 90, "a weapon read again replaces what was kept")
             self.assertEqual(merged[ROD]["healing"], 0, "a weapon the game shows no spell power for is kept as such")
             self.assertEqual(merged[SCEPTER], IN_THE_GAME[SCEPTER])
+            self.assertFalse((Path(folder) / "game.json").exists(), "two weapons of six do not say what the game has")
+
+    # -- the items the game has ---------------------------------------------------------------------
+
+    def game_db(self):
+        """tiny_db with a chest pool for a Priest and a Mage: a cloth vest of the lists; the robe is not listed."""
+        db = tiny_db()
+        db.classes["MAGE"] = copy.deepcopy(db.classes["PRIEST"])
+        for data in db.classes.values():
+            data["pools"]["chest"] = [(VEST, 50)]
+        db.gear[VEST] = {"inv": 5, "kind": "4.1", "req": 50, "stats": {5: 10}, "dps": 0.0, "armor": 60.0, "wand": False}
+        db.items[VEST] = dict(db.items[ORB], name="Plain Vest")
+        db.gear[ROBE] = {"inv": 20, "kind": "4.1", "req": 60, "stats": {5: 20, 45: 50}, "dps": 0.0, "armor": 120.0,
+                         "wand": False}
+        return db
+
+    GAME = {"build": "1.0.0.1", "date": "2026-11-15", "listed": 9, "read": 7, "absent": [999, MACE],
+            "unlisted": {ROBE: {"name": "Robe of Tests", "classes": ["Priest"], "unique": True, "limit": "TestRobes"},
+                         ORB: {"name": "Glowing Orb"},    # ForeverDB lists it by now
+                         404: {"name": "Gone"}}}          # the data no longer has it
+
+    def test_the_lists_follow_the_game(self):
+        db = self.game_db()
+        db.items[SCEPTER]["twin"] = MACE
+        report = corrections.align(db, self.GAME)
+        self.assertIs(db.aligned, report)
+        self.assertEqual((report.build, report.absent, report.dropped, report.added, report.listed, report.stale),
+                         ("1.0.0.1", 2, [MACE], [ROBE], [ORB], False))
+        self.assertTrue(report.changed)
+        # the mace the game does not have leaves the pools; its name stays, the scepter's link to it goes
+        self.assertEqual([item_id for item_id, _ in db.classes["PRIEST"]["pools"]["mh"]], [SCEPTER, ROD])
+        self.assertIn(MACE, db.items)
+        self.assertIsNone(db.items[SCEPTER]["twin"])
+        self.assertEqual(self.shown(db), [SCEPTER, ROD], "the list shown by default only lost the mace")
+        # the robe goes where cloth chests already are, but for the classes its tooltip leaves out
+        self.assertEqual(db.classes["PRIEST"]["pools"]["chest"], [(VEST, 50), (ROBE, 60)])
+        self.assertEqual(db.classes["MAGE"]["pools"]["chest"], [(VEST, 50)])
+        self.assertEqual(sum(1 for data in db.classes.values() for pool in data["pools"].values()
+                             for item_id, _ in pool if item_id == ROBE), 1)
+        self.assertEqual(db.items[ROBE], {"name": "Robe of Tests", "groups": frozenset("u"), "flags": "U", "side": "",
+                                          "twin": None, "limit": "TestRobes", "sources": [], "phase": phases.LATER})
+        # it shows with the items of no known source, once every phase counts
+        robe = ladders.full_ladder(db, "PRIEST", 1, "pve", "chest")[0]
+        self.assertEqual((robe.item_id, robe.unsourced, robe.phase, robe.stored), (ROBE, True, phases.LATER, 600))
+        self.assertTrue(robe.passes(("a", True, False, phases.LATER)))
+        self.assertFalse(robe.passes(("a", False, False, phases.LATER)))
+        self.assertFalse(robe.passes(("a", True, False, phases.PRE_RAID)))
+
+        kept = ladders.build_all(db)
+        lists = luaout.lists_file(db, kept)
+        self.assertIn("(build 1.0.0.1): 1 items the game does not have are left out", lists)
+        self.assertIn("and 1 pieces it has that ForeverDB does not list are added", lists)
+        self.assertIn(f"\tchest\t{ROBE}:600:uU9::TestRobes {VEST}:50", lists)
+        self.assertIn(f"\n{ROBE}|Robe of Tests|u|U|\n", luaout.items_file(db, kept))
+        names = luaout.names_file(db)
+        self.assertIn("Odd Mace", names, "the search by name is still ForeverDB's list")
+        self.assertNotIn("Robe of Tests", names)
+        # the build points at an added piece that comes out several times ahead of what ForeverDB lists
+        findings = audit.run(db, kept)
+        hints = [f for f in findings if f.kind == audit.ADDED]
+        self.assertEqual({(f.cls, f.slot, f.item_id) for f in hints}, {("PRIEST", "chest", ROBE)})
+        self.assertIn("12.0 times Plain Vest, the best piece ForeverDB lists", hints[0].line())
+        self.assertNotIn(ROBE, {f.item_id for f in audit.suspicious(findings)})
+        self.assertIn("added, far ahead", audit.summary(findings))
+        # an added piece brings no enchant row of its own: those show whatever the options
+        staff = ladders.Entry(item_id=STAFF, score=1.0, side="", twin=None, seen=False, new=False, unsourced=False,
+                              unique=False, two_hand=True, random=False, limit=None)
+        self.assertTrue(luaout.enchant_fits(db, "w2h", {"pve": {"main": [staff]}}))
+        db.items[STAFF]["phase"] = phases.LATER
+        self.assertFalse(luaout.enchant_fits(db, "w2h", {"pve": {"main": [staff]}}))
+
+        # a piece no player gets is not added; a reading older than the data's game build is said to be
+        db = self.game_db()
+        db.meta["build"] = "1.0.0.2"
+        with mock.patch.dict(corrections.NOT_FOR_PLAYERS, {ROBE: "a test"}):
+            report = corrections.align(db, self.GAME)
+        self.assertEqual((report.added, report.withheld, report.stale), ([], [ROBE], True))
+        self.assertNotIn(ROBE, db.items)
+        # nor is one the game itself names as withdrawn
+        db = self.game_db()
+        withdrawn = {**self.GAME, "unlisted": {ROBE: {"name": "Robe of Tests DEPRECATED"}}}
+        self.assertEqual(corrections.align(db, withdrawn).withheld, [ROBE])
+        # without a reading of the game the data stays as it is
+        db = self.game_db()
+        report = corrections.align(db, {})
+        self.assertEqual((report.build, report.changed, len(db.classes["PRIEST"]["pools"]["mh"])), ("", False, 3))
+        self.assertEqual(luaout._corrections_note(db), ())
+
+    def test_a_whole_capture_says_which_items_the_game_has(self):
+        def capture_of(*rows, locale="enUS"):
+            return "\n".join(["EasyBISCaptureDB = {", f'["meta"] = "1|1.0.0|1|{locale}|2026-11-15 12:30",',
+                              '["missing"] = "7",', '["items"] = {', *rows, "},", "}", ""])
+        rows = [
+            r'[1] = "Low Scepter\nMain Hand\tMace\n(14.29 damage per second)\nEquip: Increases healing done by '
+            r'spells and effects by up to 68.\n#stats ",',
+            r'[2] = "Odd Mace\n(29.69 damage per second)\nEquip: Increases damage and healing done by magical '
+            r'spells and effects by up to 90.\n#stats ",',
+            r'[3] = "Lively Rod\n(25.87 damage per second)\n#stats ",',
+            r'[8] = "Thin Wand\nRanged\tWand\n#stats ",',
+            r'[9] = "Glowing Orb\nHeld In Off-hand\n#stats ",',
+            r'[20] = "Robe of Tests\nBinds when picked up\nUnique\nUnique-Equipped: Test Robes (1)\nChest\tCloth\n'
+            r'Classes: Priest, Mage\nRequires Level 60\n#stats ",',
+        ]
+        db = tiny_db()
+        db.gear[ROBE] = {"inv": 20, "kind": "4.1", "req": 60, "stats": {7: 20}, "dps": 0.0, "armor": 0.0, "wand": False}
+        reading = capture.game_reading(db, capture.parse_saved(capture_of(*rows)))
+        robe = {"name": "Robe of Tests", "classes": ["Priest", "Mage"], "unique": True, "limit": "TestRobes"}
+        self.assertEqual(reading, {"build": "1.0.0.1", "date": "2026-11-15", "listed": 7, "read": 6, "absent": [STAFF],
+                                   "unlisted": {ROBE: robe}})
+        # a capture that stopped early cannot say what the game lacks, nor one in another language
+        self.assertIsNone(capture.game_reading(db, capture.parse_saved(capture_of(*rows[:4]))))
+        self.assertIsNone(capture.game_reading(db, capture.parse_saved(capture_of(*rows, locale="frFR"))))
+        self.assertEqual(capture.item_info(["A Ring", "Unique-Equipped: Signet Ring of the Bronze Dragonflight (1)"])
+                         ["limit"], "SignetRingoftheB", "the category as ForeverDB writes its limit codes")
+
+        with tempfile.TemporaryDirectory() as folder:
+            saved, kept, game = (Path(folder) / name for name in ("EasyBIS_Capture.lua", "weapons.json", "game.json"))
+            self.assertEqual(corrections.load_game(game), {})
+            saved.write_text(capture_of(*rows), encoding="utf-8")
+            result = capture.import_capture(db, saved, kept)
+            self.assertEqual((result.listed, result.shown, result.reading["absent"]), (7, 6, [STAFF]))
+            written = game.read_bytes()
+            self.assertNotIn(b"\r", written)
+            self.assertIn(f'\n    "{ROBE}": {{"classes": ["Priest", "Mage"], "limit": "TestRobes", "name": "Robe of Tests", '
+                          '"unique": true}\n', written.decode("utf-8"), "one piece per line")
+            self.assertEqual(corrections.load_game(game), {**reading, "about": corrections.GAME_ABOUT})
+            # a partial capture read later leaves that file alone
+            saved.write_text(capture_of(*rows[:2]), encoding="utf-8")
+            self.assertIsNone(capture.import_capture(db, saved, kept).reading)
+            self.assertEqual(game.read_bytes(), written)
 
     @unittest.skipIf(lupa is None, "lupa is not installed")
     def test_the_tool_reads_tooltips_and_the_generator_reads_its_capture(self):
@@ -795,12 +1010,27 @@ class HoleTest(unittest.TestCase):
         stub.run(source, "2 3\n7")
         slash = lua.globals().SlashCmdList.EASYBISCAPTURE
 
-        def play():
-            for _ in range(200):
+        def play(until=None, seconds=1.0):
+            """Lets the game run, a step at a time, to the capture's end or to a line that holds `until`."""
+            for _ in range(4000):
                 if stub.script is None:
                     return
-                stub.script(None, 1.0)
+                if until and until in stub.chat[len(stub.chat)]:
+                    return
+                stub.arrive()
+                stub.script(None, seconds)
             self.fail("the capture never ended")
+
+        def start(ids=None):
+            """Runs /ebiscapture, on another list when `ids` is given; returns the place of its first line."""
+            if ids is not None:
+                stub.run(source, " ".join(str(item_id) for item_id in ids))
+            said = len(stub.chat)
+            lua.globals().SlashCmdList.EASYBISCAPTURE("")
+            return said
+
+        def lines(said):
+            return [stub.chat[index] for index in range(said + 1, len(stub.chat) + 1)]
 
         stub.combat = True
         slash("")
@@ -811,13 +1041,15 @@ class HoleTest(unittest.TestCase):
         db = lua.globals().EasyBISCaptureDB
         self.assertEqual(db.meta, "1|1.0.0|1|enUS|2026-11-15 12:30")
         self.assertEqual(sorted(db["items"].keys()), [MACE, ROD], "the rod was asked for, then read")
-        self.assertEqual(db.missing, "7")
+        self.assertEqual((db.missing, db.absent), ("7", ""))
         self.assertIn("One-Hand\tMace\n33 - 62 Damage\tSpeed 1.60\n", db["items"][MACE])
         self.assertTrue(db["items"][MACE].endswith("\n#stats ITEM_MOD_INTELLECT_SHORT=13")
                         or db["items"][MACE].endswith("\n#stats ITEM_MOD_INTELLECT_SHORT=13.0"))
         chat = "\n".join(stub.chat.values())
-        self.assertIn("2 items read now, 2 in all, 1 the game did not show", chat)
+        self.assertIn("1 items were not answered for: asking once more.", chat)
+        self.assertIn("done: 2 items read now, 2 in all, 1 not read.", chat)
         self.assertIn("--check-capture", chat)
+        self.assertEqual(stub.requests, 3, "the mace was there already; the rod once, the staff twice")
 
         # going on where it stopped: only the staff is asked for again, and what was read is kept
         slash("")
@@ -831,6 +1063,80 @@ class HoleTest(unittest.TestCase):
         self.assertEqual(result.observations[MACE], IN_THE_GAME[MACE])
         self.assertEqual((result.observations[ROD]["healing"], result.observations[ROD]["damage"],
                           result.observations[ROD]["dps"]), (124, 41, 25.87))
+
+        parsed = capture.parse_saved(saved_variable(lua.globals().EasyBISCaptureDB))
+        self.assertEqual((parsed["missing"], parsed["absent"], parsed["sample"]), ([STAFF], [], None))
+        self.assertRegex(parsed["log"], r"^2026-11-15 12:30( \d+:\d+:\d+:\d+:\d+)+\n2026-11-15 12:30( \d+:\d+:\d+:\d+:\d+)+$")
+
+        # a long list, in a game that answers a moment after it is asked: a few items are waited for at a
+        # time, so it is never asked for more than it answers, and a line says where the capture is
+        stub.slow = True
+        stub.pieces(1000, 1599)
+        stub.requests = 0
+        said = start(range(1000, 1600))
+        waited = []
+        while stub.script is not None:
+            stub.arrive()
+            stub.script(None, 0.25)
+            waited.append(len(stub.asked))
+        told = lines(said)
+        self.assertIn("reading 600 items, a few at a time, about 50 seconds if the game answers well", told[0])
+        self.assertLessEqual(max(waited), 8, "more items waited for at once than the game is asked for")
+        pace = [int(match.group(1)) for line in told
+                for match in [re.search(r"\d+ read, \d+ to go: (\d+) a minute, about \d+ seconds left", line)] if match]
+        self.assertEqual(len(pace), 1, told)
+        self.assertTrue(600 <= pace[0] <= 720, "about twelve items a second")
+        self.assertIn("done: 600 items read now, 602 in all, 0 not read.", told[-2])
+        self.assertEqual(stub.requests, 600)
+
+        # the server answers forty requests, then none: the capture says so, waits longer each time before
+        # trying again, and stops by itself, having asked for little
+        stub.pieces(2000, 2399)
+        stub.requests, stub.quota = 0, 40
+        said = start(range(2000, 2400))
+        play()
+        told = lines(said)
+        silences = [line for line in told if "the game has not answered for" in line]
+        self.assertIn("for 45 seconds (40 read so far): trying again in 15 seconds.", silences[0])
+        self.assertEqual([re.search(r"again in (\d+)", line).group(1) for line in silences], ["15", "30", "60"])
+        self.assertIn("stopped, the game does not answer: 40 items read now, 642 in all, 360 not read.", told[-2])
+        self.assertIn("What was read is kept. Type /reload to save.", told[-1])
+        self.assertLess(stub.requests, 200, "it went on asking a game that does not answer")
+        self.assertEqual(len(lua.globals().EasyBISCaptureDB.missing.split()), 360)
+
+        # the game answers again after a while: the capture goes on by itself
+        stub.requests, stub.quota = 0, 10
+        said = start()
+        play(until="trying again in 15 seconds")
+        stub.quota = None
+        play()
+        told = lines(said)
+        self.assertTrue(any("the game answers again." in line for line in told), told)
+        self.assertIn("done: 360 items read now, 1002 in all, 0 not read.", told[-2])
+
+        # items the game's own item table does not list are not asked for, but for a few, as a check
+        stub.pieces(3000, 3039)
+        for item_id in range(3020, 3040):
+            stub.unknown[item_id] = True
+        stub.requests = 0
+        said = start(range(3000, 3040))
+        play()
+        told = lines(said)
+        self.assertIn("reading 20 items", told[0])
+        self.assertIn("20 more are not in the game's item table: they are not asked for.", told[1])
+        self.assertIn("done: 20 items read now, 1022 in all, 20 not read.", told[-2])
+        db = lua.globals().EasyBISCaptureDB
+        self.assertEqual(db.absent, " ".join(str(item_id) for item_id in range(3020, 3040)))
+        self.assertEqual((db.sample, stub.requests), ("16:0", 36))
+        # ... unless that table lists next to nothing: then it is of no help, and every item is asked for
+        stub.pieces(4000, 4009)
+        for item_id in range(4001, 4010):
+            stub.unknown[item_id] = True
+            stub.never[item_id] = None
+        said = start(range(4000, 4010))
+        self.assertEqual(lua.globals().EasyBISCaptureDB.absent, "")
+        self.assertIn("reading 10 items", lines(said)[0])
+        slash("stop")
         db = tiny_db()
         corrections.apply(db, result.observations)
         self.assertEqual(self.shown(db), [ROD, MACE, SCEPTER])

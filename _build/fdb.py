@@ -5,9 +5,10 @@ regular expressions. The formats are the ones ForeverDB's own GearFinder.lua
 and Auto.lua decode. ForeverDB's data is GPL-3.0 with an attribution term:
 "Data from ForeverDB.net (https://foreverdb.net)".
 
-load() lays the stats read in the game over ForeverDB's where its data has a
-hole (corrections.py), so the build and the tests rank the same database;
-load(..., corrected=False) is ForeverDB's data as published.
+load() lays what was read in the game over ForeverDB's data (corrections.py):
+the stats its data lacks, the pieces its lists leave out, and it drops the
+items the game does not have. So the build and the tests rank the same
+database; load(..., corrected=False) is ForeverDB's data as published.
 """
 from __future__ import annotations
 
@@ -50,8 +51,10 @@ class Database:
         self.header = ""        # the credit line every data file starts with
         self.meta = {}          # version, build, cap
         self.classes = {}       # token -> {"specs": {index: spec}, "pools": {pool: [(id, level)]}, "min": {profile: n}}
-        self.gear = {}          # id -> {"inv", "req": required level, "stats": {stat: value}, "dps", "armor", "wand"}
-        self.items = {}         # id -> {"name", "groups", "flags", "side", "twin", "limit", "sources"}
+        self.gear = {}          # id -> {"inv", "kind": "item class.subclass", "req": required level,
+        #                                "stats": {stat: value}, "dps", "armor", "wand"}
+        self.items = {}         # id -> {"name", "groups", "flags", "side", "twin", "limit", "sources"}; a piece
+        #                         corrections.align added also has "phase"
         self.extra = {}         # id -> {"hit": n, "set": {stat: value}}
         self.dual_wield = {}    # token -> level from which the class dual wields (99: never)
         self.instances = {}     # id -> fields of ForeverDB's gfInst
@@ -59,12 +62,14 @@ class Database:
         self.enchants = {}      # token -> {(spec, profile): {slot key: [(enchant id, level)]}}
         self.enchant_info = {}  # enchant id ("s<spell>" or "i<item>") -> [name, effect, where, label]
         self.corrected = None   # what corrections.apply changed (a corrections.Report), None for the published data
+        self.aligned = None     # what corrections.align changed (a corrections.Alignment), None for the published data
 
 
 def load(data_dir, corrected: bool = True) -> Database:
     db = _read(data_dir)
     if corrected:
         corrections.apply(db, corrections.load())
+        corrections.align(db, corrections.load_game())
     return db
 
 
@@ -114,6 +119,7 @@ def _read_gear(db: Database, text: str) -> None:
         inv, class_id, sub_id, required, stats, dps, armor = raw.split(";")
         record = {
             "inv": int(inv),
+            "kind": f"{class_id}.{sub_id}",
             "req": int(required) if required else 0,
             "stats": {},
             "dps": (float(dps) if dps else 0.0) / 10,

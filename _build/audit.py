@@ -15,6 +15,13 @@ The first two are what a hole in the data looks like; `build.py --audit`
 lists them and ends with status 1 when there are any. The third is only a
 hint. A finding is a row to look at, not always an error: Forever did change
 some low level items into good ones.
+
+One more hint looks at the lists with the items of no known source and every
+phase, where the pieces added from the game show (corrections.align):
+
+  added, far ahead  an added piece is the best pick, several times ahead of
+                    the best piece of ForeverDB's own lists: an item no player
+                    gets may look like that (corrections.NOT_FOR_PLAYERS)
 """
 from __future__ import annotations
 
@@ -26,10 +33,12 @@ import phases
 
 LOW_LEVEL_GAP = 15   # "far under the cap": that many levels
 LONELY_LEAD = 0.4    # "far ahead": that share of the best pick's score
+ADDED_LEAD = 8.0     # "added, far ahead": that many times the best piece ForeverDB lists. The raid trinkets
+#                      come out up to 6 times ahead, a dagger no player gets came out 19 times ahead.
 CASTER_ROLES = ("Healer", "Caster DPS")
 SCHOOL_DAMAGE = tuple(range(84, 90))  # ForeverDB's stat ids for the damage of one school
 
-LOW, POWERLESS, LONELY = "low level", "no spell power", "far ahead"
+LOW, POWERLESS, LONELY, ADDED = "low level", "no spell power", "far ahead", "added, far ahead"
 SUSPICIOUS = (LOW, POWERLESS)
 
 
@@ -99,6 +108,19 @@ def run(db, all_ladders: dict, read_in_game=frozenset()) -> list[Finding]:
                                 if lead > LONELY_LEAD:
                                     behind = db.items[alternatives[0].item_id]["name"]
                                     note(LONELY, key, best[-1], True, f"{lead:.0%} ahead of {behind}", phase)
+                # the pieces added from the game, where they show: no known source, every phase
+                added = {entry.item_id for entries in slots.values() for entry in entries
+                         if db.items[entry.item_id].get("phase") is not None}
+                for side in ("a", "h") if added else ():
+                    everything = (side, True, False, phases.LATER)
+                    for slot, (best, _) in shown_rows(slots, everything).items():
+                        listed = [e for e in slots[slot] if e.passes(everything) and e.item_id not in added]
+                        for entry in best:
+                            if (entry.item_id in added and listed and listed[0].stored > 0
+                                    and entry.stored > ADDED_LEAD * listed[0].stored):
+                                note(ADDED, (cls, spec, mode, slot), entry, True,
+                                     f"{entry.stored / listed[0].stored:.1f} times {db.items[listed[0].item_id]['name']}, "
+                                     "the best piece ForeverDB lists", phases.LATER)
 
     findings = []
     for (kind, cls, spec, mode, slot, item_id), record in found.items():
@@ -116,7 +138,7 @@ def suspicious(findings: list[Finding]) -> list[Finding]:
 
 
 def summary(findings: list[Finding]) -> str:
-    counts = {kind: [f for f in findings if f.kind == kind] for kind in (LOW, POWERLESS, LONELY)}
+    counts = {kind: [f for f in findings if f.kind == kind] for kind in (LOW, POWERLESS, LONELY, ADDED)}
     parts = [f"{len(rows)} {kind} ({len({f.item_id for f in rows})} items)" for kind, rows in counts.items() if rows]
     return ", ".join(parts) if parts else "nothing to look at"
 
@@ -126,6 +148,8 @@ def report(findings: list[Finding]) -> list[str]:
         LOW: f"Low level: a shown item requires a level more than {LOW_LEVEL_GAP} under the cap",
         POWERLESS: "No spell power: a caster's or healer's weapon with none of the stats the spec values",
         LONELY: f"Far ahead: the best pick leads the next one by more than {LONELY_LEAD:.0%} (a hint only)",
+        ADDED: f"Added, far ahead: a piece added from the game is more than {ADDED_LEAD:g} times the best one ForeverDB "
+               "lists, with the items of no known source (a hint only)",
     }
     lines = []
     for kind, title in titles.items():

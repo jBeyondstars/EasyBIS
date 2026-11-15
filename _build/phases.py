@@ -181,7 +181,12 @@ def item_phase(item: dict) -> int:
     The listed sources are the two most likely ones. A source group none of
     them stands for means there is another way to get the item, and the ways
     left out are ordinary ones (world drops, containers, vendors).
+
+    A piece that is not of that list, added because the game has it (corrections.align), comes with its
+    phase: nothing says where it is from, so it counts only once every phase does.
     """
+    if item.get("phase") is not None:
+        return item["phase"]
     found, covered = [], set()
     for source in item["sources"]:
         raid = source_raid(source, item["name"])

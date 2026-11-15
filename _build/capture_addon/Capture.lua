@@ -16,22 +16,41 @@ writes Ids.lua.
   /ebiscapture stop     stop
   /ebiscapture status   say where it is
 
+The game gets an item's data from the server when it is asked for, and it
+does not always answer: on 2026-11-15 two runs that asked for 8,600 items got
+nothing back for half an hour, and a third, an hour later, got them all at 32
+a second. The cause is not known. So only a few items are waited for at a
+time, and a few asked for per second. When nothing has arrived for STALL
+seconds the capture says so, waits and tries again; after GIVE_UP seconds of
+silence it stops by itself. What was read is kept: /ebiscapture goes on from
+there, later.
+
 The saved variable is plain text, so the generator reads it without running it:
   EasyBISCaptureDB = {
       meta = "format|game version|build|locale|date",
       items = { [item id] = "line\nline\n...\n#stats KEY=value;KEY=value" },
-      missing = "id id id",        -- the items the game did not show
+      missing = "id id id",        -- the items of the list that were not read
+      absent = "id id id",         -- of those, the ones the game's own item table does not list: not asked for
+      sample = "asked:answered",   -- a few of the absent ones were asked for all the same, as a check
+      log = "hour clock:read:asked:unanswered:quiet ...",   -- how the game answered, every LOG seconds
   }
 A line is a tooltip line: its left text, then a tab and its right text when it
 has one. The stats are the game's own item stat table (C_Item.GetItemStats).
 ]]
 
 local FORMAT = 1
-local BATCH = 8      -- items looked at per step
-local STEP = 0.25    -- seconds between two steps
-local PASSES = 4     -- times an item the game has not loaded yet is asked for
-local PAUSE = 3      -- seconds to let the game answer before asking again
-local EVERY = 500    -- items between two progress lines
+local STEP = 0.25     -- seconds between two steps
+local WINDOW = 8      -- items asked for and not answered yet, at most
+local ASKS = 3        -- items asked for per step, at most: 12 a second
+local LOOK = 40       -- items looked at per step, at most: the ones the game has already are read at once
+local TIMEOUT = 12    -- seconds an item is waited for before another takes its place
+local STALL = 45      -- seconds without anything read after which the game is taken not to answer
+local QUIET = { 15, 30, 60, 120 }   -- seconds waited before trying again, longer each time
+local GIVE_UP = 300   -- seconds without anything read after which the capture stops
+local RETRY = 200     -- items not answered for that are asked for once more at the end, when no more than this
+local SAMPLE = 16     -- items the game's table does not list that are asked for all the same
+local SAY = 30        -- seconds between two progress lines
+local LOG = 10        -- seconds between two entries of the log
 
 local PREFIX = "|cff33ff99Easy BIS capture|r: "
 
@@ -44,6 +63,8 @@ end
 ---------------------------------------------------------------------------
 
 local GetInfo = (C_Item and C_Item.GetItemInfo) or GetItemInfo
+local GetInstant = (C_Item and C_Item.GetItemInfoInstant) or GetItemInfoInstant
+local IsCached = C_Item and C_Item.IsItemDataCachedByID
 
 -- A piece of text the tooltip may hand out (the game hides some values in combat).
 local function Text(value)
@@ -116,15 +137,23 @@ local function Stats(id)
     return table.concat(out, ";")
 end
 
--- Whether the game has the item's data; asking for it starts the request.
-local function Loaded(id)
-    if C_Item and C_Item.IsItemDataCachedByID then
-        local ok, cached = pcall(C_Item.IsItemDataCachedByID, id)
-        if ok and cached then return true end
+-- Whether the game's own item table lists the item. It answers at once, without the server.
+local function Listed(id)
+    if not GetInstant then return true end
+    local ok, known = pcall(GetInstant, id)
+    return not ok or known ~= nil
+end
+
+-- Whether the game has the item's data. GetItemInfo sends a request of its own for an item the
+-- game does not have, so it is only used on an item that was asked for (`asked`).
+local function Loaded(id, asked)
+    if IsCached then
+        local ok, cached = pcall(IsCached, id)
+        if ok then return cached == true end
     end
-    if GetInfo then
+    if asked and GetInfo then
         local ok, name = pcall(GetInfo, id)
-        if ok and name ~= nil then return true end
+        return ok and name ~= nil
     end
     return false
 end
@@ -132,6 +161,8 @@ end
 local function Ask(id)
     if C_Item and C_Item.RequestLoadItemDataByID then
         pcall(C_Item.RequestLoadItemDataByID, id)
+    elseif GetInfo then
+        pcall(GetInfo, id)
     end
 end
 
@@ -144,11 +175,23 @@ local function Read(id)
 end
 
 ---------------------------------------------------------------------------
--- Going through the list, a few weapons at a time
+-- Going through the list, a few items at a time
 ---------------------------------------------------------------------------
 
-local run     -- the capture under way: { list, index, later, pass, wait, read, said }
+--[[ The capture under way:
+  ids      the whole list                    absent   the ones the game's table does not list
+  queue    what is gone through now, `next` the place in it, `stage` "list", "again" or "sample"
+  out      { id, when asked } of the items asked for and waited for
+  later    the items not answered for
+  clock    seconds of capture, out of combat  wait     seconds to the next step
+  heard    when something was last read (or the capture last started asking); answer: the same, kept
+           through the waits, for GIVE_UP
+  quiet    0 while the game answers, else the place in QUIET; hold: the clock at which to try again
+  read, asked, lost   items read, asked for, not answered for
+]]
+local run
 local driver = CreateFrame("Frame")
+local SILENT = "stopped, the game does not answer"
 
 local function Count(items)
     local count = 0
@@ -156,51 +199,157 @@ local function Count(items)
     return count
 end
 
-local function Finish(stopped)
+local function Duration(seconds)
+    if seconds > 90 then return math.ceil(seconds / 60) .. " minutes" end
+    return math.ceil(seconds) .. " seconds"
+end
+
+local function Log()
+    EasyBISCaptureDB.log = EasyBISCaptureDB.log .. (" %d:%d:%d:%d:%d"):format(
+        math.floor(run.clock), run.read, run.asked, run.lost, run.quiet)
+end
+
+local function Finish(why)
     driver:SetScript("OnUpdate", nil)
-    local missing = run.later
-    for index = run.index, #run.list do missing[#missing + 1] = run.list[index] end
+    local db = EasyBISCaptureDB
+    Log()
+    if run.before then db.sample = #run.queue .. ":" .. (run.read - run.before) end
+    local missing = {}
+    for _, id in ipairs(run.ids) do
+        if not db.items[id] then missing[#missing + 1] = id end
+    end
     table.sort(missing)
-    EasyBISCaptureDB.missing = table.concat(missing, " ")
-    Say(("%s: %d items read now, %d in all, %d the game did not show."):format(
-        stopped and "stopped" or "done", run.read, Count(EasyBISCaptureDB.items), #missing))
-    Say("Type /reload to save, then run: python -I _build/build.py --check-capture")
+    db.missing = table.concat(missing, " ")
+    Say(("%s: %d items read now, %d in all, %d not read."):format(why, run.read, Count(db.items), #missing))
+    if why == SILENT then
+        Say("What was read is kept. Type /reload to save. To go on: /ebiscapture again later.")
+    else
+        Say("Type /reload to save, then run: python -I _build/build.py --check-capture")
+    end
     run = nil
 end
 
+-- The list is gone through: the items not answered for once more when they are few, then a few of
+-- the items the game's table does not list, to learn whether that table can be trusted.
+local function Next()
+    if run.quiet > 0 then   -- the list ended while the game was not answering
+        Finish(SILENT)
+        return
+    end
+    if run.stage == "list" and #run.later > 0 and #run.later <= RETRY then
+        run.stage = "again"
+        run.queue, run.later, run.next = run.later, {}, 1
+        Say(("%d items were not answered for: asking once more."):format(#run.queue))
+    elseif run.stage ~= "sample" and #run.absent > 0 then
+        run.stage = "sample"
+        run.queue, run.next, run.before = {}, 1, run.read
+        local count = math.min(SAMPLE, #run.absent)
+        for index = 1, count do
+            run.queue[index] = run.absent[math.floor((index - 1) * #run.absent / count) + 1]
+        end
+    else
+        Finish("done")
+        return
+    end
+    run.heard = run.clock
+end
+
 local function Step()
-    local handled = 0
-    while handled < BATCH and run.index <= #run.list do
-        local id = run.list[run.index]
-        run.index = run.index + 1
-        handled = handled + 1
-        if Loaded(id) and Read(id) then
+    local now = run.clock
+    -- what was asked for: read what has arrived, let go of what was waited for too long
+    local waiting = {}
+    for _, entry in ipairs(run.out) do
+        local id = entry[1]
+        if Loaded(id, true) and Read(id) then
             run.read = run.read + 1
-        else
-            Ask(id)
+            run.heard, run.answer = now, now
+            if run.quiet > 0 then
+                run.quiet = 0
+                Say("the game answers again.")
+            end
+        elseif now - entry[2] >= TIMEOUT then
             run.later[#run.later + 1] = id
+            run.lost = run.lost + 1
+        else
+            waiting[#waiting + 1] = entry
         end
     end
-    if run.read - run.said >= EVERY then
-        run.said = run.read
-        Say(("%d items read..."):format(run.read))
+    run.out = waiting
+
+    if run.hold then
+        if now < run.hold then return end
+        run.hold, run.heard = nil, now
     end
-    if run.index > #run.list then
-        if #run.later == 0 or run.pass >= PASSES then
-            Finish(false)
+
+    -- nothing has arrived for a while: wait before asking again, longer each time, then stop
+    if run.stage ~= "sample" and now - run.heard >= STALL then
+        local silence = math.floor(now - run.answer)
+        local pause = QUIET[math.min(run.quiet + 1, #QUIET)]
+        if silence + pause >= GIVE_UP then
+            Finish(SILENT)
             return
         end
-        Say(("%d items not loaded yet: asking again (%d of %d)."):format(#run.later, run.pass, PASSES - 1))
-        run.list, run.later, run.index = run.later, {}, 1
-        run.pass, run.wait = run.pass + 1, PAUSE
+        for _, entry in ipairs(run.out) do run.later[#run.later + 1] = entry[1] end
+        run.lost, run.out = run.lost + #run.out, {}
+        run.quiet = math.min(run.quiet + 1, #QUIET)
+        run.hold = now + pause
+        Say(("the game has not answered for %d seconds (%d read so far): trying again in %d seconds."):format(
+            silence, run.read, pause))
+        return
+    end
+
+    local looked, asked = 0, 0
+    while #run.out < WINDOW and asked < ASKS and looked < LOOK and run.next <= #run.queue do
+        local id = run.queue[run.next]
+        run.next = run.next + 1
+        looked = looked + 1
+        if Loaded(id) and Read(id) then   -- the game had it already: nothing to ask for
+            run.read = run.read + 1
+            run.heard, run.answer = now, now
+        else
+            Ask(id)
+            asked = asked + 1
+            run.asked = run.asked + 1
+            run.out[#run.out + 1] = { id, now }
+        end
+    end
+    if run.next > #run.queue and #run.out == 0 then Next() end
+end
+
+local function Progress()
+    local now = run.clock
+    local pace = (run.read - run.saidRead) / (now - run.said)   -- items a second since the last line
+    local left = #run.queue - run.next + 1 + #run.out
+    run.said, run.saidRead = now, run.read
+    if pace > 0 then
+        Say(("%d read, %d to go: %d a minute, about %s left."):format(
+            run.read, left, math.floor(pace * 60 + 0.5), Duration(left / pace)))
+    else
+        Say(("%d read, %d to go: nothing came in the last %d seconds."):format(run.read, left, SAY))
     end
 end
 
 local function OnUpdate(_, elapsed)
+    if InCombatLockdown and InCombatLockdown() then   -- the game hides tooltip values there
+        if not run.combat then
+            run.combat = true
+            Say("in combat: waiting for its end.")
+        end
+        return
+    end
+    run.combat = nil
+    if elapsed > 1 then elapsed = 1 end   -- a loading screen is not a silence of the game
+    run.clock = run.clock + elapsed
     run.wait = run.wait - elapsed
     if run.wait > 0 then return end
     run.wait = STEP
     Step()
+    if not run then return end
+    if run.clock - run.logged >= LOG then
+        run.logged = run.clock
+        Log()
+    end
+    if run.clock - run.said >= SAY and not run.hold then Progress() end
 end
 
 local function Ids()
@@ -226,20 +375,36 @@ local function Start(again)
     if again or not same then db = { items = {} } end   -- another game build: its tooltips may have changed
     db.meta = table.concat({ FORMAT, game, date("%Y-%m-%d %H:%M") }, "|")
     db.missing = ""
+    db.log = (type(db.log) == "string" and #db.log < 20000 and (db.log .. "\n") or "") .. date("%H:%M")
     EasyBISCaptureDB = db
 
-    local list = {}
-    for _, id in ipairs(Ids()) do
-        if not db.items[id] then list[#list + 1] = id end
+    local ids, queue, absent = Ids(), {}, {}
+    for _, id in ipairs(ids) do
+        if not db.items[id] then
+            if Listed(id) then queue[#queue + 1] = id else absent[#absent + 1] = id end
+        end
     end
-    if #list == 0 then
-        Say("every item of the list is read already. /ebiscapture all starts again.")
+    if #absent > #queue then   -- the game's table is of no help in this game: every item is asked for
+        for _, id in ipairs(absent) do queue[#queue + 1] = id end
+        absent = {}
+    end
+    local sorted = {}
+    for index, id in ipairs(absent) do sorted[index] = id end
+    table.sort(sorted)
+    db.absent = table.concat(sorted, " ")
+    if #queue == 0 then
+        Say(("every item of the list is read already%s. /ebiscapture all starts again."):format(
+            #absent > 0 and (", but for " .. #absent .. " the game's item table does not list") or ""))
         return
     end
-    run = { list = list, index = 1, later = {}, pass = 1, wait = 0, read = 0, said = 0 }
-    local seconds = math.ceil(#list / BATCH * STEP)
-    Say(("reading %d item tooltips, about %s. Stay out of combat."):format(
-        #list, seconds > 90 and (math.ceil(seconds / 60) .. " minutes") or (seconds .. " seconds")))
+    run = { ids = ids, queue = queue, next = 1, out = {}, later = {}, absent = absent, stage = "list",
+            clock = 0, wait = 0, heard = 0, answer = 0, quiet = 0, said = 0, saidRead = 0, logged = 0,
+            read = 0, asked = 0, lost = 0 }
+    Say(("reading %d items, a few at a time, about %s if the game answers well. A line says where it is "
+        .. "every %d seconds. Stay out of combat."):format(#queue, Duration(#queue / ASKS * STEP), SAY))
+    if #absent > 0 then
+        Say(("%d more are not in the game's item table: they are not asked for."):format(#absent))
+    end
     driver:SetScript("OnUpdate", OnUpdate)
 end
 
@@ -251,10 +416,12 @@ SlashCmdList["EASYBISCAPTURE"] = function(message)
     elseif command == "all" then
         Start(true)
     elseif command == "stop" then
-        if run then Finish(true) else Say("not reading.") end
+        if run then Finish("stopped") else Say("not reading.") end
     elseif command == "status" then
         if run then
-            Say(("%d read, %d to go (pass %d)."):format(run.read, #run.list - run.index + 1 + #run.later, run.pass))
+            Say(("%d read, %d to go, %d not answered for%s."):format(
+                run.read, #run.queue - run.next + 1 + #run.out, #run.later,
+                run.quiet > 0 and "; the game is not answering" or ""))
         else
             local db = EasyBISCaptureDB
             Say(("not reading. %d items kept from the last time."):format(

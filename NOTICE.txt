@@ -12,6 +12,15 @@ https://github.com/jBeyondstars/EasyBIS
    (https://foreverdb.net/addon): its stat weights, gear pools, item stats,
    item sources and enchant lists. The best-in-slot ladders are ForeverDB's:
    the generator ranks ForeverDB's gear pools with ForeverDB's own scoring.
+   Two things are changed from ForeverDB's data, from what the game itself
+   shows (read with the developer's tool in _build/capture_addon); the first
+   lines of Data/Lists.lua say how many of each:
+     - caster weapons are ranked with the healing, spell damage and damage
+       per second the game shows, which ForeverDB's data lacks;
+     - items the game does not have are left out of the lists, and pieces it
+       has that ForeverDB does not list are added, as items with no known
+       source.
+   Those changes are Easy BIS's, not ForeverDB's (_build/corrections.py).
    Copyright (C) 2026 ForeverDB.net. GPL-3.0 with an attribution term
    (GPL-3.0 section 7(b)). If you reuse these files or data taken from them:
      - keep the line that starts
