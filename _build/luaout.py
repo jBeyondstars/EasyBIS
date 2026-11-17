@@ -50,6 +50,7 @@ def encode_entry(entry: ladders.Entry) -> str:
     flags += "U" if entry.unique else ""
     flags += "t" if entry.two_hand else ""
     flags += "r" if entry.random else ""
+    flags += "p" if entry.pvp else ""
     flags += str(entry.phase) if entry.phase else ""
     limit = entry.limit or ""
     if not limit.isalnum() and limit:
@@ -75,7 +76,21 @@ def _corrections_note(db) -> tuple:
                   f"items the game does not have are left out,",
                   f"and {len(game.added)} pieces it has that ForeverDB does not list are added, flagged u (no known "
                   "source) and 9 (counted once every phase is)."]
+    lines += _sources_note(db)
     return tuple(lines)
+
+
+def _sources_note(db) -> list:
+    """Says which sources are not ForeverDB's, when some were read in QuestieDB (corrections.fill)."""
+    filled = getattr(db, "filled", None)
+    if not filled or not filled.changed:
+        return []
+    return [f"Added to ForeverDB's data: {len(filled.items)} items and {len(filled.enchants)} enchants it gives no "
+            f"source have the one read in QuestieDB {filled.version}",
+            "(https://github.com/Questie/QuestieDB, GPL-3.0), labelled t. An item of ForeverDB's lists counts from "
+            "the phase that source needs;",
+            f"the {len(filled.added)} pieces added from the game among them stay flagged u and 9, with the source "
+            "to show. See _build/questie.py."]
 
 
 def lists_file(db, all_ladders) -> str:
@@ -86,10 +101,11 @@ def lists_file(db, all_ladders) -> str:
         "An entry is id:score*10:flags:twin:limit, empty fields at the end left out.",
         "  flags: a Alliance only, h Horde only (with a twin: the other faction wears the twin id),",
         "         s seen in Forever, n new in Forever, u no known source, U unique, t two-hander, r random bonus,",
+        "         p a PvP reward (a PvP rank, the honor quartermasters, a battleground, a Premier set),",
         "         a digit: the content phase the item needs (none: before the raids, 1: Forever's first raids,",
         "         9: a raid known from Classic data only); see _build/phases.py",
         "  limit: only one item of that category can be worn (rings and trinkets)",
-        "The PvE list leaves PvP-rank rewards out, as foreverdb.net/bis does.",
+        "A PvP-rank reward is in both lists, ranked on its stats; foreverdb.net/bis leaves those out of its PvE pages.",
     ))
     lines.append("ns.data.lists = {")
     for cls in sorted(all_ladders):
@@ -144,6 +160,7 @@ def items_file(db, all_ladders) -> str:
                               item["flags"], _field(text))))
 
     lines = _header(db, "Where each listed item comes from: id|name|groups|flags|source~source", (
+        *_sources_note(db),
         "  groups: q quest, Q dungeon quest, v vendor, c crafted, d dungeon boss, r raid, w world drop, R rare,",
         "          p PvP rank, e reputation, x container, u no known source",
         "  flags:  s seen in Forever, n new in Forever, r random bonus, U unique",
@@ -154,7 +171,7 @@ def items_file(db, all_ladders) -> str:
         "  w^level from^level to^label (world drop)                 o^chest^percent^label",
         "  x^item^container^label                                   p^rank^side^label",
         "  r^faction^standing^name^label",
-        "  label: s Seen in Forever, c Clue (unconfirmed), f Forever client, k Classic data",
+        "  label: s Seen in Forever, c Clue (unconfirmed), f Forever client, k Classic data, t QuestieDB",
     ))
     lines.append(f"ns.data.items = {_block(rows)}")
     lines.append("-- Instances: name^kind^uiMap of the entrance^zone")
@@ -178,7 +195,7 @@ def names_file(db) -> str:
         gear, name = db.gear.get(item_id), db.items[item_id].get("name")
         if gear is None or not name:
             continue
-        if db.items[item_id].get("phase") is not None:
+        if db.items[item_id].get("added"):
             continue  # a piece added from the game (corrections.align): the search is still ForeverDB's names
         rows.append("|".join((str(item_id), str(gear["req"] or ""), _field(name))))
     lines = _header(db, "The items to wear, for the search by name: id|required level|English name")
@@ -210,7 +227,7 @@ def enchant_fits(db, key: str, spec_ladders: dict) -> bool:
     for slot in slots:
         for entry in spec_ladders["pve"][slot]:
             gear = db.gear.get(entry.item_id)
-            if gear and fits(gear) and db.items.get(entry.item_id, {}).get("phase") is None:
+            if gear and fits(gear) and not db.items.get(entry.item_id, {}).get("added"):
                 return True
     return False
 
@@ -247,6 +264,7 @@ def best_enchants(ladder: dict[str, list[tuple[str, int]]], phase: int) -> dict[
 def enchants_file(db, all_ladders) -> str:
     used = set()
     lines = _header(db, f"The best enchant, armor kit or scope per spec and slot at level {db.meta['cap']}.", (
+        *_sources_note(db),
         "  E <spec> <slot key> <ids>    ids best first; s<spell id> an enchant, i<item id> a kit, spike or scope;",
         "                               id:<phase> when it needs a raid (as in Lists.lua; see _build/phases.py)",
         "  slot keys: head neck shoulder back chest wrist hands legs feet, w1h w2h (weapons), shield, held, rng",
@@ -264,7 +282,8 @@ def enchants_file(db, all_ladders) -> str:
                 block.append("\t".join(("E", str(spec), key, " ".join(tokens))))
         lines.append(f"{cls} = {_block(block)},")
     lines.append("}")
-    lines.append("-- id|name|effect|where it comes from|label (s Seen in Forever, c Clue, f Forever client, k Classic data)")
+    lines.append("-- id|name|effect|where it comes from|label (s Seen in Forever, c Clue, f Forever client, k Classic data,")
+    lines.append("-- t QuestieDB: \"Quest: <title> (<instance>)\", \"Raid drop: <boss>\", \"Vendor: <name>\"..., see _build/questie.py)")
     rows = ["|".join([enchant] + [_field(text) for text in (db.enchant_info[enchant] + [""] * 4)[:4]])
             for enchant in sorted(used)]
     lines.append(f"ns.data.enchantInfo = {_block(rows)}")
@@ -282,6 +301,7 @@ def meta_file(db) -> str:
     lines.append("    -- content phases a list can stop at: 0 before the raids, 9 everything the data holds")
     lines.append(f'    phases = {{ {", ".join(map(str, phases.PHASES))} }},')
     lines.append(f"    phase = {phases.CURRENT},  -- the phase the game is in")
+    lines.append(f"    alternatives = {ladders.MAX_ALTERNATIVES},  -- picks the lists keep after the best one(s) of a slot")
     lines.append("}")
     return "\n".join(lines) + "\n"
 

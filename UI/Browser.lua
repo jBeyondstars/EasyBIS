@@ -466,7 +466,7 @@ local function RowTooltip(row)
         end
         if GameTooltip:NumLines() == 0 then GameTooltip:SetText(enchant.name, 1, 1, 1) end
         if enchant.effect ~= "" then GameTooltip:AddLine(enchant.effect, 0.1, 1, 0.1, true) end
-        if enchant.where ~= "" then GameTooltip:AddLine(enchant.where, 1, 0.82, 0, true) end
+        if enchant.where ~= "" then GameTooltip:AddLine(ns.Enchants.Where(enchant), 1, 0.82, 0, true) end
         local remark = ns.Sources.OriginRemark(enchant.origin)
         if remark then GameTooltip:AddLine(remark, MUTED[1], MUTED[2], MUTED[3], true) end
     end
@@ -713,7 +713,7 @@ local function FillRow(row, data)
         row.icon:SetTexture(ns.Enchants.Icon(enchant) or UNKNOWN_ICON)
         row.name:SetText(ns.Enchants.Name(enchant))
         row.sub:SetText(enchant.effect ~= "" and enchant.effect or ns.Enchants.KeyName(data.key))
-        SetIcon(row.sourceIcon, ns.Sources.Icon(enchant.profession and "crafted" or "unknown", enchant.profession))
+        SetIcon(row.sourceIcon, ns.Sources.Icon(ns.Enchants.Category(enchant), enchant.profession))
         row.kind:SetText(ns.Enchants.Kind(enchant) .. Mark(enchant.origin))
         row.detail:SetText(ns.Enchants.Detail(enchant))
     end
@@ -766,10 +766,11 @@ local function Choose(key)
     end
 end
 
--- The on/off options, in three groups: tooltips, what the lists count, the window.
+-- The on/off options, in three groups: tooltips, what the lists count, the window. The number of
+-- alternatives a slot lists comes after what the lists count, as a submenu.
 local OPTION_GROUPS = {
     { "tooltip", "onlyMyClass", "alternatives" },
-    { "unsourced", "seenOnly" },
+    { "unsourced", "seenOnly", "pvpRewards" },
     { "compact", "minimap" },
 }
 
@@ -787,6 +788,17 @@ local function OpenOptionsMenu(owner)
                         ns:SetOption(option, not ns:GetOption(option))
                         return refresh
                     end)
+            end
+            if index == 2 then
+                local counts = root:CreateButton(L.OPT_ALT_COUNT)
+                for count = ns.ALTERNATIVES, ns.MaxAlternatives() do
+                    counts:CreateRadio(tostring(count),
+                        function() return ns.Alternatives() == count end,
+                        function()
+                            ns:SetAlternatives(count)
+                            return refresh
+                        end)
+                end
             end
         end
     end)

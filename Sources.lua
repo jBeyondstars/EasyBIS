@@ -10,14 +10,18 @@ Where an item comes from, in words (its first source in Data\Items.lua).
       detail     the quest, the boss, the vendor, the profession...  ("" when there is nothing to say)
       zone       the dungeon or the zone, when the data has one
       percent    the drop chance as text, or ""
-      origin     how the data is known: s seen in Forever, c a clue, f the Forever client, k Classic data
+      origin     how the data is known: s seen in Forever, c a clue, f the Forever client, k Classic data,
+                 t read in QuestieDB
+      The source said is the item's first one. Among the sources read in QuestieDB (t), a quest or a
+      vendor of the other faction is passed over when the item has another: a set sold in Ironforge
+      and in Orgrimmar names the vendor of the player's side.
       profession the profession's English name, for a crafted item
   Sources.Manual()                    the description of an item only the player knows
   Sources.CategoryName(category)
   Sources.Icon(category, profession)  texture, cropped: a small picture per category (a crafted item gets its
                                       profession's); cropped is true for a square icon whose border should go
   Sources.IconText(category)          the same picture as text, for a menu
-  Sources.OriginName(letter)          a short remark, only for c and k: nil otherwise
+  Sources.OriginName(letter)          a short remark, only for c, k and t: nil otherwise
   Sources.OriginMark(letter)          the sign rows carry for it ("*", "?"), or ""
   Sources.OriginRemark(letter)        the sentence that explains the sign, or nil
   Sources.Line(description)           "detail - zone (17%)"
@@ -65,7 +69,13 @@ local PROFESSION_ICONS = {
     Tailoring = "Interface\\Icons\\Trade_Tailoring",
 }
 
-local ORIGIN_MARKS = { k = "*", c = "?" }
+-- Classic's data and QuestieDB's wear the same sign: known from elsewhere, not confirmed in Forever.
+local ORIGIN_MARKS = { k = "*", c = "?", t = "*" }
+
+-- Where a source says which faction it is for: a quest, a vendor. Only QuestieDB's sources are chosen
+-- on it: ForeverDB's data marks vendors of Alliance towns as Horde ones (Theramore Pauldrons).
+local SIDE_FIELD = { q = 5, v = 8 }
+local SIDED_ORIGIN = "t"
 
 local STANDINGS = { "Hated", "Hostile", "Unfriendly", "Neutral", "Friendly", "Honored", "Revered", "Exalted" }
 
@@ -130,9 +140,18 @@ local READERS = {
     r = function(f) return "reputation", L.SRC_REPUTATION:format(f[4] or "", Standing(f[3])), nil, "", f[5] end,
 }
 
+local function OwnSource(item)
+    local side = ns.PlayerSide and ns.PlayerSide()
+    for _, source in ipairs(item.sources) do
+        local wanted = source.label == SIDED_ORIGIN and source[SIDE_FIELD[source.kind] or 0]
+        if not wanted or wanted == "" or wanted == side then return source end
+    end
+    return item.sources[1]
+end
+
 function Sources.Describe(id)
     local item = ns.Items.Get(id)
-    local source = item and item.sources[1]
+    local source = item and OwnSource(item)
     local reader = source and READERS[source.kind]
     if not reader then
         return { category = "unknown", detail = "", percent = "", origin = "f" }

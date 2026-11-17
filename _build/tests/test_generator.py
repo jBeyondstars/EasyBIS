@@ -30,6 +30,7 @@ import fdb  # noqa: E402
 import ladders  # noqa: E402
 import luaout  # noqa: E402
 import phases  # noqa: E402
+import questie  # noqa: E402
 
 try:
     import lupa
@@ -124,13 +125,65 @@ class GeneratorTest(unittest.TestCase):
             with self.subTest(cls=page["cls"], spec=page["spec"], mode=page["mode"]):
                 self.assertEqual(compare_site.compare(self.published, page), [])
 
-    def test_pve_leaves_pvp_rank_rewards_out(self):
+    def test_pvp_rewards_are_marked(self):
+        """Every entry says whether it is a PvP reward, so the addon can leave those out: a PvP rank's, the
+        honor quartermasters', a battleground's, a Premier set's."""
+        is_reward = lambda item_id: ladders.pvp_reward(self.db.items[item_id])   # noqa: E731
+        self.assertTrue(is_reward(16478), "Field Marshal's Plate Helm, of rank 13")
+        self.assertTrue(is_reward(20057), "Highlander's Plate Spaulders, of Arathi Basin")
+        self.assertTrue(is_reward(272787), "Premier Field Marshal's Plate Helm, which the data has no source for")
+        for item_id, name in ((12620, "Enchanted Thorium Helm"), (271959, "Theramore Spaulders"),
+                              (19491, "Amulet of the Darkmoon"), (226869, "Faceguard of Heroism")):
+            self.assertEqual(self.db.items[item_id]["name"], name)
+            self.assertFalse(is_reward(item_id), name)
+        # the vendors are the ones the data names so, and no quartermaster is missing: whoever sells a
+        # PvP-rank reward or a Premier piece is one
+        for npc, name in ladders.PVP_VENDORS.items():
+            if npc in self.db.vendors:
+                self.assertEqual(self.db.vendors[npc][0], name)
+        for item_id, item in self.db.items.items():
+            if "p" in item["groups"] or item["name"].startswith(ladders.PVP_SET):
+                self.assertTrue(ladders.pvp_reward(item))
+                for source in item["sources"]:
+                    if source[0] == "V":
+                        self.assertIn(int(source[1]), ladders.PVP_VENDORS, f"{item['name']}: who sells it")
+        marked = {"pve": 0, "pvp": 0}
+        for (token, spec, mode, slot), ladder in self.full.items():
+            for entry in ladder:
+                self.assertEqual(entry.pvp, is_reward(entry.item_id))
+                marked[mode] += entry.pvp
+                # they count until a filter says otherwise, and then in neither list
+                self.assertEqual(entry.passes(("a", True, False, phases.LATER)),
+                                 entry.passes(("a", True, False, phases.LATER, True)))
+                if entry.pvp:
+                    self.assertFalse(entry.passes(("a", True, False, phases.LATER, False)))
+        self.assertTrue(marked["pve"] and marked["pvp"])
+        # without them every spec still has something for every slot it fills with them
+        without = ("a", False, False, phases.CURRENT, False)
+        for (token, spec, mode, slot), ladder in self.full.items():
+            if slot not in ("main", "off", "ranged") and any(e.passes(without[:4]) for e in ladder):
+                self.assertTrue(any(e.passes(without) for e in ladder), f"{token} {spec} {mode} {slot} is empty")
+        self.assertIn("p a PvP reward", luaout.lists_file(self.db, self.kept))
+
+    def test_pvp_rank_rewards_are_ranked_in_both_lists(self):
+        """A PvP-rank reward is an item like any other, in the PvE list too: it is ranked on its stats.
+        Only the site's rule (rank_rewards=False) leaves it out of PvE."""
+        rewards = {"pve": set(), "pvp": set()}
         for (token, spec, mode, slot), ladder in self.full.items():
             for entry in ladder:
                 groups = self.db.items[entry.item_id]["groups"]
-                if mode == "pve":
-                    self.assertTrue(groups - {"p"}, f"{token} {spec} {slot}: {entry.item_id} is a PvP-rank reward")
-                self.assertEqual(entry.unsourced, not (groups - {"u"} - ({"p"} if mode == "pve" else set())))
+                self.assertEqual(entry.unsourced, not (groups - {"u"}), f"{token} {spec} {mode} {slot}: {entry.item_id}")
+                if groups == {"p"}:
+                    rewards[mode].add(entry.item_id)
+        self.assertTrue(rewards["pve"], "no PvP-rank reward is in a PvE list")
+        self.assertTrue(rewards["pvp"], "no PvP-rank reward is in a PvP list")
+        for (token, spec, mode, slot) in self.full:
+            if mode != "pve":
+                continue
+            for entry in ladders.full_ladder(self.db, token, spec, mode, slot, rank_rewards=False):
+                groups = self.db.items[entry.item_id]["groups"]
+                self.assertTrue(groups - {"p"}, f"{token} {spec} {slot}: {entry.item_id} is a PvP-rank reward")
+                self.assertEqual(entry.unsourced, not (groups - {"u", "p"}))
 
     def test_ladders_are_sorted_and_free_of_duplicates(self):
         for key, ladder in self.full.items():
@@ -186,6 +239,9 @@ class GeneratorTest(unittest.TestCase):
         pendant = ladders.Entry(item_id=18404, score=30.0, side="", twin=None, seen=False, new=False,
                                 unsourced=False, unique=False, two_hand=False, random=False, limit=None, phase=1)
         self.assertEqual(luaout.encode_entry(pendant), "18404:300:1")
+        helm = ladders.Entry(item_id=16478, score=117.1, side="a", twin=16542, seen=False, new=False,
+                             unsourced=False, unique=True, two_hand=False, random=False, limit=None, pvp=True)
+        self.assertEqual(luaout.encode_entry(helm), "16478:1171:aUp:16542")
 
     # -- phases ------------------------------------------------------------------------------
 
@@ -464,6 +520,7 @@ class GeneratorTest(unittest.TestCase):
 
         before = fdb.load(CACHE, corrected=False)
         corrections.apply(before, corrections.load())   # the weapons' stats, not the game's items
+        corrections.fill(before, corrections.load_sources())   # ... and the sources read in QuestieDB
         was = ladders.build_all(before)
         gone = set(game.dropped)
         for token, specs in self.kept.items():
@@ -477,6 +534,62 @@ class GeneratorTest(unittest.TestCase):
                             if now[slot] != then[slot]:
                                 lost = {entry.item_id for rows in then[slot] for entry in rows} & gone
                                 self.assertTrue(lost, f"{token} {spec} {mode} {slot} {flt} changed with nothing dropped")
+
+
+    def test_sources_read_in_questiedb_fill_the_data(self):
+        """corrections.fill on the real data: an item of ForeverDB's lists gets a source and its phase, a piece
+        added from the game the source alone."""
+        filled = self.db.filled
+        if not filled.known:
+            self.skipTest("QuestieDB was not read yet (corrections/sources.json)")
+        reading = corrections.load_sources()
+        self.assertTrue(filled.items and filled.enchants)
+        self.assertLessEqual(set(filled.added), set(self.db.aligned.added))
+        for item_id in filled.items:
+            item, was = self.db.items[item_id], self.published.items.get(item_id)
+            self.assertTrue(item["sources"] and all(source[-1] == "t" for source in item["sources"]), item_id)
+            if item_id in filled.added:
+                self.assertIsNone(was)
+                self.assertEqual((item["groups"], item["phase"]), (frozenset("u"), phases.LATER), item["name"])
+            else:
+                self.assertEqual((was["groups"], was["sources"]), (frozenset("u"), []), item["name"])
+                self.assertTrue(item["groups"] and item["groups"] <= ladders.SOURCE_GROUPS, item["name"])
+                self.assertEqual(phases.item_phase(item), item["phase"])
+                raids = [corrections._raid(self.db, source, where, item["name"]) for source, where in
+                         zip(reading["items"][item_id]["sources"], reading["items"][item_id].get("at") or [None] * 9)]
+                self.assertEqual(item["phase"] == phases.PRE_RAID, not all(raids),
+                                 f"{item['name']} counts before the raids, or does not, against its sources")
+        for item_id in filled.listed:
+            self.assertEqual(self.db.items[item_id]["sources"], self.published.items[item_id]["sources"],
+                             "a source of ForeverDB's data was replaced")
+        # every source of the file is one the data files can hold and the addon reads
+        for record in reading["items"].values():
+            for source in record["sources"]:
+                self.assertIn(source[0], "qdvmRox")
+                self.assertFalse(any(mark in text for text in source for mark in "|^~\n"), source)
+        # the instance of a boss is one the data files name
+        named = {int(source[1]) for item_id in filled.items for source in self.db.items[item_id]["sources"]
+                 if source[0] == "d"}
+        self.assertLessEqual(named, set(self.db.instances))
+        self.assertEqual(phases.unknown_raids(self.db), phases.unknown_raids(self.published))
+        for number in filled.instances:
+            self.assertEqual(self.db.instances[number][1], "raid", "a Classic instance ForeverDB lacks is a raid")
+            self.assertEqual(phases.raid_phase(phases.RAID_INSTANCES[number]), phases.LATER)
+
+        # the arcanum of the head and legs: a quest of Dire Maul, to be had before the raids
+        arcanum = self.db.enchant_info["i18331"]
+        self.assertEqual(arcanum[2:4], ["Quest: Libram of Protection (Dire Maul)", "t"])
+        self.assertEqual(phases.enchant_phase(self.db, "i18331"), phases.PRE_RAID)
+        # an enchant of Zul'Gurub or of Sapphiron still needs its raid
+        for enchant in ("i19782", "i20076", "i23545"):
+            self.assertEqual(self.db.enchant_info[enchant][3], "t")
+            self.assertEqual(phases.enchant_phase(self.db, enchant), phases.LATER, enchant)
+        for enchant in filled.enchants:
+            self.assertEqual(self.published.enchant_info[enchant][2], corrections.UNKNOWN_WHERE)
+            self.assertRegex(self.db.enchant_info[enchant][2], r"^(Quest|Raid drop|Dungeon drop|Drop|Rare drop|Vendor|"
+                                                               r"Chest|Container): [^|]+$")
+        self.assertIn("read in QuestieDB", luaout.items_file(self.db, self.kept))
+        self.assertIn("read in QuestieDB", luaout.enchants_file(self.db, self.kept))
 
 
 # -- a hole in the data: the audit that shows it, the corrections that fill it, the capture they come from --------
@@ -896,7 +1009,8 @@ class HoleTest(unittest.TestCase):
         self.assertEqual(sum(1 for data in db.classes.values() for pool in data["pools"].values()
                              for item_id, _ in pool if item_id == ROBE), 1)
         self.assertEqual(db.items[ROBE], {"name": "Robe of Tests", "groups": frozenset("u"), "flags": "U", "side": "",
-                                          "twin": None, "limit": "TestRobes", "sources": [], "phase": phases.LATER})
+                                          "twin": None, "limit": "TestRobes", "sources": [], "phase": phases.LATER,
+                                          "added": True})
         # it shows with the items of no known source, once every phase counts
         robe = ladders.full_ladder(db, "PRIEST", 1, "pve", "chest")[0]
         self.assertEqual((robe.item_id, robe.unsourced, robe.phase, robe.stored), (ROBE, True, phases.LATER, 600))
@@ -924,7 +1038,7 @@ class HoleTest(unittest.TestCase):
         staff = ladders.Entry(item_id=STAFF, score=1.0, side="", twin=None, seen=False, new=False, unsourced=False,
                               unique=False, two_hand=True, random=False, limit=None)
         self.assertTrue(luaout.enchant_fits(db, "w2h", {"pve": {"main": [staff]}}))
-        db.items[STAFF]["phase"] = phases.LATER
+        db.items[STAFF]["added"] = True
         self.assertFalse(luaout.enchant_fits(db, "w2h", {"pve": {"main": [staff]}}))
 
         # a piece no player gets is not added; a reading older than the data's game build is said to be
@@ -1140,6 +1254,269 @@ class HoleTest(unittest.TestCase):
         db = tiny_db()
         corrections.apply(db, result.observations)
         self.assertEqual(self.shown(db), [ROD, MACE, SCEPTER])
+
+
+# -- the sources the data lacks, read in QuestieDB ------------------------------------------------------------
+
+def cbor(value) -> bytes:
+    """A CBOR value as QuestieDB stores them: enough of the format for the test's rows."""
+    def head(major, number):
+        if number < 24:
+            return bytes([major << 5 | number])
+        size = 1 if number < 256 else 2 if number < 65536 else 4
+        return bytes([major << 5 | {1: 24, 2: 25, 4: 26}[size]]) + number.to_bytes(size, "big")
+    if value is None:
+        return b"\xf6"
+    if isinstance(value, float):
+        import struct
+        return b"\xfb" + struct.pack(">d", value)
+    if isinstance(value, int):
+        return head(0, value) if value >= 0 else head(1, -1 - value)
+    if isinstance(value, str):
+        return head(3, len(value.encode())) + value.encode()
+    if isinstance(value, list):
+        return head(4, len(value)) + b"".join(map(cbor, value))
+    return head(5, len(value)) + b"".join(cbor(key) + cbor(item) for key, item in value.items())
+
+
+def questie_addon(folder: Path, rows: dict, chunked=()) -> Path:
+    """A QuestieDB addon folder holding rows {(entity, id, field): value}; the fields named in chunked are
+    cut in two parts, as the addon cuts a long value."""
+    import base64
+    lines = ["## Interface: 16001", "## Title: QuestieDB", "## Version: 9.9.9", "## X-Flavor: Forever",
+             "## X-BUILD-COMMIT: abc123"]
+    for (entity, number, name), value in rows.items():
+        text = base64.b64encode(cbor(value)).decode()
+        key = f"## X-{entity}-{number}-{name}"
+        if (entity, number, name) in chunked:
+            half = len(text) // 2
+            lines += [f"{key}: ~2~", f"{key}-1: {text[:half]}", f"{key}-2: {text[half:]}"]
+        else:
+            lines.append(f"{key}: {text}")
+    folder.mkdir(parents=True, exist_ok=True)
+    (folder / questie.TOC).write_text("\n".join(lines) + "\n", encoding="utf-8")
+    zones = folder / "support" / "Forever" / "Zones"
+    zones.mkdir(parents=True)
+    (folder / "src" / "corrections" / "enum").mkdir(parents=True)
+    (folder / "src" / "corrections" / "enum" / "zones.lua").write_text(
+        "constants.zoneIDs = {\n  RAZORFEN_KRAUL = 491,\n  NAXXRAMAS = 3456,\n  KARAZHAN = 3457,\n}\n", encoding="utf-8")
+    (zones / "instanceIdToAreaId.lua").write_text(
+        "ZoneDB.instanceIdToAreaId = {\n    [47] = ZoneDB.zoneIDs.RAZORFEN_KRAUL,\n"
+        "    [533] = ZoneDB.zoneIDs.NAXXRAMAS,\n    [532] = ZoneDB.zoneIDs.KARAZHAN,\n}\n", encoding="utf-8")
+    (zones / "dungeons.lua").write_text(
+        'local dungeons = {\n    [491] = {"Razorfen Kraul",{1717},17,{{17, 42.9, 90.2}}},\n'
+        '    [3456] = {"Naxxramas",{10062, 10063},65,{{139, 34.25, 19.45}}},\n'
+        '    [3457] = {"Karazhan",nil,41,{{41, 46.8, 74.7}}},\n}\n', encoding="utf-8")
+    (zones / "areaIdToUiMapId.lua").write_text(
+        "ZoneDB.private.areaIdToUiMapIdOverride = [[return {\n    [1537] = 1455, -- an override comes first\n}]]\n"
+        "ZoneDB.private.areaIdToUiMapId = [[return {\n    [1537] = 9999,\n    [1637] = 1454,\n}]]\n", encoding="utf-8")
+    return folder
+
+
+HOOD, BELT, GEM, CHARM, SEAL, RELIC, CLOAK = 40, 41, 42, 43, 44, 45, 46
+ARCANUM, SIGIL, RUNE = "i50", "i51", "i52"
+
+# What a QuestieDB knows of the test's items. Fields: questie.ITEM_*, QUEST_*, NPC_*.
+QUESTIE_ROWS = {
+    # a quest of a dungeon, for the Horde, and the same quest for both factions
+    ("Item", HOOD, "S"): {1: "Hood of Tests", "p": 32}, ("Item", HOOD, "6"): [701, 700],
+    ("Quest", 700, "S"): {1: "A Dungeon Errand", 4: 55, 5: 60, 17: 1717, 6: 178},
+    ("Quest", 701, "S"): {1: "An Errand", 4: 50, 5: 60, 17: 40},
+    # two vendors, one per faction, and a guard QuestieDB's drop tables hold; a container
+    ("Item", BELT, "S"): {1: "Belt of Tests"}, ("Item", BELT, "14"): [801, 800], ("Item", BELT, "2"): [802],
+    ("Item", BELT, "4"): [60],
+    ("Item", 60, "S"): ["Box of Belts"],   # a row whose first fields are all set is a list
+    ("Npc", 800, "S"): {1: "Deliana", 9: 1537, 13: "A"}, ("Npc", 800, "7"): {1537: [[43.44, 52.13]]},
+    ("Npc", 801, "S"): {1: "Mokvar", 9: 1637, 13: "H"}, ("Npc", 801, "7"): {1637: [[-1, -1]]},
+    ("Npc", 802, "S"): {1: "City Guard", 9: 1537, 13: "A"}, ("Npc", 802, "7"): {1537: [[40.0, 50.0]]},
+    # a boss of a raid ForeverDB's table lacks, its trash, and a rare of the open world
+    ("Item", GEM, "S"): {1: "Gem of Tests"}, ("Item", GEM, "2"): [902, 901, 900],
+    ("Npc", 900, "S"): {1: "A Frost Wyrm", 6: 3, 9: 3456}, ("Npc", 901, "S"): {1: "Crypt Guard", 6: 1, 9: 10062},
+    ("Npc", 902, "S"): {1: "Lone Stalker", 6: 4, 9: 40}, ("Npc", 902, "7"): {40: [[10.0, 20.0]]},
+    # a boss QuestieDB does not place, and a creature with no place either
+    ("Item", CHARM, "S"): {1: "Charm of Tests"}, ("Item", CHARM, "2"): [910, 911],
+    ("Npc", 910, "S"): ["Sapphiron", None, None, 63, 63, 3], ("Npc", 911, "S"): {1: "Nowhere Man", 6: 1},
+    # a creature of an instance nothing knows: not kept, and the item stays without a source
+    ("Item", SEAL, "S"): {1: "Seal of Tests"}, ("Item", SEAL, "2"): [920],
+    ("Npc", 920, "S"): {1: "Tower Ghost", 6: 1, 9: 3457},
+    # a chest of a dungeon; QuestieDB has two chests of that name
+    ("Item", RELIC, "S"): {1: "Relic of Tests"}, ("Item", RELIC, "3"): [70, 71],
+    ("Object", 70, "S"): {1: "Old Chest", 5: 491}, ("Object", 71, "S"): {1: "Old Chest", 5: 491},
+    # a name the data files cannot hold
+    ("Item", CLOAK, "S"): {1: "Cloak of Tests"}, ("Item", CLOAK, "6"): [702],
+    ("Quest", 702, "S"): {1: "One | Two", 4: 1, 5: 1},
+    # the items to apply
+    ("Item", 50, "S"): {1: "Arcanum of Tests"}, ("Item", 50, "6"): [700],
+    ("Item", 51, "S"): {1: "Sigil of Tests"}, ("Item", 51, "2"): [900],
+    ("Item", 52, "S"): {1: "Rune of Tests"}, ("Item", 52, "2"): [910],
+}
+
+
+def sourceless_db():
+    """tiny_db with the items ForeverDB's data gives no source: pieces of its lists, and three enchants."""
+    db = tiny_db()
+    db.instances = {47: ["Razorfen Kraul", "dungeon", "1413", "42", "89", "The Barrens", "f", "A Boss"]}
+    for item_id, name in ((HOOD, "Hood of Tests"), (BELT, "Belt of Tests"), (GEM, "Gem of Tests"),
+                          (CHARM, "Charm of Tests"), (SEAL, "Seal of Tests"), (RELIC, "Relic of Tests"),
+                          (CLOAK, "Cloak of Tests")):
+        db.items[item_id] = {"name": name, "groups": frozenset("u"), "flags": "", "side": "", "twin": None,
+                             "limit": None, "sources": []}
+    db.enchant_info = {ARCANUM: ["Arcanum of Tests", "Dodge +1%", corrections.UNKNOWN_WHERE, "f"],
+                       SIGIL: ["Sigil of Tests", "Armor +1", corrections.UNKNOWN_WHERE, "f"],
+                       RUNE: ["Rune of Tests", "Armor +2", corrections.UNKNOWN_WHERE, "f"],
+                       "i53": ["Kit of Tests", "Armor +3", "Leatherworking 225: from a trainer", "k"],
+                       "s54": ["Enchant Tests", "Armor +4", corrections.UNKNOWN_WHERE, "f"]}
+    return db
+
+
+class SourcesTest(unittest.TestCase):
+    def reading(self, folder, db=None, game=None, chunked=()):
+        store = questie.Store(questie_addon(Path(folder) / "QuestieDB", QUESTIE_ROWS, chunked))
+        return questie.collect(db or sourceless_db(), game or {}, store, today="2026-11-17")
+
+    def test_questiedb_is_read_as_sources(self):
+        with tempfile.TemporaryDirectory() as folder:
+            self.assertIsNone(questie.find(folder))
+            reading = self.reading(folder)
+            self.assertEqual(questie.find(folder), Path(folder) / "QuestieDB")
+            store = questie.Store(Path(folder) / "QuestieDB")
+            self.assertEqual((store.version, store.commit, store.flavor), ("9.9.9", "abc123", "Forever"))
+            self.assertEqual(store.row("Item", 60), {1: "Box of Belts"})
+            self.assertEqual(store.row("Npc", 910), {1: "Sapphiron", 4: 63, 5: 63, 6: 3})
+            self.assertEqual(store.row("Npc", 12345), {})
+        self.assertEqual({name: reading[name] for name in ("questiedb", "commit", "date", "asked")},
+                         {"questiedb": "9.9.9", "commit": "abc123", "date": "2026-11-17",
+                          "asked": {"items": 7, "enchants": 3}})
+        items = reading["items"]
+        # the quest of both factions first; the dungeon a quest belongs to is said beside it
+        self.assertEqual(items[HOOD], {"name": "Hood of Tests", "at": [None, 47], "sources": [
+            ["q", "701", "An Errand", "50", "", "t"], ["q", "700", "A Dungeon Errand", "55", "h", "t"]]})
+        # a vendor with the map and the spot QuestieDB has, the faction it serves; no guard; the container last
+        self.assertEqual(items[BELT], {"name": "Belt of Tests", "sources": [
+            ["v", "800", "Deliana", "1455", "43.44", "52.13", "", "a", "t"],
+            ["v", "801", "Mokvar", "1454", "", "", "", "h", "t"], ["x", "60", "Box of Belts", "t"]]})
+        # the boss before the trash, as bosses of the raid; a part of an instance is that instance; the rare
+        self.assertEqual(items[GEM]["sources"], [
+            ["d", "533", "A Frost Wyrm", "", "1", "t"], ["d", "533", "Crypt Guard", "", "1", "t"]])
+        self.assertEqual(reading["instances"], {533: "Naxxramas"})
+        # a boss with no place is one of some raid; a creature with no place is not said
+        self.assertEqual(items[CHARM], {"name": "Charm of Tests", "at": ["boss"],
+                                        "sources": [["m", "910", "Sapphiron", "", "t"]]})
+        self.assertNotIn(SEAL, items, "Karazhan is an instance neither ForeverDB nor phases.py knows")
+        self.assertEqual(items[RELIC], {"name": "Relic of Tests", "at": [47], "sources": [["o", "Old Chest", "", "t"]]})
+        self.assertNotIn(CLOAK, items, "a quest title with a separator of the data files is not written")
+        self.assertEqual(reading["enchants"], {
+            ARCANUM: {"where": "Quest: A Dungeon Errand (Razorfen Kraul)", "at": 47},
+            SIGIL: {"where": "Raid drop: A Frost Wyrm (Naxxramas)", "at": 533},
+            RUNE: {"where": "Raid drop: Sapphiron", "at": "boss"}})
+        # a piece the game showed that ForeverDB does not list is asked for too, an item the game does not
+        # have is not; a value cut in parts reads the same
+        with tempfile.TemporaryDirectory() as folder:
+            db = sourceless_db()
+            del db.items[GEM]
+            again = self.reading(folder, db, {"unlisted": {GEM: {"name": "Gem of Tests"}}, "absent": [HOOD]},
+                                 chunked={("Item", GEM, "2"), ("Npc", 900, "S")})
+        self.assertEqual(again["items"], {item_id: record for item_id, record in items.items() if item_id != HOOD})
+        # a rare, when no boss drops the piece
+        rows = {**QUESTIE_ROWS, ("Item", GEM, "2"): [902]}
+        with tempfile.TemporaryDirectory() as folder:
+            store = questie.Store(questie_addon(Path(folder) / "QuestieDB", rows))
+            rare = questie.collect(sourceless_db(), {}, store)["items"][GEM]
+        self.assertEqual(rare["sources"], [["R", "902", "Lone Stalker", "", "t"]])
+        with tempfile.TemporaryDirectory() as folder:
+            (Path(folder) / questie.TOC).write_text("## Title: Something else\n", encoding="utf-8")
+            with self.assertRaises(ValueError):
+                questie.Store(folder)
+
+    def test_sources_fill_the_data(self):
+        with tempfile.TemporaryDirectory() as folder:
+            reading = self.reading(folder)
+            path = Path(folder) / "sources.json"
+            self.assertEqual(corrections.load_sources(path), {})
+            corrections.save_sources(reading, path)
+            written = path.read_bytes()
+            self.assertNotIn(b"\r", written)
+            self.assertIn(f'\n    "{CHARM}": {{"at": ["boss"], "name": "Charm of Tests", "sources": '
+                          '[["m", "910", "Sapphiron", "", "t"]]}', written.decode("utf-8"), "one item per line")
+            self.assertEqual(corrections.load_sources(path), {**reading, "about": corrections.SOURCES_ABOUT})
+            reading = corrections.load_sources(path)
+
+        db = sourceless_db()
+        db.items[RELIC].update(groups=frozenset("u"), phase=phases.LATER, added=True)   # a piece added from the game
+        db.items[BELT].update(groups=frozenset("v"), sources=[["V", "5", "10", "", "s"]])   # ForeverDB says by now
+        db.enchant_info[RUNE][2] = "Enchanting 300: from a trainer"                        # ... and for this one too
+        report = corrections.fill(db, reading)
+        self.assertIs(db.filled, report)
+        self.assertEqual((report.version, report.date, report.known), ("9.9.9", "2026-11-17", 5))
+        self.assertEqual((report.items, report.added, report.listed, report.enchants, report.instances),
+                         ([HOOD, GEM, CHARM, RELIC], [RELIC], [BELT], [ARCANUM, SIGIL], [533]))
+        self.assertTrue(report.changed)
+        # a quest of the open world and one of a dungeon: to be had before the raids
+        hood = db.items[HOOD]
+        self.assertEqual((hood["groups"], hood["phase"], hood["sources"][0][:3]),
+                         (frozenset("qQ"), phases.PRE_RAID, ["q", "701", "An Errand"]))
+        # the raid ForeverDB's table lacks is named, as a Classic raid: its drops count once every phase does
+        self.assertEqual(db.instances[533], ["Naxxramas", "raid", "", "", "", "", "t"])
+        self.assertEqual((db.items[GEM]["groups"], db.items[GEM]["phase"]), (frozenset("r"), phases.LATER))
+        self.assertEqual((db.items[CHARM]["groups"], db.items[CHARM]["phase"]), (frozenset("w"), phases.LATER))
+        # a piece added from the game gets the source to show, and stays where it showed
+        relic = db.items[RELIC]
+        self.assertEqual((relic["groups"], relic["phase"], relic["sources"]),
+                         (frozenset("u"), phases.LATER, [["o", "Old Chest", "", "t"]]))
+        # what ForeverDB's data says is left alone
+        self.assertEqual(db.items[BELT]["sources"], [["V", "5", "10", "", "s"]])
+        self.assertEqual(db.enchant_info[RUNE][2:], ["Enchanting 300: from a trainer", "f"])
+        self.assertEqual(db.items[SEAL]["sources"], [])
+        # the enchants: a sentence, the label, and the raid the source needs
+        self.assertEqual(db.enchant_info[ARCANUM][2:], ["Quest: A Dungeon Errand (Razorfen Kraul)", "t"])
+        self.assertEqual(db.enchant_info[SIGIL][2:], ["Raid drop: A Frost Wyrm (Naxxramas)", "t"])
+        self.assertEqual((phases.enchant_phase(db, ARCANUM), phases.enchant_phase(db, SIGIL)),
+                         (phases.PRE_RAID, phases.LATER))
+
+        # in the lists: no longer an item of no known source, from the phase of its source
+        db.classes["PRIEST"]["pools"]["head"] = [(HOOD, 60), (GEM, 60), (RELIC, 60)]
+        for item_id, power in ((HOOD, 10), (GEM, 30), (RELIC, 20)):
+            db.gear[item_id] = {"inv": 1, "kind": "4.1", "req": 60, "stats": {45: power}, "dps": 0.0, "armor": 0.0,
+                                "wand": False}
+        ladder = {entry.item_id: entry for entry in ladders.full_ladder(db, "PRIEST", 1, "pve", "head")}
+        self.assertEqual([(entry.item_id, entry.unsourced, entry.phase) for entry in ladder.values()],
+                         [(GEM, False, phases.LATER), (RELIC, True, phases.LATER), (HOOD, False, phases.PRE_RAID)])
+        self.assertTrue(ladder[HOOD].passes(("a", False, False, phases.PRE_RAID)))
+        self.assertFalse(ladder[GEM].passes(("a", False, False, phases.PRE_RAID)))
+        self.assertTrue(ladder[GEM].passes(("a", False, False, phases.LATER)))
+        self.assertFalse(ladder[RELIC].passes(("a", False, False, phases.LATER)))
+        # in the data files: the sources, the raid's name, and what was added to ForeverDB's data
+        kept = ladders.build_all(db)
+        items_file = luaout.items_file(db, kept)
+        self.assertIn(f"\n{HOOD}|Hood of Tests|Qq||q^701^An Errand^50^^t~q^700^A Dungeon Errand^55^h^t\n", items_file)
+        self.assertIn(f"\n{GEM}|Gem of Tests|r||d^533^A Frost Wyrm^^1^t~d^533^Crypt Guard^^1^t\n", items_file)
+        self.assertIn(f"\n{RELIC}|Relic of Tests|u||o^Old Chest^^t\n", items_file)
+        self.assertIn('\n[533]="Naxxramas^raid^^",\n', items_file)
+        for text in (items_file, luaout.lists_file(db, kept), luaout.enchants_file(db, kept)):
+            self.assertIn("4 items and 2 enchants it gives no source have the one read in QuestieDB 9.9.9", text)
+            self.assertIn("the 1 pieces added from the game among them stay flagged u and 9", text)
+        self.assertNotIn("QuestieDB", luaout.lists_file(tiny_db(), ladders.build_all(tiny_db())))
+        # nothing read yet: nothing changes
+        untouched = sourceless_db()
+        self.assertFalse(corrections.fill(untouched, {}).changed)
+        self.assertEqual(untouched.items, sourceless_db().items)
+
+    def test_the_build_imports_questiedb(self):
+        with tempfile.TemporaryDirectory() as folder:
+            addon = questie_addon(Path(folder) / "QuestieDB", QUESTIE_ROWS)
+            kept = Path(folder) / "sources.json"
+            said = []
+            with mock.patch.object(corrections, "SOURCES_FILE", kept), \
+                    mock.patch.object(build, "build", lambda details=False: 0), \
+                    mock.patch.object(fdb, "load", lambda cache, corrected=True: sourceless_db()), \
+                    mock.patch.object(corrections, "load_game", lambda: {}), \
+                    mock.patch.object(build, "HERE", Path(folder) / "_build"), \
+                    mock.patch("builtins.print", lambda *words: said.append(" ".join(map(str, words)))):
+                self.assertEqual(build.main(["--import-questie", str(addon)]), 0)
+                self.assertTrue(kept.exists())
+                self.assertEqual(build.main(["--import-questie", str(Path(folder) / "nowhere")]), 1)
+            self.assertIn("of the 7 items and 3 enchants the data gives no source, it has one for 5 and 3", said[0])
+            self.assertIn("No QuestieDB_Forever.toc", said[-1])
 
 
 if __name__ == "__main__":

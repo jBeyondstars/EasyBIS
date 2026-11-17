@@ -32,6 +32,15 @@ The same capture says which items the game has (corrections/game.json, align):
     classes that already hold that kind of piece, as items with no known
     source, counted only once every phase is: nothing says where they are from.
 A piece ForeverDB comes to list is no longer added: that part retires by itself.
+
+Where an item comes from is laid over the data the same way (corrections/sources.json, fill):
+ForeverDB's data gives no source for many items, the pieces added above among them, and QuestieDB
+knows the quest, the creature or the vendor of a good part of them. `build.py --import-questie`
+reads it (questie.py). An item of ForeverDB's lists that gets a source this way is no longer one
+"with no known source", and counts from the content phase its source needs. A piece added above gets
+the source to show and nothing else: it stays flagged and of the last phase (see fill). The source
+carries the label t, which the addon marks like Classic data: read in another database, not confirmed
+in Forever. A source ForeverDB comes to give is used instead: that part retires by itself too.
 """
 from __future__ import annotations
 
@@ -44,6 +53,7 @@ import phases
 
 FILE = Path(__file__).resolve().parent / "corrections" / "weapons.json"
 GAME_FILE = FILE.with_name("game.json")
+SOURCES_FILE = FILE.with_name("sources.json")
 ABOUT = ("Weapon stats read in the game with the EasyBIS_Capture tool (_build/capture_addon), laid over "
          "ForeverDB's data by _build/corrections.py. Written by `python build.py --import-capture`: do not edit.")
 
@@ -217,7 +227,8 @@ def align(db, game: dict) -> Alignment:
     A piece goes to every pool that already holds its kind of piece (a plate chest to the chest pool of
     the classes that have plate chests in theirs), but for the classes its tooltip leaves out. An item
     the game does not have leaves the pools, and stays in db.items: the search by name (Names.lua) is
-    still ForeverDB's list of names.
+    still ForeverDB's list of names. An added piece is marked "added", and comes with its phase: the last
+    one, until something says where it is from (fill).
     """
     report = Alignment(build=game.get("build", ""))
     db.aligned = report
@@ -258,6 +269,155 @@ def align(db, game: dict) -> Alignment:
         if placed:
             db.items[item_id] = {
                 "name": seen["name"], "groups": frozenset("u"), "flags": "U" if seen.get("unique") else "",
-                "side": "", "twin": None, "limit": seen.get("limit"), "sources": [], "phase": phases.LATER}
+                "side": "", "twin": None, "limit": seen.get("limit"), "sources": [], "phase": phases.LATER,
+                "added": True}
             report.added.append(item_id)
+    return report
+
+
+# -- where the items come from ----------------------------------------------------------------------------
+
+SOURCES_ABOUT = ("Where the items ForeverDB's data gives no source come from, read in QuestieDB "
+                 "(https://github.com/Questie/QuestieDB, GPL-3.0) by _build/questie.py and laid over the data by "
+                 "_build/corrections.py. Sources are written as ForeverDB writes them, with the label t; \"at\" is "
+                 "the instance a quest or a creature belongs to, or \"boss\" for a raid boss QuestieDB does not "
+                 "place. Written by `python build.py --import-questie`: do not edit.")
+SOURCE_LABEL = "t"
+BOSS = "boss"   # questie.BOSS: a boss of some raid
+UNKNOWN_WHERE = "where it comes from isn't known yet"   # ForeverDB's sentence for an enchant with no source
+# Source kind -> the source group it stands for; a quest or a chest of an instance is told apart in _group.
+_GROUP = {"q": "q", "d": "d", "v": "v", "V": "v", "m": "w", "R": "R", "o": "x", "x": "x"}
+
+
+@dataclass
+class Filled:
+    """What fill() did with the sources read in QuestieDB."""
+    version: str = ""                              # the QuestieDB they were read in
+    date: str = ""
+    known: int = 0                                 # items the file holds a source for
+    items: list = field(default_factory=list)      # ids given a source
+    added: list = field(default_factory=list)      # of which pieces added from the game (align)
+    listed: list = field(default_factory=list)     # ids ForeverDB gives a source by now: left to its data
+    enchants: list = field(default_factory=list)   # enchants given a source sentence
+    instances: list = field(default_factory=list)  # Classic instances named for those sources
+
+    @property
+    def changed(self) -> bool:
+        return bool(self.items or self.enchants)
+
+
+def load_sources(path=SOURCES_FILE) -> dict:
+    """{"questiedb", "commit", "date", "asked", "instances": {id: name}, "items": {id: {"name", "sources", "at"}},
+    "enchants": {enchant: {"where", "at"}}}, empty without a file."""
+    path = Path(path)
+    if not path.exists():
+        return {}
+    data = json.loads(path.read_text(encoding="utf-8"))
+    data["items"] = {int(item_id): record for item_id, record in data.get("items", {}).items()}
+    data["instances"] = {int(number): name for number, name in data.get("instances", {}).items()}
+    return data
+
+
+def save_sources(reading: dict, path=SOURCES_FILE) -> None:
+    """One item per line, in id order, so another reading of QuestieDB shows as a short difference."""
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+    def rows(records: dict, key) -> str:
+        return ",\n".join(f'    "{name}": {json.dumps(records[name], ensure_ascii=False, sort_keys=True)}'
+                          for name in sorted(records, key=key))
+
+    head = {name: reading.get(name, "") for name in ("questiedb", "commit", "date", "asked")}
+    instances = {str(number): name for number, name in sorted(reading.get("instances", {}).items())}
+    text = ("{\n" + f'  "about": {json.dumps(SOURCES_ABOUT)},\n'
+            + "".join(f'  "{name}": {json.dumps(value)},\n' for name, value in head.items())
+            + f'  "instances": {json.dumps(instances, ensure_ascii=False)},\n'
+            + '  "enchants": {\n' + rows(reading.get("enchants", {}), lambda enchant: int(enchant[1:])) + "\n  },\n"
+            + '  "items": {\n' + rows(reading.get("items", {}), int) + "\n  }\n}\n")
+    path.write_bytes(text.encode("utf-8"))
+
+
+def _raid(db, source: list, where, name: str):
+    """The raid a source of the file needs, or None: the instance it is said to be in, else what phases.py
+    knows of the source itself."""
+    if where == BOSS:
+        return BOSS   # no raid of that name: phases.raid_phase takes it for a Classic one
+    if isinstance(where, int) and (db.instances.get(where) or ["", ""])[1] == "raid":
+        return phases.RAID_INSTANCES.get(where, phases.NEW_RAID)
+    return phases.source_raid(source, name)
+
+
+def _group(db, source: list, where, raid) -> str:
+    kind = source[0]
+    if kind == "d":
+        return "r" if raid else "d"
+    if kind == "q" and isinstance(where, int):
+        return "Q"   # the quest of a dungeon or a raid
+    if kind == "o" and isinstance(where, int):
+        return "r" if raid else "d"
+    return _GROUP.get(kind, "w")
+
+
+def fill(db, reading: dict) -> Filled:
+    """Give the items and the enchants ForeverDB's data has no source for the one read in QuestieDB; the
+    report is kept as db.filled.
+
+    An item takes the sources, the source groups they stand for (in place of "u") and the phase of the
+    earliest one: a quest of Ahn'Qiraj needs that raid, whether or not phases.py lists the quest. The
+    sources that need no raid go first, as phases.shown_sources orders ForeverDB's. The Classic instances
+    the sources name join db.instances, so the data files can say them.
+
+    A piece added from the game (align) gets the sources to show, and keeps its group "u" and the last
+    phase: it shows where it did, with the items of no known source. ForeverDB's lists leave it out,
+    and QuestieDB's drop tables for such a piece are Classic's: a dungeon set Forever may have
+    replaced, a vendor whose price nothing gives. And align pools it by its kind of armor, for every
+    class when the game's tooltip names none: a list shown by default would offer a rogue's helmet to
+    a warrior. The source says where to look; it does not make the piece a pick.
+    """
+    report = Filled(version=reading.get("questiedb", ""), date=reading.get("date", ""),
+                    known=len(reading.get("items", {})))
+    db.filled = report
+    for number, name in sorted(reading.get("instances", {}).items()):
+        if number not in db.instances:
+            kind = "raid" if number in phases.RAID_INSTANCES else "dungeon"
+            db.instances[number] = [name, kind, "", "", "", "", SOURCE_LABEL]
+            report.instances.append(number)
+
+    for item_id in sorted(reading.get("items", {})):
+        record, item = reading["items"][item_id], db.items.get(item_id)
+        if item is None:
+            continue   # not in the data, and not a piece the lists took from the game
+        if item["sources"] or "u" not in item["groups"]:
+            report.listed.append(item_id)
+            continue
+        places = record.get("at") or [None] * len(record["sources"])
+        found = []
+        for source, where in zip(record["sources"], places):
+            raid = _raid(db, source, where, item["name"])
+            found.append((phases.raid_phase(raid) if raid else phases.PRE_RAID, _group(db, source, where, raid),
+                          list(source)))
+        found.sort(key=lambda entry: entry[0])
+        item["sources"] = [source for _, _, source in found]
+        item["filled"] = True
+        report.items.append(item_id)
+        if item.get("added"):
+            report.added.append(item_id)
+        else:
+            item["groups"] = frozenset(group for _, group, _ in found)
+            item["phase"] = found[0][0]
+
+    for enchant in sorted(reading.get("enchants", {})):
+        record, info = reading["enchants"][enchant], db.enchant_info.get(enchant)
+        if info is None:
+            continue
+        info += [""] * (4 - len(info))
+        if info[2] not in ("", UNKNOWN_WHERE):
+            continue   # ForeverDB says where it is from by now
+        info[2], info[3] = record["where"], SOURCE_LABEL
+        where = record.get("at")
+        if where == BOSS:
+            db.enchant_raids[enchant] = BOSS
+        elif isinstance(where, int) and (db.instances.get(where) or ["", ""])[1] == "raid":
+            db.enchant_raids[enchant] = phases.RAID_INSTANCES.get(where, phases.NEW_RAID)
+        report.enchants.append(enchant)
     return report

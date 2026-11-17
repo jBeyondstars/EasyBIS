@@ -110,7 +110,7 @@ def run(db, all_ladders: dict, read_in_game=frozenset()) -> list[Finding]:
                                     note(LONELY, key, best[-1], True, f"{lead:.0%} ahead of {behind}", phase)
                 # the pieces added from the game, where they show: no known source, every phase
                 added = {entry.item_id for entries in slots.values() for entry in entries
-                         if db.items[entry.item_id].get("phase") is not None}
+                         if db.items[entry.item_id].get("added")}
                 for side in ("a", "h") if added else ():
                     everything = (side, True, False, phases.LATER)
                     for slot, (best, _) in shown_rows(slots, everything).items():

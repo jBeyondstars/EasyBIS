@@ -27,13 +27,18 @@ def site_order(slot: str, ladder: list) -> tuple[list, object]:
     return best[:1] + alternatives, second
 
 
+def site_ladder(db, cls: str, spec: int, mode: str, slot: str) -> list:
+    """The slot's full ladder under the site's rule: its PvE pages leave the PvP-rank rewards out."""
+    return ladders.full_ladder(db, cls, spec, mode, slot, rank_rewards=False)
+
+
 def slot_ladder(db, cls: str, spec: int, mode: str, slot: str) -> list:
     """The slot's full ladder; the two weapon slots are weighed against each other first."""
     if slot in ("main", "off"):
-        main, off = ladders.weapon_lists(ladders.full_ladder(db, cls, spec, mode, "main"),
-                                         ladders.full_ladder(db, cls, spec, mode, "off"))
+        main, off = ladders.weapon_lists(site_ladder(db, cls, spec, mode, "main"),
+                                         site_ladder(db, cls, spec, mode, "off"))
         return main if slot == "main" else off
-    return ladders.full_ladder(db, cls, spec, mode, slot)
+    return site_ladder(db, cls, spec, mode, slot)
 
 
 def same_pick(ours, site_id: int, scores: dict) -> bool:
@@ -53,7 +58,7 @@ def compare(db, page: dict) -> list[str]:
         if site == "absent":
             continue
         ladder = slot_ladder(db, cls, spec, mode, slot)
-        scores = {entry.item_id: entry.score for entry in ladders.full_ladder(db, cls, spec, mode, slot)}
+        scores = {entry.item_id: entry.score for entry in site_ladder(db, cls, spec, mode, slot)}
         if site is None:
             if ladder:
                 problems.append(f"{slot}: the site shows none, we list {ladder[0].item_id}")

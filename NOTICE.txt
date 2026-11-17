@@ -12,6 +12,9 @@ https://github.com/jBeyondstars/EasyBIS
    (https://foreverdb.net/addon): its stat weights, gear pools, item stats,
    item sources and enchant lists. The best-in-slot ladders are ForeverDB's:
    the generator ranks ForeverDB's gear pools with ForeverDB's own scoring.
+   Unlike the foreverdb.net/bis pages, the PvE lists keep the PvP-rank
+   rewards, ranked on their stats like any other item; the addon leaves the
+   PvP rewards out of its lists until its "PvP rewards" option is switched on.
    Two things are changed from ForeverDB's data, from what the game itself
    shows (read with the developer's tool in _build/capture_addon); the first
    lines of Data/Lists.lua say how many of each:
@@ -20,6 +23,10 @@ https://github.com/jBeyondstars/EasyBIS
      - items the game does not have are left out of the lists, and pieces it
        has that ForeverDB does not list are added, as items with no known
        source.
+   One thing is added to ForeverDB's data: where an item or an enchant
+   comes from, for the ones its data gives no source, read in QuestieDB
+   (section 4). Those sources carry the label t in Data/Items.lua and
+   Data/Enchants.lua, and the addon marks them as not confirmed in Forever.
    Those changes are Easy BIS's, not ForeverDB's (_build/corrections.py).
    Copyright (C) 2026 ForeverDB.net. GPL-3.0 with an attribution term
    (GPL-3.0 section 7(b)). If you reuse these files or data taken from them:
@@ -42,13 +49,23 @@ https://github.com/jBeyondstars/EasyBIS
    of Warcraft Classic 1.12 world database, Copyright (C) the CMaNGOS project
    and its contributors, GPL-3.0.
 
-4. World of Warcraft
+4. QuestieDB
+   The sources labelled t (the quest, the creature, the vendor, the chest or
+   the container an item comes from, and the names of the Classic raids) are
+   read in QuestieDB (https://github.com/Questie/QuestieDB), the database of
+   the Questie addon, by _build/questie.py, and kept in
+   _build/corrections/sources.json. Copyright (C) the Questie team and its
+   contributors, GPL-3.0 as its LICENSE.md says, with the reservation it
+   makes for contributions older than that licence. Nothing of QuestieDB's
+   code is part of Easy BIS, and Easy BIS does not need Questie to run.
+
+5. World of Warcraft
    World of Warcraft, WoW Forever and their names, places and icons are
    trademarks or property of Blizzard Entertainment, Inc. Item names and
    numbers come from the game. Easy BIS is not affiliated with or endorsed by
-   Blizzard Entertainment or by ForeverDB.net.
+   Blizzard Entertainment, by ForeverDB.net or by the Questie team.
 
-5. The logo
+6. The logo
    The logo (Media/*.tga, made from _build/art/*) was made for Easy BIS by its
    author with an image generator, and is part of Easy BIS under the same
    licence.

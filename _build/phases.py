@@ -37,8 +37,10 @@ CURRENT = PRE_RAID
 
 PHASES = (PRE_RAID, *sorted(set(RAID_PHASE.values())), LATER)
 
-# ForeverDB's instance id -> raid. A raid instance missing here is taken for the newest Forever phase.
-RAID_INSTANCES = {249: "onyxia"}
+# The game's instance id -> raid. A raid instance missing here is taken for the newest Forever phase.
+# ForeverDB's data names Onyxia's Lair only; the Classic raids are named by the sources read in QuestieDB
+# (questie.py): Molten Core, Blackwing Lair, Zul'Gurub, the two Ahn'Qiraj, Naxxramas.
+RAID_INSTANCES = {249: "onyxia", 409: "mc", 469: "bwl", 309: "zg", 509: "aq", 531: "aq", 533: "naxx"}
 NEW_RAID = "new"
 
 
@@ -183,7 +185,8 @@ def item_phase(item: dict) -> int:
     left out are ordinary ones (world drops, containers, vendors).
 
     A piece that is not of that list, added because the game has it (corrections.align), comes with its
-    phase: nothing says where it is from, so it counts only once every phase does.
+    phase: nothing says where it is from, so it counts only once every phase does. So does an item of
+    the list whose source was read in QuestieDB (corrections.fill): the phase that source needs.
     """
     if item.get("phase") is not None:
         return item["phase"]
@@ -205,9 +208,10 @@ def enchant_phase(db, enchant: str) -> int:
     """The phase of an enchant of ForeverDB's list (fdb.Database.enchant_info).
 
     Besides RAID_ENCHANTS, an enchant whose source text says its recipe "drops
-    in" a raid instance needs that raid.
+    in" a raid instance needs that raid, and so does one whose source, read in
+    QuestieDB, is in a raid (corrections.fill, db.enchant_raids).
     """
-    raid = RAID_ENCHANTS.get(enchant)
+    raid = RAID_ENCHANTS.get(enchant) or getattr(db, "enchant_raids", {}).get(enchant)
     if raid is None:
         where = (db.enchant_info.get(enchant) or ["", "", ""])[2]
         dropped = re.search(r"drops in ([^;]+)", where)

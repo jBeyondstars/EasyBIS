@@ -20,7 +20,7 @@ ns.PAIRED = { finger = true, trinket = true }
 
 ns.LISTS = { "pve", "pvp" }
 
--- Picks shown after the best one(s) of a slot.
+-- Picks shown after the best one(s) of a slot, until the player asks for more (ns.Alternatives, Core.lua).
 ns.ALTERNATIVES = 2
 
 local CLASS_NAMES = {

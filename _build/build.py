@@ -10,6 +10,10 @@
                                        compare what /ebiscapture read with the data, stat by stat (no build)
     python build.py --import-capture [FILE]
                                        keep what the capture read (corrections.py), then build
+    python build.py --import-questie [FOLDER]
+                                       keep the sources QuestieDB has for the items the data gives none
+                                       (questie.py), then build; FOLDER defaults to the QuestieDB addon
+                                       installed next to Easy BIS
 
 The local copy is _build/cache/ForeverDB. Data from ForeverDB.net
 (https://foreverdb.net), GPL-3.0 with an attribution term: see NOTICE.txt.
@@ -30,6 +34,7 @@ import fdb  # noqa: E402
 import ladders  # noqa: E402
 import luaout  # noqa: E402
 import phases  # noqa: E402
+import questie  # noqa: E402
 import source  # noqa: E402
 
 CACHE = HERE / "cache" / "ForeverDB"
@@ -97,6 +102,20 @@ def build(cache_dir: Path = CACHE, out_dir: Path = OUT, details: bool = False) -
             print(f"  The data is of game build {db.meta['build']}, later than that reading: read the game again "
                   "(/ebiscapture all).")
 
+    filled = db.filled
+    if not filled or not filled.known:
+        print("Sources: none read in QuestieDB yet. The items the data gives no source stay without one "
+              "(--import-questie).")
+    else:
+        shown = luaout.shown_ids(all_ladders)
+        unknown = sum(1 for item_id in shown if item_id in db.items and not db.items[item_id]["sources"])
+        print(f"Sources (QuestieDB {filled.version}, read {filled.date}): {len(filled.items)} items the data gives no "
+              f"source have one, {len(filled.added)} of them pieces added from the game (still shown with the items "
+              f"of no known source), and {len(filled.enchants)} enchants; {len(set(filled.items) & shown)} of those "
+              f"items are in the lists, where {unknown} still have no source at all"
+              + (f"; {len(filled.listed)} more have a source in ForeverDB's data by now" if filled.listed else "")
+              + ".")
+
     findings = audit.run(db, all_ladders, read_in_game=frozenset(observed))
     suspicious = audit.suspicious(findings)
     print(f"Audit: {audit.summary(findings)}." + ("" if details or not findings else " Details: build.py --audit"))
@@ -161,6 +180,9 @@ def main(argv=None) -> int:
                         help="compare what /ebiscapture read with the data, stat by stat, and stop")
     parser.add_argument("--import-capture", nargs="?", const="", metavar="FILE",
                         help="keep what /ebiscapture read; FILE defaults to the newest EasyBIS_Capture.lua of WTF")
+    parser.add_argument("--import-questie", nargs="?", const="", metavar="FOLDER",
+                        help="keep the sources QuestieDB has for the items the data gives none; FOLDER defaults "
+                             "to the QuestieDB addon installed next to Easy BIS")
     args = parser.parse_args(argv)
 
     if args.addon:
@@ -226,6 +248,22 @@ def main(argv=None) -> int:
             print(f"The capture holds {result.shown} of the {result.listed} items of its list, in {result.locale}: not "
                   f"enough to say which items the game has ({capture.COMPLETE:.0%} in English are needed). "
                   f"{corrections.GAME_FILE.name} is left as it is.")
+    if args.import_questie is not None:
+        folder = Path(args.import_questie) if args.import_questie else questie.find(ADDONS)
+        if folder is None or not (folder / questie.TOC).exists():
+            print(f"No {questie.TOC} in {folder or ADDONS / questie.ADDON}: install the QuestieDB addon, or name "
+                  "its folder.")
+            return 1
+        try:
+            reading = questie.collect(fdb.load(CACHE, corrected=False), corrections.load_game(), questie.Store(folder))
+        except ValueError as error:
+            print(f"{folder}: {error}")
+            return 1
+        corrections.save_sources(reading, corrections.SOURCES_FILE)
+        print(f"QuestieDB {reading['questiedb']} ({folder}): of the {reading['asked']['items']} items and "
+              f"{reading['asked']['enchants']} enchants the data gives no source, it has one for "
+              f"{len(reading['items'])} and {len(reading['enchants'])}. "
+              f"Kept in {corrections.SOURCES_FILE.relative_to(HERE.parent)}.")
     suspicious = build(details=args.audit)
     return 1 if args.audit and suspicious else 0
 

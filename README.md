@@ -27,6 +27,7 @@ The addon's data (`Data/*.lua`) is generated from ForeverDB's addon data by the 
 python -I _build/build.py            # rebuild Data/*.lua from the cached ForeverDB files
 python -I _build/build.py --check    # is newer ForeverDB data out?
 python -I _build/build.py --update   # download what changed (SHA-256 checked) and rebuild
+python -I _build/build.py --import-questie   # read in the QuestieDB addon the sources ForeverDB's data lacks
 ```
 
 Offline tests (they need `lupa`, and `Pillow` for the textures):
@@ -41,6 +42,6 @@ python -P _build/tests/test_ui.py
 
 ## Licence and credits
 
-**Data from [ForeverDB.net](https://foreverdb.net).** Easy BIS is free software under the GNU GPL, version 3 (`LICENSE.txt`). `NOTICE.txt` says where each part comes from and what reusing it requires.
+**Data from [ForeverDB.net](https://foreverdb.net).** The sources ForeverDB's data lacks come from [QuestieDB](https://github.com/Questie/QuestieDB). Easy BIS is free software under the GNU GPL, version 3 (`LICENSE.txt`). `NOTICE.txt` says where each part comes from and what reusing it requires.
 
-Easy BIS is not affiliated with Blizzard Entertainment or ForeverDB.net.
+Easy BIS is not affiliated with Blizzard Entertainment, ForeverDB.net or the Questie team.

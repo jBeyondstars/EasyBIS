@@ -24,7 +24,7 @@ import ladders  # noqa: E402
 import phases  # noqa: E402
 import test_addon  # noqa: E402
 from test_addon import (  # noqa: E402
-    ATIESH, EVERYTHING, SAGEBLADE, VAULTED_SECRETS, Game, default_filter, strip_colors)
+    ATIESH, EVERYTHING, MAGEBLADE, VAULTED_SECRETS, WITH_PVP, Game, default_filter, strip_colors)
 
 lupa = test_addon.lupa
 
@@ -82,9 +82,10 @@ class WindowTest(unittest.TestCase):
     def gap(score: float, reference: float) -> int:
         return math.floor((score - reference) / reference * 100 + 0.5)
 
-    def reference_rows(self, token, spec, mode, flt=None, only_slot=None, alts=True) -> list[tuple]:
+    def reference_rows(self, token, spec, mode, flt=None, only_slot=None, alts=True,
+                       count=ladders.ALTERNATIVES) -> list[tuple]:
         """(kind, id, slot, bis, gap) for every row the window should list, from the generator's rules.
-        alts: False with the alternatives switched off."""
+        alts: False with the alternatives switched off. count: the alternatives a slot lists."""
         flt = flt or default_filter()
         side = flt[0]
         visible = {slot: [e for e in self.kept[token][spec][mode][slot] if e.passes(flt)]
@@ -93,7 +94,7 @@ class WindowTest(unittest.TestCase):
         one = [e for e in visible["main"] if not e.two_hand]
         two_hand = bool(two) and (not one or two[0].stored >= one[0].stored
                                   + (visible["off"][0].stored if visible["off"] else 0))
-        shown = 1 + ladders.ALTERNATIVES
+        shown = 1 + count
         other = {slot: entries[:shown] for slot, entries in
                  zip(("main", "off"), ladders.other_weapons(visible["main"], visible["off"]))}
         visible["main"], visible["off"] = ladders.weapon_lists(visible["main"], visible["off"])
@@ -110,7 +111,7 @@ class WindowTest(unittest.TestCase):
         for slot, _ in ladders.SLOTS:
             if only_slot and slot != only_slot:
                 continue
-            best, alternatives = ladders.picks(slot, visible[slot])
+            best, alternatives = ladders.picks(slot, visible[slot], count)
             for entry in best:
                 rows.append(("item", entry.shown(side), slot, True, 0))
             for entry in alternatives if alts else []:
@@ -346,9 +347,9 @@ class WindowTest(unittest.TestCase):
         self.assertEqual(frames[position - 1].header.text, "Off hand")
 
     def test_both_weapon_styles_are_listed(self):
-        game = Game(cls="MAGE", saved=FIRE_MAGE)
-        game.stub.itemNames[SAGEBLADE] = "Sageblade"
-        game.stub.itemTypes[SAGEBLADE] = game.lua.table("One-Handed Swords", "INVTYPE_WEAPON")
+        game = Game(cls="MAGE", saved=FIRE_MAGE + " " + WITH_PVP)   # the Mageblade is a PvP reward
+        game.stub.itemNames[MAGEBLADE] = "Grand Marshal's Mageblade"
+        game.stub.itemTypes[MAGEBLADE] = game.lua.table("One-Handed Swords", "INVTYPE_WEAPON")
         game.ns.Browser.Open()
         window = game.ns.Browser.window
 
@@ -358,7 +359,7 @@ class WindowTest(unittest.TestCase):
         # before the raids a one-hander and an off hand are best: the two-handers follow, under a note
         main = rows_of("main")
         self.assertEqual([frame.data.kind for frame in main], ["item"] * 3 + ["note"] + ["item"] * 3)
-        self.assertEqual(main[0].data.id, SAGEBLADE)
+        self.assertEqual(main[0].data.id, MAGEBLADE)
         self.assertEqual(main[0].sub.text, "One-Hand - One-Handed Swords")
         self.assertEqual(main[3].note.text, "Or a two-hander")
         self.assertFalse(main[3].icon.shown)
@@ -376,7 +377,8 @@ class WindowTest(unittest.TestCase):
         self.assertEqual(main[0].data.id, ATIESH)
         self.assertEqual([frame.data.kind for frame in main], ["item"] * 3 + ["note"] + ["item"] * 3)
         self.assertEqual(main[3].note.text, "Or a one-hander with an off hand")
-        self.assertEqual(main[4].data.id, VAULTED_SECRETS, "the best one-hander once every raid counts")
+        self.assertEqual(main[4].data.id, MAGEBLADE, "the best one-hander once every raid counts")
+        self.assertEqual(main[5].data.id, VAULTED_SECRETS, "and the next one")
         self.assertEqual(off[0].note.text, "With a one-hander, in place of the two-hander")
         self.assertEqual([frame.data.kind for frame in off], ["note"] + ["item"] * 3)
         self.assertTrue(all(frame.data.other and not frame.data.bis for frame in off[1:]))
@@ -384,7 +386,7 @@ class WindowTest(unittest.TestCase):
         self.assertEqual(main[4].data.gap, off[1].data.gap)
         self.assertLess(main[4].data.gap, 0)
         self.assertEqual(self.shown_rows(game),
-                         self.reference_rows("MAGE", 2, "pve", default_filter(phase=EVERYTHING)))
+                         self.reference_rows("MAGE", 2, "pve", default_filter(phase=EVERYTHING, pvp=True)))
 
         # a source filter keeps the items and drops the notes
         game.ns.Browser.state.source = "quest"
@@ -662,21 +664,60 @@ class WindowTest(unittest.TestCase):
         self.assertEqual(detail(strength), "Formula, source unknown")
         kit = info("i15564")
         self.assertEqual((kind(kit), detail(kit)), ("Leatherworking (225)", "Taught by trainers"))
+        scroll = info("i273593")   # a scroll new in Forever: neither ForeverDB nor QuestieDB says where it is from
+        self.assertEqual((kind(scroll), detail(scroll)), ("Item to apply", "Unknown source"))
+        self.assertEqual(game.ns.Enchants.Category(scroll), "unknown")
+        self.assertEqual(game.ns.Enchants.Where(scroll), "where it comes from isn't known yet")
+        self.assertEqual((game.ns.Enchants.Category(cloak), game.ns.Enchants.Category(kit)), ("crafted", "crafted"))
+        self.assertEqual(game.ns.Enchants.Where(kit), "Leatherworking 225: from a trainer")
+        # the items to apply that a quest or a boss gives: the source read in QuestieDB, said as an item's is
+        arcanum = info("i18331")
+        self.assertEqual((kind(arcanum), detail(arcanum), arcanum.origin),
+                         ("Quest", "Libram of Protection - Dire Maul", "t"))
+        self.assertEqual(game.ns.Enchants.Category(arcanum), "quest")
+        self.assertEqual(game.ns.Enchants.Where(arcanum), "Source: Quest - Libram of Protection - Dire Maul")
+        voracity = info("i11645")
+        self.assertEqual((kind(voracity), detail(voracity)), ("Quest", "Libram of Voracity"))
         scourge = info("i23548")
-        self.assertEqual((kind(scourge), detail(scourge)), ("Item to apply", "Unknown source"))
+        self.assertEqual((kind(scourge), detail(scourge)), ("Raid", "Sapphiron"))
+        self.assertEqual(game.ns.Sources.Icon(game.ns.Enchants.Category(scourge)), game.ns.Sources.Icon("raid"))
         # every sentence of the data is one this reads
         for enchant, fields in self.db.enchant_info.items():
             record = info(enchant)
             if record is None:
                 continue   # not among the enchants the addon lists
-            read = record.trainer or record.recipe or fields[2] == "where it comes from isn't known yet"
+            read = (record.trainer or record.recipe or record.category
+                    or fields[2] == "where it comes from isn't known yet")
             self.assertTrue(read, f"{enchant}: {fields[2]!r} is a sentence Enchants.lua does not read")
+            if fields[3] == "t":
+                self.assertIsNotNone(record.category, f"{enchant}: {fields[2]!r}")
+                self.assertNotEqual(game.ns.Sources.CategoryName(record.category), "SRC_" + record.category)
+        # the row of the window: the quest's picture, its name, and the sign of a source not confirmed in Forever
+        import luaout
+        cls, spec = next((cls, spec) for cls in test_addon.CLASSES for spec in self.kept[cls]
+                         if luaout.best_enchants(luaout.enchant_ladders(self.db, cls, spec, self.kept[cls][spec]),
+                                                 phases.CURRENT).get("head", [""])[0] == "i18331")
+        shown = self.open(cls=cls, saved=f"EasyBISCharDB = {{ class = '{cls}', spec = {spec}, list = 'pve' }}")
+        shown.stub.run(shown.ns.Browser.window.tabs.buttons[2], "OnClick")
+        row = {frame.data.enchant.id: frame for frame in self.frames(shown)}["i18331"]
+        self.assertEqual((strip_colors(row.kind.text), row.detail.text), ("Quest *", "Libram of Protection - Dire Maul"))
+        self.assertEqual(row.sourceIcon.texture, "Interface\\GossipFrame\\AvailableQuestIcon")
+        shown.stub.run(row, "OnEnter")
+        lines = [strip_colors(line[1]) for line in shown.lua.globals().GameTooltip.lines.values()]
+        self.assertIn("Source: Quest - Libram of Protection - Dire Maul", lines)
+        self.assertIn("* Source from Questie's database, not confirmed in Forever.", lines)
 
         french = Game(locale="frFR")
         cloak = french.ns.Enchants.Info("s1219587")
         self.assertEqual(french.ns.Enchants.Kind(cloak), "Enchantement (300)")
         self.assertEqual(french.ns.Enchants.Detail(cloak),
                          "Formule : en vente chez Alynsia (Redridge Mountains), ou un parchemin")
+        arcanum = french.ns.Enchants.Info("i18331")
+        self.assertEqual((french.ns.Enchants.Kind(arcanum), french.ns.Enchants.Detail(arcanum)),
+                         ("Quête", "Libram of Protection - Dire Maul"))
+        self.assertEqual(french.ns.Enchants.Where(arcanum), "Provenance : Quête - Libram of Protection - Dire Maul")
+        self.assertEqual(french.ns.Sources.OriginRemark("t"),
+                         "* Provenance d'après la base de données de Questie, non confirmée dans Forever.")
 
     # -- options ------------------------------------------------------------------------------
 
@@ -709,7 +750,8 @@ class WindowTest(unittest.TestCase):
         menu = game.stub.menu
         self.assertEqual(texts(menu), ["Options", "BIS lines in item tooltips", "Tooltips show my class only",
                                        "Tooltips show alternatives too", "Items with no known source",
-                                       "Only items seen in Forever", "Compact rows", "Minimap button"])
+                                       "Only items seen in Forever", "PvP rewards", "Alternatives per slot",
+                                       "Compact rows", "Minimap button"])
         tooltips = find(menu, "BIS lines")
         self.assertTrue(tooltips.selected())
         tooltips.pick()
@@ -722,6 +764,30 @@ class WindowTest(unittest.TestCase):
         self.assertTrue(unsourced.selected())
         self.assertTrue(game.ns.db.unsourced)
         self.assertEqual(self.shown_rows(game), self.reference_rows("SHAMAN", 2, "pvp", default_filter(unsourced=True)))
+        # the PvP rewards are left out until the box is ticked; the rows follow at once
+        rewards = find(menu, "PvP rewards")
+        self.assertFalse(rewards.selected())
+        rewards.pick()
+        self.assertTrue(rewards.selected())
+        self.assertTrue(game.ns.db.pvpRewards)
+        with_them = self.reference_rows("SHAMAN", 2, "pvp", default_filter(unsourced=True, pvp=True))
+        self.assertEqual(self.shown_rows(game), with_them)
+        self.assertNotEqual(with_them, self.reference_rows("SHAMAN", 2, "pvp", default_filter(unsourced=True)))
+        # how many alternatives a slot lists: a submenu, from two to six, the rows following at once
+        counts = find(menu, "Alternatives per slot")
+        self.assertEqual(counts.kind, "button")
+        self.assertEqual(texts(counts), ["2", "3", "4", "5", "6"])
+        self.assertEqual([bool(item.selected()) for item in counts["items"].values()], [True, False, False, False, False])
+        find(counts, "5").pick()
+        self.assertEqual(game.ns.db.altCount, 5)
+        self.assertTrue(find(counts, "5").selected())
+        self.assertFalse(find(counts, "2").selected())
+        five = self.reference_rows("SHAMAN", 2, "pvp", default_filter(unsourced=True, pvp=True), count=5)
+        self.assertEqual(self.shown_rows(game), five)
+        self.assertGreater(len(five), len(with_them))
+        french = Game(locale="frFR")
+        self.assertEqual((french.ns.L.OPT_pvpRewards, french.ns.L.OPT_ALT_COUNT),
+                         ("Récompenses JcJ", "Alternatives par emplacement"))
 
     def test_minimap_button(self):
         game = Game()
@@ -772,6 +838,14 @@ class WindowTest(unittest.TestCase):
         self.assertEqual(game.ns.Sources.OriginMark("k"), "*")
         self.assertEqual(game.ns.Sources.OriginRemark("k"), "* Source from Classic's data, not confirmed in Forever.")
         self.assertEqual((game.ns.Sources.OriginMark("s"), game.ns.Sources.OriginRemark("s")), ("", None))
+        # a source read in QuestieDB wears the sign Classic's data does, and says where it is from
+        self.assertEqual(game.ns.Sources.OriginName("t"), "Questie's data")
+        self.assertEqual(game.ns.Sources.OriginMark("t"), "*")
+        self.assertEqual(game.ns.Sources.OriginRemark("t"), "* Source from Questie's database, not confirmed in Forever.")
+        sash = describe(226772)   # a set piece sold in Ironforge and in Orgrimmar: the vendor of the player's side
+        self.assertEqual((sash.category, sash.detail, sash.zone, sash.origin), ("vendor", "Deliana", "Map 1455", "t"))
+        sash = Game(faction="Horde").ns.Sources.Describe(226772)
+        self.assertEqual((sash.category, sash.detail, sash.zone), ("vendor", "Mokvar", "Map 1454"))
         # a picture per category; a crafted item gets its profession's
         self.assertEqual(game.ns.Sources.Icon("vendor"), ("Interface\\GossipFrame\\VendorGossipIcon", False))
         self.assertEqual(game.ns.Sources.Icon(tunic.category, tunic.profession),
@@ -831,7 +905,8 @@ class WindowTest(unittest.TestCase):
         self.assertFalse(row.data.bis)
         self.assertEqual(strip_colors(row.rank.text), "Tied")
         self.assertEqual(row.bar.width, BAR)
-        mine =[right for left, right in game.lines(item_id) if token.capitalize() in left]
+        name = self.db.classes[token]["specs"][spec]["name"]   # another spec of the class may want it less
+        mine = [right for left, right in game.lines(item_id) if token.capitalize() in left and name in left]
         self.assertTrue(mine and all("BIS" in right for right in mine), "a tie is as good as the best in tooltips")
 
     def test_tooltip_opens_beside_the_window(self):

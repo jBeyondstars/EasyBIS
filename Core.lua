@@ -24,7 +24,8 @@ end
 
 ---------------------------------------------------------------------------
 -- Internal callbacks
---   OPTION_CHANGED(key, value)   an option was switched, or the phase ("phase") was changed
+--   OPTION_CHANGED(key, value)   an option was switched, or the phase ("phase") or the number of
+--                                alternatives ("altCount") was changed
 --   CUSTOM_CHANGED()             an item was added to a list by hand, or taken out (Custom.lua)
 --   LOGIN()                      the character is in the world
 ---------------------------------------------------------------------------
@@ -52,6 +53,8 @@ local DEFAULTS = {
     alternatives = true,   -- tooltips: the alternatives too, not only the best picks
     unsourced = false,     -- count the items with no known source
     seenOnly = false,      -- count only the items ForeverDB players have seen in Forever
+    pvpRewards = false,    -- count the PvP rewards: PvP ranks, honor, battlegrounds
+    altCount = 2,          -- alternatives listed after the best pick(s) of a slot (ns.Alternatives)
     minimap = true,        -- the button on the minimap
     minimapAngle = 215,    -- where it sits around the minimap, in degrees
     lists = { pve = true, pvp = true }, -- the lists tooltips read
@@ -102,6 +105,27 @@ function ns:ListShown(list)
     return self.db.lists[list] ~= false
 end
 
+-- How many alternatives a slot lists after its best pick(s): from ns.ALTERNATIVES to what the data files
+-- keep of a ladder (Data\Meta.lua).
+function ns.MaxAlternatives()
+    local kept = ns.data and ns.data.meta and tonumber(ns.data.meta.alternatives)
+    return math.max(ns.ALTERNATIVES, kept or ns.ALTERNATIVES)
+end
+
+function ns.Alternatives()
+    local count = math.floor(tonumber(ns.db.altCount) or ns.ALTERNATIVES)
+    return math.max(ns.ALTERNATIVES, math.min(count, ns.MaxAlternatives()))
+end
+
+-- A number out of the range is brought back into it.
+function ns:SetAlternatives(count)
+    count = math.floor(tonumber(count) or ns.ALTERNATIVES)
+    count = math.max(ns.ALTERNATIVES, math.min(count, ns.MaxAlternatives()))
+    if count == ns.Alternatives() and self.db.altCount == count then return end
+    self.db.altCount = count
+    self:Fire("OPTION_CHANGED", "altCount", count)
+end
+
 ---------------------------------------------------------------------------
 -- The player
 ---------------------------------------------------------------------------
@@ -144,9 +168,14 @@ function ns.Filter()
         side = ns.PlayerSide(),
         unsourced = ns:GetOption("unsourced"),
         seenOnly = ns:GetOption("seenOnly"),
+        pvpRewards = ns:GetOption("pvpRewards"),
         phase = ns.Phase(),
+        alternatives = ns.Alternatives(),
     }
 end
+
+-- The options (and the phase) that change what the lists hold: OPTION_CHANGED keys.
+ns.FILTER_OPTIONS = { unsourced = true, seenOnly = true, pvpRewards = true, phase = true, altCount = true }
 
 ---------------------------------------------------------------------------
 -- Startup

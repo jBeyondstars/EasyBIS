@@ -7,8 +7,10 @@ and Auto.lua decode. ForeverDB's data is GPL-3.0 with an attribution term:
 
 load() lays what was read in the game over ForeverDB's data (corrections.py):
 the stats its data lacks, the pieces its lists leave out, and it drops the
-items the game does not have. So the build and the tests rank the same
-database; load(..., corrected=False) is ForeverDB's data as published.
+items the game does not have. Then it gives the items that have no source in
+the data the one read in QuestieDB (corrections.fill). So the build and the
+tests rank the same database; load(..., corrected=False) is ForeverDB's data
+as published.
 """
 from __future__ import annotations
 
@@ -54,15 +56,18 @@ class Database:
         self.gear = {}          # id -> {"inv", "kind": "item class.subclass", "req": required level,
         #                                "stats": {stat: value}, "dps", "armor", "wand"}
         self.items = {}         # id -> {"name", "groups", "flags", "side", "twin", "limit", "sources"}; a piece
-        #                         corrections.align added also has "phase"
+        #                         corrections.align added also has "added" and "phase", an item corrections.fill
+        #                         gave a source "filled", and "phase" when it is one of ForeverDB's lists
         self.extra = {}         # id -> {"hit": n, "set": {stat: value}}
         self.dual_wield = {}    # token -> level from which the class dual wields (99: never)
         self.instances = {}     # id -> fields of ForeverDB's gfInst
         self.vendors = {}       # npc id -> [name, uiMap, x, y]
         self.enchants = {}      # token -> {(spec, profile): {slot key: [(enchant id, level)]}}
         self.enchant_info = {}  # enchant id ("s<spell>" or "i<item>") -> [name, effect, where, label]
+        self.enchant_raids = {}  # enchant id -> the raid its source needs, for the ones corrections.fill placed
         self.corrected = None   # what corrections.apply changed (a corrections.Report), None for the published data
         self.aligned = None     # what corrections.align changed (a corrections.Alignment), None for the published data
+        self.filled = None      # what corrections.fill changed (a corrections.Filled), None for the published data
 
 
 def load(data_dir, corrected: bool = True) -> Database:
@@ -70,6 +75,7 @@ def load(data_dir, corrected: bool = True) -> Database:
     if corrected:
         corrections.apply(db, corrections.load())
         corrections.align(db, corrections.load_game())
+        corrections.fill(db, corrections.load_sources())
     return db
 
 

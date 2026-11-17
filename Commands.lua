@@ -5,7 +5,8 @@ local L = ns.L
 /easybis (or /ebis):
   (nothing)                              open or close the window
   help                                   list the commands
-  tooltip, class, alt, unsourced, seen, minimap   switch an option
+  tooltip, class, alt, unsourced, seen, pvp, minimap   switch an option
+  alternatives [2-6]                     how many alternatives a slot lists
   phase [0, 1 or all]                    the content phase the lists stop at
   item [link or ID]                      say who wants an item
   list [1-3] [pvp]                       print the list of one of the player's specs
@@ -19,6 +20,7 @@ local OPTIONS = {
     alt = "alternatives",
     unsourced = "unsourced",
     seen = "seenOnly",
+    pvp = "pvpRewards",
     minimap = "minimap",
 }
 
@@ -30,7 +32,7 @@ end
 local function Help()
     ns:Print(L.HELP_HEADER:format(ns.version))
     for _, key in ipairs({ "HELP_WINDOW", "HELP_TOOLTIP", "HELP_CLASS", "HELP_ALT", "HELP_UNSOURCED", "HELP_SEEN",
-        "HELP_MINIMAP", "HELP_PHASE", "HELP_ITEM", "HELP_LIST", "HELP_ADD", "HELP_REMOVE" }) do
+        "HELP_PVP", "HELP_ALT_COUNT", "HELP_MINIMAP", "HELP_PHASE", "HELP_ITEM", "HELP_LIST", "HELP_ADD", "HELP_REMOVE" }) do
         ns:Print(L[key])
     end
     ns:Print(L.CREDIT)
@@ -41,6 +43,12 @@ local function PhaseCommand(rest)
     local wanted = rest:lower() == "all" and 9 or tonumber(rest)
     if wanted then ns:SetPhase(wanted) end
     ns:Print(L.PHASE_STATE:format(ns.PhaseName(ns.Phase())))
+end
+
+-- A number sets how many alternatives a slot lists; anything else only says how many it lists now.
+local function AlternativesCommand(rest)
+    if tonumber(rest) then ns:SetAlternatives(tonumber(rest)) end
+    ns:Print(L.ALT_COUNT_STATE:format(ns.Alternatives()))
 end
 
 local function ItemCommand(rest)
@@ -140,6 +148,8 @@ SlashCmdList.EASYBIS = function(message)
         Toggle(OPTIONS[command])
     elseif command == "phase" then
         PhaseCommand(rest)
+    elseif command == "alternatives" then
+        AlternativesCommand(rest)
     elseif command == "item" then
         ItemCommand(rest)
     elseif command == "list" then

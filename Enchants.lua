@@ -9,9 +9,14 @@ The best enchants, armor kits and scopes per spec (Data\Enchants.lua).
                                      none is given)
   Enchants.Info(id)                  { id, kind = "spell"|"item", number, name, effect, where, origin } or nil,
                                      plus what the "where" sentence says: profession, skill, recipe, seller,
-                                     drop, trainer, scroll
-  Enchants.Kind(info)                "Enchanting (300)"; "Enchant" or "Item to apply" when no profession is named
-  Enchants.Detail(info)              "Formula sold by Alynsia (Redridge Mountains), or a scroll"
+                                     drop, trainer, scroll; or category, detail, place for an item to apply
+                                     that a quest, a boss or a vendor gives
+  Enchants.Kind(info)                "Enchanting (300)"; "Quest"; "Enchant" or "Item to apply" when the
+                                     sentence names neither a profession nor a source
+  Enchants.Detail(info)              "Formula sold by Alynsia (Redridge Mountains), or a scroll";
+                                     "Libram of Protection - Dire Maul"
+  Enchants.Category(info)            the source category whose picture goes with it (Sources.Icon)
+  Enchants.Where(info)               the source in a sentence, for a tooltip
   Enchants.Name(info)                the game's name for it, in its language; the data's until the game knows it
   Enchants.ShortName(info)           what sets it apart, for a small space: "Greater Stats"
   Enchants.Icon(info)                its picture, or nil
@@ -22,7 +27,9 @@ The best enchants, armor kits and scopes per spec (Data\Enchants.lua).
 An id is "s<spell id>" for an enchant, "i<item id>" for something applied
 from the bags. The name, the effect and the source sentence are ForeverDB's,
 in English; the window asks the game for the name in its own language, and
-puts the sentence in a few words of its own.
+puts the sentence in a few words of its own. The sentence of an item to apply
+that ForeverDB's data has no source for is read in QuestieDB by the generator
+(_build/questie.py), with the label t.
 ]]
 
 local Enchants = {}
@@ -128,9 +135,24 @@ end
 --   <Profession> <skill>: from a trainer
 -- with "; or Forever's scroll <name>" after it when a scroll does the same, or
 --   where it comes from isn't known yet
+-- The generator writes the sources it reads in QuestieDB (_build/questie.py) as
+--   <what>: <name>            Quest: Libram of Voracity
+--   <what>: <name> (<place>)  Quest: Libram of Protection (Dire Maul)
+local PLACED = {
+    ["Quest"] = "quest", ["Raid drop"] = "raid", ["Dungeon drop"] = "dungeon", ["Drop"] = "drop",
+    ["Rare drop"] = "rare", ["Vendor"] = "vendor", ["Chest"] = "chest", ["Container"] = "container",
+}
+
 local function ReadWhere(record)
     local profession, skill, rest = record.where:match("^(%a+) (%d+): (.*)$")
-    if not profession then return end
+    if not profession then
+        local what, said = record.where:match("^(%a[%a ]*): (.+)$")
+        if PLACED[what or ""] then
+            local name, place = said:match("^(.+) %(([^()]+)%)$")
+            record.category, record.detail, record.place = PLACED[what], name or said, place
+        end
+        return
+    end
     record.profession, record.skill = profession, tonumber(skill)
     local alone = rest:match("^(.-); or Forever's scroll .*$")
     if alone then
@@ -217,12 +239,19 @@ function Enchants.Kind(record)
     if record.profession then
         return L.SRC_SKILL:format(ns.ProfessionName(record.profession), record.skill or 0)
     end
+    if record.category then return ns.Sources.CategoryName(record.category) end
     return L["ENCH_" .. record.kind]
+end
+
+function Enchants.Category(record)
+    return record.category or (record.profession and "crafted") or "unknown"
 end
 
 function Enchants.Detail(record)
     local text
-    if record.trainer then
+    if record.category then
+        return ns.Sources.Line({ detail = record.detail, zone = record.place, percent = "" })
+    elseif record.trainer then
         text = L.ENCH_TRAINER
     elseif record.recipe then
         local recipe = L["RECIPE_" .. record.recipe]
@@ -241,4 +270,10 @@ function Enchants.Detail(record)
     end
     if record.scroll then text = text .. L.ENCH_OR_SCROLL end
     return text
+end
+
+-- A quest, a boss or a vendor is said as an item's source is; a profession's sentence stays ForeverDB's.
+function Enchants.Where(record)
+    if not record.category then return record.where end
+    return L.TIP_SOURCE:format(Enchants.Kind(record) .. " - " .. Enchants.Detail(record))
 end

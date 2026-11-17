@@ -124,7 +124,7 @@ function Index.WarmUp()
 end
 
 ns:On("OPTION_CHANGED", function(key)
-    if key == "unsourced" or key == "seenOnly" or key == "phase" then
+    if ns.FILTER_OPTIONS[key] then
         Index.Reset()
         Index.WarmUp()
     end

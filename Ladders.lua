@@ -6,8 +6,8 @@ pick(s) and their alternatives, for one faction and the current options.
 
 A ladder is every pick of a slot, best first. What a character sees of it
 depends on the filter: the faction, whether items with no known source count,
-whether only items seen in Forever count, and the content phase the list stops
-at.
+whether only items seen in Forever count, whether the PvP rewards count, the
+content phase the list stops at, and how many alternatives a slot lists.
 
   Ladders.Specs(class)               { { index, name, role, style }, ... }
   Ladders.For(class, spec, list)     { [slot] = { best = {...}, alts = {...}, other = {...} }, twoHand = bool }
@@ -42,8 +42,8 @@ local function ParseEntry(text)
     }
 end
 
--- flags: s seen in Forever, n new in Forever, u no known source, U unique, t two-hander, r random bonus;
--- a digit is the content phase the item needs (entry.phase, 0 without one)
+-- flags: s seen in Forever, n new in Forever, u no known source, U unique, t two-hander, r random bonus,
+-- p a PvP reward; a digit is the content phase the item needs (entry.phase, 0 without one)
 function Ladders.HasFlag(entry, letter)
     return entry.flags:find(letter, 1, true) ~= nil
 end
@@ -88,6 +88,7 @@ local function Visible(entries, filter)
         if id
             and entry.phase <= (filter.phase or 9)
             and (filter.unsourced or not Ladders.HasFlag(entry, "u"))
+            and (filter.pvpRewards ~= false or not Ladders.HasFlag(entry, "p"))
             and (not filter.seenOnly or Ladders.HasFlag(entry, "s")) then
             visible[#visible + 1] = { id = id, score = entry.score10 / 10, entry = entry }
         end
@@ -127,9 +128,9 @@ local function First(picks, count)
     return first
 end
 
--- best, alternatives. Rings and trinkets have two best picks: the second is
--- the next one that can be worn with the first.
-local function Picks(slot, visible)
+-- best, alternatives (count of them at most). Rings and trinkets have two best
+-- picks: the second is the next one that can be worn with the first.
+local function Picks(slot, visible, count)
     local best, alts = {}, {}
     local first = visible[1]
     if not first then return best, alts end
@@ -144,7 +145,7 @@ local function Picks(slot, visible)
         end
     end
     for _, pick in ipairs(visible) do
-        if #alts >= ns.ALTERNATIVES then break end
+        if #alts >= count then break end
         if pick ~= best[1] and pick ~= best[2] then alts[#alts + 1] = pick end
     end
     return best, alts
@@ -160,13 +161,14 @@ function Ladders.Compute(data, spec, list, filter)
     local twoHand, otherMain, otherOff
     visible.main, visible.off, twoHand, otherMain, otherOff = WeaponLists(visible.main, visible.off)
 
+    local count = filter.alternatives or ns.ALTERNATIVES
     local result = { twoHand = twoHand }
     for _, slot in ipairs(ns.SLOTS) do
-        local best, alts = Picks(slot, visible[slot])
+        local best, alts = Picks(slot, visible[slot], count)
         result[slot] = { best = best, alts = alts, other = {} }
     end
-    result.main.other = First(otherMain, 1 + ns.ALTERNATIVES)
-    result.off.other = First(otherOff, 1 + ns.ALTERNATIVES)
+    result.main.other = First(otherMain, 1 + count)
+    result.off.other = First(otherOff, 1 + count)
     return result
 end
 
@@ -211,5 +213,5 @@ function Ladders.For(class, spec, list)
 end
 
 ns:On("OPTION_CHANGED", function(key)
-    if key == "unsourced" or key == "seenOnly" or key == "phase" then current.results = {} end
+    if ns.FILTER_OPTIONS[key] then current.results = {} end
 end)
