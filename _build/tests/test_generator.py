@@ -126,8 +126,8 @@ class GeneratorTest(unittest.TestCase):
                 self.assertEqual(compare_site.compare(self.published, page), [])
 
     def test_pvp_rewards_are_marked(self):
-        """Every entry says whether it is a PvP reward, so the addon can leave those out: a PvP rank's, the
-        honor quartermasters', a battleground's, a Premier set's."""
+        """Every entry says whether it is a PvP reward, so the addon can leave those out of a list: a PvP
+        rank's, the honor quartermasters', a battleground's, a Premier set's."""
         is_reward = lambda item_id: ladders.pvp_reward(self.db.items[item_id])   # noqa: E731
         self.assertTrue(is_reward(16478), "Field Marshal's Plate Helm, of rank 13")
         self.assertTrue(is_reward(20057), "Highlander's Plate Spaulders, of Arathi Basin")
@@ -152,12 +152,13 @@ class GeneratorTest(unittest.TestCase):
             for entry in ladder:
                 self.assertEqual(entry.pvp, is_reward(entry.item_id))
                 marked[mode] += entry.pvp
-                # they count until a filter says otherwise, and then in neither list
+                # they count until a filter says otherwise, and then the list leaves them out
                 self.assertEqual(entry.passes(("a", True, False, phases.LATER)),
                                  entry.passes(("a", True, False, phases.LATER, True)))
-                if entry.pvp:
-                    self.assertFalse(entry.passes(("a", True, False, phases.LATER, False)))
+                self.assertEqual(entry.passes(("a", True, False, phases.LATER, False)),
+                                 entry.passes(("a", True, False, phases.LATER)) and not entry.pvp)
         self.assertTrue(marked["pve"] and marked["pvp"])
+        self.assertEqual(ladders.PVP_REWARDS, {"pve": False, "pvp": True})
         # without them every spec still has something for every slot it fills with them
         without = ("a", False, False, phases.CURRENT, False)
         for (token, spec, mode, slot), ladder in self.full.items():

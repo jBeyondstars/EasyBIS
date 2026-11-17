@@ -13,7 +13,8 @@
 -- An entry is id:score*10:flags:twin:limit, empty fields at the end left out.
 --   flags: a Alliance only, h Horde only (with a twin: the other faction wears the twin id),
 --          s seen in Forever, n new in Forever, u no known source, U unique, t two-hander, r random bonus,
---          p a PvP reward (a PvP rank, the honor quartermasters, a battleground, a Premier set),
+--          p a PvP reward (a PvP rank, the honor quartermasters, a battleground, a Premier set): the addon
+--            leaves those out of the PvE list, and counts them in the PvP list, until its option says otherwise,
 --          a digit: the content phase the item needs (none: before the raids, 1: Forever's first raids,
 --          9: a raid known from Classic data only); see _build/phases.py
 --   limit: only one item of that category can be worn (rings and trinkets)

@@ -6,8 +6,9 @@ pick(s) and their alternatives, for one faction and the current options.
 
 A ladder is every pick of a slot, best first. What a character sees of it
 depends on the filter: the faction, whether items with no known source count,
-whether only items seen in Forever count, whether the PvP rewards count, the
-content phase the list stops at, and how many alternatives a slot lists.
+whether only items seen in Forever count, whether the PvP rewards count in the
+list (each list has its own answer), the content phase the list stops at, and
+how many alternatives a slot lists.
 
   Ladders.Specs(class)               { { index, name, role, style }, ... }
   Ladders.For(class, spec, list)     { [slot] = { best = {...}, alts = {...}, other = {...} }, twoHand = bool }
@@ -81,14 +82,18 @@ local function Shown(entry, side)
     return entry.twin
 end
 
-local function Visible(entries, filter)
+-- filter.pvpRewards: whether the PvP rewards count, as { pve = bool, pvp = bool } or one answer for both
+-- lists; they count when the filter does not say.
+local function Visible(entries, filter, list)
+    local rewards = filter.pvpRewards
+    if type(rewards) == "table" then rewards = rewards[list] end
     local visible = {}
     for _, entry in ipairs(entries or {}) do
         local id = Shown(entry, filter.side)
         if id
             and entry.phase <= (filter.phase or 9)
             and (filter.unsourced or not Ladders.HasFlag(entry, "u"))
-            and (filter.pvpRewards ~= false or not Ladders.HasFlag(entry, "p"))
+            and (rewards ~= false or not Ladders.HasFlag(entry, "p"))
             and (not filter.seenOnly or Ladders.HasFlag(entry, "s")) then
             visible[#visible + 1] = { id = id, score = entry.score10 / 10, entry = entry }
         end
@@ -156,7 +161,7 @@ function Ladders.Compute(data, spec, list, filter)
     local ladders = data.lists[spec] and data.lists[spec][list] or {}
     local visible = {}
     for _, slot in ipairs(ns.SLOTS) do
-        visible[slot] = Visible(ladders[slot], filter)
+        visible[slot] = Visible(ladders[slot], filter, list)
     end
     local twoHand, otherMain, otherOff
     visible.main, visible.off, twoHand, otherMain, otherOff = WeaponLists(visible.main, visible.off)

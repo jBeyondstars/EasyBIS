@@ -13,10 +13,11 @@ what an item is worth. The site's pages leave those out of PvE:
 full_ladder(..., rank_rewards=False) is the site's rule, kept to check the
 ranking against the site (tests/compare_site.py).
 
-The addon leaves the PvP rewards out again, of both lists, until an option of
-its own says to count them: every entry says whether it is one (pvp_reward),
-which is wider than the site's rule: the Premier sets and the battlegrounds'
-rewards count too.
+The addon can leave the PvP rewards out again, of either list, with an option
+it keeps per list: out of the PvE list and in the PvP list until the player
+says otherwise. Every entry says whether it is one (pvp_reward), which is
+wider than the site's rule: the Premier sets and the battlegrounds' rewards
+count too.
 """
 from __future__ import annotations
 
@@ -53,6 +54,7 @@ PVP_VENDORS = {
 # The League of Arathor, The Defilers, Frostwolf Clan, Stormpike Guard, Warsong Outriders, Silverwing Sentinels
 PVP_FACTIONS = frozenset((509, 510, 729, 730, 889, 890))
 PVP_SET = "Premier "
+PVP_REWARDS = {"pve": False, "pvp": True}  # whether a list counts them until the player says otherwise
 ALTERNATIVES = 2      # picks shown after the best one(s), until the player asks for more
 MAX_ALTERNATIVES = 6  # ... up to this many: what the data files keep of a ladder
 
@@ -63,7 +65,8 @@ INV_SHIELD, INV_ONE_HAND, INV_OFF_HAND, INV_TWO_HAND, INV_THROWN = 14, 13, 22, 1
 RANGED_INV = (15, 25, 26)
 
 # What the addon can filter on at run time: faction, items with no known source, items seen in Forever only,
-# the content phase the list stops at, and whether the PvP rewards count.
+# the content phase the list stops at, and whether the PvP rewards count in the list (the addon's default:
+# they do in the PvP list and not in the PvE one, PVP_REWARDS).
 FILTERS = tuple(product(("a", "h"), (False, True), (False, True), phases.PHASES, (True, False)))
 
 
@@ -81,7 +84,7 @@ class Entry:
     random: bool     # random bonus ("of the Bear")
     limit: str | None  # only one item of this category can be worn
     phase: int = phases.PRE_RAID  # the content phase it arrives with (phases.py)
-    pvp: bool = False  # a PvP reward (pvp_reward)
+    pvp: bool = False  # a PvP reward (pvp_reward): what the addon's option leaves out of a list
 
     @property
     def stored(self) -> int:
@@ -96,7 +99,7 @@ class Entry:
 
     def passes(self, flt) -> bool:
         """flt: (faction, with the items of no known source, seen in Forever only, phase), and whether the
-        PvP rewards count, which they do when the filter does not say."""
+        PvP rewards count in the list, which they do when the filter does not say."""
         side, with_unsourced, seen_only, phase, *rest = flt
         if self.shown(side) is None or self.phase > phase:
             return False

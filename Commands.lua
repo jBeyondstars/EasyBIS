@@ -5,7 +5,9 @@ local L = ns.L
 /easybis (or /ebis):
   (nothing)                              open or close the window
   help                                   list the commands
-  tooltip, class, alt, unsourced, seen, pvp, minimap   switch an option
+  tooltip, class, alt, unsourced, seen, minimap   switch an option
+  pvp [pve or pvp]                       count the PvP rewards in a list or leave them out (the list the
+                                         window shows when none is named)
   alternatives [2-6]                     how many alternatives a slot lists
   phase [0, 1 or all]                    the content phase the lists stop at
   item [link or ID]                      say who wants an item
@@ -20,7 +22,6 @@ local OPTIONS = {
     alt = "alternatives",
     unsourced = "unsourced",
     seen = "seenOnly",
-    pvp = "pvpRewards",
     minimap = "minimap",
 }
 
@@ -43,6 +44,18 @@ local function PhaseCommand(rest)
     local wanted = rest:lower() == "all" and 9 or tonumber(rest)
     if wanted then ns:SetPhase(wanted) end
     ns:Print(L.PHASE_STATE:format(ns.PhaseName(ns.Phase())))
+end
+
+-- Each list has its own answer: "pvp pve" switches the PvE list's, "pvp" alone the one of the list the
+-- window shows.
+local function RewardsCommand(rest)
+    local list = rest:lower()
+    if list ~= "pve" and list ~= "pvp" then
+        local _
+        _, _, list = ns.Browser.Target()
+    end
+    ns:SetPvPRewards(list, not ns:PvPRewards(list))
+    ns:Print(L.OPT_STATE:format(L.OPT_pvpRewards:format(ns.ListName(list)), ns:PvPRewards(list) and L.ON or L.OFF))
 end
 
 -- A number sets how many alternatives a slot lists; anything else only says how many it lists now.
@@ -150,6 +163,8 @@ SlashCmdList.EASYBIS = function(message)
         PhaseCommand(rest)
     elseif command == "alternatives" then
         AlternativesCommand(rest)
+    elseif command == "pvp" and ns.Browser then
+        RewardsCommand(rest)
     elseif command == "item" then
         ItemCommand(rest)
     elseif command == "list" then

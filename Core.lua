@@ -53,7 +53,7 @@ local DEFAULTS = {
     alternatives = true,   -- tooltips: the alternatives too, not only the best picks
     unsourced = false,     -- count the items with no known source
     seenOnly = false,      -- count only the items ForeverDB players have seen in Forever
-    pvpRewards = false,    -- count the PvP rewards: PvP ranks, honor, battlegrounds
+    pvpRewards = { pve = false, pvp = true }, -- per list: count the PvP rewards (ranks, honor, battlegrounds)
     altCount = 2,          -- alternatives listed after the best pick(s) of a slot (ns.Alternatives)
     minimap = true,        -- the button on the minimap
     minimapAngle = 215,    -- where it sits around the minimap, in degrees
@@ -84,6 +84,8 @@ ns.char = {}
 
 local function InitDB()
     if type(EasyBISDB) ~= "table" then EasyBISDB = {} end
+    -- version 1.1.0 kept one answer for both lists: it becomes the PvE list's
+    if type(EasyBISDB.pvpRewards) == "boolean" then EasyBISDB.pvpRewards = { pve = EasyBISDB.pvpRewards } end
     ns.db = Merge(EasyBISDB, DEFAULTS)
     if type(EasyBISCharDB) ~= "table" then EasyBISCharDB = {} end
     ns.char = EasyBISCharDB
@@ -103,6 +105,19 @@ end
 
 function ns:ListShown(list)
     return self.db.lists[list] ~= false
+end
+
+-- Whether a list ("pve", "pvp") counts the PvP rewards: the PvP list does and the PvE list does not, until
+-- the player says otherwise for that list.
+function ns:PvPRewards(list)
+    return self.db.pvpRewards[list] == true
+end
+
+function ns:SetPvPRewards(list, value)
+    value = value and true or false
+    if DEFAULTS.pvpRewards[list] == nil or self.db.pvpRewards[list] == value then return end
+    self.db.pvpRewards[list] = value
+    self:Fire("OPTION_CHANGED", "pvpRewards", value)
 end
 
 -- How many alternatives a slot lists after its best pick(s): from ns.ALTERNATIVES to what the data files
@@ -168,7 +183,7 @@ function ns.Filter()
         side = ns.PlayerSide(),
         unsourced = ns:GetOption("unsourced"),
         seenOnly = ns:GetOption("seenOnly"),
-        pvpRewards = ns:GetOption("pvpRewards"),
+        pvpRewards = { pve = ns:PvPRewards("pve"), pvp = ns:PvPRewards("pvp") },
         phase = ns.Phase(),
         alternatives = ns.Alternatives(),
     }

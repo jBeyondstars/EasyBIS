@@ -48,7 +48,7 @@ The lists follow the game's progress. **Pre-raid** (the default) only counts gea
 | `/easybis remove [link or ID]` | take a hand-added item out again |
 | `/easybis tooltip`, `class`, `alt` | tooltip lines on or off, your class only, alternatives |
 | `/easybis unsourced`, `seen` | items with no known source, items seen in Forever only |
-| `/easybis pvp` | count or leave out the PvP rewards (PvP ranks, honor, battlegrounds) |
+| `/easybis pvp [pve or pvp]` | count the PvP rewards (PvP ranks, honor, battlegrounds) in that list, or leave them out |
 | `/easybis alternatives [2-6]` | how many alternatives a slot lists |
 | `/easybis minimap` | show or hide the minimap button |
 | `/easybis help` | list the commands |

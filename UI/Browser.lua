@@ -766,11 +766,12 @@ local function Choose(key)
     end
 end
 
--- The on/off options, in three groups: tooltips, what the lists count, the window. The number of
--- alternatives a slot lists comes after what the lists count, as a submenu.
+-- The on/off options, in three groups: tooltips, what the lists count, the window. After what the lists
+-- count come two submenus: the PvP rewards, a box per list (each list counts them or not), and the
+-- number of alternatives a slot lists.
 local OPTION_GROUPS = {
     { "tooltip", "onlyMyClass", "alternatives" },
-    { "unsourced", "seenOnly", "pvpRewards" },
+    { "unsourced", "seenOnly" },
     { "compact", "minimap" },
 }
 
@@ -790,6 +791,15 @@ local function OpenOptionsMenu(owner)
                     end)
             end
             if index == 2 then
+                local rewards = root:CreateButton(L.OPT_PVP_REWARDS)
+                for _, list in ipairs(ns.LISTS) do
+                    rewards:CreateCheckbox(L.OPT_PVP_LIST:format(ns.ListName(list)),
+                        function() return ns:PvPRewards(list) end,
+                        function()
+                            ns:SetPvPRewards(list, not ns:PvPRewards(list))
+                            return refresh
+                        end)
+                end
                 local counts = root:CreateButton(L.OPT_ALT_COUNT)
                 for count = ns.ALTERNATIVES, ns.MaxAlternatives() do
                     counts:CreateRadio(tostring(count),

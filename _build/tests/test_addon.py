@@ -38,15 +38,22 @@ MAGEBLADE = 23451            # Grand Marshal's Mageblade (Alliance), a rank 14 o
 #                              Fire Mage before the raids. A PvP-rank reward is ranked in the PvE list on its stats.
 VAULTED_SECRETS = 21413      # a one-hander of Ahn'Qiraj: an alternative for a Fire Mage once every raid counts
 MARK_OF_FORDRING = 15411     # a neck several classes want in PvE, the Shaman among them
-# The saved option of a player who counts the PvP rewards, which the lists leave out until then: the
-# examples above that are PvP rewards (the leggings, the Mageblade) need it.
-WITH_PVP = "EasyBISDB = { pvpRewards = true }"
+# The saved option of a player who counts the PvP rewards in the PvE lists, which leave them out until
+# then: the examples above that are PvP rewards (the leggings, the Mageblade) need it.
+WITH_PVP = "EasyBISDB = { pvpRewards = { pve = true } }"
 EVERYTHING = phases.LATER
 
 
-def default_filter(side="a", unsourced=False, seen_only=False, phase=phases.CURRENT, pvp=False) -> tuple:
-    """The filter a character has until it changes an option or the phase."""
+def default_filter(side="a", unsourced=False, seen_only=False, phase=phases.CURRENT, pvp=None) -> tuple:
+    """The filter a character has until it changes an option or the phase. pvp: whether the PvP rewards
+    count; None is each list's own answer (for_list)."""
     return (side, unsourced, seen_only, phase, pvp)
+
+
+def for_list(flt: tuple, mode: str) -> tuple:
+    """A filter as it applies to one list: until the player says otherwise the PvP list counts the PvP
+    rewards and the PvE list leaves them out."""
+    return flt if flt[4] is not None else (*flt[:4], ladders.PVP_REWARDS[mode])
 
 
 def toc_files() -> list[Path]:
@@ -105,6 +112,7 @@ class AddonTest(unittest.TestCase):
 
     def expected_picks(self, token, spec, mode, flt, count=ladders.ALTERNATIVES, full=False) -> dict:
         """count: the alternatives asked for. full: from the whole ladder, not the part the data files keep."""
+        flt = for_list(flt, mode)
         side = flt[0]
         ladder = (lambda slot: ladders.full_ladder(self.db, token, spec, mode, slot)) if full \
             else self.kept[token][spec][mode].__getitem__
@@ -225,7 +233,7 @@ class AddonTest(unittest.TestCase):
                          (ladders.ALTERNATIVES, ladders.MAX_ALTERNATIVES))
         self.assertEqual(game.ns.data.meta.alternatives, ladders.MAX_ALTERNATIVES)
         longest = 0
-        for flt in (default_filter(), default_filter("h", True, False, EVERYTHING, True)):
+        for flt in (default_filter(pvp=False), default_filter("h", True, False, EVERYTHING, True)):
             for count in range(ladders.ALTERNATIVES, ladders.MAX_ALTERNATIVES + 1):
                 lua_filter = game.lua.table(side=flt[0], unsourced=flt[1], seenOnly=flt[2], phase=flt[3],
                                             pvpRewards=flt[4], alternatives=count)
@@ -298,35 +306,63 @@ class AddonTest(unittest.TestCase):
         game.ns.SetOption(game.ns, "unsourced", False)
         self.assertEqual(game.ns.Ladders.For("SHAMAN", 2, "pvp").head.best[1].id, before)
 
-    def test_pvp_rewards_can_be_left_out(self):
-        # The best PvE head of an Alliance Protection Warrior is a rank 13 reward, and so are its best shoulders;
-        # the next shoulders are Arathi Basin's.
+    def test_each_list_counts_the_pvp_rewards_or_not(self):
+        # The PvP list counts them and the PvE list leaves them out, until the player says otherwise for
+        # that list. The example: the best head of an Alliance Protection Warrior is a rank 13 reward in
+        # both lists.
         game = Game(cls="WARRIOR")
-        self.assertFalse(game.ns.db.pvpRewards, "the PvP rewards are left out until the player says otherwise")
-        self.assertFalse(game.ns.Filter().pvpRewards)
-        flags = {entry.id: entry.flags for slots in game.ns.Ladders.Decode("WARRIOR").lists[3].values()
-                 for entries in slots.values() for entry in entries.values()}
-        with_them, without = default_filter(pvp=True), default_filter()
-        self.assertEqual(without[4], False)
-        game.ns.SetOption(game.ns, "pvpRewards", True)
-        for slot in ("head", "shoulder"):
-            before = game.ns.Ladders.For("WARRIOR", 3, "pve")[slot].best[1].id
-            self.assertEqual(before, self.expected_picks("WARRIOR", 3, "pve", with_them)[slot][0][0])
-            self.assertIn("p", flags[before], f"the best {slot} is no PvP reward: pick another spec for this test")
-        self.assertIn(game.ns.Index.ForItem(before)[1]["class"], CLASSES)
-        game.ns.SetOption(game.ns, "pvpRewards", False)
-        for mode in ladders.MODES:   # both lists leave them out
+        self.assertEqual(dict(game.ns.db.pvpRewards), ladders.PVP_REWARDS)
+        self.assertEqual(dict(game.ns.Filter().pvpRewards), {"pve": False, "pvp": True})
+        self.assertEqual((game.ns.PvPRewards(game.ns, "pve"), game.ns.PvPRewards(game.ns, "pvp")), (False, True))
+        lists = game.ns.Ladders.Decode("WARRIOR").lists[3]
+        flags = {mode: {entry.id: entry.flags for entries in lists[mode].values() for entry in entries.values()}
+                 for mode in ladders.MODES}
+        with_them, without = default_filter(pvp=True), default_filter(pvp=False)
+
+        def picks(mode):
             result = game.ns.Ladders.For("WARRIOR", 3, mode)
+            return {slot: [pick.id for kind in ("best", "alts", "other") for pick in result[slot][kind].values()]
+                    for slot, _ in ladders.SLOTS}
+
+        def check(mode, flt):
+            shown, expected = picks(mode), self.expected_picks("WARRIOR", 3, mode, flt)
             for slot, _ in ladders.SLOTS:
-                shown = [pick.id for kind in ("best", "alts", "other") for pick in result[slot][kind].values()]
-                self.assertEqual([pick.id for pick in result[slot].best.values()],
-                                 self.expected_picks("WARRIOR", 3, mode, without)[slot][0], f"{mode} {slot}")
-                self.assertFalse([item_id for item_id in shown if "p" in flags[item_id]], f"{mode} {slot}")
-        # the tooltips follow: nobody wants the rank 13 shoulders any more
-        self.assertIsNone(game.ns.Index.ForItem(before))
-        game.ns.SetOption(game.ns, "pvpRewards", True)
-        self.assertEqual(game.ns.Ladders.For("WARRIOR", 3, "pve").shoulder.best[1].id, before)
-        self.assertIsNotNone(game.ns.Index.ForItem(before))
+                self.assertEqual(shown[slot][:len(expected[slot][0])], expected[slot][0], f"{mode} {slot} {flt}")
+                rewards = [item_id for item_id in shown[slot] if "p" in flags[mode][item_id]]
+                self.assertEqual(bool(rewards) and not flt[4], False, f"{mode} {slot}: a PvP reward is listed")
+            return shown
+
+        wanted = lambda item: {(hit["class"], hit.spec, hit.list)   # noqa: E731
+                               for hit in (game.ns.Index.ForItem(item) or game.lua.table()).values()}
+        in_pve, in_pvp = check("pve", without), check("pvp", with_them)
+        rank_13 = in_pvp["head"][0]
+        self.assertIn("p", flags["pvp"][rank_13], "the best PvP head is no PvP reward: this test needs another spec")
+        self.assertEqual(wanted(rank_13) & {("WARRIOR", 3, "pve"), ("WARRIOR", 3, "pvp")}, {("WARRIOR", 3, "pvp")})
+
+        # the PvE list counts them: its best head is that helm too; the PvP list has not moved
+        game.ns.SetPvPRewards(game.ns, "pve", True)
+        self.assertEqual(check("pve", with_them)["head"][0], rank_13)
+        self.assertEqual(picks("pvp"), in_pvp)
+        self.assertLessEqual({("WARRIOR", 3, "pve"), ("WARRIOR", 3, "pvp")}, wanted(rank_13))
+        # the PvP list leaves them out: what is best for PvP without the honor system; the PvE list has not moved
+        counted = picks("pve")
+        game.ns.SetPvPRewards(game.ns, "pvp", False)
+        self.assertNotEqual(check("pvp", without)["head"][0], rank_13)
+        self.assertEqual(picks("pve"), counted)
+        self.assertEqual(wanted(rank_13) & {("WARRIOR", 3, "pve"), ("WARRIOR", 3, "pvp")}, {("WARRIOR", 3, "pve")})
+        self.assertEqual(dict(game.lua.globals().EasyBISDB.pvpRewards), {"pve": True, "pvp": False}, "not saved")
+        game.ns.SetPvPRewards(game.ns, "pve", False)
+        game.ns.SetPvPRewards(game.ns, "pvp", True)
+        self.assertEqual((picks("pve"), picks("pvp")), (in_pve, in_pvp))
+        game.ns.SetPvPRewards(game.ns, "raid", True)   # no such list
+        self.assertIsNone(game.ns.db.pvpRewards.raid)
+
+        # saved: one list's answer, the other keeps its own; version 1.1.0's single answer was the PvE list's
+        saved = Game(saved="EasyBISDB = { pvpRewards = { pvp = false } }")
+        self.assertEqual(dict(saved.ns.db.pvpRewards), {"pve": False, "pvp": False})
+        old = Game(saved="EasyBISDB = { pvpRewards = true }")
+        self.assertEqual(dict(old.ns.db.pvpRewards), {"pve": True, "pvp": True})
+        self.assertEqual(dict(Game(saved="EasyBISDB = { pvpRewards = false }").ns.db.pvpRewards), ladders.PVP_REWARDS)
 
     # -- phases -------------------------------------------------------------------------------
 
@@ -610,9 +646,13 @@ class AddonTest(unittest.TestCase):
         self.assertEqual(game.slash("TOOLTIP"), ["Easy BIS: BIS lines in item tooltips: on."])
         self.assertEqual(game.slash("unsourced"), ["Easy BIS: Items with no known source: on."])
         self.assertTrue(game.ns.db.unsourced)
-        self.assertEqual(game.slash("pvp"), ["Easy BIS: PvP rewards: on."])
-        self.assertTrue(game.ns.db.pvpRewards)
-        self.assertEqual(game.slash("pvp"), ["Easy BIS: PvP rewards: off."])
+        # the PvP rewards: the list the window shows (the PvE one here), or the one named
+        self.assertEqual(game.slash("pvp"), ["Easy BIS: PvP rewards in the PvE list: on."])
+        self.assertEqual(dict(game.ns.db.pvpRewards), {"pve": True, "pvp": True})
+        self.assertEqual(game.slash("pvp"), ["Easy BIS: PvP rewards in the PvE list: off."])
+        self.assertEqual(game.slash("pvp PVP"), ["Easy BIS: PvP rewards in the PvP list: off."])
+        self.assertEqual(dict(game.ns.db.pvpRewards), {"pve": False, "pvp": False})
+        self.assertEqual(game.slash("pvp pve"), ["Easy BIS: PvP rewards in the PvE list: on."])
         self.assertTrue(any("/easybis pvp" in line for line in game.slash("help")))
         self.assertEqual(game.slash("minimap"), ["Easy BIS: Minimap button: off."])
 

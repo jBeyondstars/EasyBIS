@@ -14,7 +14,9 @@ https://github.com/jBeyondstars/EasyBIS
    the generator ranks ForeverDB's gear pools with ForeverDB's own scoring.
    Unlike the foreverdb.net/bis pages, the PvE lists keep the PvP-rank
    rewards, ranked on their stats like any other item; the addon leaves the
-   PvP rewards out of its lists until its "PvP rewards" option is switched on.
+   PvP rewards out of its PvE lists until its option "PvP rewards in the PvE
+   list" is switched on, and counts them in its PvP lists until the same
+   option is switched off there.
    Two things are changed from ForeverDB's data, from what the game itself
    shows (read with the developer's tool in _build/capture_addon); the first
    lines of Data/Lists.lua say how many of each:

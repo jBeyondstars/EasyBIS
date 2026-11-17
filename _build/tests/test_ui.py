@@ -24,7 +24,7 @@ import ladders  # noqa: E402
 import phases  # noqa: E402
 import test_addon  # noqa: E402
 from test_addon import (  # noqa: E402
-    ATIESH, EVERYTHING, MAGEBLADE, VAULTED_SECRETS, WITH_PVP, Game, default_filter, strip_colors)
+    ATIESH, EVERYTHING, MAGEBLADE, VAULTED_SECRETS, WITH_PVP, Game, default_filter, for_list, strip_colors)
 
 lupa = test_addon.lupa
 
@@ -86,7 +86,7 @@ class WindowTest(unittest.TestCase):
                        count=ladders.ALTERNATIVES) -> list[tuple]:
         """(kind, id, slot, bis, gap) for every row the window should list, from the generator's rules.
         alts: False with the alternatives switched off. count: the alternatives a slot lists."""
-        flt = flt or default_filter()
+        flt = for_list(flt or default_filter(), mode)
         side = flt[0]
         visible = {slot: [e for e in self.kept[token][spec][mode][slot] if e.passes(flt)]
                    for slot, _ in ladders.SLOTS}
@@ -764,15 +764,40 @@ class WindowTest(unittest.TestCase):
         self.assertTrue(unsourced.selected())
         self.assertTrue(game.ns.db.unsourced)
         self.assertEqual(self.shown_rows(game), self.reference_rows("SHAMAN", 2, "pvp", default_filter(unsourced=True)))
-        # the PvP rewards are left out until the box is ticked; the rows follow at once
+        # the PvP rewards: a submenu with a box per list. The PvP list counts them and the PvE list leaves
+        # them out until the player says otherwise; the rows follow at once, whichever list the window shows
         rewards = find(menu, "PvP rewards")
-        self.assertFalse(rewards.selected())
-        rewards.pick()
-        self.assertTrue(rewards.selected())
-        self.assertTrue(game.ns.db.pvpRewards)
+        self.assertEqual(rewards.kind, "button")
+        self.assertEqual(texts(rewards), ["PvE list", "PvP list"])
+        in_pve, in_pvp = find(rewards, "PvE list"), find(rewards, "PvP list")
+        self.assertEqual((in_pve.kind, bool(in_pve.selected()), bool(in_pvp.selected())), ("checkbox", False, True))
         with_them = self.reference_rows("SHAMAN", 2, "pvp", default_filter(unsourced=True, pvp=True))
         self.assertEqual(self.shown_rows(game), with_them)
-        self.assertNotEqual(with_them, self.reference_rows("SHAMAN", 2, "pvp", default_filter(unsourced=True)))
+        in_pvp.pick()
+        self.assertFalse(in_pvp.selected())
+        self.assertEqual(dict(game.ns.db.pvpRewards), {"pve": False, "pvp": False})
+        without = self.reference_rows("SHAMAN", 2, "pvp", default_filter(unsourced=True, pvp=False))
+        self.assertEqual(self.shown_rows(game), without)
+        self.assertNotEqual(without, with_them)
+        in_pve.pick()   # the other list's box: the PvP list the window shows has not moved
+        self.assertTrue(in_pve.selected())
+        self.assertEqual(dict(game.ns.db.pvpRewards), {"pve": True, "pvp": False})
+        self.assertEqual(self.shown_rows(game), without)
+        in_pve.pick()
+        in_pvp.pick()
+        self.assertEqual(self.shown_rows(game), with_them)
+        # a window on a PvE list follows the PvE box
+        other = self.open(cls="WARRIOR", saved="EasyBISCharDB = { class = 'WARRIOR', spec = 3, list = 'pve' }")
+        other.stub.run(other.ns.Browser.window.options, "OnClick")
+        box = find(find(other.stub.menu, "PvP rewards"), "PvE list")
+        left_out = self.reference_rows("WARRIOR", 3, "pve")
+        self.assertEqual(self.shown_rows(other), left_out)
+        box.pick()
+        self.assertTrue(box.selected())
+        self.assertEqual(dict(other.ns.db.pvpRewards), {"pve": True, "pvp": True})
+        counted = self.reference_rows("WARRIOR", 3, "pve", default_filter(pvp=True))
+        self.assertEqual(self.shown_rows(other), counted)
+        self.assertNotEqual(counted, left_out)
         # how many alternatives a slot lists: a submenu, from two to six, the rows following at once
         counts = find(menu, "Alternatives per slot")
         self.assertEqual(counts.kind, "button")
@@ -786,8 +811,10 @@ class WindowTest(unittest.TestCase):
         self.assertEqual(self.shown_rows(game), five)
         self.assertGreater(len(five), len(with_them))
         french = Game(locale="frFR")
-        self.assertEqual((french.ns.L.OPT_pvpRewards, french.ns.L.OPT_ALT_COUNT),
-                         ("Récompenses JcJ", "Alternatives par emplacement"))
+        french.ns.Browser.Open()
+        french.stub.run(french.ns.Browser.window.options, "OnClick")
+        self.assertEqual(texts(find(french.stub.menu, "Récompenses JcJ")), ["Liste JcE", "Liste JcJ"])
+        self.assertEqual(french.ns.L.OPT_ALT_COUNT, "Alternatives par emplacement")
 
     def test_minimap_button(self):
         game = Game()
@@ -891,7 +918,7 @@ class WindowTest(unittest.TestCase):
                 for slot, _ in ladders.SLOTS:
                     if slot in ("main", "off") or slot in ladders.PAIRED:
                         continue
-                    visible = [e for e in modes["pve"][slot] if e.passes(default_filter())]
+                    visible = [e for e in modes["pve"][slot] if e.passes(for_list(default_filter(), "pve"))]
                     if len(visible) > 1 and visible[0].stored == visible[1].stored:
                         return token, spec, slot, visible[1].shown("a")
         self.fail("no tie in the PvE lists: this test needs another example")
