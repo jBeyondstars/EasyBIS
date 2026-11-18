@@ -28,6 +28,7 @@ end
 --                                alternatives ("altCount") was changed
 --   CUSTOM_CHANGED()             an item was added to a list by hand, or taken out (Custom.lua)
 --   LOGIN()                      the character is in the world
+--   REPUTATION_CHANGED()         the game says the character's reputations changed (Reputation.lua)
 ---------------------------------------------------------------------------
 
 local listeners = {}
@@ -51,6 +52,8 @@ local DEFAULTS = {
     tooltip = true,        -- BIS lines in item tooltips
     onlyMyClass = false,   -- tooltips: my class only
     alternatives = true,   -- tooltips: the alternatives too, not only the best picks
+    repTooltip = true,     -- tooltips: the reputation an item asks for
+    repCompact = true,     -- the window: a reputation's standing without its numbers
     unsourced = false,     -- count the items with no known source
     seenOnly = false,      -- count only the items ForeverDB players have seen in Forever
     pvpRewards = { pve = false, pvp = true }, -- per list: count the PvP rewards (ranks, honor, battlegrounds)

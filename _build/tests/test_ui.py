@@ -749,9 +749,10 @@ class WindowTest(unittest.TestCase):
         game.stub.run(window.options, "OnClick")
         menu = game.stub.menu
         self.assertEqual(texts(menu), ["Options", "BIS lines in item tooltips", "Tooltips show my class only",
-                                       "Tooltips show alternatives too", "Items with no known source",
+                                       "Tooltips show alternatives too", "Reputation needed in item tooltips",
+                                       "Items with no known source",
                                        "Only items seen in Forever", "PvP rewards", "Alternatives per slot",
-                                       "Compact rows", "Minimap button"])
+                                       "Compact rows", "Short reputation lines", "Minimap button"])
         tooltips = find(menu, "BIS lines")
         self.assertTrue(tooltips.selected())
         tooltips.pick()
@@ -1239,7 +1240,7 @@ class WindowTest(unittest.TestCase):
         game.ns.Browser.Open()
         window = game.ns.Browser.window
         self.assertEqual([label(button) for button in window.tabs.buttons.values()],
-                         ["Items", "Enchants", "Character"])
+                         ["Items", "Enchants", "Character", "Reputations"])
         self.assertIsNone(game.ns.Character.view, "the sheet is made when it is first asked for")
         game.stub.run(window.tabs.buttons[3], "OnClick")
         view = game.ns.Character.view
@@ -1531,6 +1532,245 @@ class WindowTest(unittest.TestCase):
         self.assertEqual(cells[("ranged", 1)].where.text, "Rien dans la liste")
 
     # -- a client without the newer frames and menus ---------------------------------------
+
+    # -- reputations ---------------------------------------------------------------------------
+
+    @staticmethod
+    def earn(game, faction, reaction, value=0, low=0, high=3000):
+        game.stub.factions[faction] = game.lua.table_from(
+            {"reaction": reaction, "value": value, "low": low, "high": high, "name": f"Faction {faction}"})
+        game.stub.fire("UPDATE_FACTION")
+        game.stub.runTimers()
+
+    @staticmethod
+    def gated_rows(game) -> list:
+        window = game.ns.Browser.window
+        return [window.rows[index] for index in range(1, len(window.rowData) + 1)
+                if window.rowData[index].reputation]
+
+    def pvp_game(self, **options) -> Game:
+        """A list where reputations stand in front of several pieces."""
+        return self.open(saved="EasyBISCharDB = { class = 'WARRIOR', spec = 2, list = 'pvp' }", cls="WARRIOR", **options)
+
+    def test_rows_say_what_a_reputation_asks(self):
+        game = self.pvp_game()
+        gated = self.gated_rows(game)
+        self.assertTrue(gated)
+        row = gated[0]
+        requirement = row.data.reputation
+        self.assertTrue(row.rep.shown and row.repState.shown)
+        self.assertIn(game.ns.Reputation.StandingName(requirement.standing), row.rep.text)
+        self.assertEqual(row.height, ONE_LINE, "a row on one line keeps its height")
+        self.assertNotIn("|cffffd100", row.repState.text, "gold is for what is earned")
+        # a row with no reputation says nothing of one
+        free = next(frame for frame in self.frames(game) if frame.data.kind == "item" and not frame.data.reputation)
+        self.assertFalse(free.rep.shown or free.repState.shown)
+        # earned: the state turns gold, and the row follows the game without being asked
+        self.earn(game, requirement.factionID, 8, 42000, 42000, 43000)
+        row = next(frame for frame in self.gated_rows(game) if frame.data.id == row.data.id)
+        self.assertEqual(strip_colors(row.repState.text), "Earned")
+        self.assertIn("|cffffd100", row.repState.text)
+        # on two lines the row grows by the reputation's line, and only that row
+        game.ns.SetOption(game.ns, "compact", False)
+        row = next(frame for frame in self.gated_rows(game) if frame.data.id == row.data.id)
+        self.assertEqual(row.height, ROW + 16)
+        free = next(frame for frame in self.frames(game) if frame.data.kind == "item" and not frame.data.reputation)
+        self.assertEqual(free.height, ROW)
+
+    def test_reputation_filter(self):
+        game = self.pvp_game()
+        window = game.ns.Browser.window
+        rows = lambda: [row for row in window.rowData.values() if row.kind == "item"]
+        everything = rows()
+        gated = [row.id for row in everything if row.reputation and row.reputation.kind != "r"]
+        self.assertTrue(gated)
+        self.assertEqual(label(window.reputation), "All")
+        self.assertEqual(look(window.reputation), "idle")
+        game.stub.run(window.reputation.button, "OnClick")
+        self.assertEqual(texts(game.stub.menu), ["All", "Within reach", "To earn"])
+        find(game.stub.menu, "To earn").pick()
+        self.assertEqual(look(window.reputation), "active", "a filter that narrows the list is gold")
+        self.assertEqual({row.id for row in rows()}, set(gated))
+        game.stub.run(window.reputation.button, "OnClick")
+        find(game.stub.menu, "Within reach").pick()
+        self.assertFalse({row.id for row in rows()} & set(gated))
+        self.assertEqual(len(rows()), len(everything) - len(gated))
+        # once earned, a piece is within reach
+        faction = game.ns.Reputation.Requirement(gated[0]).factionID
+        self.earn(game, faction, 8, 42000, 42000, 43000)
+        self.assertIn(gated[0], {row.id for row in rows()})
+        # the enchants have the filter too, the character sheet does not
+        game.stub.run(window.tabs.buttons[2], "OnClick")
+        self.assertTrue(window.reputation.shown)
+        game.stub.run(window.tabs.buttons[3], "OnClick")
+        self.assertFalse(window.reputation.shown)
+
+    def test_recipes_are_never_to_earn(self):
+        game = self.open()
+        rep = game.ns.Reputation
+        recipe = game.lua.table_from({"factionID": 576, "standing": 7, "kind": "r"})
+        worn = game.lua.table_from({"factionID": 576, "standing": 7, "kind": "w"})
+        self.assertTrue(rep.Reachable(recipe), "the crafter's reputation is not the player's to earn")
+        self.assertFalse(rep.Reachable(worn))
+        self.assertTrue(rep.Reachable(None))
+
+    def test_enchant_rows_say_what_a_reputation_asks(self):
+        game = self.open(saved="EasyBISCharDB = { phase = 9 }")
+        window = game.ns.Browser.window
+        game.stub.run(window.tabs.buttons[2], "OnClick")
+        state, gated = game.ns.Browser.state, []
+        for cls in test_addon.CLASSES:
+            for spec in range(1, int(game.ns.Index.SpecCount(cls)) + 1):
+                if not gated:
+                    state["class"], state.spec = cls, spec
+                    game.ns.SetOption(game.ns, "listAlts", False)
+                    game.ns.SetOption(game.ns, "listAlts", True)   # the window draws them again
+                    gated = self.gated_rows(game)
+        self.assertTrue(gated, "no enchant of any spec needs a reputation")
+        row = gated[0]
+        self.assertEqual(row.height, ROW + 16)
+        game.stub.run(row, "OnEnter")
+        lines = [plain(line[1]) for line in game.lua.globals().GameTooltip.lines.values()]
+        self.assertTrue(any(text.startswith("Requires ") for text in lines), lines)
+        self.assertEqual(sum(1 for text in lines if text.startswith("Requires ")), 1)
+
+    def test_reputations_tab(self):
+        game = self.pvp_game()
+        window = game.ns.Browser.window
+        self.assertIsNone(game.ns.ReputationView.view, "the tab is made when it is first asked for")
+        game.stub.run(window.tabs.buttons[4], "OnClick")
+        view = game.ns.ReputationView.view
+        self.assertTrue(view.shown)
+        self.assertEqual(look(window.tabs.buttons[4]), "lit")
+        for hidden in (window.slot, window.source, window.zone, window.reputation, window.add, window.alts, window.scroll):
+            self.assertFalse(hidden.shown)
+        for kept in (window.spec, window.list, window.phase):
+            self.assertTrue(kept.shown)
+
+        needs = view.factionData
+        self.assertTrue(needs.own[1])
+        first = needs.own[1]
+        self.assertEqual(view.chosen.factionID, first.factionID)
+        self.assertEqual(strip_colors(view.title.text), f"Faction {first.factionID}")
+        lines = list(view.detailData.values())
+        kinds = [line.kind for line in lines]
+        self.assertEqual(kinds.count("step"), 4, "Friendly, Honored, Revered, Exalted")
+        self.assertEqual([plain(line.text) for line in lines if line.kind == "section"],
+                         ["What each standing unlocks for this spec", "Vendor", "How to earn it"])
+        entries = [line.entry for line in lines if line.kind == "entry"]
+        self.assertEqual(len(entries), first.best + first.alts + first.other)
+        self.assertTrue(all(line.evidence in ("data", "check", "unknown") for line in lines if line.kind == "way"))
+        self.assertTrue(any(line.kind == "way" and line.evidence == "unknown" for line in lines),
+                        "what is not known of a reputation is said to be unknown")
+        # nothing earned yet: not a word of gold
+        self.assertNotIn("|cffffd100", view.you.text)
+        self.assertFalse(any("|cffffd100" in (line.right or "") for line in lines))
+
+        # the player earns it: every standing reads as earned, in gold, and the tab follows by itself
+        self.earn(game, first.factionID, 8, 42000, 42000, 43000)
+        self.assertIn("|cffffd100", view.you.text)
+        steps = [line for line in view.detailData.values() if line.kind == "step"]
+        self.assertEqual([plain(line.right) for line in steps], ["Earned"] * 4)
+
+        # another faction, by a click
+        if needs.own[2]:
+            second = view.buttons[2]
+            game.stub.run(second, "OnClick")
+            self.assertEqual(view.chosen.factionID, needs.own[2].factionID)
+            self.assertEqual(game.ns.Browser.state.faction, needs.own[2].factionID)
+
+        # leaving the tab hides it
+        game.stub.run(window.tabs.buttons[1], "OnClick")
+        self.assertFalse(view.shown)
+        self.assertTrue(window.scroll.shown)
+        self.assertTrue(window.slot.shown)
+
+    def test_recipes_are_kept_apart_in_the_tab(self):
+        """In every spec, a recipe is counted in the artisans' group and in nobody's own total."""
+        game = self.open()
+        rep = game.ns.Reputation
+        artisans = 0
+        for cls in test_addon.CLASSES:
+            for spec in range(1, int(game.ns.Index.SpecCount(cls)) + 1):
+                for mode in ("pve", "pvp"):
+                    needs = rep.Needs(cls, spec, mode)
+                    for group in needs.own.values():
+                        self.assertFalse(group.artisan)
+                        for entries in group.steps.values():
+                            self.assertFalse([e for e in entries.values() if e.requirement.kind == "r"])
+                    for group in needs.artisan.values():
+                        artisans += 1
+                        self.assertTrue(group.artisan)
+                        for entries in group.steps.values():
+                            self.assertFalse([e for e in entries.values() if e.requirement.kind != "r"])
+        self.assertGreater(artisans, 0)
+
+    def test_reputations_tab_shows_a_piece_asking_for_neutral(self):
+        game = self.pvp_game()
+        window = game.ns.Browser.window
+        game.lua.eval("""function(rep)
+            local needs = rep.Needs
+            rep.Needs = function(...)
+                local result = needs(...)
+                local group = result.own[1]
+                group.steps[3] = { { id = 21196, slot = "finger", role = "alt",
+                    requirement = { factionID = group.factionID, standing = 3, kind = "w" } } }
+                return result
+            end
+        end""")(game.ns.Reputation)
+        game.stub.run(window.tabs.buttons[4], "OnClick")
+        lines = list(game.ns.ReputationView.view.detailData.values())
+        steps = [plain(line.text) for line in lines if line.kind == "step"]
+        self.assertEqual(steps, ["Neutral", "Friendly", "Honored", "Revered", "Exalted"])
+        self.assertEqual(lines[[line.kind for line in lines].index("step") + 1].entry.id, 21196)
+
+    def test_reputations_tab_with_nothing_to_earn(self):
+        game = self.pvp_game()
+        window = game.ns.Browser.window
+        needs = game.lua.eval("function(rep) rep.Needs = function() return { own = {}, artisan = {} } end end")
+        needs(game.ns.Reputation)
+        game.stub.run(window.tabs.buttons[4], "OnClick")
+        view = game.ns.ReputationView.view
+        self.assertTrue(view.empty.shown)
+        self.assertEqual(view.empty.text, "This spec needs no reputation for this list and this phase.")
+        self.assertFalse(view.list.shown or view.detail.shown or view.title.shown)
+
+    def test_character_sheet_sums_up_the_reputations(self):
+        game = self.pvp_game()
+        window = game.ns.Browser.window
+        game.stub.run(window.tabs.buttons[3], "OnClick")
+        view = game.ns.Character.view
+        summary = list(view.reputationData.values())
+        self.assertTrue(summary)
+        self.assertTrue(view.reputationTitle.shown)
+        cells = [cell for cell in view.cellData.values() if cell.reputation and cell.reputation.kind != "r"]
+        self.assertEqual(sum(line.total for line in summary), len(cells), "the recipes are not counted")
+        line = view.reputations[1]
+        self.assertEqual(strip_colors(line.count.text), f"0 / {summary[0].total}")
+        self.assertNotIn("|cffffd100", line.count.text)
+        # a cell says what it asks for, and not where it comes from
+        cell = next(view.cells[index] for index in range(1, len(view.cellData) + 1)
+                    if view.cellData[index].reputation and view.cellData[index].reputation.factionID == summary[0].factionID)
+        self.assertIn(game.ns.Reputation.StandingName(cell.data.reputation.standing), plain(cell.where.text))
+        # earned: the count and the cell turn gold
+        self.earn(game, summary[0].factionID, 8, 42000, 42000, 43000)
+        self.assertEqual(strip_colors(line.count.text), f"{summary[0].total} / {summary[0].total}")
+        self.assertIn("|cffffd100", line.count.text)
+        self.assertIn("Earned", plain(cell.where.text))
+        # a click opens the tab on that faction
+        game.stub.run(line, "OnClick")
+        self.assertEqual(game.ns.Browser.state.tab, "reputations")
+        self.assertEqual(game.ns.ReputationView.view.chosen.factionID, summary[0].factionID)
+
+    def test_reputations_in_french(self):
+        game = self.open(locale="frFR", saved="EasyBISCharDB = { class = 'WARRIOR', spec = 2, list = 'pvp' }", cls="WARRIOR")
+        window = game.ns.Browser.window
+        self.assertEqual(label(window.tabs.buttons[4]), "Réputations")
+        self.assertEqual(label(window.reputation), "Toutes")
+        game.stub.run(window.tabs.buttons[4], "OnClick")
+        view = game.ns.ReputationView.view
+        self.assertEqual([plain(line.text) for line in view.detailData.values() if line.kind == "section"],
+                         ["Ce que chaque palier débloque pour cette spécialisation", "Vendeur", "Comment progresser"])
 
     def test_older_client(self):
         game = Game(saved=OLD_CLIENT + "; " + ENHANCEMENT)

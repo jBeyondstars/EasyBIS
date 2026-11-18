@@ -7,7 +7,8 @@ Best-in-slot gear for every class and spec of **WoW Forever**, in a window and i
 - **Items**: the best items of each slot at level 60, PvE and PvP, with their alternatives and sources. You can filter by phase, slot, source and zone, and add items to a list yourself.
 - **Character**: the BIS #1 of each slot laid out as a character sheet, with its best enchant, worn by your own character.
 - **Enchants**: the best enchant of each slot and how to get it.
-- **Tooltips**: which classes and specs want an item, and whether it is their BIS.
+- **Reputations**: what your spec needs of each faction, where you stand, what each standing unlocks, who sells it and what is known of how to earn it. Crafters' recipes are kept apart.
+- **Tooltips**: which classes and specs want an item, whether it is their BIS, and the reputation it asks for.
 
 Type `/easybis` (or `/ebis`) in the game, or `/easybis help` for the commands.
 

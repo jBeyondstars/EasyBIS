@@ -680,6 +680,189 @@ class AddonTest(unittest.TestCase):
         self.assertIn("PvP", game.slash("list 2 pvp")[0])
         self.assertIn("no spec number 7", game.slash("list 7")[0])
 
+    # -- reputations ---------------------------------------------------------------------------
+
+    @staticmethod
+    def wearers_pieces(game, phase, side, mode) -> tuple[int, int, int, int]:
+        """The best pieces asking for the wearer's reputation: their number over every spec, the specs that have
+        some, the most a spec has, and the number of specs."""
+        count = game.lua.eval("""function(ns, phase, side, list)
+            local total, specs, most, all = 0, 0, 0, 0
+            for _, class in ipairs(ns.CLASSES) do
+                for spec = 1, ns.Index.SpecCount(class) do
+                    all = all + 1
+                    local mine = 0
+                    for _, group in ipairs(ns.Reputation.Needs(class, spec, list, phase, side).own) do
+                        for _, entries in pairs(group.steps) do
+                            for _, entry in ipairs(entries) do
+                                if entry.id and entry.role == "best" and entry.requirement.kind == "w" then
+                                    mine = mine + 1
+                                end
+                            end
+                        end
+                    end
+                    total, most = total + mine, math.max(most, mine)
+                    if mine > 0 then specs = specs + 1 end
+                end
+            end
+            return total, specs, most, all
+        end""")
+        return count(game.ns, phase, side, mode)
+
+    def test_reputation_counts_of_the_validated_analysis(self):
+        game = Game()
+        self.assertEqual(self.wearers_pieces(game, 0, "a", "pve"), (41, 25, 3, 27))
+        self.assertEqual(self.wearers_pieces(game, 0, "h", "pve"), (40, 25, 3, 27))
+        self.assertEqual(self.wearers_pieces(game, 0, "a", "pvp"), (66, 27, 6, 27))
+        self.assertEqual(self.wearers_pieces(game, 0, "h", "pvp"), (49, 25, 5, 27))
+        self.assertEqual(self.wearers_pieces(game, 9, "a", "pve"), (24, 17, 2, 27))
+
+    def test_reputation_requirements_follow_the_data(self):
+        game = Game()
+        text = (ADDON / "Data" / "Reputation.lua").read_text(encoding="utf-8")
+        block = re.search(r"items = \[==\[\n(.*?)\]==\]", text, re.S).group(1)
+        records = [line.split("|") for line in block.splitlines()]
+        self.assertTrue(records)
+        rep = game.ns.Reputation
+        for fields in records:
+            item_id, side = int(fields[0]), fields[1]
+            found = rep.Requirement(item_id, side or "a")
+            self.assertEqual((found.factionID, found.standing, found.kind),
+                             (int(fields[2]), int(fields[3]), fields[4]), fields)
+        self.assertIsNone(rep.Requirement(EYE_OF_REND, "a"))
+        self.assertIsNone(rep.EnchantRequirement("no such enchant"))
+
+    def test_reputation_of_the_other_side(self):
+        for faction, status in (("Horde", "other"), ("Alliance", "missing")):
+            game = Game(faction=faction)
+            stormpike = game.lua.table_from({"factionID": 730, "standing": 4})
+            self.assertEqual(game.ns.Reputation.Status(stormpike), status)
+
+    def test_reputation_standing_as_the_game_says(self):
+        game = Game()
+        rep, stub = game.ns.Reputation, game.stub
+        need = game.lua.table_from({"factionID": 576, "standing": 5, "kind": "w"})
+        def be(reaction, value, low, high):
+            stub.factions[576] = game.lua.table_from({"reaction": reaction, "value": value, "low": low, "high": high})
+            stub.fire("UPDATE_FACTION")
+        # never met: the game reads Neutral 0, the pane does not list it
+        self.assertFalse(rep.Standing(576).met)
+        self.assertEqual(rep.ProgressText(576), "Not met")
+        self.assertEqual(rep.Status(need), "missing")
+        be(5, 3500, 3000, 9000)        # Friendly, 500 into it
+        self.assertEqual(rep.Status(need), "missing")
+        self.assertEqual((rep.Standing(576).standing, rep.Standing(576).value, rep.Standing(576).span), (4, 500, 6000))
+        self.assertEqual(rep.ProgressText(576), "Friendly 500 / 6000")
+        self.assertEqual(rep.ProgressText(576, True), "Friendly")
+        self.assertAlmostEqual(rep.Ratio(576), 500 / 6000)
+        self.assertEqual(strip_colors(rep.StateText(need)), "You: Friendly")
+        self.assertNotIn("|cffffd100", rep.StateText(need))
+        be(6, 9000, 9000, 21000)       # Honored: what is asked for
+        self.assertEqual(rep.Status(need), "met")
+        self.assertTrue(rep.Reachable(need))
+        self.assertEqual(rep.StateText(need), "|cffffd100Earned|r")
+        be(8, 42000, 42000, 43000)     # Exalted: no numbers left to read
+        self.assertEqual(rep.ProgressText(576), "Exalted")
+        self.assertEqual(rep.Ratio(576), 1)
+
+    def test_reputation_asking_for_neutral(self):
+        """The game reads a faction never met as Neutral 0: that is not a Neutral standing earned."""
+        game = Game()
+        rep, stub = game.ns.Reputation, game.stub
+        need = game.lua.table_from({"factionID": 910, "standing": 3, "kind": "w"})
+        self.assertEqual(rep.Status(need), "missing")
+        self.assertFalse(rep.Reachable(need))
+        self.assertNotIn("|cffffd100", rep.StateText(need))
+        # the reputation pane hides the answer: unknown, and still not gold
+        stub.factionList = game.lua.table_from({1: game.lua.table_from({"factionID": 1, "isHeader": True, "isCollapsed": True})})
+        stub.fire("UPDATE_FACTION")
+        self.assertEqual(rep.Status(need), "unknown")
+        self.assertNotIn("|cffffd100", rep.StateText(need))
+        # met, and at Neutral: earned
+        stub.factionList = game.lua.table_from({1: game.lua.table_from({"factionID": 910, "isHeader": False, "isCollapsed": False})})
+        stub.fire("UPDATE_FACTION")
+        self.assertEqual(rep.Status(need), "met")
+
+    def test_reputation_never_claims_what_the_game_hides(self):
+        game = Game()
+        rep, stub = game.ns.Reputation, game.stub
+        entry = lambda **fields: game.lua.table_from(fields)
+        # a collapsed header may hide the faction: nothing is said of whether it was met
+        stub.factionList = game.lua.table_from({1: entry(factionID=1118, isHeader=True, isCollapsed=True)})
+        stub.fire("UPDATE_FACTION")
+        self.assertIsNone(rep.Standing(576).met)
+        self.assertEqual(rep.ProgressText(576), "Neutral 0 / 3000")
+        # listed at Neutral 0: met
+        stub.factionList = game.lua.table_from({1: entry(factionID=576, isHeader=False, isCollapsed=False)})
+        stub.fire("UPDATE_FACTION")
+        self.assertTrue(rep.Standing(576).met)
+        # a faction the game does not know is written as unknown, and is not "missing"
+        stub.factionsUnknown = True
+        stub.fire("UPDATE_FACTION")
+        need = game.lua.table_from({"factionID": 576, "standing": 5, "kind": "w"})
+        self.assertEqual(rep.Status(need), "unknown")
+        self.assertEqual(rep.ProgressText(576), "Unknown")
+        self.assertEqual(strip_colors(rep.StateText(need)), "Unknown")
+        self.assertFalse(rep.Reachable(need))
+
+    def test_reputation_on_a_client_without_c_reputation(self):
+        game = Game(saved="""C_Reputation = nil
+            function GetFactionInfoByID(id) return "Old " .. id, "", 6, 9000, 21000, 12000 end
+            function GetNumFactions() return 0 end""")
+        standing = game.ns.Reputation.Standing(576)
+        self.assertEqual((standing.name, standing.standing, standing.value, standing.span), ("Old 576", 5, 3000, 12000))
+
+    def test_reputation_changes_are_announced_once(self):
+        game = Game()
+        seen = game.lua.eval("function(ns) local n = { count = 0 }; ns:On('REPUTATION_CHANGED', function() n.count = n.count + 1 end); return n end")(game.ns)
+        for _ in range(5):
+            game.stub.fire("UPDATE_FACTION")
+        self.assertEqual(seen.count, 0, "the game sends them in bursts")
+        game.stub.runTimers()
+        self.assertEqual(seen.count, 1)
+
+    def test_reputation_tooltip(self):
+        game = Game(cls="WARRIOR")
+        rep = game.ns.Reputation
+        text = (ADDON / "Data" / "Reputation.lua").read_text(encoding="utf-8")
+        block = re.search(r"items = \[==\[\n(.*?)\]==\]", text, re.S).group(1)
+        fields = next(line.split("|") for line in block.splitlines() if line.split("|")[4] == "w" and line.split("|")[6])
+        item_id, faction = int(fields[0]), int(fields[2])
+        lines = list(rep.TooltipLines(item_id).values())
+        self.assertTrue(lines[0].text.startswith("Requires "))
+        self.assertEqual((lines[0].r, lines[0].g, lines[0].b), (1, 1, 1), "not earned: not gold")
+        words = [strip_colors(line.text) for line in lines]
+        self.assertTrue(any(word.startswith("You: ") for word in words), words)
+        self.assertTrue(any(word.startswith("Vendor: ") for word in words), words)
+        self.assertTrue(any(word.startswith("Price: ") for word in words), words)
+        game.stub.factions[faction] = game.lua.table_from({"reaction": 8, "value": 42000, "low": 42000, "high": 43000})
+        game.stub.fire("UPDATE_FACTION")
+        first = rep.TooltipLines(item_id)[1]
+        self.assertEqual((first.r, first.g, first.b), (1, 0.82, 0), "earned: gold")
+        self.assertEqual(len(rep.TooltipLines(EYE_OF_REND)), 0)
+        # the option takes them out of the game's tooltips
+        shown = lambda: any(line[0].startswith("Requires ") for line in game.tooltip(item_id))
+        if game.lines(item_id):
+            self.assertTrue(shown())
+            game.ns.SetOption(game.ns, "repTooltip", False)
+            self.assertFalse(shown())
+
+    def test_reputation_ways_say_what_is_known(self):
+        game = Game()
+        ways = lambda faction: [(way.text, way.evidence) for way in game.ns.Reputation.Ways(faction).values()]
+        self.assertEqual([evidence for _, evidence in ways(2819)], ["unknown"], "The Watchers: nothing is known")
+        powderfuse = ways(2827)
+        self.assertIn("check", [evidence for _, evidence in powderfuse])
+        self.assertEqual(powderfuse[-2:], [("The whole way to Exalted.", "unknown"), ("Reputation from creatures.", "unknown")])
+        argent = ways(529)
+        self.assertEqual(argent[0], ("219 quests listed, 127 of them repeatable.", "data"))
+        self.assertFalse([text for text, _ in argent if text == "The whole way to Exalted."])
+        # no time is ever said: nothing measures the player's gains
+        for language, words in game.ns.locales.items():
+            for key, value in words.items():
+                if str(key).startswith("REP_"):
+                    self.assertIsNone(re.search(r"\b(hours?|heures?|minutes?|days?|jours?)\b", str(value), re.I), (language, key))
+
     # -- the game runs Lua 5.1 ----------------------------------------------------------------
 
     def test_no_syntax_newer_than_lua_51(self):

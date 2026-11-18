@@ -14,6 +14,7 @@ The window's own controls, all in one flat dark style:
   Widgets.Paint(button, look)                      "idle", "lit" (the chosen one, a switch that is on) or
                                                    "active" (gold)
   Widgets.Click()                                  the game's click sound
+  Widgets.Scroll(parent)                           a scroll frame and the frame it scrolls: scroll, child
 
 Gold is kept for a filter that hides something, so a glance at the top of
 the window tells whether the list is whole.
@@ -34,6 +35,16 @@ local HOVER_EDGE = { 1, 1, 1, 0.60 }
 
 function Widgets.Click()
     if PlaySound and SOUNDKIT then PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON) end
+end
+
+function Widgets.Scroll(parent)
+    local modern = C_XMLUtil ~= nil and C_XMLUtil.GetTemplateInfo ~= nil
+        and C_XMLUtil.GetTemplateInfo("ScrollFrameTemplate") ~= nil
+    local scroll = CreateFrame("ScrollFrame", nil, parent, modern and "ScrollFrameTemplate" or "UIPanelScrollFrameTemplate")
+    local child = CreateFrame("Frame", nil, scroll)
+    child:SetSize(1, 1)
+    scroll:SetScrollChild(child)
+    return scroll, child
 end
 
 function Widgets.Paint(button, look)

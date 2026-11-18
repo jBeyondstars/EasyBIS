@@ -21,10 +21,12 @@ Data\Lists.lua
 Data\Items.lua
 Data\Names.lua
 Data\Enchants.lua
+Data\Reputation.lua
 Ladders.lua
 Items.lua
 Sources.lua
 Enchants.lua
+Reputation.lua
 Custom.lua
 Index.lua
 Tooltip.lua
@@ -33,5 +35,6 @@ UI\Widgets.lua
 UI\AddItem.lua
 UI\Browser.lua
 UI\Character.lua
+UI\Reputations.lua
 UI\MinimapButton.lua
 Commands.lua

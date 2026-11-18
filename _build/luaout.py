@@ -10,6 +10,7 @@ from pathlib import Path
 
 import ladders
 import phases
+import reputations
 
 CREDIT = "Data from ForeverDB.net (https://foreverdb.net)"
 ENCHANTS_PER_SLOT = 3
@@ -303,6 +304,60 @@ def enchants_file(db, all_ladders) -> str:
     return "\n".join(lines) + "\n"
 
 
+def reputation_file(db, all_ladders, reading: dict) -> str:
+    """The reputations the listed items and enchants ask for, and what is known of how to earn them."""
+    shown = shown_ids(all_ladders)
+    enchants = {enchant for specs in (db.enchants or {}).values() for lists in specs.values()
+                for entries in lists.values() for enchant, _ in entries}
+    vendors = reputations.faction_vendors(reading, shown)
+    rewards = {record["faction"] for item_id in shown for record in reading.get("items", {}).get(item_id, ())
+               if record["kind"] == reputations.QUEST}
+
+    factions, methods = [], []
+    for number, (name, side) in sorted(reputations.FACTIONS.items()):
+        known = reading.get("factions", {}).get(number) or {"quests": 0, "repeatable": 0, "once": {}, "methods": []}
+        factions.append("|".join(map(str, (
+            number, _field(name), side, known["quests"], known["repeatable"], known["once"].get("a", 0),
+            known["once"].get("h", 0), vendors.get(number, ""), "1" if number in rewards else ""))))
+        for title, amount, repeats, quest_side in known["methods"]:
+            methods.append("|".join(map(str, (number, _field(title), amount, repeats, quest_side))))
+
+    items, used = [], set(vendors.values())
+    for item_id in sorted(shown):
+        for record in reading.get("items", {}).get(item_id, ()):
+            if record.get("vendor"):
+                used.add(record["vendor"])
+            items.append("|".join(map(str, (
+                item_id, record["side"], record["faction"], record["standing"], record["kind"],
+                record.get("vendor", ""), record.get("price", ""), _field(record.get("via", "")),
+                record.get("profession", ""), record.get("skill", "")))))
+    sellers = ["|".join([str(npc)] + [_field(str(text)) for text in reading["vendors"][npc]])
+               for npc in sorted(used) if npc in reading.get("vendors", {})]
+    formulas = ["|".join(map(str, (
+        enchant, record["faction"], record["standing"], record["kind"], "1" if record.get("scroll") else "",
+        _field(record.get("via", "")))))
+        for enchant, record in sorted(reading.get("enchants", {}).items()) if enchant in enchants]
+
+    lines = _header(db, "The reputations the listed items and enchants ask for, and the quests that earn them.", (
+        f"Read in ForeverDB's Items.lua and Recipes.lua and in QuestieDB {reading.get('questiedb', '?')} "
+        f"(https://github.com/Questie/QuestieDB, GPL-3.0) on {reading.get('date', '?')}. See _build/reputations.py.",
+        "  factions  id|name|side|quests|repeatable|reputation from the quests done once, Alliance|the same, Horde|"
+        "npc that sells the most|1 when a quest rewards its pieces",
+        "  methods   faction|quest|amount|1 when it repeats|side",
+        "  vendors   npc|name|uiMap|x|y",
+        "  items     id|side|faction|standing|kind|vendor npc|price in copper|quest or recipe|profession|skill",
+        "  enchants  id|faction|standing|kind|1 when a scroll does the same|quest or recipe",
+        "  kind: w the wearer's reputation, q a quest asks for it, r the crafter's: the recipe is sold against it",
+        "  standing: 3 Neutral, 4 Friendly, 5 Honored, 6 Revered, 7 Exalted",
+    ))
+    lines.append("ns.data.reputation = {")
+    for name, rows in (("factions", factions), ("methods", methods), ("vendors", sellers), ("items", items),
+                       ("enchants", formulas)):
+        lines.append(f"{name} = {_block(rows)},")
+    lines.append("}")
+    return "\n".join(lines) + "\n"
+
+
 def meta_file(db) -> str:
     lines = _header(db, "What the data files were built from.")
     lines.append("ns.data.meta = {")
@@ -320,7 +375,7 @@ def meta_file(db) -> str:
 
 
 def write_all(db, all_ladders, out_dir) -> dict[str, int]:
-    """Write the five data files; returns {file name: size in bytes}."""
+    """Write the six data files; returns {file name: size in bytes}."""
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     files = {
@@ -329,6 +384,7 @@ def write_all(db, all_ladders, out_dir) -> dict[str, int]:
         "Items.lua": items_file(db, all_ladders),
         "Enchants.lua": enchants_file(db, all_ladders),
         "Names.lua": names_file(db),
+        "Reputation.lua": reputation_file(db, all_ladders, reputations.load()),
     }
     sizes = {}
     for name, text in files.items():

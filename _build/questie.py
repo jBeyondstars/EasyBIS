@@ -133,6 +133,10 @@ class Store:
     def has(self, entity: str, number: int) -> bool:
         return (entity, number) in self._rows
 
+    def numbers(self, entity: str) -> list[int]:
+        """Every id QuestieDB has a row for, in order."""
+        return sorted(number for kind, number in self._rows if kind == entity)
+
     def _value(self, entity: str, number: int, name: str):
         text = self._rows.get((entity, number), {}).get(name)
         if text is None:

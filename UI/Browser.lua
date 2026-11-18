@@ -5,14 +5,16 @@ local Widgets = ns.Widgets
 --[[
 The Easy BIS window: the best gear of a spec, slot by slot.
 
-  top      filters: spec, list (PvE, PvP), phase, slot, source, zone. A filter that narrows the list
-           down is gold; the others stay quiet.
+  top      filters: spec, list (PvE, PvP), phase, slot, source, zone, reputation. A filter that narrows
+           the list down is gold; the others stay quiet.
   middle   the rows (UI\Rows.lua). An item takes one line: icon, name, score bar and rank, type, where
-           it comes from. With the option "compact" off it takes two, as an enchant always does.
+           it comes from. With the option "compact" off it takes two, as an enchant always does. What a
+           reputation stands in front of says so under where it comes from.
            The Character tab shows the best pick of every slot as a character sheet instead
-           (UI\Character.lua): it follows the spec, the list and the phase, and has no other filter.
-  bottom   Items / Enchants / Character, the data's credit, "Add an item" (UI\AddItem.lua), the
-           alternatives switch and the options menu. The grip in the corner changes the window's height.
+           (UI\Character.lua), the Reputations tab what the spec needs of each faction
+           (UI\Reputations.lua): both follow the spec, the list and the phase, and have no other filter.
+  bottom   Items / Enchants / Character / Reputations, the data's credit, "Add an item" (UI\AddItem.lua),
+           the alternatives switch and the options menu. The grip in the corner changes the window's height.
 
 The class, spec, list and phase are remembered per character; the other
 filters last until the window is rebuilt (a reload). The phase is not the
@@ -23,6 +25,8 @@ opens beside the window; Shift-click links the item in chat.
   Browser.Toggle(), Browser.Open(), Browser.Close()
   Browser.Target()                class, spec, list: what the window shows, or will show once opened
   Browser.ShowSlot(slot)          the Items tab, on that slot alone
+  Browser.ShowReputation(factionID, artisan)   the Reputations tab, on that faction
+  Browser.EnchantTooltip(owner, enchant, requirement)   an enchant's tooltip beside the window; the caller shows it
   Browser.PlaceTooltip(owner, side)  the game's tooltip, owned by a part of the window and set beside
                                   it; side "LEFT": against the owner's left edge, inside the window
   Browser.ItemTooltip(owner, data, side)   an item's tooltip there, with where it comes from in full;
@@ -43,7 +47,9 @@ local MIN_HEIGHT, MAX_HEIGHT = 380, 1400
 local INSET_TOP, INSET_BOTTOM = 70, 58   -- what the filters and the footer take of the window's height
 local ROW_HEIGHT = 54      -- a row on two lines
 local COMPACT_HEIGHT = 36  -- an item on one line
-local HEADER_HEIGHT = 38   -- a slot's name over its rows; the text sits at the bottom, the rest is spacing
+local REPUTATION_LINE = 16 -- what a reputation adds to a row on two lines; a row on one keeps its height
+local COMPACT_SHIFT = 7    -- on one line: how far where it comes from and the reputation sit from the middle
+local HEADER_HEIGHT = 38  -- a slot's name over its rows; the text sits at the bottom, the rest is spacing
 local NOTE_HEIGHT = 28     -- a line of plain text between rows
 local ICON, COMPACT_ICON = 44, 30   -- the item's picture, on two lines and on one
 local SOURCE_ICON = 16     -- the picture of where it comes from
@@ -260,6 +266,16 @@ local function ZoneChoices(facets)
     return choices
 end
 
+local REPUTATION_NAMES = { ok = "REP_FILTER_OK", todo = "REP_FILTER_TODO" }
+
+local function ReputationChoices()
+    return {
+        { text = L.REP_FILTER_ALL, value = ALL },
+        { text = L.REP_FILTER_OK, value = "ok" },
+        { text = L.REP_FILTER_TODO, value = "todo" },
+    }
+end
+
 ---------------------------------------------------------------------------
 -- The window
 ---------------------------------------------------------------------------
@@ -451,24 +467,32 @@ local function ItemTooltip(owner, data, side)
     end
 end
 
+local function EnchantTooltip(owner, enchant, requirement)
+    PlaceTooltip(owner)
+    if enchant.kind == "spell" then
+        pcall(GameTooltip.SetSpellByID, GameTooltip, enchant.number)
+    else
+        pcall(GameTooltip.SetItemByID, GameTooltip, enchant.number)
+    end
+    if GameTooltip:NumLines() == 0 then GameTooltip:SetText(enchant.name, 1, 1, 1) end
+    if enchant.effect ~= "" then GameTooltip:AddLine(enchant.effect, 0.1, 1, 0.1, true) end
+    if enchant.where ~= "" then GameTooltip:AddLine(ns.Enchants.Where(enchant), 1, 0.82, 0, true) end
+    local remark = ns.Sources.OriginRemark(enchant.origin)
+    if remark then GameTooltip:AddLine(remark, MUTED[1], MUTED[2], MUTED[3], true) end
+    if requirement then
+        GameTooltip:AddLine(L.REP_TIP_NEED:format(ns.Reputation.NeedText(requirement)), 1, 1, 1, true)
+        GameTooltip:AddLine(ns.Reputation.StateText(requirement), MUTED[1], MUTED[2], MUTED[3], true)
+        if requirement.scroll then GameTooltip:AddLine(L.REP_SCROLL, MUTED[1], MUTED[2], MUTED[3], true) end
+    end
+end
+
 local function RowTooltip(row)
     local data = row.data
     if not data or data.kind == "note" or data.kind == "header" then return end
     if data.kind == "item" then
         ItemTooltip(row, data)
     else
-        PlaceTooltip(row)
-        local enchant = data.enchant
-        if enchant.kind == "spell" then
-            pcall(GameTooltip.SetSpellByID, GameTooltip, enchant.number)
-        else
-            pcall(GameTooltip.SetItemByID, GameTooltip, enchant.number)
-        end
-        if GameTooltip:NumLines() == 0 then GameTooltip:SetText(enchant.name, 1, 1, 1) end
-        if enchant.effect ~= "" then GameTooltip:AddLine(enchant.effect, 0.1, 1, 0.1, true) end
-        if enchant.where ~= "" then GameTooltip:AddLine(ns.Enchants.Where(enchant), 1, 0.82, 0, true) end
-        local remark = ns.Sources.OriginRemark(enchant.origin)
-        if remark then GameTooltip:AddLine(remark, MUTED[1], MUTED[2], MUTED[3], true) end
+        EnchantTooltip(row, data.enchant, data.reputation)
     end
     ShowTooltip()
 end
@@ -527,6 +551,12 @@ local function CreateRow(parent)
     row.kind:SetTextColor(MUTED[1], MUTED[2], MUTED[3])
     row.detail = Text(row, FONT_TEXT)
 
+    -- what a reputation asks for, and where the player stands
+    row.rep = Text(row, FONT_TEXT)
+    row.rep:SetTextColor(MUTED[1], MUTED[2], MUTED[3])
+    row.repState = Text(row, FONT_TEXT)
+    row.repState:SetJustifyH("RIGHT")
+
     -- a header row shows this alone: the slot's name
     row.header = row:CreateFontString(nil, "OVERLAY", FONT_HEADER)
     row.header:SetPoint("BOTTOMLEFT", 6, 5)
@@ -579,7 +609,7 @@ local function Arrange(row, compact)
     row.compact = compact
     local icon = compact and COMPACT_ICON or ICON
     row.icon:SetSize(icon, icon)
-    for _, part in ipairs({ row.name, row.sub, row.barBack, row.sourceIcon, row.kind, row.detail }) do
+    for _, part in ipairs({ row.name, row.sub, row.barBack, row.sourceIcon, row.kind }) do
         part:ClearAllPoints()
     end
     -- the right end of the texts leaves room for the button that removes an item added by hand
@@ -590,8 +620,6 @@ local function Arrange(row, compact)
         row.sub:SetPoint("LEFT", row, "LEFT", COMPACT.type, 0)
         row.sub:SetPoint("RIGHT", row, "LEFT", COMPACT.source - 8, 0)
         row.sourceIcon:SetPoint("LEFT", row, "LEFT", COMPACT.source, 0)
-        row.detail:SetPoint("LEFT", row.sourceIcon, "RIGHT", 6, 0)
-        row.detail:SetPoint("RIGHT", row, "RIGHT", -28, 0)
     else
         row.name:SetPoint("TOPLEFT", row.icon, "TOPRIGHT", 8, -4)
         row.name:SetPoint("RIGHT", row, "LEFT", WIDE.rank - 8, 0)
@@ -601,9 +629,38 @@ local function Arrange(row, compact)
         row.sourceIcon:SetPoint("LEFT", row, "TOPLEFT", WIDE.source, -LINE_ONE)
         row.kind:SetPoint("LEFT", row.sourceIcon, "RIGHT", 6, 0)
         row.kind:SetPoint("RIGHT", row, "TOPRIGHT", -28, -LINE_ONE)
-        row.detail:SetPoint("BOTTOMLEFT", row, "BOTTOMLEFT", WIDE.source, 9)
-        row.detail:SetPoint("RIGHT", row, "RIGHT", -28, 0)
     end
+end
+
+-- Where the row says where it comes from, and the line a reputation adds under it: on one line the two
+-- share the row's height, on two the row grows by a line (RowHeight).
+local function PlaceReputation(row, compact, gated)
+    row.detail:ClearAllPoints()
+    row.rep:ClearAllPoints()
+    row.repState:ClearAllPoints()
+    if compact then
+        local shift = gated and COMPACT_SHIFT or 0
+        row.detail:SetPoint("LEFT", row.sourceIcon, "RIGHT", 6, shift)
+        row.detail:SetPoint("RIGHT", row, "RIGHT", -28, shift)
+        row.repState:SetPoint("RIGHT", row, "RIGHT", -28, -COMPACT_SHIFT)
+        row.rep:SetPoint("LEFT", row.sourceIcon, "RIGHT", 6, -COMPACT_SHIFT)
+    else
+        row.detail:SetPoint("BOTTOMLEFT", row, "BOTTOMLEFT", WIDE.source, gated and 9 + REPUTATION_LINE or 9)
+        row.detail:SetPoint("RIGHT", row, "RIGHT", -28, 0)
+        row.repState:SetPoint("BOTTOMRIGHT", row, "BOTTOMRIGHT", -28, 9)
+        row.rep:SetPoint("BOTTOMLEFT", row, "BOTTOMLEFT", WIDE.source, 9)
+    end
+    row.rep:SetPoint("RIGHT", row.repState, "LEFT", -8, 0)
+end
+
+local function ShowReputation(row, data, compact)
+    local requirement = data.reputation
+    row.rep:SetShown(requirement ~= nil)
+    row.repState:SetShown(requirement ~= nil)
+    PlaceReputation(row, compact, requirement ~= nil)
+    if not requirement then return end
+    row.rep:SetText(ns.Reputation.NeedText(requirement))
+    row.repState:SetText(ns.Reputation.StateText(requirement))
 end
 
 local function PlaceRank(row, hasBar)
@@ -682,6 +739,8 @@ local function FillRow(row, data)
     if plain then
         row.barBack:Hide()
         row.bar:Hide()
+        row.rep:Hide()
+        row.repState:Hide()
         if header then
             row.header:SetText(data.text)
             row.line:SetColorTexture(1, 0.82, 0, 0.45)
@@ -693,6 +752,7 @@ local function FillRow(row, data)
     row.line:SetColorTexture(1, 1, 1, 0.08)
     Arrange(row, compact)
     ShowRank(row, data)
+    ShowReputation(row, data, compact)
 
     if data.kind == "item" then
         local name, _, quality, _, _, _, subType, _, equipLoc, texture, _, classID, subclassID
@@ -723,7 +783,7 @@ local function RowHeight(data)
     if data.kind == "header" then return HEADER_HEIGHT end
     if data.kind == "note" then return NOTE_HEIGHT end
     if data.kind == "item" and ns:GetOption("compact") then return COMPACT_HEIGHT end
-    return ROW_HEIGHT
+    return data.reputation and ROW_HEIGHT + REPUTATION_LINE or ROW_HEIGHT
 end
 
 local function LayoutRows(rows)
@@ -770,9 +830,9 @@ end
 -- count come two submenus: the PvP rewards, a box per list (each list counts them or not), and the
 -- number of alternatives a slot lists.
 local OPTION_GROUPS = {
-    { "tooltip", "onlyMyClass", "alternatives" },
+    { "tooltip", "onlyMyClass", "alternatives", "repTooltip" },
     { "unsourced", "seenOnly" },
-    { "compact", "minimap" },
+    { "compact", "repCompact", "minimap" },
 }
 
 local function OpenOptionsMenu(owner)
@@ -859,25 +919,32 @@ local function Build()
         OpenMenu(self, PhaseChoices(), ns.Phase, function(value) ns:SetPhase(value) end)
     end)
 
-    window.slot = Widgets.Dropdown(window, L.FILTER_SLOT, 116)
+    window.slot = Widgets.Dropdown(window, L.FILTER_SLOT, 104)
     window.slot:SetPoint("BOTTOMLEFT", window.phase, "BOTTOMRIGHT", 8, 0)
     window.slot.button:SetScript("OnClick", function(self)
         Widgets.Click()
         OpenMenu(self, SlotChoices(), function() return state.slot or ALL end, Choose("slot"))
     end)
 
-    window.source = Widgets.Dropdown(window, L.FILTER_SOURCE, 116)
+    window.source = Widgets.Dropdown(window, L.FILTER_SOURCE, 104)
     window.source:SetPoint("BOTTOMLEFT", window.slot, "BOTTOMRIGHT", 8, 0)
     window.source.button:SetScript("OnClick", function(self)
         Widgets.Click()
         OpenMenu(self, SourceChoices(window.facets), function() return state.source or ALL end, Choose("source"))
     end)
 
-    window.zone = Widgets.Dropdown(window, L.FILTER_ZONE, 140)
+    window.zone = Widgets.Dropdown(window, L.FILTER_ZONE, 112)
     window.zone:SetPoint("BOTTOMLEFT", window.source, "BOTTOMRIGHT", 8, 0)
     window.zone.button:SetScript("OnClick", function(self)
         Widgets.Click()
         OpenMenu(self, ZoneChoices(window.facets), function() return state.zone or ALL end, Choose("zone"))
+    end)
+
+    window.reputation = Widgets.Dropdown(window, L.FILTER_REPUTATION, 110)
+    window.reputation:SetPoint("BOTTOMLEFT", window.zone, "BOTTOMRIGHT", 8, 0)
+    window.reputation.button:SetScript("OnClick", function(self)
+        Widgets.Click()
+        OpenMenu(self, ReputationChoices(), function() return state.reputation or ALL end, Choose("reputation"))
     end)
 
     -- Rows
@@ -897,19 +964,20 @@ local function Build()
     window.empty:SetPoint("TOP", 0, -40)
     window.empty:SetText(L.NO_ROWS)
 
-    -- Footer, left to right: the three tabs, the credit, "add an item", the alternatives, the options
+    -- Footer, left to right: the four tabs, the credit, "add an item", the alternatives, the options
     window.tabs = Widgets.Segmented(window,
         {
             { value = "items", text = L.TAB_ITEMS },
             { value = "enchants", text = L.TAB_ENCHANTS },
             { value = "character", text = L.TAB_CHARACTER },
+            { value = "reputations", text = L.TAB_REPUTATIONS },
         },
         function() return state.tab end,
         function(value)
             state.tab = value
             Refresh()
         end)
-    window.tabs:Layout(nil, 16)   -- three tabs: a little narrower each, so the credit keeps its room
+    window.tabs:Layout(nil, 12)   -- four tabs: a little narrower each, so the credit keeps its room
     window.tabs:SetPoint("BOTTOMLEFT", 10, 28)
 
     window.options = Widgets.Button(window, L.OPTIONS, 88, true)
@@ -959,6 +1027,7 @@ end
 Refresh = function()
     if not window or not window:IsShown() then return end
     local items, character = state.tab == "items", state.tab == "character"
+    local enchants, reputations = state.tab == "enchants", state.tab == "reputations"
     local rows, facets = {}, { sources = {}, zones = {} }
     if items then
         rows, facets = ns.Rows.Items(state)
@@ -968,7 +1037,7 @@ Refresh = function()
             if state.zone and not facets.zones[state.zone] then state.zone = nil end
             rows, facets = ns.Rows.Items(state)
         end
-    elseif not character then
+    elseif enchants then
         rows = ns.Rows.Enchants(state)
     end
     window.facets = facets
@@ -979,30 +1048,40 @@ Refresh = function()
     window.slot:Set(state.slot and ns.SlotName(state.slot) or L.ALL_SLOTS, state.slot ~= nil)
     window.source:Set(state.source and ns.Sources.CategoryName(state.source) or L.ALL_SOURCES, state.source ~= nil)
     window.zone:Set(state.zone or L.ALL_ZONES, state.zone ~= nil)
+    window.reputation:Set(state.reputation and L[REPUTATION_NAMES[state.reputation]] or L.REP_FILTER_ALL,
+        state.reputation ~= nil)
     -- The two lists do not apply to enchants. Where an item comes from and adding one by hand belong to
-    -- the list of items. The character sheet has every slot and no alternative: only the spec, the list
-    -- and the phase apply to it.
-    window.listLabel:SetShown(items or character)
-    window.list:SetShown(items or character)
-    window.slot:SetShown(not character)
+    -- the list of items. The character sheet and the reputations have every slot and no alternative: only
+    -- the spec, the list and the phase apply to them.
+    local listed = items or enchants
+    window.listLabel:SetShown(not enchants)
+    window.list:SetShown(not enchants)
+    window.slot:SetShown(listed)
     window.source:SetShown(items)
     window.zone:SetShown(items)
+    window.reputation:SetShown(listed)
     window.add:SetShown(items)
-    window.alts:SetShown(not character)
+    window.alts:SetShown(listed)
 
     window.list:Refresh()
     window.tabs:Refresh()
     window.alts:Refresh()
     ns.AddItem.Refresh()
-    window.scroll:SetShown(not character)
+    window.scroll:SetShown(listed)
+    if not listed then window.empty:Hide() end
     if character then
-        window.empty:Hide()
         if not window.character then window.character = ns.Character.Create(window.inset) end
         ns.Character.Update(state, window:GetHeight() - INSET_TOP - INSET_BOTTOM)
     else
         ns.Character.Hide()
-        LayoutRows(ns.Rows.Grouped(rows))
     end
+    if reputations then
+        if not window.reputations then window.reputations = ns.ReputationView.Create(window.inset) end
+        ns.ReputationView.Update(state)
+    else
+        ns.ReputationView.Hide()
+    end
+    if listed then LayoutRows(ns.Rows.Grouped(rows)) end
 end
 
 function Browser.ShowSlot(slot)
@@ -1010,8 +1089,14 @@ function Browser.ShowSlot(slot)
     Refresh()
 end
 
+function Browser.ShowReputation(factionID, artisan)
+    state.tab, state.faction, state.factionArtisan = "reputations", factionID, artisan == true
+    Refresh()
+end
+
 Browser.PlaceTooltip = PlaceTooltip
 Browser.ItemTooltip = ItemTooltip
+Browser.EnchantTooltip = EnchantTooltip
 Browser.ShowTooltip = ShowTooltip
 Browser.ModifiedClick = ModifiedClick
 
@@ -1041,6 +1126,7 @@ end
 
 ns:On("OPTION_CHANGED", function() Refresh() end)
 ns:On("CUSTOM_CHANGED", function() Refresh() end)
+ns:On("REPUTATION_CHANGED", function() Refresh() end)
 
 -- The entry in the game's addon menu (see the toc).
 function EasyBIS_OnCompartmentClick()

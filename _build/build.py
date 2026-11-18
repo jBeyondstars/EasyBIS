@@ -18,6 +18,10 @@
                                        keep the drops Wowhead Forever counted, as the DungeonJournal and GearQuest
                                        Forever addons hold them (drops.py), then build; FOLDER defaults to the
                                        AddOns folder Easy BIS is in
+    python build.py --import-reputations [FOLDER]
+                                       keep the reputations items and enchants ask for (reputations.py), then build;
+                                       FOLDER holds ForeverDB's Items.lua and Recipes.lua and defaults to the local
+                                       copy; QuestieDB is read in the addon installed next to Easy BIS
 
 The local copy is _build/cache/ForeverDB. Data from ForeverDB.net
 (https://foreverdb.net), GPL-3.0 with an attribution term: see NOTICE.txt.
@@ -40,6 +44,7 @@ import ladders  # noqa: E402
 import luaout  # noqa: E402
 import phases  # noqa: E402
 import questie  # noqa: E402
+import reputations  # noqa: E402
 import source  # noqa: E402
 
 CACHE = HERE / "cache" / "ForeverDB"
@@ -130,6 +135,17 @@ def build(cache_dir: Path = CACHE, out_dir: Path = OUT, details: bool = False) -
               f"not name; {len(confirmed.moved)} take the boss counted in place of the data's; "
               f"{len(confirmed.disputed)} are named for another creature on too little to change them.")
 
+    reading = reputations.load()
+    if not reading:
+        print("Reputations: none read yet. The addon says no item asks for one (--import-reputations).")
+    else:
+        shown = luaout.shown_ids(all_ladders)
+        kinds = {kind: sum(1 for item_id in shown for record in reading["items"].get(item_id, ())
+                           if record["kind"] == kind) for kind in (reputations.WEAR, reputations.QUEST, reputations.RECIPE)}
+        print(f"Reputations (QuestieDB {reading['questiedb']}, read {reading['date']}): of the listed items, "
+              f"{kinds[reputations.WEAR]} ask the wearer for one, {kinds[reputations.QUEST]} come from a quest that "
+              f"does and {kinds[reputations.RECIPE]} from a recipe sold against one.")
+
     findings = audit.run(db, all_ladders, read_in_game=frozenset(observed))
     suspicious = audit.suspicious(findings)
     print(f"Audit: {audit.summary(findings)}." + ("" if details or not findings else " Details: build.py --audit"))
@@ -200,6 +216,9 @@ def main(argv=None) -> int:
     parser.add_argument("--import-drops", nargs="?", const="", metavar="FOLDER",
                         help="keep the drops Wowhead Forever counted, read in the DungeonJournal and GearQuest Forever "
                              "addons; FOLDER defaults to the AddOns folder Easy BIS is in")
+    parser.add_argument("--import-reputations", nargs="?", const="", metavar="FOLDER",
+                        help="keep the reputations items and enchants ask for; FOLDER holds ForeverDB's Items.lua and "
+                             "Recipes.lua and defaults to the local copy")
     args = parser.parse_args(argv)
 
     if args.addon:
@@ -294,6 +313,25 @@ def main(argv=None) -> int:
         corrections.save_drops(reading, corrections.DROPS_FILE)
         print(f"DungeonJournal {reading['journal']} and GearQuest Forever {reading['gearquest']}: drops counted for "
               f"{len(reading['items'])} items of the data. Kept in {corrections.DROPS_FILE.name}.")
+    if args.import_reputations is not None:
+        folder = Path(args.import_reputations) if args.import_reputations else CACHE
+        missing = [name for name in reputations.SOURCE_FILES if not (folder / name).exists()]
+        if missing:
+            print(f"No {' or '.join(missing)} in {folder}: name the folder of ForeverDB's data files that has them.")
+            return 1
+        store = questie.find(ADDONS)
+        if store is None:
+            print(f"No {questie.TOC} in {ADDONS / questie.ADDON}: install the QuestieDB addon.")
+            return 1
+        db = fdb.load(CACHE)
+        try:
+            reading = reputations.collect(db, folder, questie.Store(store), luaout.shown_ids(ladders.build_all(db)))
+        except ValueError as error:
+            print(f"{folder}: {error}")
+            return 1
+        reputations.save(reading)
+        print(f"Reputations: {len(reading['items'])} items and {len(reading['enchants'])} enchants of the data ask for "
+              f"one. Kept in {reputations.FILE.name}.")
     suspicious = build(details=args.audit)
     return 1 if args.audit and suspicious else 0
 

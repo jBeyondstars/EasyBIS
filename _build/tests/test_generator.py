@@ -32,6 +32,7 @@ import ladders  # noqa: E402
 import luaout  # noqa: E402
 import phases  # noqa: E402
 import questie  # noqa: E402
+import reputations  # noqa: E402
 
 try:
     import lupa
@@ -523,6 +524,7 @@ class GeneratorTest(unittest.TestCase):
         before = fdb.load(CACHE, corrected=False)
         corrections.apply(before, corrections.load())   # the weapons' stats, not the game's items
         corrections.fill(before, corrections.load_sources())   # ... and the sources read in QuestieDB
+        corrections.assign_sides(before)   # ... and the side of Theramore's pieces
         was = ladders.build_all(before)
         gone = set(game.dropped)
         for token, specs in self.kept.items():
@@ -537,6 +539,35 @@ class GeneratorTest(unittest.TestCase):
                                 lost = {entry.item_id for rows in then[slot] for entry in rows} & gone
                                 self.assertTrue(lost, f"{token} {spec} {mode} {slot} {flt} changed with nothing dropped")
 
+
+    def test_theramores_pieces_are_the_alliances(self):
+        """corrections.assign_sides: no piece sold against Theramore is left to both sides, and no other piece moves."""
+        raw = fdb.load(CACHE, corrected=False)
+        sold = {item_id for item_id, item in raw.items.items()
+                if any(source[0] == "r" and source[1] == "2799" for source in item["sources"])}
+        self.assertTrue(sold)
+        open_to_both = {item_id for item_id in sold if not raw.items[item_id]["side"]}
+        self.assertEqual(set(corrections.assign_sides(raw)), open_to_both)
+        self.assertEqual({raw.items[item_id]["side"] for item_id in sold}, {"a"})
+        self.assertEqual(corrections.assign_sides(raw), [], "a second pass finds nothing left to do")
+
+    def test_reputation_file_matches_the_reading(self):
+        """Data/Reputation.lua says what corrections/reputations.json holds, for the items the lists show."""
+        reading = reputations.load()
+        if not reading:
+            self.skipTest("the reputations were not read yet (corrections/reputations.json)")
+        text = luaout.reputation_file(self.db, self.kept, reading)
+        block = lambda name: re.search(name + r" = \[==\[\n(.*?)\]==\]", text, re.S).group(1).splitlines()
+        factions = {int(line.split("|")[0]): line.split("|") for line in block("factions")}
+        self.assertEqual(set(factions), set(reputations.FACTIONS) & set(factions))
+        self.assertEqual(factions[2819][3:5], ["0", "0"], "nothing is known of how to earn The Watchers")
+        shown = luaout.shown_ids(self.kept)
+        for line in block("items"):
+            fields = line.split("|")
+            self.assertIn(int(fields[0]), shown)
+            self.assertIn(int(fields[2]), factions)
+            self.assertIn(fields[3], {"3", "4", "5", "6", "7"})
+            self.assertIn(fields[4], {reputations.WEAR, reputations.QUEST, reputations.RECIPE})
 
     def test_sources_read_in_questiedb_fill_the_data(self):
         """corrections.fill on the real data: an item of ForeverDB's lists gets a source and its phase, a piece

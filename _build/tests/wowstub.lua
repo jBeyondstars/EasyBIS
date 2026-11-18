@@ -23,6 +23,8 @@ local stub = {
     modifier = false,  -- a modifier key is held
     linked = nil,      -- the last link given to HandleModifiedItemClick
     menu = nil,        -- the last context menu opened
+    factions = {},     -- [faction id] = { reaction, value, low, high, name }: what the game says of a reputation
+    factionList = {},  -- the reputation pane's lines: { factionID, isHeader, isCollapsed }
 }
 
 ---------------------------------------------------------------------------
@@ -130,6 +132,7 @@ function METHODS:GetText() return self.text end
 function METHODS:SetTitle(text) self.title = text end
 function METHODS:SetTextColor(r, g, b) self.color = { r, g, b } end
 function METHODS:GetStringWidth() return #(self.text or "") * 6 end
+function METHODS:GetStringHeight() return 14 end
 function METHODS:SetTexture(texture) self.texture = texture end
 function METHODS:SetChecked(checked) self.checked = checked and true or false end
 function METHODS:GetChecked() return self.checked end
@@ -280,6 +283,20 @@ end
 C_Spell = {}
 function C_Spell.GetSpellName(id) return stub.spellNames[id] end
 function C_Spell.GetSpellTexture() return 136243 end
+
+-- A faction the test did not set reads as the game reads one never met: Neutral 0.
+C_Reputation = {}
+function C_Reputation.GetFactionDataByID(id)
+    if stub.factionsUnknown then return nil end
+    local faction = stub.factions[id] or { reaction = 4, value = 0, low = 0, high = 3000 }
+    return {
+        factionID = id, name = faction.name or ("Faction " .. id), reaction = faction.reaction,
+        currentStanding = faction.value, currentReactionThreshold = faction.low,
+        nextReactionThreshold = faction.high,
+    }
+end
+function C_Reputation.GetNumFactions() return #stub.factionList end
+function C_Reputation.GetFactionDataByIndex(index) return stub.factionList[index] end
 
 C_Map = {}
 function C_Map.GetMapInfo(id) return { name = "Map " .. id } end

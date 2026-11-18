@@ -70,6 +70,22 @@ DPS_TOO_HIGH = 1.25
 DPS_TOLERANCE = 0.06  # the data keeps one decimal
 
 
+ALLIANCE_FACTIONS = frozenset({"2799"})   # Theramore Expeditionary Force
+
+
+def assign_sides(db) -> list[int]:
+    """ForeverDB's data leaves the pieces of Theramore Expeditionary Force to both sides, and marks their vendor
+    as a Horde one, while the vendor is friendly to the Alliance alone and every quest of the faction is an
+    Alliance quest (QuestieDB). A Horde character could never buy them: they are the Alliance's. Returns the
+    items changed; once the data gives them a side, there are none."""
+    changed = []
+    for item_id, item in db.items.items():
+        if not item["side"] and any(source[0] == "r" and source[1] in ALLIANCE_FACTIONS for source in item["sources"]):
+            item["side"] = "a"
+            changed.append(item_id)
+    return changed
+
+
 @dataclass
 class Report:
     """What apply() did with the observations."""

@@ -79,6 +79,7 @@ def load(data_dir, corrected: bool = True) -> Database:
         corrections.align(db, corrections.load_game())
         corrections.fill(db, corrections.load_sources())
         corrections.confirm(db, corrections.load_drops())
+        corrections.assign_sides(db)
     return db
 
 

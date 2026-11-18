@@ -5,8 +5,10 @@ local L = ns.L
 What the window lists, as plain tables: the frames only draw them.
 
   Rows.Items(state)      rows, facets
-      state    { class, spec, list, slot, source, zone }   slot, source and zone are nil for "all"
-      a row    { kind = "item", id, slot, bis, tie, gap, ratio, source, other, custom }
+      state    { class, spec, list, slot, source, zone, reputation }   slot, source, zone and reputation are nil
+               for "all"; reputation "ok": what is within the player's reach, "todo": what is still to earn
+      a row    { kind = "item", id, slot, bis, tie, gap, ratio, source, other, custom, reputation }
+                   reputation   what the item asks for (Reputation.Requirement), or nil
                    gap      percent behind the best (0 or less); nil for an item added by hand
                    ratio    its score as a share of the best's (0 to 1), for the score bar; nil likewise
                    tie      true for an alternative that scores exactly as a best pick
@@ -16,11 +18,11 @@ What the window lists, as plain tables: the frames only draw them.
       facets   { sources = { [category] = true }, zones = { [name] = true } }: what the Source and
                Zone filters can offer for this spec, list and slot
   Rows.Enchants(state)   rows
-      a row    { kind = "enchant", key, bis, enchant }
+      a row    { kind = "enchant", key, bis, enchant, reputation }
   Rows.Grouped(rows)     the same rows with a { kind = "header", group, text } row before each slot's
                          rows, so the window can set the slots apart
   Rows.Character(state)  cells: the best pick of every slot, in the order of the game's character sheet
-      a cell   { place = "left"|"right"|"bottom", slot, rank, id, source, ties, enchant, twoHand }
+      a cell   { place = "left"|"right"|"bottom", slot, rank, id, source, ties, enchant, twoHand, reputation }
                    rank      1, or 2 for the second ring and the second trinket
                    id        nil when the list has nothing for the slot
                    ties      the other items that score exactly as this one: { id, ... }
@@ -73,6 +75,12 @@ local function OtherNote(slots, slot)
     return slots.twoHand and L.LIST_OR_ONE_HAND or L.LIST_OR_TWO_HAND
 end
 
+-- Whether a row passes the Reputation filter.
+local function PassesReputation(row, wanted)
+    if not wanted then return true end
+    return ns.Reputation.Reachable(row.reputation) == (wanted == "ok")
+end
+
 function Rows.Items(state)
     local all, facets = {}, { sources = {}, zones = {} }
     local slots = ns.Ladders.For(state.class, state.spec, state.list)
@@ -84,6 +92,7 @@ function Rows.Items(state)
         facets.sources[source.category] = true
         if source.zone then facets.zones[source.zone] = true end
         row.kind, row.id, row.slot, row.source = "item", id, slot, source
+        row.reputation = ns.Reputation.Requirement(id)
         all[#all + 1] = row
     end
 
@@ -127,12 +136,13 @@ function Rows.Items(state)
         end
     end
 
-    if not state.source and not state.zone then return all, facets end
+    if not state.source and not state.zone and not state.reputation then return all, facets end
     local rows = {}
     for _, row in ipairs(all) do
         if row.kind == "item"
             and (not state.source or row.source.category == state.source)
-            and (not state.zone or row.source.zone == state.zone) then
+            and (not state.zone or row.source.zone == state.zone)
+            and PassesReputation(row, state.reputation) then
             rows[#rows + 1] = row
         end
     end
@@ -197,6 +207,7 @@ function Rows.Character(state)
         if pick then
             cell.id = pick.id
             cell.source = ns.Sources.Describe(pick.id)
+            cell.reputation = ns.Reputation.Requirement(pick.id)
             cell.ties = Ties(picks, rank)
             local key = ns.Enchants.KeyOf(slot, pick.id, ns.Ladders.HasFlag(pick.entry, "t"))
             cell.enchant = key and enchants[key] or nil
@@ -217,7 +228,9 @@ function Rows.Enchants(state)
             for _, id in ipairs(group.ids) do
                 local enchant = ns.Enchants.Info(id)
                 if enchant and (first or withAlts) then
-                    rows[#rows + 1] = { kind = "enchant", key = group.key, bis = first, enchant = enchant }
+                    local row = { kind = "enchant", key = group.key, bis = first, enchant = enchant,
+                        reputation = ns.Reputation.EnchantRequirement(id) }
+                    if PassesReputation(row, state.reputation) then rows[#rows + 1] = row end
                     first = false
                 end
             end
