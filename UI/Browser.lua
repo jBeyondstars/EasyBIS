@@ -6,12 +6,13 @@ local Widgets = ns.Widgets
 The Easy BIS window: the best gear of a spec, slot by slot.
 
   top      filters: spec, list (PvE, PvP), phase, slot, source, zone. A filter that narrows the list
-           down is gold; the others stay quiet.
-  middle   the rows (UI\Rows.lua). An item takes one line: icon, name, score bar and rank, type, where
-           it comes from. With the option "compact" off it takes two, as an enchant always does.
+           down is gold; the others stay quiet. On the Consumables tab the slot filter is a category filter.
+  middle   the rows (UI\Rows.lua). An item or a consumable takes one line: icon, name, score bar and rank,
+           type or effect, where it comes from. With the option "compact" off it takes two, as an enchant
+           always does.
            The Character tab shows the best pick of every slot as a character sheet instead
            (UI\Character.lua): it follows the spec, the list and the phase, and has no other filter.
-  bottom   Items / Enchants / Character, the data's credit, "Add an item" (UI\AddItem.lua), the
+  bottom   Items / Enchants / Character / Consumables, the data's credit, "Add an item" (UI\AddItem.lua), the
            alternatives switch and the options menu. The grip in the corner changes the window's height.
 
 The class, spec, list and phase are remembered per character; the other
@@ -42,7 +43,7 @@ local WIDTH, HEIGHT = 960, 620
 local MIN_HEIGHT, MAX_HEIGHT = 380, 1400
 local INSET_TOP, INSET_BOTTOM = 70, 58   -- what the filters and the footer take of the window's height
 local ROW_HEIGHT = 54      -- a row on two lines
-local COMPACT_HEIGHT = 36  -- an item on one line
+local COMPACT_HEIGHT = 36  -- an item or a consumable on one line
 local HEADER_HEIGHT = 38   -- a slot's name over its rows; the text sits at the bottom, the rest is spacing
 local NOTE_HEIGHT = 28     -- a line of plain text between rows
 local ICON, COMPACT_ICON = 44, 30   -- the item's picture, on two lines and on one
@@ -97,8 +98,11 @@ local function QualityHex(quality)
     return hex
 end
 
--- "BIS", "Tied", "-12%", "Added"; an enchant has no score, so its alternatives read "Alt".
+-- "BIS", "Tied", "-12%", "Added"; an enchant has no score, so its alternatives read "Alt". A consumable is
+-- the best of its category and nothing more, so it never reads "BIS".
 local function RankText(row)
+    if row.unranked then return GREY_TEXT .. L.RANK_UNRANKED .. "|r" end
+    if row.kind == "consumable" and row.bis then return GOLD_TEXT .. L.RANK_BEST .. "|r" end
     if row.custom then return ns.COLOR .. L.RANK_CUSTOM .. "|r" end
     if row.bis then return GOLD_TEXT .. L.RANK_BIS .. "|r" end
     if row.tie then return GOLD_TEXT .. L.RANK_TIE .. "|r" end
@@ -231,6 +235,14 @@ local function SlotChoices()
     local choices = { { text = L.ALL_SLOTS, value = ALL } }
     for _, slot in ipairs(ns.SLOTS) do
         choices[#choices + 1] = { text = ns.SlotName(slot), value = slot }
+    end
+    return choices
+end
+
+local function CategoryChoices()
+    local choices = { { text = L.ALL_CATEGORIES, value = ALL } }
+    for _, group in ipairs(ns.Consumables.For(state.class, state.spec, state.list)) do
+        choices[#choices + 1] = { text = ns.Consumables.KeyName(group.key), value = group.key }
     end
     return choices
 end
@@ -440,6 +452,10 @@ local function ItemTooltip(owner, data, side)
     local where = ns.Sources.CategoryName(source.category) .. (line ~= "" and (" - " .. line) or "")
     GameTooltip:AddLine(" ")
     GameTooltip:AddLine(L.TIP_SOURCE:format(where), 1, 0.82, 0, true)
+    if source.cost then
+        GameTooltip:AddLine(ns.Sources.CostLine(source.cost), 1, 0.82, 0, true)
+        if source.cost.beta then GameTooltip:AddLine(L.TIP_COST_BETA, MUTED[1], MUTED[2], MUTED[3], true) end
+    end
     local remark = ns.Sources.OriginRemark(source.origin)
     if remark then GameTooltip:AddLine(remark, MUTED[1], MUTED[2], MUTED[3], true) end
     if data.custom then
@@ -456,6 +472,21 @@ local function RowTooltip(row)
     if not data or data.kind == "note" or data.kind == "header" then return end
     if data.kind == "item" then
         ItemTooltip(row, data)
+    elseif data.kind == "consumable" then
+        PlaceTooltip(row)
+        local consumable = data.consumable
+        pcall(GameTooltip.SetItemByID, GameTooltip, data.id)
+        if GameTooltip:NumLines() == 0 then GameTooltip:SetText(consumable.name, 1, 1, 1) end
+        if consumable.effect ~= "" then GameTooltip:AddLine(consumable.effect, 0.1, 1, 0.1, true) end
+        local zoneNote = ns.Consumables.ZoneNote(consumable)
+        if zoneNote then GameTooltip:AddLine(zoneNote, 0.45, 0.78, 1, true) end
+        GameTooltip:AddLine(ns.Consumables.Where(consumable), 1, 0.82, 0, true)
+        if data.unranked and data.key ~= "situational" then
+            GameTooltip:AddLine(L.TIP_CONS_UNRANKED, MUTED[1], MUTED[2], MUTED[3], true)
+        elseif data.ratio and not data.bis and not data.tie then
+            GameTooltip:AddLine(L.TIP_CONS_SCORE:format(math.floor(data.ratio * 100 + 0.5)),
+                MUTED[1], MUTED[2], MUTED[3], true)
+        end
     else
         PlaceTooltip(row)
         local enchant = data.enchant
@@ -487,7 +518,7 @@ end
 local function RowClick(row)
     local data = row.data
     if not data then return end
-    ModifiedClick(data.kind == "item" and data.id
+    ModifiedClick(((data.kind == "item" or data.kind == "consumable") and data.id)
         or (data.kind == "enchant" and data.enchant.kind == "item" and data.enchant.number) or nil)
 end
 
@@ -505,8 +536,20 @@ local function CreateRow(parent)
     highlight:SetAllPoints()
     highlight:SetColorTexture(1, 1, 1, 0.07)
 
+    -- a consumable tied to a zone: a blue tint over the row and a small map on its picture
+    row.zoneBack = row:CreateTexture(nil, "BACKGROUND")
+    row.zoneBack:SetAllPoints()
+    row.zoneBack:SetColorTexture(0.20, 0.55, 0.85, 0.14)
+    row.zoneBack:Hide()
+
     row.icon = row:CreateTexture(nil, "ARTWORK")
     row.icon:SetPoint("LEFT", 4, 0)
+    row.zoneMark = row:CreateTexture(nil, "OVERLAY")
+    row.zoneMark:SetSize(14, 14)
+    row.zoneMark:SetPoint("BOTTOMRIGHT", row.icon, "BOTTOMRIGHT", 3, -3)
+    row.zoneMark:SetTexture("Interface\\Icons\\INV_Misc_Map_01")
+    row.zoneMark:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    row.zoneMark:Hide()
     row.name = Text(row, FONT_NAME)
     row.sub = Text(row, FONT_TEXT)
     row.sub:SetTextColor(MUTED[1], MUTED[2], MUTED[3])
@@ -662,11 +705,16 @@ local function Mark(origin)
     return mark ~= "" and (" |cff808080" .. mark .. "|r") or ""
 end
 
+-- Whether a row takes one line.
+local function OnOneLine(data)
+    return (data.kind == "item" or data.kind == "consumable") and ns:GetOption("compact")
+end
+
 local function FillRow(row, data)
     row.data = data
     local header, note = data.kind == "header", data.kind == "note"
     local plain = header or note
-    local compact = data.kind == "item" and ns:GetOption("compact")
+    local compact = OnOneLine(data)
     row.header:SetShown(header)
     row.note:SetShown(note)
     row.icon:SetShown(not plain)
@@ -677,6 +725,9 @@ local function FillRow(row, data)
     row.kind:SetShown(not plain and not compact)
     row.detail:SetShown(not plain)
     row.remove:SetShown(data.custom == true)
+    local zoned = data.kind == "consumable" and data.consumable.zone ~= nil
+    row.zoneBack:SetShown(zoned)
+    row.zoneMark:SetShown(zoned)
     row.line:SetShown(not note)
     row:EnableMouse(not plain)   -- a header or a note neither lights up nor has a tooltip
     if plain then
@@ -707,7 +758,17 @@ local function FillRow(row, data)
         SetIcon(row.sourceIcon, ns.Sources.Icon(source.category, source.profession))
         row.kind:SetText(category .. mark)
         -- on one line the picture stands for the category, which is spelled out only when nothing else is known
-        row.detail:SetText(compact and ((line ~= "" and line or category) .. mark) or line)
+        row.detail:SetText(ns.Sources.WithCost(compact and ((line ~= "" and line or category) .. mark) or line, source.cost))
+    elseif data.kind == "consumable" then
+        local consumable = data.consumable
+        row.icon:SetTexture(ns.Consumables.Icon(consumable) or UNKNOWN_ICON)
+        row.name:SetText(ns.Consumables.Name(consumable))
+        row.sub:SetText(consumable.effect ~= "" and consumable.effect or ns.Consumables.KeyName(data.key))
+        SetIcon(row.sourceIcon, ns.Sources.Icon(ns.Consumables.Category(consumable), consumable.profession))
+        local kind, detail = ns.Consumables.Kind(consumable), ns.Consumables.Detail(consumable)
+        row.kind:SetText(kind)
+        -- on one line the profession and its skill replace what every trainer teaches, or a source with no words
+        row.detail:SetText(compact and (consumable.trainer or detail == "") and kind or detail)
     else
         local enchant = data.enchant
         row.icon:SetTexture(ns.Enchants.Icon(enchant) or UNKNOWN_ICON)
@@ -722,8 +783,7 @@ end
 local function RowHeight(data)
     if data.kind == "header" then return HEADER_HEIGHT end
     if data.kind == "note" then return NOTE_HEIGHT end
-    if data.kind == "item" and ns:GetOption("compact") then return COMPACT_HEIGHT end
-    return ROW_HEIGHT
+    return OnOneLine(data) and COMPACT_HEIGHT or ROW_HEIGHT
 end
 
 local function LayoutRows(rows)
@@ -855,6 +915,7 @@ local function Build()
     window.phase = Widgets.Dropdown(window, L.FILTER_PHASE, 100)
     window.phase:SetPoint("BOTTOMLEFT", window.list, "BOTTOMRIGHT", 8, 0)
     window.phase.button:SetScript("OnClick", function(self)
+        if ns:GetOption("availableNow") then return end   -- only the game's phase is available now
         Widgets.Click()
         OpenMenu(self, PhaseChoices(), ns.Phase, function(value) ns:SetPhase(value) end)
     end)
@@ -863,7 +924,11 @@ local function Build()
     window.slot:SetPoint("BOTTOMLEFT", window.phase, "BOTTOMRIGHT", 8, 0)
     window.slot.button:SetScript("OnClick", function(self)
         Widgets.Click()
-        OpenMenu(self, SlotChoices(), function() return state.slot or ALL end, Choose("slot"))
+        if state.tab == "consumables" then
+            OpenMenu(self, CategoryChoices(), function() return state.category or ALL end, Choose("category"))
+        else
+            OpenMenu(self, SlotChoices(), function() return state.slot or ALL end, Choose("slot"))
+        end
     end)
 
     window.source = Widgets.Dropdown(window, L.FILTER_SOURCE, 116)
@@ -873,12 +938,19 @@ local function Build()
         OpenMenu(self, SourceChoices(window.facets), function() return state.source or ALL end, Choose("source"))
     end)
 
-    window.zone = Widgets.Dropdown(window, L.FILTER_ZONE, 140)
+    window.zone = Widgets.Dropdown(window, L.FILTER_ZONE, 124)
     window.zone:SetPoint("BOTTOMLEFT", window.source, "BOTTOMRIGHT", 8, 0)
     window.zone.button:SetScript("OnClick", function(self)
         Widgets.Click()
         OpenMenu(self, ZoneChoices(window.facets), function() return state.zone or ALL end, Choose("zone"))
     end)
+
+    -- On every tab: the items, the enchants, the character sheet and the tooltips all follow it.
+    window.available = Widgets.Check(window, L.OPT_availableNow,
+        function() return ns:GetOption("availableNow") end,
+        function(value) ns:SetOption("availableNow", value) end,
+        function() return L.TIP_AVAILABLE_NOW:format(ns.RankCap()) end)
+    window.available:SetPoint("BOTTOMLEFT", window.zone, "BOTTOMRIGHT", 10, 0)
 
     -- Rows
     local inset = CreateInset(window)
@@ -897,19 +969,21 @@ local function Build()
     window.empty:SetPoint("TOP", 0, -40)
     window.empty:SetText(L.NO_ROWS)
 
-    -- Footer, left to right: the three tabs, the credit, "add an item", the alternatives, the options
+    -- Footer, left to right: the four tabs, the credit, "add an item", the alternatives, the options
     window.tabs = Widgets.Segmented(window,
         {
             { value = "items", text = L.TAB_ITEMS },
             { value = "enchants", text = L.TAB_ENCHANTS },
             { value = "character", text = L.TAB_CHARACTER },
+            { value = "consumables", text = L.TAB_CONSUMABLES },
         },
         function() return state.tab end,
         function(value)
             state.tab = value
             Refresh()
         end)
-    window.tabs:Layout(nil, 16)   -- three tabs: a little narrower each, so the credit keeps its room
+    window.tabs:Layout(nil, 10)   -- four tabs: narrower each, so the credit keeps its room
+    Widgets.MarkNew(window.tabs.buttons[4], L.TAB_NEW)
     window.tabs:SetPoint("BOTTOMLEFT", 10, 28)
 
     window.options = Widgets.Button(window, L.OPTIONS, 88, true)
@@ -958,7 +1032,7 @@ end
 
 Refresh = function()
     if not window or not window:IsShown() then return end
-    local items, character = state.tab == "items", state.tab == "character"
+    local items, character, consumables = state.tab == "items", state.tab == "character", state.tab == "consumables"
     local rows, facets = {}, { sources = {}, zones = {} }
     if items then
         rows, facets = ns.Rows.Items(state)
@@ -968,6 +1042,12 @@ Refresh = function()
             if state.zone and not facets.zones[state.zone] then state.zone = nil end
             rows, facets = ns.Rows.Items(state)
         end
+    elseif consumables then
+        -- a category the new spec or list does not have: back to "all"
+        if state.category and not ns.Consumables.Has(state.class, state.spec, state.list, state.category) then
+            state.category = nil
+        end
+        rows = ns.Rows.Consumables(state)
     elseif not character then
         rows = ns.Rows.Enchants(state)
     end
@@ -976,14 +1056,20 @@ Refresh = function()
     window.spec:Set(ClassHex(state.class) .. ns.ClassName(state.class) .. "|r "
         .. ns.SpecName(ns.Index.SpecName(state.class, state.spec) or ""), false)
     window.phase:Set(ns.PhaseName(ns.Phase()), false)
-    window.slot:Set(state.slot and ns.SlotName(state.slot) or L.ALL_SLOTS, state.slot ~= nil)
+    window.phase:SetAlpha(ns:GetOption("availableNow") and 0.5 or 1)
+    window.slot.label:SetText(consumables and L.FILTER_CATEGORY or L.FILTER_SLOT)
+    if consumables then
+        window.slot:Set(state.category and ns.Consumables.KeyName(state.category) or L.ALL_CATEGORIES, state.category ~= nil)
+    else
+        window.slot:Set(state.slot and ns.SlotName(state.slot) or L.ALL_SLOTS, state.slot ~= nil)
+    end
     window.source:Set(state.source and ns.Sources.CategoryName(state.source) or L.ALL_SOURCES, state.source ~= nil)
     window.zone:Set(state.zone or L.ALL_ZONES, state.zone ~= nil)
     -- The two lists do not apply to enchants. Where an item comes from and adding one by hand belong to
     -- the list of items. The character sheet has every slot and no alternative: only the spec, the list
     -- and the phase apply to it.
-    window.listLabel:SetShown(items or character)
-    window.list:SetShown(items or character)
+    window.listLabel:SetShown(items or character or consumables)
+    window.list:SetShown(items or character or consumables)
     window.slot:SetShown(not character)
     window.source:SetShown(items)
     window.zone:SetShown(items)
@@ -993,6 +1079,7 @@ Refresh = function()
     window.list:Refresh()
     window.tabs:Refresh()
     window.alts:Refresh()
+    window.available:Refresh()
     ns.AddItem.Refresh()
     window.scroll:SetShown(not character)
     if character then

@@ -17,6 +17,12 @@ What the window lists, as plain tables: the frames only draw them.
                Zone filters can offer for this spec, list and slot
   Rows.Enchants(state)   rows
       a row    { kind = "enchant", key, bis, enchant }
+  Rows.Consumables(state)   rows: a note, then each category's, ranked ones first
+      state    { class, spec, list, category }   category is nil for "all"
+      a row    { kind = "consumable", key, id, consumable, bis, twin, tie, gap, ratio, unranked }
+                   gap, ratio  as for an item, against the best of the category
+                   unranked    true for what is listed without a rank
+                   twin        true for the sharp or blunt version of the row before it; of the best, it is the best too
   Rows.Grouped(rows)     the same rows with a { kind = "header", group, text } row before each slot's
                          rows, so the window can set the slots apart
   Rows.Character(state)  cells: the best pick of every slot, in the order of the game's character sheet
@@ -142,13 +148,14 @@ end
 function Rows.Grouped(rows)
     local grouped, last = {}, nil
     for _, row in ipairs(rows) do
-        local enchant = row.kind == "enchant"
-        local group = enchant and row.key or row.slot
+        local enchant, consumable = row.kind == "enchant", row.kind == "consumable"
+        local group = (enchant or consumable) and row.key or row.slot
         if group ~= last then
             last = group
             grouped[#grouped + 1] = {
                 kind = "header", group = group,
-                text = enchant and ns.Enchants.KeyName(group) or ns.SlotName(group),
+                text = (consumable and ns.Consumables.KeyName(group))
+                    or (enchant and ns.Enchants.KeyName(group)) or ns.SlotName(group),
             }
         end
         grouped[#grouped + 1] = row
@@ -206,6 +213,37 @@ function Rows.Character(state)
         cells[#cells + 1] = cell
     end
     return cells
+end
+
+function Rows.Consumables(state)
+    local rows = {}
+    local withAlts = ns:GetOption("listAlts")
+    for _, group in ipairs(ns.Consumables.For(state.class, state.spec, state.list)) do
+        if not state.category or state.category == group.key then
+            local top = group.ranked[1]
+            for index, entry in ipairs(group.ranked) do
+                local consumable = ns.Consumables.Info(entry.id)
+                local best = index == 1 or (index == 2 and entry.twin == true)
+                if consumable and (best or withAlts) then
+                    rows[#rows + 1] = {
+                        kind = "consumable", key = group.key, id = entry.id, consumable = consumable,
+                        bis = best, twin = entry.twin, tie = not best and entry.score == top.score or nil,
+                        gap = Gap(entry.score, top.score), ratio = Ratio(entry.score, top.score),
+                    }
+                end
+            end
+            for _, id in ipairs(group.unranked) do
+                local consumable = ns.Consumables.Info(id)
+                if consumable then
+                    rows[#rows + 1] = {
+                        kind = "consumable", key = group.key, id = id, consumable = consumable, unranked = true,
+                    }
+                end
+            end
+        end
+    end
+    if rows[1] then table.insert(rows, 1, { kind = "note", text = L.CONS_NOTE }) end
+    return rows
 end
 
 function Rows.Enchants(state)

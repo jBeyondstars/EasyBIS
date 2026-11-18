@@ -21,6 +21,7 @@ DATA_PREFIX = "downloads/addon-data/"
 USER_AGENT = "wow-addon-data-tool/0.1"  # the site refuses Python's default agent
 TIMEOUT = 60
 NOTICES = ("LICENSE.txt", "NOTICE.txt")
+FILES = fdb.DATA_FILES + fdb.CONSUMABLE_FILES
 
 
 def _get(url: str) -> bytes:
@@ -39,14 +40,14 @@ def read_manifest() -> dict:
     files = {}
     for entry in manifest["data"]["files"]:
         name = entry["path"].rsplit("/", 1)[-1]
-        if name not in fdb.DATA_FILES:
+        if name not in FILES:
             continue
         url = urllib.parse.urljoin(SITE, entry["url"])
         parts = urllib.parse.urlsplit(url)
         if parts.scheme != "https" or parts.netloc != "foreverdb.net" or not parts.path.startswith("/" + DATA_PREFIX):
             raise ValueError(f"unexpected address for {name}: {url}")
         files[name] = {"url": url, "sha256": entry["sha256"], "bytes": entry["bytes"]}
-    missing = [name for name in fdb.DATA_FILES if name not in files]
+    missing = [name for name in FILES if name not in files]
     if missing:
         raise ValueError(f"the manifest no longer lists {', '.join(missing)}")
     return {"version": manifest["data"]["version"], "files": files}
@@ -64,12 +65,12 @@ def check(cache_dir: Path, manifest: dict) -> dict[str, str]:
     return status
 
 
-def update(cache_dir: Path, manifest: dict) -> list[str]:
-    """Download the files that differ from the manifest; returns their names."""
+def update(cache_dir: Path, manifest: dict, only=None) -> list[str]:
+    """Download the files that differ from the manifest, or those of them named in `only`; returns their names."""
     cache_dir.mkdir(parents=True, exist_ok=True)
     fetched = []
     for name, state in check(cache_dir, manifest).items():
-        if state == "current":
+        if state == "current" or (only is not None and name not in only):
             continue
         entry = manifest["files"][name]
         data = _get(entry["url"])
@@ -84,7 +85,7 @@ def import_addon(addon_dir: Path, cache_dir: Path) -> list[str]:
     """Copy the data files and the licence notices from an unpacked ForeverDB addon folder."""
     cache_dir.mkdir(parents=True, exist_ok=True)
     copied = []
-    for name in fdb.DATA_FILES:
+    for name in FILES:
         shutil.copyfile(addon_dir / "Data" / name, cache_dir / name)
         copied.append(name)
     for name in NOTICES:

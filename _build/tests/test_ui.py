@@ -525,7 +525,7 @@ class WindowTest(unittest.TestCase):
         self.assertEqual(len(texts(game.stub.menu)), 16)
         find(game.stub.menu, "Finger").pick()
         self.assertEqual(self.shown_rows(game), self.reference_rows("SHAMAN", 2, "pve", only_slot="finger"))
-        self.assertEqual(len(self.shown_rows(game)), 4, "two rings and two alternatives")
+        self.assertEqual(len(self.shown_rows(game)), 3, "the best ring and two picks after it, the second ring one of them")
         self.assertEqual(label(window.slot), "Finger")
         self.assertEqual(look(window.slot), "active", "a filter that narrows the list is gold")
         self.assertEqual(look(window.source), "idle")
@@ -741,6 +741,39 @@ class WindowTest(unittest.TestCase):
         self.assertEqual(self.shown_rows(again), self.reference_rows("SHAMAN", 2, "pve", alts=False))
         self.assertEqual(len([row for row in self.shown_rows(again) if row[0] == "note"]), 1,
                          "the off hand still says the two-hander wins")
+
+    def test_available_now_checkbox(self):
+        game = self.open(saved="EasyBISCharDB = { class = 'PRIEST', spec = 3, list = 'pvp', phase = 9 }")
+        window = game.ns.Browser.window
+        box = window.available
+        self.assertEqual(box.text.text, "Available now")
+        self.assertFalse(box.mark.shown)
+        controls = [window.spec, window.list, window.phase, window.slot, window.source, window.zone]
+        right = 66 + sum(control.width for control in controls) + 8 * 5 + 10 + box.width
+        self.assertLessEqual(right, WIDTH - 8, "the box stays inside the window")
+        chosen = label(window.phase)
+        self.assertEqual(self.shown_rows(game), self.reference_rows("PRIEST", 3, "pvp", default_filter(phase=EVERYTHING)))
+
+        game.stub.run(box, "OnClick")
+        self.assertTrue(game.ns.db.availableNow)
+        self.assertTrue(box.mark.shown)
+        self.assertEqual(self.shown_rows(game), self.reference_rows("PRIEST", 3, "pvp",
+                                                                    ("a", False, False, phases.CURRENT, True, 6)))
+        self.assertEqual(label(window.phase), game.ns.PhaseName(phases.CURRENT))
+        game.stub.menu = None
+        game.stub.run(window.phase.button, "OnClick")
+        self.assertIsNone(game.stub.menu, "only the game's phase is available now")
+
+        game.stub.run(box, "OnEnter")
+        tooltip = game.lua.globals().GameTooltip
+        self.assertTrue(tooltip.shown)
+        self.assertIn("rank 6", tooltip.lines[1][1])
+        game.stub.run(box, "OnLeave")
+        self.assertFalse(tooltip.shown)
+
+        game.stub.run(box, "OnClick")
+        self.assertFalse(box.mark.shown)
+        self.assertEqual(label(window.phase), chosen, "the phase the character picked comes back")
 
     def test_options_menu(self):
         game = self.open(saved="EasyBISCharDB = { class = 'SHAMAN', spec = 2, list = 'pvp' }")
@@ -1239,7 +1272,7 @@ class WindowTest(unittest.TestCase):
         game.ns.Browser.Open()
         window = game.ns.Browser.window
         self.assertEqual([label(button) for button in window.tabs.buttons.values()],
-                         ["Items", "Enchants", "Character"])
+                         ["Items", "Enchants", "Character", "Consumables"])
         self.assertIsNone(game.ns.Character.view, "the sheet is made when it is first asked for")
         game.stub.run(window.tabs.buttons[3], "OnClick")
         view = game.ns.Character.view
@@ -1552,6 +1585,248 @@ class WindowTest(unittest.TestCase):
         self.assertEqual(game.ns.Phase(), 1, "without menus, a click on the phase moves to the next one")
         game.stub.run(window.tabs.buttons[3], "OnClick")
         self.assertEqual(self.sheet(game), self.reference_sheet("SHAMAN", 3, "pve", default_filter(phase=1)))
+
+
+    # -- the Consumables tab ---------------------------------------------------------------------
+
+    def open_consumables(self, token="WARRIOR", spec=2, **options) -> Game:
+        game = self.open(cls=token, saved=f"EasyBISCharDB = {{ class = '{token}', spec = {spec}, list = 'pve' }}", **options)
+        game.stub.run(game.ns.Browser.window.tabs.buttons[4], "OnClick")
+        return game
+
+    def consumable_rows(self, game) -> list:
+        return [row for row in game.ns.Browser.window.rowData.values() if row.kind == "consumable"]
+
+    def test_consumables_tab(self):
+        game = self.open_consumables()
+        window = game.ns.Browser.window
+        self.assertEqual(look(window.tabs.buttons[4]), "lit")
+        for control in (window.spec, window.list, window.listLabel, window.phase, window.slot, window.alts):
+            self.assertTrue(control.shown)
+        for control in (window.source, window.zone, window.add):
+            self.assertFalse(control.shown)
+        self.assertEqual(window.slot.label.text, "Category")
+        data = list(window.rowData.values())
+        self.assertEqual((data[0].kind, data[0].text), ("note", game.ns.L.CONS_NOTE))
+        self.assertEqual((data[1].kind, data[1].text), ("header", "Flasks"))
+        headers = [row.text for row in data if row.kind == "header"]
+        self.assertEqual(headers, ["Flasks", "Elixirs", "Food", "Scrolls", "Weapon stones and oils", "Combat potions",
+                                   "Healing potions", "Bandages", "Situational"], "a warrior has no mana to restore")
+
+    def test_consumable_rows_show_rank_effect_and_source(self):
+        game = self.open_consumables()
+        window = game.ns.Browser.window
+        frames = {window.rowData[index].id: window.rows[index] for index in range(1, len(window.rowData) + 1)
+                  if window.rowData[index].kind == "consumable"}
+        grizzly = frames[250351]
+        self.assertEqual(plain(grizzly.rank.text), "Best", "the best of its category, never a BIS")
+        self.assertEqual(grizzly.sub.text, "+25 Strength; +2% Critical Strike")
+        self.assertEqual(grizzly.kind.text, "Alchemy (300)")
+        self.assertTrue(grizzly.barBack.shown)
+        titans = frames[13510]
+        self.assertEqual(plain(titans.rank.text), "Not ranked")
+        self.assertFalse(titans.barBack.shown)
+        self.assertEqual(titans.sub.text, "+1200 Maximum Health")
+        self.assertEqual(plain(frames[250329].rank.text), "Not ranked", "the Phalanx: armor has no weight for a Fury warrior")
+        mongoose = frames[13452]
+        self.assertRegex(plain(mongoose.rank.text), r"^-\d+%$")
+
+    def test_consumable_tooltip(self):
+        game = self.open_consumables()
+        window = game.ns.Browser.window
+        index = next(index for index in range(1, len(window.rowData) + 1) if window.rowData[index].id == 13510)
+        game.stub.run(window.rows[index], "OnEnter")
+        tooltip = game.lua.globals().GameTooltip
+        self.assertEqual(tooltip.item, 13510)
+        said = [plain(line[1]) for line in tooltip.lines.values()]
+        self.assertIn(game.ns.L.TIP_CONS_UNRANKED, said)
+        self.assertIn("+1200 Maximum Health", said)
+
+    def test_the_category_filter(self):
+        game = self.open_consumables()
+        window = game.ns.Browser.window
+        game.stub.run(window.slot.button, "OnClick")
+        self.assertEqual(texts(game.stub.menu)[0], "All")
+        find(game.stub.menu, "Food").pick()
+        self.assertEqual({row.key for row in self.consumable_rows(game)}, {"food"})
+        self.assertEqual(look(window.slot.button), "active")
+        # the slot filter of the other tabs is left as it was
+        game.stub.run(window.tabs.buttons[1], "OnClick")
+        self.assertEqual(window.slot.label.text, "Slot")
+        self.assertEqual(label(window.slot.button), "All")
+
+    def test_a_category_the_spec_lacks_goes_back_to_all(self):
+        game = self.open_consumables("MAGE", 2)
+        window = game.ns.Browser.window
+        game.stub.run(window.slot.button, "OnClick")
+        find(game.stub.menu, "Mana potions").pick()
+        self.assertEqual({row.key for row in self.consumable_rows(game)}, {"mana"})
+        state = game.ns.Browser.state
+        state["class"], state.spec = "WARRIOR", 2
+        game.stub.run(window.list.buttons[2], "OnClick")
+        self.assertIsNone(state.category)
+        self.assertGreater(len({row.key for row in self.consumable_rows(game)}), 1)
+
+    def test_the_consumables_follow_the_list_and_the_phase(self):
+        import consumable_lists
+        game = self.open_consumables("HUNTER", 2)
+        window = game.ns.Browser.window
+        built = consumable_lists.build(self.db)["HUNTER"][2]
+        food = lambda: [row.id for row in self.consumable_rows(game) if row.key == "food"]
+        wanted = lambda mode: [entry[0] for entry in consumable_lists.shown(built[mode]["food"].ranked, phases.CURRENT)]
+        self.assertEqual(food(), wanted("pve"))
+        game.stub.run(window.list.buttons[2], "OnClick")
+        self.assertEqual(food(), wanted("pvp"))
+        game.ns.SetPhase(game.ns, EVERYTHING)
+        self.assertEqual({row.key for row in self.consumable_rows(game)} >= {"flask", "food"}, True)
+
+    def test_without_alternatives_a_category_shows_its_best(self):
+        game = self.open_consumables()
+        window = game.ns.Browser.window
+        game.stub.run(window.alts, "OnClick")
+        ranked = [row for row in self.consumable_rows(game) if not row.unranked and not row.twin]
+        self.assertEqual(len(ranked), len({row.key for row in ranked}))
+
+    def test_the_best_stone_is_shown_for_both_kinds_of_weapon(self):
+        game = self.open_consumables("PALADIN", 3)
+        game.stub.run(game.ns.Browser.window.alts, "OnClick")
+        stones = [row for row in self.consumable_rows(game) if row.key == "weapon"]
+        self.assertEqual([(row.id, row.bis) for row in stones], [(12404, True), (12643, True)])
+
+    def test_compact_rows_apply_to_consumables(self):
+        game = self.open_consumables()
+        game.stub.run(game.ns.Browser.window.alts, "OnClick")
+
+        def rows():
+            return [frame for frame in self.frames(game) if frame.data.kind == "consumable"]
+
+        taught = next(frame for frame in rows() if frame.data.consumable.trainer)
+        for frame in rows():
+            self.assertEqual((frame.height, frame.icon.width), (ONE_LINE, 30), frame.data.id)
+            self.assertFalse(frame.kind.shown, "on one line the picture stands for the source")
+        kind = game.ns.Consumables.Kind(taught.data.consumable)
+        self.assertEqual(taught.detail.text, kind, "the skill it takes says more than who teaches it")
+
+        game.ns.SetOption(game.ns, "compact", False)
+        for frame in rows():
+            self.assertEqual((frame.height, frame.icon.width), (ROW, 44), frame.data.id)
+            self.assertTrue(frame.kind.shown)
+        taught = next(frame for frame in rows() if frame.data.consumable.trainer)
+        self.assertEqual((taught.kind.text, taught.detail.text), (kind, "Taught by trainers"))
+
+    def test_a_consumable_tied_to_a_zone_stands_out(self):
+        game = self.open_consumables("WARRIOR", 3)
+        game.stub.run(game.ns.Browser.window.alts, "OnClick")
+        frames = [frame for frame in self.frames(game) if frame.data.kind == "consumable"]
+        marked = [frame for frame in frames if frame.zoneMark.shown]
+        self.assertIn(274273, [frame.data.id for frame in marked])
+        for frame in frames:
+            zoned = frame.data.consumable.zone is not None
+            self.assertEqual((bool(frame.zoneBack.shown), bool(frame.zoneMark.shown)), (zoned, zoned), frame.data.id)
+        game.stub.run(marked[0], "OnEnter")
+
+    def test_the_four_tabs_leave_the_credit_its_room(self):
+        for locale in ("enUS", "frFR"):
+            game = self.open(locale=locale)
+            window = game.ns.Browser.window
+            self.assertEqual(len(window.tabs.buttons), 4)
+            self.assertLess(window.tabs.width, 320, locale)
+
+    def test_the_consumables_tab_is_marked_new(self):
+        for locale in ("enUS", "frFR"):
+            game = self.open(locale=locale)
+            window = game.ns.Browser.window
+            items, consumables = window.tabs.buttons[1], window.tabs.buttons[4]
+            green = list(consumables.newEdge.values())
+            self.assertEqual(consumables.newBadge.text.text, "New", locale)
+            self.assertEqual(list(consumables.borderColor.values()), green, "idle")
+            self.assertIsNone(items.newBadge)
+            self.assertNotEqual(list(items.borderColor.values()), green)
+            game.stub.run(consumables, "OnClick")
+            self.assertEqual(consumables.look, "lit")
+            self.assertEqual(list(consumables.borderColor.values()), green, "the border stays on the open tab")
+            self.assertEqual(consumables.newBadge.points[1][3], "TOPRIGHT", "on the corner, so the credit keeps its room")
+
+    def test_the_consumables_tab_in_french(self):
+        game = self.open_consumables(locale="frFR")
+        window = game.ns.Browser.window
+        self.assertEqual(label(window.tabs.buttons[4]), "Consommables")
+        self.assertEqual(window.slot.label.text, "Catégorie")
+        data = list(window.rowData.values())
+        self.assertEqual(data[1].text, "Flacons")
+
+
+@unittest.skipIf(lupa is None, "lupa is not installed")
+class CostWindowTest(unittest.TestCase):
+    """The price of what a vendor sells for a currency, in the window."""
+    REAL, REAL_CURRENCY, CLOAK = 226404, 3469, 272411   # the best back of a Balance Druid, sold for 75 Reals
+    BALANCE = "EasyBISCharDB = { class = 'DRUID', spec = 1, list = 'pve' }"
+
+    def open(self, **options) -> Game:
+        game = Game(cls="DRUID", saved=self.BALANCE, **options)
+        game.ns.Browser.Open()
+        return game
+
+    def row(self, game, item_id):
+        window = game.ns.Browser.window
+        return next(window.rows[index] for index in range(1, len(window.rowData) + 1)
+                    if window.rowData[index].id == item_id)
+
+    def sheet(self, game):
+        game.stub.run(game.ns.Browser.window.tabs.buttons[3], "OnClick")
+        return game.ns.Character.view
+
+    def test_a_row_says_the_price_first(self):
+        game = self.open()
+        self.assertEqual(plain(self.row(game, self.CLOAK).detail.text), "75 Reals · Pix Xizzix - Map 1434")
+        self.assertIn("|T134400:", self.row(game, self.CLOAK).detail.text, "the currency's picture")
+        game.ns.SetOption(game.ns, "compact", False)
+        self.assertEqual(plain(self.row(game, self.CLOAK).detail.text), "75 Reals · Pix Xizzix - Map 1434")
+
+    def test_the_tooltip_says_what_is_missing(self):
+        game = self.open()
+        game.stub.itemCounts[self.REAL] = 38
+        game.stub.run(self.row(game, self.CLOAK), "OnEnter")
+        lines = [plain(line[1]) for line in game.lua.globals().GameTooltip.lines.values()]
+        self.assertIn("Cost: 75 Reals (you have 38, 37 missing)", lines)
+        self.assertNotIn("Price from the Forever beta, not confirmed in the game.", lines, "read at the vendor")
+
+    def test_the_tooltip_says_when_the_price_is_the_betas(self):
+        game = self.open()
+        game.ns.Items.Get(self.CLOAK).sources[1][7] = f"{self.REAL}:75:b"
+        game.ns.Browser.Open()
+        game.stub.run(self.row(game, self.CLOAK), "OnEnter")
+        lines = [plain(line[1]) for line in game.lua.globals().GameTooltip.lines.values()]
+        self.assertIn("Price from the Forever beta, not confirmed in the game.", lines)
+
+    def test_the_sheet_counts_what_is_left_to_pay(self):
+        game = self.open()
+        view = self.sheet(game)
+        cells = {(cell.data.slot, cell.data.rank): cell for cell in view.cells.values()}
+        self.assertEqual(plain(cells[("back", 1)].where.text), "75 Reals · Map 1434")
+        priced = {cell.data.id: cell.data.source.cost.amount for cell in view.cells.values()
+                  if cell.data.source and cell.data.source.cost}
+        total = sum(priced.values())
+        self.assertTrue(view.cost.shown)
+        self.assertEqual(plain(view.cost.text), f"Reals for this set: {total} (you have 0)")
+        self.assertIn("|T134400:", view.cost.text, "the currency's picture")
+
+        game.stub.equipped[self.CLOAK] = True   # worn: paid for
+        game.stub.currencies[self.REAL_CURRENCY] = 38
+        game.stub.fire("BAG_UPDATE_DELAYED")
+        self.assertEqual(plain(view.cost.text), f"Reals for this set: {total - 75} (you have 38)")
+
+        for item_id in priced:                  # all of it in the bags: nothing is left to say
+            game.stub.itemCounts[item_id] = 1
+        game.stub.fire("CURRENCY_DISPLAY_UPDATE")
+        self.assertFalse(view.cost.shown)
+
+    def test_a_set_without_a_price_says_nothing(self):
+        game = Game(saved=ENHANCEMENT)
+        game.ns.Browser.Open()
+        view = self.sheet(game)
+        priced = [cell for cell in view.cells.values() if cell.data.source and cell.data.source.cost]
+        self.assertEqual(view.cost.shown, bool(priced))
 
 
 if __name__ == "__main__":

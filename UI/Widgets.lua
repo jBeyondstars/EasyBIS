@@ -11,12 +11,15 @@ The window's own controls, all in one flat dark style:
                                                    :Layout(width, padding): every button that wide, or each
                                                    as wide as its text plus the padding (24 when not given)
   Widgets.Toggle(parent, text, get, set)           a button that stays lit while on; :Refresh()
+  Widgets.Check(parent, text, get, set, tip)       a box and its text, gold while on; :Refresh()
+                                                   tip: gives the sentence of its tooltip
   Widgets.Paint(button, look)                      "idle", "lit" (the chosen one, a switch that is on) or
                                                    "active" (gold)
+  Widgets.MarkNew(button, text)                    a green border, and a small badge on its corner
   Widgets.Click()                                  the game's click sound
 
 Gold is kept for a filter that hides something, so a glance at the top of
-the window tells whether the list is whole.
+the window tells whether the list is whole. What is new is green.
 ]]
 
 local Widgets = {}
@@ -31,6 +34,8 @@ local LOOKS = {
     active = { fill = { 1, 0.82, 0, 0.14 }, edge = { 1, 0.82, 0, 0.80 }, text = { 1, 0.82, 0 } },
 }
 local HOVER_EDGE = { 1, 1, 1, 0.60 }
+local NEW_EDGE = { 0.35, 0.90, 0.50, 0.95 }
+local NEW_FILL = { 0.10, 0.45, 0.20, 1 }
 
 function Widgets.Click()
     if PlaySound and SOUNDKIT then PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON) end
@@ -40,7 +45,7 @@ function Widgets.Paint(button, look)
     if not LOOKS[look] then look = "idle" end
     button.look = look
     local colors = LOOKS[look]
-    local edge = button.hovered and HOVER_EDGE or colors.edge
+    local edge = button.hovered and HOVER_EDGE or button.newEdge or colors.edge
     button:SetBackdropColor(colors.fill[1], colors.fill[2], colors.fill[3], colors.fill[4])
     button:SetBackdropBorderColor(edge[1], edge[2], edge[3], edge[4])
     button.text:SetTextColor(colors.text[1], colors.text[2], colors.text[3])
@@ -82,6 +87,23 @@ function Widgets.Button(parent, text, width, withArrow)
     end)
     Widgets.Paint(button, "idle")
     return button
+end
+
+-- The badge sits across the corner, not after the button: the credit beside the tabs has no width to spare.
+function Widgets.MarkNew(button, text)
+    button.newEdge = NEW_EDGE
+    local badge = CreateFrame("Frame", nil, button, "BackdropTemplate")
+    badge:SetBackdrop(Widgets.FLAT)
+    badge:SetBackdropColor(NEW_FILL[1], NEW_FILL[2], NEW_FILL[3], NEW_FILL[4])
+    badge:SetBackdropBorderColor(NEW_EDGE[1], NEW_EDGE[2], NEW_EDGE[3], NEW_EDGE[4])
+    badge:SetFrameLevel(button:GetFrameLevel() + 10)   -- over the list, which its top edge may touch
+    badge.text = badge:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    badge.text:SetPoint("CENTER")
+    badge.text:SetText(text)
+    badge:SetSize(math.ceil(badge.text:GetStringWidth()) + 8, 13)
+    badge:SetPoint("CENTER", button, "TOPRIGHT", 0, 3)
+    button.newBadge = badge
+    Widgets.Paint(button, button.look)
 end
 
 function Widgets.Dropdown(parent, label, width)
@@ -155,4 +177,54 @@ function Widgets.Toggle(parent, text, get, set)
 
     button:Refresh()
     return button
+end
+
+function Widgets.Check(parent, text, get, set, tip)
+    local check = CreateFrame("Button", nil, parent)
+    check:SetHeight(22)
+    check.box = CreateFrame("Frame", nil, check, "BackdropTemplate")
+    check.box:SetBackdrop(Widgets.FLAT)
+    check.box:SetSize(14, 14)
+    check.box:SetPoint("LEFT", 0, 0)
+    check.mark = check.box:CreateTexture(nil, "OVERLAY")
+    check.mark:SetTexture("Interface\\Buttons\\UI-CheckBox-Check")
+    check.mark:SetSize(18, 18)
+    check.mark:SetPoint("CENTER")
+    check.text = check:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    check.text:SetPoint("LEFT", check.box, "RIGHT", 5, 0)
+    check.text:SetText(text)
+    check:SetWidth(19 + math.ceil(check.text:GetStringWidth()))
+
+    function check:Refresh()
+        local on = get()
+        local colors = LOOKS[on and "active" or "idle"]
+        local edge = self.hovered and HOVER_EDGE or colors.edge
+        self.box:SetBackdropColor(colors.fill[1], colors.fill[2], colors.fill[3], colors.fill[4])
+        self.box:SetBackdropBorderColor(edge[1], edge[2], edge[3], edge[4])
+        self.text:SetTextColor(colors.text[1], colors.text[2], colors.text[3])
+        self.mark:SetShown(on)
+    end
+
+    check:SetScript("OnClick", function()
+        Widgets.Click()
+        set(not get())
+    end)
+    check:SetScript("OnEnter", function(self)
+        self.hovered = true
+        self:Refresh()
+        if tip then
+            GameTooltip:SetOwner(self, "ANCHOR_BOTTOMRIGHT")
+            GameTooltip:SetText(text, 1, 1, 1)
+            GameTooltip:AddLine(tip(), Widgets.MUTED[1], Widgets.MUTED[2], Widgets.MUTED[3], true)
+            GameTooltip:Show()
+        end
+    end)
+    check:SetScript("OnLeave", function(self)
+        self.hovered = false
+        self:Refresh()
+        if tip then GameTooltip:Hide() end
+    end)
+
+    check:Refresh()
+    return check
 end

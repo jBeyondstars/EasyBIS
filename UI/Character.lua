@@ -13,7 +13,7 @@ game's character sheet (UI\Rows.lua, Rows.Character).
   middle   the spec, the list and the phase; under them the player's own character wearing the set,
            turned by dragging, with the melee weapons in hand (a hunter: the ranged one; a player
            without Dual Wield: the main hand's alone). A client that cannot make the model shows the
-           class's icon instead.
+           class's icon instead. Under the character, what is left to pay in a currency for the set.
 
 A cell says the item's name in its quality's color, where it comes from in a
 few words and, when one goes on the item, the best enchant of the phase. Its
@@ -27,7 +27,7 @@ between cells; under the height it needs, the view is drawn smaller.
   Character.Create(parent)        the view, hidden
   Character.Update(state, room)   fills it. state: the window's { class, spec, list }; room: the height it has
   Character.Hide()
-  Character.view                  (the tests read it: cells, title, subtitle, model, crest, worn)
+  Character.view                  (the tests read it: cells, title, subtitle, cost, model, crest, worn)
 ]]
 
 local Character = {}
@@ -43,6 +43,7 @@ local CELLS_HIGH = 8                  -- the right column, the longer one
 local MIN_PITCH, MAX_PITCH = 46, 60   -- from a cell's top to the next one's
 local WEAPONS = 56                    -- the bottom row, the line over it included
 local HEAD = 40                       -- the title and the line under it, over the model
+local COST_LINE = 16                  -- what is left to pay, under the model
 local MIN_HEIGHT = CELLS_HIGH * MIN_PITCH + WEAPONS
 local TURN = 0.012                    -- radians the model turns per pixel dragged
 local UNKNOWN_ICON = "Interface\\Icons\\INV_Misc_QuestionMark"
@@ -187,7 +188,7 @@ local function FillCell(cell, data)
 
     local source = data.source
     local mark = ns.Sources.OriginMark(source.origin)
-    cell.where:SetText(ns.Sources.IconText(source.category) .. " " .. ns.Sources.Short(source)
+    cell.where:SetText(ns.Sources.IconText(source.category) .. " " .. ns.Sources.WithCost(ns.Sources.Short(source), source.cost)
         .. (mark ~= "" and (" " .. GREY .. mark .. "|r") or ""))
     cell.where:SetTextColor(MUTED[1], MUTED[2], MUTED[3])
     if enchant then cell.enchant:SetText("+ " .. ns.Enchants.ShortName(enchant)) end
@@ -272,6 +273,14 @@ end
 -- The view
 ---------------------------------------------------------------------------
 
+-- What is left to pay for the set; nothing when it asks for no currency, or all of it is owned.
+local function ShowCost(cells)
+    local lines = {}
+    for index, owed in ipairs(ns.Sources.ToPay(cells)) do lines[index] = ns.Sources.ToPayLine(owed) end
+    view.cost:SetText(table.concat(lines, "  "))
+    view.cost:SetShown(lines[1] ~= nil)
+end
+
 function Character.Create(parent)
     if view then return view end
     view = CreateFrame("Frame", nil, parent)
@@ -286,6 +295,13 @@ function Character.Create(parent)
     view.subtitle:SetPoint("TOP", view.title, "BOTTOM", 0, -3)
     view.subtitle:SetTextColor(MUTED[1], MUTED[2], MUTED[3])
 
+    view.cost = view:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    view.cost:SetPoint("BOTTOM", view, "BOTTOM", 0, WEAPONS + 1)
+    view.cost:SetWidth(WIDTH - 2 * (COLUMN + GAP))
+    view.cost:SetWordWrap(false)
+    view.cost:SetTextColor(1, 0.82, 0)
+    view.cost:Hide()
+
     view.line = view:CreateTexture(nil, "BACKGROUND")
     view.line:SetColorTexture(1, 1, 1, 0.08)
     view.line:SetHeight(1)
@@ -295,7 +311,7 @@ function Character.Create(parent)
     view.model = CreateModel(view)
     if view.model then
         view.model:SetPoint("TOPLEFT", view, "TOPLEFT", COLUMN + GAP, -HEAD)
-        view.model:SetPoint("BOTTOMRIGHT", view, "BOTTOMRIGHT", -(COLUMN + GAP), WEAPONS)
+        view.model:SetPoint("BOTTOMRIGHT", view, "BOTTOMRIGHT", -(COLUMN + GAP), WEAPONS + COST_LINE)
     else
         view.crest = view:CreateTexture(nil, "ARTWORK")
         view.crest:SetSize(96, 96)
@@ -304,6 +320,13 @@ function Character.Create(parent)
     end
     -- a model that was hidden may have lost what it wore
     view:SetScript("OnHide", function(self) self.worn = nil end)
+    -- what the player buys or loots while the sheet is open; a client without one of these events does without it
+    for _, event in ipairs({ "BAG_UPDATE_DELAYED", "CURRENCY_DISPLAY_UPDATE", "PLAYER_EQUIPMENT_CHANGED" }) do
+        pcall(view.RegisterEvent, view, event)
+    end
+    view:SetScript("OnEvent", function(self)
+        if self:IsShown() and self.cellData then ShowCost(self.cellData) end
+    end)
     return view
 end
 
@@ -325,7 +348,9 @@ function Character.Update(state, room)
     local r, g, b = ns.ClassColor(state.class)
     view.title:SetText(("|cff%02x%02x%02x%s|r %s"):format(math.floor(r * 255), math.floor(g * 255),
         math.floor(b * 255), ns.ClassName(state.class), ns.SpecName(ns.Index.SpecName(state.class, state.spec) or "")))
-    view.subtitle:SetText(ns.ListLongName(state.list) .. " - " .. ns.PhaseName(ns.Phase()))
+    local subtitle = ns.ListLongName(state.list) .. " - " .. ns.PhaseName(ns.Phase())
+    if ns:GetOption("availableNow") then subtitle = subtitle .. " - " .. ns.L.RANK_CAP_SHORT:format(ns.RankCap()) end
+    view.subtitle:SetText(subtitle)
 
     local cells = ns.Rows.Character(state)
     local placed = { left = 0, right = 0, bottom = 0 }
@@ -350,6 +375,7 @@ function Character.Update(state, room)
     end
     for index = #cells + 1, #view.cells do view.cells[index]:Hide() end
     view.cellData = cells
+    ShowCost(cells)
 
     if view.model then Dress(cells, state.class) else ShowCrest(state.class) end
 end

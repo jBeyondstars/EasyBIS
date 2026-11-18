@@ -5,7 +5,7 @@ local L = ns.L
 /easybis (or /ebis):
   (nothing)                              open or close the window
   help                                   list the commands
-  tooltip, class, alt, unsourced, seen, minimap   switch an option
+  tooltip, class, alt, unsourced, seen, now, minimap   switch an option
   pvp [pve or pvp]                       count the PvP rewards in a list or leave them out (the list the
                                          window shows when none is named)
   alternatives [2-6]                     how many alternatives a slot lists
@@ -22,6 +22,7 @@ local OPTIONS = {
     alt = "alternatives",
     unsourced = "unsourced",
     seen = "seenOnly",
+    now = "availableNow",
     minimap = "minimap",
 }
 
@@ -33,7 +34,7 @@ end
 local function Help()
     ns:Print(L.HELP_HEADER:format(ns.version))
     for _, key in ipairs({ "HELP_WINDOW", "HELP_TOOLTIP", "HELP_CLASS", "HELP_ALT", "HELP_UNSOURCED", "HELP_SEEN",
-        "HELP_PVP", "HELP_ALT_COUNT", "HELP_MINIMAP", "HELP_PHASE", "HELP_ITEM", "HELP_LIST", "HELP_ADD", "HELP_REMOVE" }) do
+        "HELP_NOW", "HELP_PVP", "HELP_ALT_COUNT", "HELP_MINIMAP", "HELP_PHASE", "HELP_ITEM", "HELP_LIST", "HELP_ADD", "HELP_REMOVE" }) do
         ns:Print(L[key])
     end
     ns:Print(L.CREDIT)

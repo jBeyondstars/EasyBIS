@@ -1,0 +1,64 @@
+"""What a PvP rank buys in Forever, and the highest rank each week of a season allows.
+
+The ranks of a season are capped, and the cap rises every week (WEEKLY_CAPS). Blizzard says there is a
+weekly cap and does not publish it: the curve was read in the game's client before launch, and players
+saw its first values on their rank bar once the game was out (2,700 points the first week, 5,250 from the
+reset of 2026-11-10). The season began with the game; its second week starts at the first weekly reset.
+
+What a rank buys is Blizzard's list (https://worldofwarcraft.blizzard.com/en-us/news/24303316). Forever's
+PvP gear is the Premier sets, sold for honor:
+  - the blue set (level 55) needs no rank;
+  - the epic set (level 60) needs an Emboldened Seal of the slot, sold from a rank that depends on the slot;
+  - the epic weapons need rank 14, the cloaks rank 3 and the necklaces rank 4.
+
+The rank rewards of Classic ("Field Marshal's Headdress") are still in the game's files, and no vendor of
+Forever has been seen selling one, when the vendors of the same rank 14 weapons list the Premier ones.
+
+To maintain: when a new season opens, change SEASON_START, and WEEKLY_CAPS if its curve is another.
+"""
+from __future__ import annotations
+
+SEASON_START = 1793833200  # 2026-11-04 23:00 UTC: the game's launch
+WEEKLY_CAPS = (3, 5, 6, 7, 8, 9, 11, 12, 13, 14)  # the highest rank of each week; the last one stays
+
+NO_RANK = 0
+NOT_SOLD = 99  # above every rank: a list that follows the cap never shows it
+
+RANK_GROUP = "p"     # ForeverDB's source group of the rank rewards
+PREMIER = "Premier "  # the name of every piece of Forever's PvP sets
+EPIC_LEVEL = 60       # a Premier piece of this required level is of the epic set
+
+CLOAK, NECK = 16, 2   # inventory types
+BLUE_RANKS = {CLOAK: 3, NECK: 4}
+WEAPON_RANK = 14
+# Inventory type -> the rank that sells its Emboldened Seal.
+SEAL_RANKS = {9: 8, 6: 8, 8: 9, 10: 10, 7: 12, 3: 12, 5: 13, 20: 13, 1: 13}  # wrist and waist, feet, hands,
+#                                                                              legs and shoulders, chest and head
+NEEDED = (NO_RANK, *sorted({*BLUE_RANKS.values(), *SEAL_RANKS.values(), WEAPON_RANK}))
+
+
+def sold_for_honor(item: dict) -> bool:
+    """Whether an item of the source list is a piece of the Premier sets, which the data often gives no
+    source for: the honor quartermasters sell them."""
+    return item["name"].startswith(PREMIER)
+
+
+def required(item: dict, gear: dict | None) -> int:
+    """The rank an item of the source list needs: NO_RANK, a rank, or NOT_SOLD."""
+    if sold_for_honor(item):
+        gear = gear or {}
+        if gear.get("req", 0) >= EPIC_LEVEL:
+            return SEAL_RANKS.get(gear.get("inv"), WEAPON_RANK)
+        return BLUE_RANKS.get(gear.get("inv"), NO_RANK)
+    return NOT_SOLD if RANK_GROUP in item["groups"] else NO_RANK
+
+
+def filter_caps() -> tuple[int, ...]:
+    """The weekly caps that show different items: the generator keeps what each of them needs."""
+    caps, shown = [], set()
+    for cap in WEEKLY_CAPS:
+        allowed = frozenset(rank for rank in NEEDED if rank <= cap)
+        if allowed not in shown:
+            shown.add(allowed)
+            caps.append(cap)
+    return tuple(caps)

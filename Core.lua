@@ -53,12 +53,13 @@ local DEFAULTS = {
     alternatives = true,   -- tooltips: the alternatives too, not only the best picks
     unsourced = false,     -- count the items with no known source
     seenOnly = false,      -- count only the items ForeverDB players have seen in Forever
+    availableNow = false,  -- the window's checkbox: count only what a player can get today
     pvpRewards = { pve = false, pvp = true }, -- per list: count the PvP rewards (ranks, honor, battlegrounds)
-    altCount = 2,          -- alternatives listed after the best pick(s) of a slot (ns.Alternatives)
+    altCount = 2,          -- picks listed after the best one of a slot, second ring or trinket included
     minimap = true,        -- the button on the minimap
     minimapAngle = 215,    -- where it sits around the minimap, in degrees
     lists = { pve = true, pvp = true }, -- the lists tooltips read
-    compact = true,        -- the window: an item on one line instead of two
+    compact = true,        -- the window: an item or a consumable on one line instead of two
     listAlts = true,       -- the window: the alternatives too, not only the best picks
     window = {},           -- where the window was left: point, relativePoint, x, y
     windowHeight = 0,      -- its height once resized (0: not resized)
@@ -120,8 +121,8 @@ function ns:SetPvPRewards(list, value)
     self:Fire("OPTION_CHANGED", "pvpRewards", value)
 end
 
--- How many alternatives a slot lists after its best pick(s): from ns.ALTERNATIVES to what the data files
--- keep of a ladder (Data\Meta.lua).
+-- How many picks a slot lists after its best one (the second ring or trinket among them): from
+-- ns.ALTERNATIVES to what the data files keep of a ladder (Data\Meta.lua).
 function ns.MaxAlternatives()
     local kept = ns.data and ns.data.meta and tonumber(ns.data.meta.alternatives)
     return math.max(ns.ALTERNATIVES, kept or ns.ALTERNATIVES)
@@ -157,7 +158,8 @@ function ns.PlayerSide()
 end
 
 -- The content phase the lists stop at: 0 before the raids, 1 and up a phase, 9 everything the data
--- holds. Each character keeps its own; until it picks one, it follows the phase the game is in.
+-- holds. Each character keeps its own; until it picks one, it follows the phase the game is in, as it
+-- does whatever it picked while the lists show what is available now.
 local function KnownPhase(phase)
     local meta = ns.data and ns.data.meta or {}
     for _, known in ipairs(meta.phases or {}) do
@@ -167,8 +169,9 @@ local function KnownPhase(phase)
 end
 
 function ns.Phase()
-    if KnownPhase(ns.char.phase) then return ns.char.phase end
-    return ns.data and ns.data.meta and ns.data.meta.phase or 0
+    local game = ns.data and ns.data.meta and ns.data.meta.phase or 0
+    if ns:GetOption("availableNow") or not KnownPhase(ns.char.phase) then return game end
+    return ns.char.phase
 end
 
 function ns:SetPhase(phase)
@@ -177,12 +180,38 @@ function ns:SetPhase(phase)
     self:Fire("OPTION_CHANGED", "phase", phase)
 end
 
--- What the lists are filtered on. Two characters with the same key see the same lists.
+-- The PvP ranks of a season are capped, and the cap rises at every weekly reset (_build/ranks.py).
+local WEEK = 7 * 24 * 60 * 60
+local TOP_RANK = 14
+
+-- The week of the season, from 1: how many weekly resets have passed since it began, plus one.
+function ns.SeasonWeek()
+    local start = ns.data and ns.data.meta and ns.data.meta.seasonStart
+    if not start then return 1 end
+    local now = GetServerTime()
+    local left = C_DateAndTime and C_DateAndTime.GetSecondsUntilWeeklyReset
+        and C_DateAndTime.GetSecondsUntilWeeklyReset()
+    left = left or (WEEK - (now - start) % WEEK)
+    return math.max(1, math.ceil((now + left - start) / WEEK))
+end
+
+-- The highest rank a player can have this week.
+function ns.RankCap()
+    local caps = ns.data and ns.data.meta and ns.data.meta.rankCaps
+    if not caps then return TOP_RANK end
+    return caps[math.min(ns.SeasonWeek(), #caps)]
+end
+
+-- What the lists are filtered on. Two characters with the same key see the same lists. What is available
+-- now stops at the week's rank cap and the game's phase (ns.Phase), and leaves out the items of no known
+-- source, whatever the options say.
 function ns.Filter()
+    local availableNow = ns:GetOption("availableNow")
     return {
         side = ns.PlayerSide(),
-        unsourced = ns:GetOption("unsourced"),
+        unsourced = ns:GetOption("unsourced") and not availableNow,
         seenOnly = ns:GetOption("seenOnly"),
+        rankCap = availableNow and ns.RankCap() or nil,
         pvpRewards = { pve = ns:PvPRewards("pve"), pvp = ns:PvPRewards("pvp") },
         phase = ns.Phase(),
         alternatives = ns.Alternatives(),
@@ -190,7 +219,8 @@ function ns.Filter()
 end
 
 -- The options (and the phase) that change what the lists hold: OPTION_CHANGED keys.
-ns.FILTER_OPTIONS = { unsourced = true, seenOnly = true, pvpRewards = true, phase = true, altCount = true }
+ns.FILTER_OPTIONS = { unsourced = true, seenOnly = true, availableNow = true, pvpRewards = true, phase = true,
+    altCount = true }
 
 ---------------------------------------------------------------------------
 -- Startup

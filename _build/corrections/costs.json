@@ -1,0 +1,54 @@
+{
+  "about": "What the vendors who take a currency ask for their items, laid over ForeverDB's data by _build/corrections.py (price). ForeverDB's data gives these items a price of 0. A price with no build is the list Wowhead published for the WoW: Forever beta, and the addon says so; one with a build and a date was shown by the vendor's window in that game build. `python build.py --import-prices` writes those. A vendor marked neutral sells to both factions, whatever faction the data keeps its items for.",
+  "date": "2026-11-18",
+  "currencies": {
+    "226404": {"name": "Tarnished Undermine Real", "currency": 3469}
+  },
+  "vendors": {
+    "227853": {
+      "name": "Pix Xizzix",
+      "neutral": true,
+      "paid_in": 226404,
+      "items": {
+        "228175": {"name": "Libram of Holy Alacrity", "price": 15},
+        "228176": {"name": "Totem of Thunder", "price": 15},
+        "272151": {"name": "Damaged Undermine Supply Crate", "price": 5, "build": "1.60.1.70959", "date": "2026-11-18"},
+        "272393": {"name": "Magician's Cord", "price": 100},
+        "272394": {"name": "Penitent's Cinch", "price": 100, "build": "1.60.1.70959", "date": "2026-11-18"},
+        "272395": {"name": "Assassin's Waistguard", "price": 100},
+        "272396": {"name": "Shifter's Belt", "price": 100},
+        "272397": {"name": "Ranger's Belt", "price": 100},
+        "272398": {"name": "Caretaker's Cord", "price": 100},
+        "272399": {"name": "Stormseeker's Girdle", "price": 100},
+        "272401": {"name": "Elunite Cord", "price": 100},
+        "272402": {"name": "Prophet's Waistcord", "price": 100},
+        "272403": {"name": "Valiant's Waistguard", "price": 100},
+        "272404": {"name": "Vindicator's Belt", "price": 100},
+        "272405": {"name": "Redeemer's Waistcord", "price": 100},
+        "272406": {"name": "Channeler's Ring", "price": 75, "build": "1.60.1.70959", "date": "2026-11-18"},
+        "272407": {"name": "Blessed Band of Light", "price": 75, "build": "1.60.1.70959", "date": "2026-11-18"},
+        "272408": {"name": "Cutthroat's Signet", "price": 75, "build": "1.60.1.70959", "date": "2026-11-18"},
+        "272409": {"name": "Ring of Awareness", "price": 75, "build": "1.60.1.70959", "date": "2026-11-18"},
+        "272410": {"name": "Windseeker's Belt", "price": 100},
+        "272411": {"name": "Arcanoweave Cloak", "price": 75, "build": "1.60.1.70959", "date": "2026-11-18"},
+        "272413": {"name": "Drape of Recovery", "price": 75, "build": "1.60.1.70959", "date": "2026-11-18"},
+        "272414": {"name": "Howler's Furs", "price": 75, "build": "1.60.1.70959", "date": "2026-11-18"},
+        "272415": {"name": "Stalwart Cloak", "price": 75, "build": "1.60.1.70959", "date": "2026-11-18"},
+        "272427": {"name": "Howling Idol", "price": 50, "build": "1.60.1.70959", "date": "2026-11-18"},
+        "272428": {"name": "Enraged Idol", "price": 50, "build": "1.60.1.70959", "date": "2026-11-18"},
+        "272429": {"name": "Idol of Synthesis", "price": 50, "build": "1.60.1.70959", "date": "2026-11-18"},
+        "272430": {"name": "Swarming Idol", "price": 50, "build": "1.60.1.70959", "date": "2026-11-18"},
+        "272431": {"name": "Tidal Totem", "price": 50, "build": "1.60.1.70959", "date": "2026-11-18"},
+        "272432": {"name": "Totem of the Storm", "price": 50, "build": "1.60.1.70959", "date": "2026-11-18"},
+        "272433": {"name": "Burning Totem", "price": 50, "build": "1.60.1.70959", "date": "2026-11-18"},
+        "272434": {"name": "Sentinel's Libram", "price": 50, "build": "1.60.1.70959", "date": "2026-11-18"},
+        "272435": {"name": "Libram of Law", "price": 50, "build": "1.60.1.70959", "date": "2026-11-18"},
+        "272436": {"name": "Libram of Economy", "price": 50, "build": "1.60.1.70959", "date": "2026-11-18"},
+        "272437": {"name": "Adaptive Combat Assistant", "price": 125, "build": "1.60.1.70959", "date": "2026-11-18"},
+        "272438": {"name": "Weakness Analyzer", "price": 125, "build": "1.60.1.70959", "date": "2026-11-18"},
+        "272439": {"name": "Serenity Field", "price": 125, "build": "1.60.1.70959", "date": "2026-11-18"},
+        "272440": {"name": "Defender's Grip Stabilizer", "price": 125, "build": "1.60.1.70959", "date": "2026-11-18"}
+      }
+    }
+  }
+}

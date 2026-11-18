@@ -23,6 +23,10 @@ local stub = {
     modifier = false,  -- a modifier key is held
     linked = nil,      -- the last link given to HandleModifiedItemClick
     menu = nil,        -- the last context menu opened
+    itemCounts = {},   -- [id] = how many the player has, the bank included
+    equipped = {},     -- [id] = true for what the player wears
+    currencies = {},   -- [currency id] = the quantity the game gives; an id that is not here is no currency
+    currencyIcon = nil,  -- the picture the game gives for a currency
 }
 
 ---------------------------------------------------------------------------
@@ -48,7 +52,7 @@ for _, method in ipairs({
     "SetFrameStrata", "SetFrameLevel", "SetToplevel", "SetClampedToScreen", "SetMovable", "EnableMouse",
     "RegisterForDrag", "RegisterForClicks", "SetDontSavePosition", "StartMoving", "StopMovingOrSizing",
     "SetPortraitToAsset", "SetPortraitTextureRaw", "SetBackdrop", "SetBackdropColor",
-    "SetBackdropBorderColor", "SetWordWrap", "SetJustifyH", "SetColorTexture", "SetTexCoord",
+    "SetWordWrap", "SetJustifyH", "SetColorTexture", "SetTexCoord",
     "SetHighlightTexture", "SetScrollChild", "UpdateScrollChildRect", "Raise", "SetAllPoints", "SetDesaturated",
     "SetResizable", "SetResizeBounds", "StartSizing", "SetNormalTexture", "SetPushedTexture", "SetAutoFocus",
     "SetMaxLetters",
@@ -57,6 +61,7 @@ for _, method in ipairs({
 end
 
 function METHODS:SetScale(scale) self.scale = scale end
+function METHODS:SetBackdropBorderColor(r, g, b, a) self.borderColor = { r, g, b, a } end
 
 -- Model methods (a DressUpModel): what it was asked to show.
 function METHODS:SetUnit(unit) self.unit = unit end
@@ -254,6 +259,13 @@ function GetItemInfoInstant(id)
 end
 INVTYPE_HEAD, INVTYPE_2HWEAPON, INVTYPE_WEAPON, INVTYPE_HOLDABLE = "Head", "Two-Hand", "One-Hand", "Held In Off-hand"
 function GetItemIcon() return 134400 end
+function GetItemCount(id) return stub.itemCounts[id] or 0 end
+function IsEquippedItem(id) return stub.equipped[id] == true end
+C_CurrencyInfo = {}
+function C_CurrencyInfo.GetCurrencyInfo(id)
+    local quantity = stub.currencies[id]
+    return quantity and { quantity = quantity, iconFileID = stub.currencyIcon } or nil
+end
 
 function GetCursorInfo()
     if stub.cursor then return stub.cursor[1], stub.cursor[2] end
@@ -284,6 +296,12 @@ function C_Spell.GetSpellTexture() return 136243 end
 C_Map = {}
 function C_Map.GetMapInfo(id) return { name = "Map " .. id } end
 function GetRealZoneText(id) return stub.zoneNames[id] end
+
+-- 2026-11-18 11:00 UTC, the third week of the first PvP season, six days before the next weekly reset
+stub.serverTime, stub.untilReset = 1795000000, 6 * 24 * 60 * 60
+function GetServerTime() return stub.serverTime end
+C_DateAndTime = {}
+function C_DateAndTime.GetSecondsUntilWeeklyReset() return stub.untilReset end
 
 local TEMPLATES = {
     PortraitFrameTemplate = true, InsetFrameTemplate = true, ScrollFrameTemplate = true,

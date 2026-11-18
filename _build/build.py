@@ -3,13 +3,20 @@
     python build.py                    build ../Data from the local copy
     python build.py --check            say whether ForeverDB published newer data (one request)
     python build.py --update           download what changed, then build
+    python build.py --update-consumables
+                                       download only the data files of the Consumables tab, without building
     python build.py --import FOLDER    copy the data from an unpacked ForeverDB addon folder, then build
     python build.py --audit            build, then list the rows the data probably has wrong (audit.py)
     python build.py --capture-tool     install the EasyBIS_Capture addon, which reads item tooltips in the game
     python build.py --check-capture [FILE]
                                        compare what /ebiscapture read with the data, stat by stat (no build)
     python build.py --import-capture [FILE]
-                                       keep what the capture read (corrections.py), then build
+                                       keep what the capture read (corrections.py, consumables.py), then build
+    python build.py --import-prices [FILE]
+                                       keep what the vendors' windows showed in the game (corrections/costs.json),
+                                       then build
+    python build.py --audit-consumables
+                                       list where the game disagrees with ForeverDB's catalogue of consumables
     python build.py --import-questie [FOLDER]
                                        keep the sources QuestieDB has for the items the data gives none
                                        (questie.py), then build; FOLDER defaults to the QuestieDB addon
@@ -33,6 +40,7 @@ sys.path.insert(0, str(HERE))
 
 import audit  # noqa: E402
 import capture  # noqa: E402
+import consumables  # noqa: E402
 import corrections  # noqa: E402
 import drops  # noqa: E402
 import fdb  # noqa: E402
@@ -130,6 +138,19 @@ def build(cache_dir: Path = CACHE, out_dir: Path = OUT, details: bool = False) -
               f"not name; {len(confirmed.moved)} take the boss counted in place of the data's; "
               f"{len(confirmed.disputed)} are named for another creature on too little to change them.")
 
+    priced = db.priced
+    if priced and priced.changed:
+        print(f"Prices (written down {priced.date}): {len(priced.items)} items carry what their vendor asks in a currency, "
+              f"{len(priced.read)} of them read at the vendor and the others the beta's, {len(priced.freed)} of a neutral "
+              f"vendor count for both factions; {len(priced.absent)} of the file are not items the data says that vendor "
+              "sells.")
+
+    reading = db.simulated
+    if reading and reading.specs:
+        names = ", ".join(f"{db.classes[cls]['specs'][spec]['name']} {cls.title()}" for cls, spec in sorted(reading.specs))
+        print(f"Simulation (WoWSims Forever {reading.commit}, {reading.date}): the PvE lists of {names} are ranked on the "
+              "damage measured, every other list on ForeverDB's weights.")
+
     findings = audit.run(db, all_ladders, read_in_game=frozenset(observed))
     suspicious = audit.suspicious(findings)
     print(f"Audit: {audit.summary(findings)}." + ("" if details or not findings else " Details: build.py --audit"))
@@ -180,10 +201,49 @@ def check_report(check) -> list[str]:
     return lines
 
 
+def consumables_report(result, kept: dict, catalogue: dict) -> list[str]:
+    """What consumables.read_capture found, as lines to print."""
+    lines = [f"Consumables: {result.read} of the {result.listed} on the capture's list were read, {result.understood} "
+             f"understood whole; {len(result.absent)} the game did not show."]
+    if not result.locale.startswith("en"):
+        lines.append(f"  The capture is in {result.locale}: the phrases are understood in English only, nothing was kept.")
+    if result.by_category:
+        lines.append("  By category: " + ", ".join(f"{name} {count}" for name, count in sorted(result.by_category.items())))
+    if result.unread:
+        lines.append(f"  Not understood: {len(result.unread)} phrases, the most frequent first (numbers as N):")
+        lines.extend(f"    {count:3d} items: {phrase}" for phrase, count in result.unread.most_common(40))
+    if result.other_unread:
+        lines.append(f"  {result.other_unread} items the tab does not list (bombs, keys, fireworks) hold phrases not understood.")
+    found = consumables.audit(kept, catalogue)
+    lines.append(f"  The game against ForeverDB's catalogue: {consumables.audit_summary(found)}. "
+                 "Details: build.py --audit-consumables")
+    return lines
+
+
+def prices_report(reading) -> list[str]:
+    """What the vendors' windows said of the costs file, to print."""
+    lines = [f"Prices read at the vendor (game build {reading.game or '-'}, {reading.date or '-'}): "
+             f"{len(reading.confirmed)} confirmed, {len(reading.changed)} changed, {len(reading.added)} added; "
+             f"{reading.unread} of the file are still the beta's."]
+    lines += [f"  Changed: {name} ({item_id}), {old} -> {new}" for item_id, name, old, new in reading.changed]
+    lines += [f"  Added: {name} ({item_id}), {price}" for item_id, name, price in reading.added]
+    lines += [f"  Left as it was, the window asks {asked}: {name} ({item_id})" for item_id, name, asked in reading.other]
+    if reading.unseen:
+        lines.append(f"  {len(reading.unseen)} items of the file were not in the window, and stay as they were: "
+                     + ", ".join(name for _, name in reading.unseen))
+    lines += [f"  Not in {corrections.COSTS_FILE.name}, so not kept: {name} (npc {npc}), {rows} items"
+              for npc, name, rows in reading.strangers]
+    return lines
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description="Build Easy BIS's data files from ForeverDB's addon data.")
     parser.add_argument("--check", action="store_true", help="compare the local copy with ForeverDB's manifest")
     parser.add_argument("--update", action="store_true", help="download the data files that changed, then build")
+    parser.add_argument("--update-consumables", action="store_true",
+                        help="download only the data files of the Consumables tab, without building")
+    parser.add_argument("--audit-consumables", action="store_true",
+                        help="list where the game disagrees with ForeverDB's catalogue of consumables, and stop")
     parser.add_argument("--import", dest="addon", metavar="FOLDER",
                         help="copy the data from an unpacked ForeverDB addon folder, then build")
     parser.add_argument("--audit", action="store_true",
@@ -194,6 +254,9 @@ def main(argv=None) -> int:
                         help="compare what /ebiscapture read with the data, stat by stat, and stop")
     parser.add_argument("--import-capture", nargs="?", const="", metavar="FILE",
                         help="keep what /ebiscapture read; FILE defaults to the newest EasyBIS_Capture.lua of WTF")
+    parser.add_argument("--import-prices", nargs="?", const="", metavar="FILE",
+                        help="keep what the vendors' windows showed in the game; FILE defaults to the newest "
+                             "EasyBIS_Capture.lua of WTF that holds one")
     parser.add_argument("--import-questie", nargs="?", const="", metavar="FOLDER",
                         help="keep the sources QuestieDB has for the items the data gives none; FOLDER defaults "
                              "to the QuestieDB addon installed next to Easy BIS")
@@ -202,6 +265,21 @@ def main(argv=None) -> int:
                              "addons; FOLDER defaults to the AddOns folder Easy BIS is in")
     args = parser.parse_args(argv)
 
+    if args.update_consumables:
+        fetched = source.update(CACHE, source.read_manifest(), only=fdb.CONSUMABLE_FILES)
+        print(f"Downloaded: {', '.join(fetched) if fetched else 'nothing, the local copy is current'}")
+        return 0
+    if args.audit_consumables:
+        kept = consumables.load()
+        data = fdb.read_consumables(CACHE)
+        if not kept or data is None:
+            print("No consumables read yet: run /ebiscapture in the game, /reload, then --import-capture.")
+            return 1
+        found = consumables.audit(kept["items"], data.catalogue)
+        print(f"Consumables read in game build {kept['build']}: {consumables.audit_summary(found)}.")
+        for entry in found:
+            print("  " + entry.line())
+        return 0
     if args.addon:
         copied = source.import_addon(Path(args.addon), CACHE)
         print(f"Copied {len(copied)} files into {CACHE}")
@@ -243,28 +321,65 @@ def main(argv=None) -> int:
             print(f"No {capture.SAVED} under {GAME / 'WTF'}: run /ebiscapture in the game, then /reload.")
             return 1
         print(f"Capture: {saved}")
+        published = fdb.load(CACHE, corrected=False)
+        eaten = None
         try:
-            result = capture.import_capture(fdb.load(CACHE, corrected=False), saved)
+            parsed = capture.parse_saved(saved.read_text(encoding="utf-8", errors="replace"))
         except ValueError as error:
             print(f"{saved.name}: {error}")
             return 1
-        print(f"Capture of game build {result.game} ({result.locale}): {result.read} tooltips, {result.weapons} weapons "
-              f"of the data, {result.with_power} with healing or spell damage ({result.from_stats} of them read in the "
-              f"game's stat table, not on the tooltip); {result.missing} the game did not show.")
-        if result.other_names:
-            print(f"  {len(result.other_names)} weapons have another name in the game than in the data, "
-                  f"for example {result.other_names[0]}.")
-        for template, count in result.unread.most_common(5):
-            print(f"  Not understood ({count} weapons): {template}")
-        print(f"Kept in {corrections.FILE.relative_to(HERE.parent)}.")
-        if result.reading:
-            print(f"The capture holds {result.shown} of the {result.listed} items of its list: the {len(result.reading['absent'])} "
-                  f"others are taken as items the game does not have, and the {len(result.reading['unlisted'])} pieces "
-                  f"it showed that ForeverDB does not list are kept. In {corrections.GAME_FILE.relative_to(HERE.parent)}.")
-        else:
-            print(f"The capture holds {result.shown} of the {result.listed} items of its list, in {result.locale}: not "
-                  f"enough to say which items the game has ({capture.COMPLETE:.0%} in English are needed). "
-                  f"{corrections.GAME_FILE.name} is left as it is.")
+        if published.consumables is not None:
+            eaten = consumables.read_capture(published, parsed)
+            if eaten.readings:
+                consumables.save(eaten, parsed["date"])
+            for line in consumables_report(eaten, consumables.load().get("items", {}), published.consumables.catalogue):
+                print(line)
+        try:
+            result = capture.import_capture(published, saved)
+        except ValueError as error:
+            if not (eaten and eaten.readings):
+                print(f"{saved.name}: {error}")
+                return 1
+            # the game stopped answering after the consumables, which come first: they are kept all the same
+            result = None
+            print(f"Gear: nothing kept from this capture, the corrections stay as they are ({error}).")
+        if result:
+            print(f"Capture of game build {result.game} ({result.locale}): {result.read} tooltips, {result.weapons} weapons "
+                  f"of the data, {result.with_power} with healing or spell damage ({result.from_stats} of them read in the "
+                  f"game's stat table, not on the tooltip); {result.missing} the game did not show.")
+            if result.other_names:
+                print(f"  {len(result.other_names)} weapons have another name in the game than in the data, "
+                      f"for example {result.other_names[0]}.")
+            for template, count in result.unread.most_common(5):
+                print(f"  Not understood ({count} weapons): {template}")
+            print(f"Kept in {corrections.FILE.relative_to(HERE.parent)}.")
+            if result.reading:
+                print(f"The capture holds {result.shown} of the {result.listed} items of its list: the "
+                      f"{len(result.reading['absent'])} others are taken as items the game does not have, and the "
+                      f"{len(result.reading['unlisted'])} pieces it showed that ForeverDB does not list are kept. "
+                      f"In {corrections.GAME_FILE.relative_to(HERE.parent)}.")
+            else:
+                print(f"The capture holds {result.shown} of the {result.listed} items of its list, in {result.locale}: not "
+                      f"enough to say which items the game has ({capture.COMPLETE:.0%} in English are needed). "
+                      f"{corrections.GAME_FILE.name} is left as it is.")
+    if args.import_prices is not None:
+        saved = Path(args.import_prices) if args.import_prices else capture.find_vendors(GAME)
+        if saved is None or not saved.exists():
+            print(f"No vendor's window read under {GAME / 'WTF'}: open it in the game with {capture.ADDON} enabled, "
+                  "then /reload.")
+            return 1
+        print(f"Capture: {saved}")
+        try:
+            reading = capture.import_prices(fdb.load(CACHE, corrected=False), saved)
+        except ValueError as error:
+            print(f"{saved.name}: {error}")
+            return 1
+        for line in prices_report(reading):
+            print(line)
+        if not reading.read:
+            print(f"Nothing kept: {corrections.COSTS_FILE.name} is left as it is.")
+            return 1
+        print(f"Kept in {corrections.COSTS_FILE.relative_to(HERE.parent)}.")
     if args.import_questie is not None:
         folder = Path(args.import_questie) if args.import_questie else questie.find(ADDONS)
         if folder is None or not (folder / questie.TOC).exists():

@@ -20,9 +20,11 @@ BUILD = TESTS.parent
 ADDON = BUILD.parent
 sys.path.insert(0, str(BUILD))
 
+import consumable_lists  # noqa: E402
 import fdb  # noqa: E402
 import ladders  # noqa: E402
 import phases  # noqa: E402
+import ranks  # noqa: E402
 
 try:
     import lupa
@@ -53,7 +55,7 @@ def default_filter(side="a", unsourced=False, seen_only=False, phase=phases.CURR
 def for_list(flt: tuple, mode: str) -> tuple:
     """A filter as it applies to one list: until the player says otherwise the PvP list counts the PvP
     rewards and the PvE list leaves them out."""
-    return flt if flt[4] is not None else (*flt[:4], ladders.PVP_REWARDS[mode])
+    return flt if flt[4] is not None else (*flt[:4], ladders.PVP_REWARDS[mode], *flt[5:])
 
 
 def toc_files() -> list[Path]:
@@ -67,6 +69,10 @@ def toc_files() -> list[Path]:
 
 def strip_colors(text: str) -> str:
     return re.sub(r"\|c[0-9a-fA-F]{8}|\|r", "", text)
+
+
+def no_pictures(text: str) -> str:
+    return re.sub(r"\|T[^|]*\|t\s*", "", text)
 
 
 class Game:
@@ -202,7 +208,7 @@ class AddonTest(unittest.TestCase):
         checked = 0
         for flt in ladders.FILTERS:
             lua_filter = game.lua.table(side=flt[0], unsourced=flt[1], seenOnly=flt[2], phase=flt[3],
-                                        pvpRewards=flt[4])
+                                        pvpRewards=flt[4], rankCap=flt[5])
             for token in CLASSES:
                 for spec in self.kept[token]:
                     for mode in ladders.MODES:
@@ -218,12 +224,69 @@ class AddonTest(unittest.TestCase):
                                              f"{token} {spec} {mode} {slot} {flt}: the other weapon style")
                             checked += 1
         self.assertEqual(checked, len(ladders.FILTERS) * 27 * 2 * 15)
-        self.assertEqual(len(ladders.FILTERS), 2 * 2 * 2 * len(phases.PHASES) * 2)
+        self.assertEqual(len(ladders.FILTERS), 2 * 2 * 2 * len(phases.PHASES) * 2 * len(ladders.RANK_CAPS))
         # a filter that does not say counts the PvP rewards, as the lists did before the option
         silent = game.lua.table(side="a", unsourced=False, seenOnly=False, phase=phases.CURRENT)
         head = compute(decoded["WARRIOR"], 3, "pve", silent).head
         self.assertEqual([pick.id for pick in head.best.values()],
                          self.expected_picks("WARRIOR", 3, "pve", default_filter(pvp=True))["head"][0])
+
+    def test_the_rank_cap_rises_at_every_weekly_reset(self):
+        """A realm in America resets on Tuesdays, one in Europe on Wednesdays: both count their own resets."""
+        game = Game()
+        self.assertEqual(game.ns.data.meta.seasonStart, ranks.SEASON_START)
+        self.assertEqual(list(game.ns.data.meta.rankCaps.values()), list(ranks.WEEKLY_CAPS))
+        week = 7 * 24 * 60 * 60
+        launch = ranks.SEASON_START
+        for first_reset in (1794322800, 1794369600):  # 2026-11-10 15:00 UTC, 2026-11-11 04:00 UTC
+            for now, next_reset, expected_week in (
+                    (launch + 60, first_reset, 1),
+                    (first_reset - 1, first_reset, 1),
+                    (first_reset, first_reset + week, 2),
+                    (first_reset + week - 1, first_reset + week, 2),
+                    (first_reset + week, first_reset + 2 * week, 3),
+                    (first_reset + 8 * week, first_reset + 9 * week, 10),
+                    (first_reset + 30 * week, first_reset + 31 * week, 32)):
+                game.stub.serverTime, game.stub.untilReset = now, next_reset - now
+                self.assertEqual(game.ns.SeasonWeek(), expected_week, f"{now}")
+                self.assertEqual(game.ns.RankCap(), ranks.WEEKLY_CAPS[min(expected_week, 10) - 1], f"{now}")
+        # a client that does not say when the reset is: the weeks count from the launch
+        game.stub.untilReset = None
+        for now, expected_week in ((launch, 1), (launch + week - 1, 1), (launch + week, 2)):
+            game.stub.serverTime = now
+            self.assertEqual(game.ns.SeasonWeek(), expected_week)
+
+    def test_the_rank_cap_option_narrows_the_lists(self):
+        game = Game()
+        self.assertIsNone(game.ns.Filter().rankCap, "the lists follow the cap only when asked")
+        before = game.ns.Ladders.For("PRIEST", 3, "pvp").head.best[1].id
+        self.assertEqual(before, 17602, "Field Marshal's Headdress, which no vendor sells")
+        self.assertEqual(game.slash("now"), ["Easy BIS: Available now: on."])
+        self.assertEqual(game.ns.Filter().rankCap, 6)
+        flt = ("a", False, False, phases.CURRENT, True, 6)
+        decoded = game.ns.Ladders.Decode("PRIEST")
+        for spec in self.kept["PRIEST"]:
+            result = game.ns.Ladders.Compute(decoded, spec, "pvp", game.ns.Filter())
+            expected = self.expected_picks("PRIEST", spec, "pvp", flt, full=True)
+            for slot, _ in ladders.SLOTS:
+                picks = [*result[slot].best.values(), *result[slot].alts.values()]
+                self.assertEqual([pick.id for pick in picks], expected[slot][0] + expected[slot][1], slot)
+                self.assertTrue(all(pick.entry.rank <= 6 for pick in picks), slot)
+        head = game.ns.Ladders.For("PRIEST", 3, "pvp").head.best[1]
+        self.assertEqual(self.db.items[head.id]["name"], "Premier Satin Cowl", "sold for honor, with no rank")
+        self.assertEqual(game.ns.Sources.Describe(head.id).detail, "Honor")
+        self.assertEqual(game.slash("now"), ["Easy BIS: Available now: off."])
+        self.assertEqual(game.ns.Ladders.For("PRIEST", 3, "pvp").head.best[1].id, before)
+
+    def test_available_now_overrules_the_other_choices(self):
+        """The week's rank cap, the game's phase and no unknown source, and the player's own choices come back."""
+        game = Game(saved="EasyBISDB = { unsourced = true, availableNow = true }; EasyBISCharDB = { phase = 9 }")
+        flt = game.ns.Filter()
+        self.assertEqual((flt.rankCap, flt.phase, flt.unsourced), (6, phases.CURRENT, False))
+        self.assertEqual(game.ns.Phase(), phases.CURRENT)
+        game.ns.SetOption(game.ns, "availableNow", False)
+        flt = game.ns.Filter()
+        self.assertEqual((flt.rankCap, flt.phase, flt.unsourced), (None, EVERYTHING, True))
 
     def test_a_slot_lists_as_many_alternatives_as_asked(self):
         """From two to six alternatives: the picks the whole ladder gives, which the kept part must hold."""
@@ -692,6 +755,162 @@ class AddonTest(unittest.TestCase):
             code = re.sub(r'"(?:\\.|[^"\\])*"', '""', code)
             found = newer.search(code)
             self.assertIsNone(found, f"{path.name}: {found.group(0) if found else ''} is not Lua 5.1")
+
+
+@unittest.skipIf(lupa is None, "lupa is not installed")
+class ConsumablesTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.db = fdb.load(BUILD / "cache" / "ForeverDB")
+        cls.lists = consumable_lists.build(cls.db)
+        cls.game = Game()
+
+    def groups(self, token, spec, mode, phase):
+        return {group.key: group for group in self.game.ns.Consumables.For(token, spec, mode, phase).values()}
+
+    def test_the_categories_are_the_generators(self):
+        self.assertEqual(list(self.game.ns.Consumables.CATEGORIES.values()), list(consumable_lists.CATEGORIES))
+        self.assertEqual(self.game.ns.Consumables.PER_CATEGORY, consumable_lists.PER_CATEGORY)
+
+    def test_the_lists_are_the_generators(self):
+        for token, spec, mode, phase in product(CLASSES, (1, 2, 3), consumable_lists.MODES, phases.PHASES):
+            groups = self.groups(token, spec, mode, phase)
+            for category, shelf in self.lists[token][spec][mode].items():
+                with self.subTest(token=token, spec=spec, mode=mode, phase=phase, category=category):
+                    wanted = [(entry[0], entry[2]) for entry in consumable_lists.shown(shelf.ranked, phase, twins=shelf.twins)]
+                    group = groups.get(category)
+                    got = [(entry.id, entry.score) for entry in group.ranked.values()] if group else []
+                    self.assertEqual(got, wanted)
+                    unranked = list(group.unranked.values()) if group else []
+                    self.assertEqual(unranked, [item for item, needed in shelf.unranked if needed <= phase])
+
+    def test_a_sharp_and_a_blunt_stone_take_one_place(self):
+        ranked = list(self.groups("PALADIN", 3, "pve", phases.PRE_RAID)["weapon"].ranked.values())
+        self.assertEqual([entry.id for entry in ranked], [12404, 12643, 7964, 7965, 2871, 3241])
+        self.assertEqual([entry.twin for entry in ranked], [None, True, None, True, None, True])
+
+    def test_every_spec_is_listed_in_both_lists(self):
+        for token, spec, mode in product(CLASSES, (1, 2, 3), consumable_lists.MODES):
+            groups = self.groups(token, spec, mode, phases.CURRENT)
+            self.assertLessEqual({"flask", "elixir", "food", "scroll", "combat", "healing", "bandage", "situational"},
+                                 set(groups), (token, spec, mode))
+
+    def test_situational_is_what_the_class_can_use(self):
+        for token, spec, phase in product(("WARRIOR", "MAGE"), (1, 2), phases.PHASES):
+            wanted = [item for item, needed in consumable_lists.situational(self.db, token) if needed <= phase]
+            group = self.groups(token, spec, "pve", phase)["situational"]
+            self.assertEqual(list(group.unranked.values()), wanted)
+            self.assertEqual(len(group.ranked), 0)
+        cryoblast = 277499
+        self.assertIn(cryoblast, self.groups("MAGE", 2, "pve", phases.LATER)["situational"].unranked.values())
+        self.assertNotIn(cryoblast, self.groups("WARRIOR", 2, "pve", phases.LATER)["situational"].unranked.values())
+
+    def test_every_row_says_what_it_does_and_where_it_comes_from(self):
+        api = self.game.ns.Consumables
+        known = consumable_lists.used_ids(self.lists, consumable_lists.situational(self.db))
+        for item in known:
+            with self.subTest(item=item):
+                record = api.Info(item)
+                self.assertIsNotNone(record)
+                self.assertTrue(api.Kind(record))
+                self.assertTrue(api.Detail(record))
+                self.assertTrue(api.Where(record))
+                if record.where != consumable_lists.UNKNOWN_WHERE:
+                    self.assertNotEqual(api.Category(record), "unknown", record.where)
+
+    def test_a_source_in_a_few_words(self):
+        api = self.game.ns.Consumables
+        oil = api.Info(20749)
+        self.assertEqual((api.Kind(oil), api.Detail(oil)),
+                         ("Enchanting (300)", "Recipe sold by Rin'wosho the Trader (Stranglethorn Vale)"))
+        bandage = api.Info(14530)
+        self.assertEqual(api.Kind(bandage), "First Aid (290)")
+        self.assertEqual(api.Detail(api.Info(13510)), "Recipe drops from General Drakkisath")
+        self.assertEqual(api.Kind(api.Info(10305)), "Vendor")
+        self.assertEqual(api.Detail(api.Info(286152)), "Recipe found in Deadwind Pass")
+        self.assertEqual(api.Detail(api.Info(274276)), "Recipe, source unknown")
+        scroll = api.Info(277492)
+        self.assertEqual((api.Category(scroll), api.Detail(scroll)), ("container", "Bundle of Scrolls"))
+
+    def test_what_a_zone_changes(self):
+        api = self.game.ns.Consumables
+        flask = api.Info(274276)
+        self.assertEqual((flask.zoneRule, flask.zone), ("bonus", "Mount Hyjal, Hyjal Summit, and the Barrow Deeps"))
+        self.assertEqual(api.ZoneNote(flask), "Its bonus works only in Mount Hyjal, Hyjal Summit, and the Barrow Deeps.")
+        self.assertEqual(api.ZoneNote(api.Info(17348)), "Usable only in PvP Battlegrounds.")
+        self.assertIsNone(api.ZoneNote(api.Info(13446)))
+
+
+@unittest.skipIf(lupa is None, "lupa is not installed")
+class CostTest(unittest.TestCase):
+    """What a vendor asks in a currency, and what the player has of it."""
+    REAL, REAL_CURRENCY, CLOAK = 226404, 3469, 272411   # the Arcanoweave Cloak is sold for 75 Reals
+
+    def setUp(self):
+        self.game = Game()
+        self.sources = self.game.ns.Sources
+
+    def test_the_source_says_the_price(self):
+        cost = self.sources.Describe(self.CLOAK).cost
+        self.assertEqual((cost.item, cost.amount), (self.REAL, 75))
+        self.assertEqual(no_pictures(self.sources.CostText(cost)), "75 Reals")
+        self.assertEqual(no_pictures(self.sources.WithCost("Pix Xizzix", cost)), "75 Reals · Pix Xizzix")
+        self.assertIsNone(self.sources.Describe(EYE_OF_REND).cost, "a drop costs nothing")
+        self.assertEqual(self.sources.WithCost("Blackrock Spire", None), "Blackrock Spire")
+
+    def test_a_price_read_at_the_vendor_is_not_called_the_betas(self):
+        source = self.game.ns.Items.Get(self.CLOAK).sources[1]
+        for field, beta in ((f"{self.REAL}:75", False), (f"{self.REAL}:75:b", True)):
+            source[7] = field
+            cost = self.sources.Describe(self.CLOAK).cost
+            self.assertEqual((cost.item, cost.amount, cost.beta), (self.REAL, 75, beta), field)
+
+    def test_the_balance_is_read_as_a_currency_or_as_an_item(self):
+        self.assertEqual(self.sources.Held(self.REAL), 0)
+        self.game.stub.currencies[self.REAL_CURRENCY] = 38
+        self.assertEqual(self.sources.Held(self.REAL), 38)
+        self.game.stub.itemCounts[self.REAL] = 50
+        self.assertEqual(self.sources.Held(self.REAL), 50, "the larger of the two, never their sum")
+
+    def test_the_line_says_what_is_missing(self):
+        cost = self.sources.Describe(self.CLOAK).cost
+        self.assertEqual(no_pictures(self.sources.CostLine(cost)), "Cost: 75 Reals (you have 0, 75 missing)")
+        self.game.stub.itemCounts[self.REAL] = 38
+        self.assertEqual(no_pictures(self.sources.CostLine(cost)), "Cost: 75 Reals (you have 38, 37 missing)")
+        self.game.stub.itemCounts[self.REAL] = 80
+        self.assertEqual(no_pictures(self.sources.CostLine(cost)), "Cost: 75 Reals (you have 80)")
+
+    def test_a_client_that_cannot_say_shows_the_price_alone(self):
+        self.game.lua.globals().C_CurrencyInfo = None
+        self.game.lua.globals().GetItemCount = None
+        self.assertIsNone(self.sources.Held(self.REAL))
+        self.assertEqual(no_pictures(self.sources.CostLine(self.sources.Describe(self.CLOAK).cost)), "Cost: 75 Reals")
+
+    def test_in_french(self):
+        game = Game(locale="frFR")
+        game.stub.itemCounts[self.REAL] = 38
+        cost = game.ns.Sources.Describe(self.CLOAK).cost
+        self.assertEqual(no_pictures(game.ns.Sources.CostLine(cost)), "Coût : 75 Reals (vous en avez 38, il en manque 37)")
+
+    def test_the_price_wears_the_items_picture(self):
+        cost = self.sources.Describe(self.CLOAK).cost
+        self.assertEqual(self.sources.CostText(cost), "75 |T134400:14:14:0:0:64:64:5:59:5:59|t Reals")
+
+    def test_the_currencys_own_picture_comes_first(self):
+        self.game.stub.currencies[self.REAL_CURRENCY] = 0
+        self.game.stub.currencyIcon = 463446
+        cost = self.sources.Describe(self.CLOAK).cost
+        self.assertEqual(self.sources.CostText(cost), "75 |T463446:14:14:0:0:64:64:5:59:5:59|t Reals")
+
+    def test_a_game_without_a_picture_shows_the_words(self):
+        self.game.lua.globals().C_CurrencyInfo = None
+        self.game.lua.globals().GetItemIcon = None
+        self.assertEqual(self.sources.CostText(self.sources.Describe(self.CLOAK).cost), "75 Reals")
+
+    def test_both_factions_are_offered_the_vendors_items(self):
+        for faction in ("Alliance", "Horde"):
+            game = Game(faction=faction, cls="DRUID")
+            self.assertEqual(game.ns.Ladders.For("DRUID", 1, "pve").back.best[1].id, self.CLOAK, faction)
 
 
 if __name__ == "__main__":

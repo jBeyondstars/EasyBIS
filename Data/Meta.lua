@@ -13,4 +13,6 @@ ns.data.meta = {
     phases = { 0, 1, 9 },
     phase = 0,  -- the phase the game is in
     alternatives = 6,  -- picks the lists keep after the best one(s) of a slot
+    seasonStart = 1793833200,  -- when the PvP season began (server time)
+    rankCaps = { 3, 5, 6, 7, 8, 9, 11, 12, 13, 14 },  -- the highest PvP rank of each week of the season
 }

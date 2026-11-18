@@ -6,7 +6,11 @@
     in the game: /ebiscapture, then /reload
     python build.py --check-capture     compare what the game shows with the data, stat by stat
     python build.py --import-capture    read the saved variable, keep the weapons' healing, spell damage and
-                                        damage per second in corrections/weapons.json, and build
+                                        damage per second in corrections/weapons.json, what the consumables do
+                                        in corrections/consumables.json (consumables.py), and build
+    in the game: open a vendor's window, then /reload
+    python build.py --import-prices     keep what the vendors of corrections/costs.json ask, as their windows
+                                        showed it, and build
 
 The saved variable (WTF/Account/<account>/SavedVariables/EasyBIS_Capture.lua)
 is the developer's own; it is parsed as text and never run. The tooltip lines
@@ -22,6 +26,7 @@ from collections import Counter
 from dataclasses import dataclass, field
 from pathlib import Path
 
+import consumables
 import corrections
 
 HERE = Path(__file__).resolve().parent
@@ -29,18 +34,22 @@ SOURCE = HERE / "capture_addon"
 ADDON = "EasyBIS_Capture"
 SAVED = ADDON + ".lua"
 FORMAT = 1
+VENDOR_FORMAT = 1
 POOLS = ("mh", "2h", "oh")
 UNLISTED_FROM = 50   # required level from which a piece ForeverDB left out of its lists is worth reading
 # The order the groups of capture_ids are read in. The game's server stops answering when too much is
 # asked of it, so what is not known from anywhere else comes first, and the weapons, read already, last.
-ORDER = ("unlisted", "twins", "pool", "weapons")
+ORDER = ("consumables", "unlisted", "twins", "pool", "weapons")
+GEAR_GROUPS = ORDER[1:]   # the groups that say which pieces of gear the game has (game_reading)
 COMPLETE = 0.85   # the share of its list a capture has to hold for the rest to be what the game does not have
 
 _STRING = r'"((?:[^"\\]|\\.)*)"'
 _META = re.compile(rf'\["?meta"?\]\s*=\s*{_STRING}')
+_VENDOR = re.compile(rf'\["?v(\d+)"?\]\s*=\s*{_STRING}')
 _ESCAPE = re.compile(r"\\(\d{1,3}|.)", re.S)
 _ESCAPED = {"n": "\n", "r": "\r", "t": "\t", "a": "\a", "b": "\b", "f": "\f", "v": "\v"}
 _MARKUP = re.compile(r"\|c[0-9a-fA-F]{8}|\|r|\|T[^|]*\|t|\|A[^|]*\|a")
+_USE = "#use "   # a line of the saved variable: the spell an item casts, its name and its description, by tabs
 
 _N = r"(\d+(?:\.\d+)?)"
 _BOTH = re.compile(rf"^Equip: Increases damage and healing done by magical spells and effects by up to {_N}\.$")
@@ -119,6 +128,7 @@ def capture_ids(db) -> dict[str, list[int]]:
               the cap: raid sets and raid drops mostly, read to learn what they are and who can wear them
     twins     the other faction's version of a pooled piece (the lists show it to that faction), when it is
               not pooled itself: read to learn whether the server has it at all
+    consumables  what the Consumables tab ranks: the rule is in consumables.py
     """
     weapons = weapon_ids(db)
     pooled = set()
@@ -130,7 +140,7 @@ def capture_ids(db) -> dict[str, list[int]]:
                 if item_id not in db.items and UNLISTED_FROM <= gear["req"] <= cap]
     twins = {db.items[item_id]["twin"] for item_id in pooled if db.items[item_id].get("twin")} - pooled
     return {"weapons": weapons, "pool": sorted(pooled - set(weapons)), "unlisted": sorted(unlisted),
-            "twins": sorted(twins - set(unlisted))}
+            "twins": sorted(twins - set(unlisted)), "consumables": consumables.consumable_ids(db.consumables)}
 
 
 def write_tool(db, addons_dir) -> tuple[Path, dict[str, int]]:
@@ -179,12 +189,13 @@ def _unescape(text: str) -> str:
 
 
 def parse_saved(text: str) -> dict:
-    """{"game": "version.build", "locale", "date", "items": {id: (lines, stats)}, "missing": [ids],
-    "absent": [ids], "sample": (asked, answered) or None, "log": text}.
+    """{"game": "version.build", "locale", "date", "items": {id: (lines, stats)}, "uses": {id: [(spell, name,
+    description)]}, "missing": [ids], "absent": [ids], "sample": (asked, answered) or None, "log": text}.
 
     The file is the game's rendering of EasyBISCaptureDB (see capture_addon/Capture.lua): "missing" are
     the items not read, "absent" the ones of them the game's own item table does not list, "sample" what
-    became of the few absent ones that were asked for all the same.
+    became of the few absent ones that were asked for all the same. "uses" is what the game says of the
+    spell an item casts when used; a capture made before the tool asked for it has none.
     """
     meta = _META.search(text)
     if not meta:
@@ -192,21 +203,26 @@ def parse_saved(text: str) -> dict:
     fields = _unescape(meta.group(1)).split("|")
     if len(fields) != 5 or fields[0] != str(FORMAT):
         raise ValueError(f"unknown capture format {fields[0]!r}: install the tool again (build.py --capture-tool)")
-    items = {}
+    items, uses = {}, {}
     for match in re.finditer(rf"\[(\d+)\]\s*=\s*{_STRING}", text, re.S):
         lines = [_MARKUP.sub("", line).strip() for line in _unescape(match.group(2)).split("\n")]
         stats = {}
         if lines and lines[-1].startswith("#stats"):
             for key, value in re.findall(r"(\w+)=(-?[\d.]+)", lines.pop()):
                 stats[key] = float(value)
-        items[int(match.group(1))] = ([line for line in lines if line], stats)
+        for line in lines:
+            if line.startswith(_USE):
+                spell, _, rest = line[len(_USE):].partition("\t")
+                name, _, description = rest.partition("\t")
+                uses.setdefault(int(match.group(1)), []).append((int(spell), name, description))
+        items[int(match.group(1))] = ([line for line in lines if line and not line.startswith(_USE)], stats)
     def field_text(name):
         found = re.search(rf'\["?{name}"?\]\s*=\s*{_STRING}', text)
         return _unescape(found.group(1)) if found else ""
 
     sample = re.fullmatch(r"(\d+):(\d+)", field_text("sample"))
     return {
-        "game": f"{fields[1]}.{fields[2]}", "locale": fields[3], "date": fields[4][:10], "items": items,
+        "game": f"{fields[1]}.{fields[2]}", "locale": fields[3], "date": fields[4][:10], "items": items, "uses": uses,
         "missing": [int(number) for number in re.findall(r"\d+", field_text("missing"))],
         "absent": [int(number) for number in re.findall(r"\d+", field_text("absent"))],
         "sample": (int(sample.group(1)), int(sample.group(2))) if sample else None,
@@ -280,10 +296,11 @@ def game_reading(db, parsed: dict) -> dict | None:
 
     Every item of the capture's list that it does not hold is taken as one the game does not have, so the
     capture has to be whole: COMPLETE of its list at least, in English (the class and unique lines of the
-    tooltips are read). db is ForeverDB's data as published.
+    tooltips are read). db is ForeverDB's data as published. The consumables are no part of this: it speaks
+    of the gear.
     """
     groups = capture_ids(db)
-    listed = {item_id for group in groups.values() for item_id in group}
+    listed = {item_id for name in GEAR_GROUPS for item_id in groups[name]}
     read = listed & set(parsed["items"])
     if len(read) < COMPLETE * len(listed) or not parsed["locale"].startswith("en"):
         return None
@@ -304,7 +321,8 @@ def read_capture(db, text: str) -> Import:
     parsed = parse_saved(text)
     result = Import(game=parsed["game"], locale=parsed["locale"], read=len(parsed["items"]),
                     missing=len(parsed["missing"]), reading=game_reading(db, parsed))
-    listed = {item_id for group in capture_ids(db).values() for item_id in group}
+    groups = capture_ids(db)
+    listed = {item_id for name in GEAR_GROUPS for item_id in groups[name]}
     result.listed, result.shown = len(listed), len(listed & set(parsed["items"]))
     for item_id, (lines, stats) in sorted(parsed["items"].items()):
         gear = db.gear.get(item_id)
@@ -342,6 +360,129 @@ def import_capture(db, saved_file, corrections_file=corrections.FILE, game_file=
     if result.reading:
         corrections.save_game(result.reading, game_file or Path(corrections_file).with_name(corrections.GAME_FILE.name))
     return result
+
+
+# -- what the vendors ask ----------------------------------------------------------------------------------
+
+def find_vendors(game_dir) -> Path | None:
+    """The newest saved variable of this game folder that holds a vendor's window."""
+    found = sorted(Path(game_dir).glob(f"WTF/Account/*/SavedVariables/{SAVED}"),
+                   key=lambda path: path.stat().st_mtime, reverse=True)
+    for path in found:
+        if _VENDOR.search(path.read_text(encoding="utf-8", errors="replace")):
+            return path
+    return None
+
+
+def parse_vendors(text: str) -> dict:
+    """{npc: {"name", "game": "version.build", "locale", "date", "items": {item id: {"name", "copper", "costs":
+    [(kind, what, amount)]}}}}, what the vendors' windows showed (capture_addon/Capture.lua).
+
+    A cost's kind is "i" for an item, "c" for a currency, both with their id as text, or "n" with the name.
+    """
+    vendors = {}
+    for match in _VENDOR.finditer(text):
+        head, *rows = _unescape(match.group(2)).split("\n")
+        fields = head.split("|", 5)
+        if len(fields) != 6 or fields[0] != str(VENDOR_FORMAT):
+            raise ValueError(f"unknown vendor format {fields[0]!r}: install the tool again (build.py --capture-tool)")
+        items = {}
+        for row in rows:
+            item_id, name, copper, paid = row.split("\t")
+            costs = []
+            for cost in filter(None, paid.split(";")):
+                what, _, amount = cost[1:].rpartition(":")
+                costs.append((cost[0], what, int(amount)))
+            items[int(item_id)] = {"name": name, "copper": int(copper), "costs": costs}
+        vendors[int(match.group(1))] = {"name": fields[5], "game": f"{fields[1]}.{fields[2]}", "locale": fields[3],
+                                        "date": fields[4][:10], "items": items}
+    return vendors
+
+
+@dataclass
+class PriceReading:
+    """What the vendors' windows said of corrections/costs.json."""
+    game: str = ""
+    date: str = ""
+    confirmed: list = field(default_factory=list)   # item ids the window asks the file's price for
+    changed: list = field(default_factory=list)     # (item id, name, the file's price, the window's)
+    added: list = field(default_factory=list)       # (item id, name, price) the file did not have
+    other: list = field(default_factory=list)       # (item id, name, what the window asks): left as they were
+    unseen: list = field(default_factory=list)      # (item id, name) of the file no window showed
+    strangers: list = field(default_factory=list)   # (npc, name, rows) of vendors the file does not have
+    unread: int = 0                                 # items of the file no window has confirmed so far
+
+    @property
+    def read(self) -> int:
+        return len(self.confirmed) + len(self.changed) + len(self.added)
+
+
+def _asked(row: dict, paid_in: int, currency: dict):
+    """What the row asks in the vendor's currency; None when it asks for anything else as well or instead."""
+    if row["copper"] or len(row["costs"]) != 1:
+        return None
+    kind, what, amount = row["costs"][0]
+    expected = {"i": str(paid_in), "c": str(currency.get("currency", "")), "n": currency.get("name", "")}
+    return amount if expected.get(kind) == what else None
+
+
+def _asked_text(row: dict) -> str:
+    costs = [f"{amount} of {kind}{what}" for kind, what, amount in row["costs"]]
+    return ", ".join(costs + ([f"{row['copper']} copper"] if row["copper"] else []))
+
+
+def read_prices(costs: dict, vendors: dict, names: dict | None = None) -> PriceReading:
+    """Lay what the windows showed over `costs` (corrections.load_costs).
+
+    An item read holds the game build and the date of the reading, which is what tells the addon its price
+    is not the beta's any more. An item no window showed stays as it was: a window may show a class only
+    what it can use. Names stay in English whatever the game's language: `names` gives the ones of an item
+    the file did not have.
+    """
+    reading = PriceReading()
+    for npc, shown in sorted(vendors.items()):
+        vendor = costs.get("vendors", {}).get(npc)
+        if vendor is None:
+            reading.strangers.append((npc, shown["name"], len(shown["items"])))
+            continue
+        reading.game, reading.date = shown["game"], shown["date"]
+        read = {"build": shown["game"], "date": shown["date"]}
+        currency = costs["currencies"][vendor["paid_in"]]
+        for item_id, row in sorted(shown["items"].items()):
+            record = vendor["items"].get(item_id)
+            name = record["name"] if record else (names or {}).get(item_id, row["name"])
+            amount = _asked(row, vendor["paid_in"], currency)
+            if amount is None:
+                if record or row["costs"]:
+                    reading.other.append((item_id, name, _asked_text(row)))
+            elif record is None:
+                vendor["items"][item_id] = {"name": name, "price": amount, **read}
+                reading.added.append((item_id, name, amount))
+            else:
+                if record["price"] == amount:
+                    reading.confirmed.append(item_id)
+                else:
+                    reading.changed.append((item_id, name, record["price"], amount))
+                record.update(price=amount, **read)
+        reading.unseen += [(item_id, record["name"]) for item_id, record in sorted(vendor["items"].items())
+                           if item_id not in shown["items"]]
+    if reading.read:
+        costs["date"] = reading.date
+    reading.unread = sum("build" not in record for vendor in costs.get("vendors", {}).values()
+                         for record in vendor["items"].values())
+    return reading
+
+
+def import_prices(db, saved_file, costs_file=corrections.COSTS_FILE) -> PriceReading:
+    """Keep in the costs file what the saved variable holds of its vendors."""
+    vendors = parse_vendors(Path(saved_file).read_text(encoding="utf-8", errors="replace"))
+    if not vendors:
+        raise ValueError("no vendor's window in this file: open it in the game, then /reload")
+    costs = corrections.load_costs(costs_file)
+    reading = read_prices(costs, vendors, {item_id: item["name"] for item_id, item in db.items.items()})
+    if reading.read:
+        corrections.save_costs(costs, costs_file)
+    return reading
 
 
 # -- the game against the data ----------------------------------------------------------------------------

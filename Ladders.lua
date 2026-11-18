@@ -7,8 +7,8 @@ pick(s) and their alternatives, for one faction and the current options.
 A ladder is every pick of a slot, best first. What a character sees of it
 depends on the filter: the faction, whether items with no known source count,
 whether only items seen in Forever count, whether the PvP rewards count in the
-list (each list has its own answer), the content phase the list stops at, and
-how many alternatives a slot lists.
+list (each list has its own answer), the PvP rank the week's cap allows, the
+content phase the list stops at, and how many alternatives a slot lists.
 
   Ladders.Specs(class)               { { index, name, role, style }, ... }
   Ladders.For(class, spec, list)     { [slot] = { best = {...}, alts = {...}, other = {...} }, twoHand = bool }
@@ -28,9 +28,9 @@ ns.Ladders = Ladders
 -- Decoding
 ---------------------------------------------------------------------------
 
--- "id:score*10:flags:twin:limit", the empty fields at the end left out.
+-- "id:score*10:flags:twin:limit:rank", the empty fields at the end left out.
 local function ParseEntry(text)
-    local id, score, flags, twin, limit = text:match("^(%d+):(%d+):?([%a%d]*):?(%d*):?(.*)$")
+    local id, score, flags, twin, limit, rank = text:match("^(%d+):(%d+):?([%a%d]*):?(%d*):?([%a%d]*):?(%d*)$")
     if not id then return nil end
     return {
         id = tonumber(id),
@@ -40,11 +40,13 @@ local function ParseEntry(text)
         phase = tonumber(flags:match("%d")) or 0,
         twin = tonumber(twin),
         limit = limit ~= "" and limit or nil,
+        rank = tonumber(rank) or 0,
     }
 end
 
 -- flags: s seen in Forever, n new in Forever, u no known source, U unique, t two-hander, r random bonus,
--- p a PvP reward; a digit is the content phase the item needs (entry.phase, 0 without one)
+-- p a PvP reward, v a Premier piece (sold for honor, even when the data gives it no source); a digit is the
+-- content phase the item needs (entry.phase, 0 without one)
 function Ladders.HasFlag(entry, letter)
     return entry.flags:find(letter, 1, true) ~= nil
 end
@@ -83,16 +85,19 @@ local function Shown(entry, side)
 end
 
 -- filter.pvpRewards: whether the PvP rewards count, as { pve = bool, pvp = bool } or one answer for both
--- lists; they count when the filter does not say.
+-- lists; they count when the filter does not say. filter.rankCap: the rank the week's cap allows, nil when
+-- the list does not follow it. A list that follows it counts the Premier pieces it allows, source known or not.
 local function Visible(entries, filter, list)
     local rewards = filter.pvpRewards
     if type(rewards) == "table" then rewards = rewards[list] end
+    local cap = filter.rankCap
     local visible = {}
     for _, entry in ipairs(entries or {}) do
         local id = Shown(entry, filter.side)
         if id
             and entry.phase <= (filter.phase or 9)
-            and (filter.unsourced or not Ladders.HasFlag(entry, "u"))
+            and (not cap or entry.rank <= cap)
+            and (filter.unsourced or not Ladders.HasFlag(entry, "u") or (cap and Ladders.HasFlag(entry, "v")))
             and (rewards ~= false or not Ladders.HasFlag(entry, "p"))
             and (not filter.seenOnly or Ladders.HasFlag(entry, "s")) then
             visible[#visible + 1] = { id = id, score = entry.score10 / 10, entry = entry }
@@ -133,8 +138,9 @@ local function First(picks, count)
     return first
 end
 
--- best, alternatives (count of them at most). Rings and trinkets have two best
--- picks: the second is the next one that can be worn with the first.
+-- best, alternatives. Rings and trinkets have two best picks: the second is the
+-- next one that can be worn with the first. That second pick is one of the count
+-- asked for: a slot lists the best pick and at most count items after it.
 local function Picks(slot, visible, count)
     local best, alts = {}, {}
     local first = visible[1]
@@ -149,6 +155,7 @@ local function Picks(slot, visible, count)
             end
         end
     end
+    count = count - (#best - 1)
     for _, pick in ipairs(visible) do
         if #alts >= count then break end
         if pick ~= best[1] and pick ~= best[2] then alts[#alts + 1] = pick end
