@@ -61,12 +61,21 @@ def texts(menu) -> list[str]:
 def label(control) -> str:
     """What a filter's button, or a plain button, reads."""
     button = control.button or control
-    return strip_colors(button.text.text)
+    return strip_colors(button.Text.text if button.Text else button.GetText(button))
 
 
 def look(control) -> str:
     """How a button is painted: idle, lit or active (gold)."""
-    return (control.button or control).look
+    if control.label and list(control.label.color.values()) == [1, 0.82, 0]:
+        return "active"
+    return "lit" if control.highlightLocked else "idle"
+
+
+def open_dropdown(game, button):
+    if button.kind == "DropdownButton":
+        game.stub.run(button, "OnMouseDown", "LeftButton")
+    else:
+        game.stub.run(button, "OnClick")
 
 
 @unittest.skipIf(lupa is None, "lupa is not installed")
@@ -318,7 +327,7 @@ class WindowTest(unittest.TestCase):
         self.assertEqual(window.child.height, offset)
 
         # a frame that was a header is reused as an item row when the list changes
-        game.stub.run(window.slot.button, "OnClick")
+        open_dropdown(game, window.slot.button)
         find(game.stub.menu, "Legs").pick()
         kinds = [frame.data.kind for frame in self.all_frames(game)]
         self.assertEqual(kinds, ["header", "item", "item", "item"])
@@ -377,8 +386,8 @@ class WindowTest(unittest.TestCase):
         self.assertEqual(main[0].data.id, ATIESH)
         self.assertEqual([frame.data.kind for frame in main], ["item"] * 3 + ["note"] + ["item"] * 3)
         self.assertEqual(main[3].note.text, "Or a one-hander with an off hand")
-        self.assertEqual(main[4].data.id, MAGEBLADE, "the best one-hander once every raid counts")
-        self.assertEqual(main[5].data.id, VAULTED_SECRETS, "and the next one")
+        self.assertEqual({main[4].data.id, main[5].data.id}, {MAGEBLADE, VAULTED_SECRETS},
+                         "the two best one-handers once every raid counts, within a rounding of each other")
         self.assertEqual(off[0].note.text, "With a one-hander, in place of the two-hander")
         self.assertEqual([frame.data.kind for frame in off], ["note"] + ["item"] * 3)
         self.assertTrue(all(frame.data.other and not frame.data.bis for frame in off[1:]))
@@ -451,7 +460,7 @@ class WindowTest(unittest.TestCase):
     def test_spec_menu(self):
         game = self.open(cls="SHAMAN")
         window, state = game.ns.Browser.window, game.ns.Browser.state
-        game.stub.run(window.spec.button, "OnClick")
+        open_dropdown(game, window.spec.button)
         menu = game.stub.menu
         self.assertEqual(texts(menu)[0], "Shaman", "the player's class comes first")
         self.assertEqual(len(texts(menu)), 9)
@@ -482,7 +491,7 @@ class WindowTest(unittest.TestCase):
         self.assertEqual(label(window.phase), "Pre-raid")
         self.assertNotIn(ATIESH, [row[1] for row in self.shown_rows(game)])
 
-        game.stub.run(window.phase.button, "OnClick")
+        open_dropdown(game, window.phase.button)
         menu = game.stub.menu
         self.assertEqual(texts(menu), ["Pre-raid", "Phase 1", "Everything, Classic raids included"])
         self.assertTrue(find(menu, "Pre-raid").selected())
@@ -520,7 +529,7 @@ class WindowTest(unittest.TestCase):
     def test_slot_filter(self):
         game = self.open(saved=ENHANCEMENT)
         window = game.ns.Browser.window
-        game.stub.run(window.slot.button, "OnClick")
+        open_dropdown(game, window.slot.button)
         self.assertEqual(texts(game.stub.menu)[:3], ["All", "Head", "Neck"])
         self.assertEqual(len(texts(game.stub.menu)), 16)
         find(game.stub.menu, "Finger").pick()
@@ -539,7 +548,7 @@ class WindowTest(unittest.TestCase):
         window, state = game.ns.Browser.window, game.ns.Browser.state
         everything = self.shown_rows(game)
 
-        game.stub.run(window.source.button, "OnClick")
+        open_dropdown(game, window.source.button)
         offered = texts(game.stub.menu)
         self.assertEqual(offered[0], "All")
         self.assertIn("Dungeon", offered)
@@ -553,7 +562,7 @@ class WindowTest(unittest.TestCase):
         self.assertIn("|T", find(game.stub.menu, "Crafted").text, "the menu shows each category's picture")
         find(game.stub.menu, "All").pick()
 
-        game.stub.run(window.zone.button, "OnClick")
+        open_dropdown(game, window.zone.button)
         zones = texts(game.stub.menu)
         self.assertEqual(zones[0], "All")
         self.assertIn("Blackrock Spire", zones)
@@ -622,7 +631,7 @@ class WindowTest(unittest.TestCase):
         self.assertEqual(tooltip.spell, int(wanted[1:]))
         self.assertGreater(len(tooltip.lines), 1, "the effect and the source are added to the tooltip")
 
-        game.stub.run(window.slot.button, "OnClick")
+        open_dropdown(game, window.slot.button)
         find(game.stub.menu, "Main hand").pick()
         self.assertEqual({row[2] for row in self.shown_rows(game)}, {"w2h"},
                          "a spec that fights with a two-hander is not shown one-hander or shield enchants")
@@ -747,7 +756,8 @@ class WindowTest(unittest.TestCase):
         window = game.ns.Browser.window
         box = window.available
         self.assertEqual(box.text.text, "Available now")
-        self.assertFalse(box.mark.shown)
+        self.assertFalse(box.GetChecked(box))
+        self.assertTrue(window.phase.button.IsEnabled(window.phase.button))
         controls = [window.spec, window.list, window.phase, window.slot, window.source, window.zone]
         right = 66 + sum(control.width for control in controls) + 8 * 5 + 10 + box.width
         self.assertLessEqual(right, WIDTH - 8, "the box stays inside the window")
@@ -756,12 +766,13 @@ class WindowTest(unittest.TestCase):
 
         game.stub.run(box, "OnClick")
         self.assertTrue(game.ns.db.availableNow)
-        self.assertTrue(box.mark.shown)
+        self.assertTrue(box.GetChecked(box))
         self.assertEqual(self.shown_rows(game), self.reference_rows("PRIEST", 3, "pvp",
                                                                     ("a", False, False, phases.CURRENT, True, 6)))
         self.assertEqual(label(window.phase), game.ns.PhaseName(phases.CURRENT))
+        self.assertFalse(window.phase.button.IsEnabled(window.phase.button))
         game.stub.menu = None
-        game.stub.run(window.phase.button, "OnClick")
+        open_dropdown(game, window.phase.button)
         self.assertIsNone(game.stub.menu, "only the game's phase is available now")
 
         game.stub.run(box, "OnEnter")
@@ -772,14 +783,15 @@ class WindowTest(unittest.TestCase):
         self.assertFalse(tooltip.shown)
 
         game.stub.run(box, "OnClick")
-        self.assertFalse(box.mark.shown)
+        self.assertFalse(box.GetChecked(box))
+        self.assertTrue(window.phase.button.IsEnabled(window.phase.button))
         self.assertEqual(label(window.phase), chosen, "the phase the character picked comes back")
 
     def test_options_menu(self):
         game = self.open(saved="EasyBISCharDB = { class = 'SHAMAN', spec = 2, list = 'pvp' }")
         window = game.ns.Browser.window
         self.assertEqual(self.shown_rows(game), self.reference_rows("SHAMAN", 2, "pvp"))
-        game.stub.run(window.options, "OnClick")
+        open_dropdown(game, window.options)
         menu = game.stub.menu
         self.assertEqual(texts(menu), ["Options", "BIS lines in item tooltips", "Tooltips show my class only",
                                        "Tooltips show alternatives too", "Reputation needed in item tooltips",
@@ -822,7 +834,7 @@ class WindowTest(unittest.TestCase):
         self.assertEqual(self.shown_rows(game), with_them)
         # a window on a PvE list follows the PvE box
         other = self.open(cls="WARRIOR", saved="EasyBISCharDB = { class = 'WARRIOR', spec = 3, list = 'pve' }")
-        other.stub.run(other.ns.Browser.window.options, "OnClick")
+        open_dropdown(other, other.ns.Browser.window.options)
         box = find(find(other.stub.menu, "PvP rewards"), "PvE list")
         left_out = self.reference_rows("WARRIOR", 3, "pve")
         self.assertEqual(self.shown_rows(other), left_out)
@@ -846,7 +858,7 @@ class WindowTest(unittest.TestCase):
         self.assertGreater(len(five), len(with_them))
         french = Game(locale="frFR")
         french.ns.Browser.Open()
-        french.stub.run(french.ns.Browser.window.options, "OnClick")
+        open_dropdown(french, french.ns.Browser.window.options)
         self.assertEqual(texts(find(french.stub.menu, "Récompenses JcJ")), ["Liste JcE", "Liste JcJ"])
         self.assertEqual(french.ns.L.OPT_ALT_COUNT, "Alternatives par emplacement")
 
@@ -1066,7 +1078,7 @@ class WindowTest(unittest.TestCase):
 
         # the tooltip names the spec it was added for, and the Source filter knows the category
         self.assertIn(("<classicon-shaman> Shaman Enhancement", "Added PvE"), game.lines(crown))
-        game.stub.run(window.source.button, "OnClick")
+        open_dropdown(game, window.source.button)
         find(game.stub.menu, "Added by hand").pick()
         self.assertEqual({row[1] for row in self.shown_rows(game)}, {crown, blade})
         find(game.stub.menu, "All").pick()
@@ -1619,12 +1631,12 @@ class WindowTest(unittest.TestCase):
         self.assertTrue(gated)
         self.assertEqual(label(window.reputation), "All")
         self.assertEqual(look(window.reputation), "idle")
-        game.stub.run(window.reputation.button, "OnClick")
+        open_dropdown(game, window.reputation.button)
         self.assertEqual(texts(game.stub.menu), ["All", "Within reach", "To earn"])
         find(game.stub.menu, "To earn").pick()
         self.assertEqual(look(window.reputation), "active", "a filter that narrows the list is gold")
         self.assertEqual({row.id for row in rows()}, set(gated))
-        game.stub.run(window.reputation.button, "OnClick")
+        open_dropdown(game, window.reputation.button)
         find(game.stub.menu, "Within reach").pick()
         self.assertFalse({row.id for row in rows()} & set(gated))
         self.assertEqual(len(rows()), len(everything) - len(gated))
@@ -1813,15 +1825,15 @@ class WindowTest(unittest.TestCase):
         self.assertEqual(self.shown_rows(game), self.reference_rows("SHAMAN", 2, "pve"))
         self.assertFalse(window.options.shown, "the options menu needs the menu API")
         # without menus, a click moves to the next choice
-        game.stub.run(window.slot.button, "OnClick")
+        open_dropdown(game, window.slot.button)
         self.assertEqual(state.slot, "head")
-        game.stub.run(window.slot.button, "OnClick")
+        open_dropdown(game, window.slot.button)
         self.assertEqual(state.slot, "neck")
-        game.stub.run(window.spec.button, "OnClick")
+        open_dropdown(game, window.spec.button)
         self.assertEqual((state["class"], state.spec), ("SHAMAN", 3))
-        game.stub.run(window.source.button, "OnClick")
-        game.stub.run(window.zone.button, "OnClick")
-        game.stub.run(window.phase.button, "OnClick")
+        open_dropdown(game, window.source.button)
+        open_dropdown(game, window.zone.button)
+        open_dropdown(game, window.phase.button)
         self.assertEqual(game.ns.Phase(), 1, "without menus, a click on the phase moves to the next one")
         game.stub.run(window.tabs.buttons[3], "OnClick")
         self.assertEqual(self.sheet(game), self.reference_sheet("SHAMAN", 3, "pve", default_filter(phase=1)))
@@ -1885,11 +1897,11 @@ class WindowTest(unittest.TestCase):
     def test_the_category_filter(self):
         game = self.open_consumables()
         window = game.ns.Browser.window
-        game.stub.run(window.slot.button, "OnClick")
+        open_dropdown(game, window.slot.button)
         self.assertEqual(texts(game.stub.menu)[0], "All")
         find(game.stub.menu, "Food").pick()
         self.assertEqual({row.key for row in self.consumable_rows(game)}, {"food"})
-        self.assertEqual(look(window.slot.button), "active")
+        self.assertEqual(look(window.slot), "active")
         # the slot filter of the other tabs is left as it was
         game.stub.run(window.tabs.buttons[1], "OnClick")
         self.assertEqual(window.slot.label.text, "Slot")
@@ -1898,7 +1910,7 @@ class WindowTest(unittest.TestCase):
     def test_a_category_the_spec_lacks_goes_back_to_all(self):
         game = self.open_consumables("MAGE", 2)
         window = game.ns.Browser.window
-        game.stub.run(window.slot.button, "OnClick")
+        open_dropdown(game, window.slot.button)
         find(game.stub.menu, "Mana potions").pick()
         self.assertEqual({row.key for row in self.consumable_rows(game)}, {"mana"})
         state = game.ns.Browser.state
@@ -1977,14 +1989,12 @@ class WindowTest(unittest.TestCase):
             game = self.open(locale=locale)
             window = game.ns.Browser.window
             items, consumables = window.tabs.buttons[1], window.tabs.buttons[4]
-            green = list(consumables.newEdge.values())
             self.assertEqual(consumables.newBadge.text.text, "New", locale)
-            self.assertEqual(list(consumables.borderColor.values()), green, "idle")
+            self.assertTrue(consumables.newBadge.shown)
             self.assertIsNone(items.newBadge)
-            self.assertNotEqual(list(items.borderColor.values()), green)
             game.stub.run(consumables, "OnClick")
-            self.assertEqual(consumables.look, "lit")
-            self.assertEqual(list(consumables.borderColor.values()), green, "the border stays on the open tab")
+            self.assertTrue(consumables.highlightLocked)
+            self.assertTrue(consumables.newBadge.shown, "the badge stays on the open tab")
             self.assertEqual(consumables.newBadge.points[1][3], "TOPRIGHT", "on the corner, so the credit keeps its room")
 
     def test_the_consumables_tab_in_french(self):

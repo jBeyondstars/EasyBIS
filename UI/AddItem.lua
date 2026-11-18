@@ -142,7 +142,7 @@ local function Enter()
 end
 
 local function BuildSuggestions(box)
-    local suggest = CreateFrame("Frame", nil, dialog, "BackdropTemplate")
+    local suggest = CreateFrame("Frame", nil, dialog, "TooltipBackdropTemplate")
     dialog.suggest = suggest
     suggest:Hide()
     suggest.ids = {}
@@ -151,9 +151,6 @@ local function BuildSuggestions(box)
     suggest:SetFrameStrata("FULLSCREEN_DIALOG")
     suggest:SetClampedToScreen(true)
     suggest:EnableMouse(true)
-    suggest:SetBackdrop(Widgets.FLAT)
-    suggest:SetBackdropColor(0.07, 0.07, 0.09, 0.98)
-    suggest:SetBackdropBorderColor(1, 1, 1, 0.30)
 
     suggest.rows = {}
     for i = 1, SUGGESTIONS do
@@ -162,9 +159,7 @@ local function BuildSuggestions(box)
         row:SetPoint("TOPLEFT", 4, -4 - (i - 1) * ROW_HEIGHT)
         row:SetPoint("RIGHT", suggest, "RIGHT", -4, 0)
 
-        row.selected = row:CreateTexture(nil, "BACKGROUND")
-        row.selected:SetAllPoints()
-        row.selected:SetColorTexture(1, 1, 1, 0.12)
+        row.selected = Widgets.ListHighlight(row, "BACKGROUND", 0.48)
         row.selected:Hide()
 
         row.icon = row:CreateTexture(nil, "ARTWORK")
@@ -241,7 +236,7 @@ local function OnLink(link)
 end
 
 local function Build()
-    dialog = CreateFrame("Frame", DIALOG_NAME, UIParent, "BackdropTemplate")
+    dialog = CreateFrame("Frame", DIALOG_NAME, UIParent, "DialogBorderTemplate")
     AddItem.dialog = dialog
     dialog:Hide()
     dialog:SetSize(WIDTH, HEIGHT)
@@ -249,9 +244,6 @@ local function Build()
     dialog:SetToplevel(true)
     dialog:SetClampedToScreen(true)
     dialog:EnableMouse(true)
-    dialog:SetBackdrop(Widgets.FLAT)
-    dialog:SetBackdropColor(0.05, 0.05, 0.06, 0.97)
-    dialog:SetBackdropBorderColor(1, 1, 1, 0.35)
     table.insert(UISpecialFrames, DIALOG_NAME)
 
     dialog.title = dialog:CreateFontString(nil, "OVERLAY", "GameFontNormal")
@@ -271,7 +263,7 @@ local function Build()
     local close = CreateFrame("Button", nil, dialog, "UIPanelCloseButton")
     close:SetPoint("TOPRIGHT", 2, 2)
 
-    local box = CreateFrame("EditBox", nil, dialog, "InputBoxTemplate")
+    local box = CreateFrame("EditBox", nil, dialog, "SearchBoxTemplate")
     dialog.box = box
     box:SetSize(266, 22)
     box:SetPoint("BOTTOMLEFT", 20, 32)
@@ -283,7 +275,7 @@ local function Build()
     end)
     box:SetScript("OnReceiveDrag", Drop)
     -- only what the player types: the box emptied after an add, or a pasted link, asks for nothing
-    box:SetScript("OnTextChanged", function(self, typed)
+    box:HookScript("OnTextChanged", function(self, typed)
         if typed then AddItem.Suggest(self:GetText()) else HideSuggestions() end
     end)
     box:SetScript("OnArrowPressed", function(_, key)

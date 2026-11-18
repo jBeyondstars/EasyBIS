@@ -128,9 +128,7 @@ local function CreateCell(parent, mirrored)
     local cell = CreateFrame("Button", nil, parent)
     cell:SetSize(COLUMN, FRAME)
     cell.mirrored = mirrored
-    local highlight = cell:CreateTexture(nil, "HIGHLIGHT")
-    highlight:SetAllPoints()
-    highlight:SetColorTexture(1, 1, 1, 0.07)
+    Widgets.ListHighlight(cell, "HIGHLIGHT", 0.30)
 
     local side = mirrored and "RIGHT" or "LEFT"
     cell.border = cell:CreateTexture(nil, "BACKGROUND")
@@ -296,9 +294,7 @@ local function SummaryLine(index)
     view.reputations[index] = line
     line:SetSize(SUMMARY_WIDTH, SUMMARY_LINE)
     line:SetFrameLevel(view:GetFrameLevel() + 5)   -- over the character
-    local highlight = line:CreateTexture(nil, "HIGHLIGHT")
-    highlight:SetAllPoints()
-    highlight:SetColorTexture(1, 1, 1, 0.07)
+    Widgets.ListHighlight(line, "HIGHLIGHT", 0.30)
     line.label = line:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     line.label:SetPoint("LEFT", 6, 0)
     line.label:SetPoint("RIGHT", -64, 0)
