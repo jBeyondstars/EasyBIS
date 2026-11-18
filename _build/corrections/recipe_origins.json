@@ -1,0 +1,28 @@
+{
+  "about": "Where consumables come from when ForeverDB's data does not say, laid over it by _build/consumable_lists.py (where): what ForeverDB's data knows comes first, so an entry retires by itself once the data has the answer. The key is the consumable. One of sold, quest, drops or found says how its recipe is had, and container names what holds a consumable no recipe makes; read says where that was read. What players cannot get is under unobtainable, and is left out of the lists. Written by hand.",
+  "date": "2026-11-18",
+  "recipes": {
+    "13446": {"name": "Major Healing Potion", "sold": "Pexmit (Mount Hyjal)", "read": "QuestieDB"},
+    "20452": {"name": "Smoked Desert Dumplings", "quest": "Desert Recipe (Silithus)", "read": "WhatsTraining, QuestieDB"},
+    "249869": {"name": "Sunny Tea", "drops": "Marsh Oracle (Swamp of Sorrows)", "read": "QuestieDB"},
+    "249870": {"name": "Sage's Tea", "drops": "Deadwind Ogre Mage (Deadwind Pass)", "read": "Wowhead Forever"},
+    "250068": {"name": "Savory Turtle Stew", "drops": "Child of Tortolla (Mount Hyjal)", "read": "Wowhead Forever"},
+    "250069": {"name": "Flank au Poivre", "drops": "Ghostfang Alpha (Mount Hyjal)", "read": "Wowhead Forever"},
+    "250070": {"name": "Bear Bruscitti", "drops": "Rabid Shardtooth (Winterspring)", "read": "QuestieDB"},
+    "250071": {"name": "Steaming Stag Steak", "quest": "Now We're Cooking (Mount Hyjal)", "read": "WhatsTraining, QuestieDB"},
+    "250072": {"name": "Swiftstrike Steak", "drops": "Frostsaber Pride Watcher (Winterspring)", "read": "Wowhead Forever"},
+    "250327": {"name": "Potion of Predatory Senses", "drops": "Nether Sorceress (Desolace)", "read": "QuestieDB"},
+    "250332": {"name": "Cleric's Elixir", "drops": "Xavian Hellcaller (Ashenvale)", "read": "QuestieDB"},
+    "250936": {"name": "Superior Spellblasting Potion", "drops": "Spitelash Screamer (Azshara)", "read": "QuestieDB"},
+    "250942": {"name": "Superior Frenzy Potion", "drops": "Northspring Roguefeather (Feralas)", "read": "QuestieDB"},
+    "250948": {"name": "Superior Mender's Potion", "drops": "Vilebranch Witch Doctor (The Hinterlands)", "read": "QuestieDB"},
+    "277492": {"name": "Scroll of Khadgar's Unlocking", "container": "Bundle of Scrolls", "read": "Wowhead Forever"},
+    "286152": {"name": "Plated Armorfish", "found": "Deadwind Pass", "read": "QuestieDB"}
+  },
+  "unobtainable": {
+    "13460": {"name": "Greater Holy Protection Potion", "why": "Wowhead Forever's comments say neither the recipe nor the potion is available to players, and no source is known in Forever."},
+    "23578": {"name": "Diet McWeaksauce", "why": "A test realm item of patch 1.11, as Wowhead Forever's comments say; no source is known."},
+    "23579": {"name": "The McWeaksauce Classic", "why": "A test server item, as Wowhead Forever's comments say; no source is known."},
+    "23684": {"name": "Crystal Infused Bandage", "why": "No source on Wowhead Forever, and ForeverDB's recipe data marks it as it marks the recipes left over from Season of Discovery."}
+  }
+}

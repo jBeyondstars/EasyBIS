@@ -7,6 +7,7 @@ Best-in-slot gear for every class and spec of **WoW Forever**, in a window and i
 - **Items**: the best items of each slot at level 60, PvE and PvP, with their alternatives and sources. You can filter by phase, slot, source and zone, and add items to a list yourself.
 - **Character**: the BIS #1 of each slot laid out as a character sheet, with its best enchant, worn by your own character.
 - **Enchants**: the best enchant of each slot and how to get it.
+- **Consumables**: flasks, elixirs, food, scrolls, weapon stones and oils and potions, ranked category by category for each spec, in PvE and PvP.
 - **Reputations**: what your spec needs of each faction, where you stand, what each standing unlocks, who sells it and what is known of how to earn it. Crafters' recipes are kept apart.
 - **Tooltips**: which classes and specs want an item, whether it is their BIS, and the reputation it asks for.
 
@@ -29,6 +30,9 @@ python -I _build/build.py            # rebuild Data/*.lua from the cached Foreve
 python -I _build/build.py --check    # is newer ForeverDB data out?
 python -I _build/build.py --update   # download what changed (SHA-256 checked) and rebuild
 python -I _build/build.py --import-questie   # read in the QuestieDB addon the sources ForeverDB's data lacks
+python -I _build/build.py --capture-tool     # install the tool that reads item tooltips in the game (/ebiscapture)
+python -I _build/build.py --import-capture   # keep what it read: weapons, and what each consumable does
+python -I _build/tests/compare_coach.py      # compare the consumable lists with ForeverDB's coach
 ```
 
 Offline tests (they need `lupa`, and `Pillow` for the textures):
@@ -37,6 +41,7 @@ Offline tests (they need `lupa`, and `Pillow` for the textures):
 python -P _build/tests/test_generator.py
 python -P _build/tests/test_addon.py
 python -P _build/tests/test_ui.py
+python -P _build/tests/test_consumables.py
 ```
 
 `_build/art/make_textures.py` makes `Media/*.tga` from a logo. The release zip leaves out `_build` and `docs` (`.pkgmeta`).

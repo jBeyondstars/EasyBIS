@@ -11,8 +11,10 @@ Item tooltips say which classes and specs want the item:
 
 A line per class and status. The spec names are left out when every spec of
 the class is on the line. The list (PvE, PvP) is named only when the two
-lists disagree. "Alt" is one of the two picks that come after the best, or a
-weapon of the other style (a one-hander when a two-hander is best); an
+lists disagree. "Alt" is one of the picks that come after the best, as many
+as the "alternatives per slot" option asks for (the second ring or trinket
+counts among them), or a weapon of the other style (a one-hander when a
+two-hander is best); an
 alternative that scores as much as the best pick reads "BIS". "Added" is an
 item the player put in that spec's list by hand (Custom.lua), when the data
 does not pick it. The lists are the ones of the character's content phase

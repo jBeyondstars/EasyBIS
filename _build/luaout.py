@@ -8,9 +8,12 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import consumable_lists
+import consumables
 import ladders
 import phases
 import reputations
+import ranks
 
 CREDIT = "Data from ForeverDB.net (https://foreverdb.net)"
 ENCHANTS_PER_SLOT = 3
@@ -52,12 +55,13 @@ def encode_entry(entry: ladders.Entry) -> str:
     flags += "t" if entry.two_hand else ""
     flags += "r" if entry.random else ""
     flags += "p" if entry.pvp else ""
+    flags += "v" if entry.honor else ""
     flags += str(entry.phase) if entry.phase else ""
     limit = entry.limit or ""
     if not limit.isalnum() and limit:
         raise ValueError(f"unexpected character in the limit category {limit!r}")
     fields = [str(entry.item_id), str(entry.stored), flags,
-              str(entry.twin) if entry.twin else "", limit]
+              str(entry.twin) if entry.twin else "", limit, str(entry.rank) if entry.rank else ""]
     while fields and not fields[-1]:
         fields.pop()
     return ":".join(fields)
@@ -78,7 +82,21 @@ def _corrections_note(db) -> tuple:
                   f"and {len(game.added)} pieces it has that ForeverDB does not list are added, flagged u (no known "
                   "source) and 9 (counted once every phase is)."]
     lines += _sources_note(db)
+    lines += _costs_note(db)
+    lines += _simulated_note(db)
     return tuple(lines)
+
+
+def _simulated_note(db) -> list:
+    """Says which PvE lists a simulator ranked instead of ForeverDB's weights (simulated.py)."""
+    reading = getattr(db, "simulated", None)
+    if not reading or not reading.specs:
+        return []
+    names = ", ".join(f"{db.classes[cls]['specs'][spec]['name']} {cls.title()}" for cls, spec in sorted(reading.specs))
+    return [f"Ranked by simulation: in the PvE lists of {names}, a score is the damage per second the item adds to a "
+            f"reference set,",
+            f"measured with WoWSims Forever {reading.commit} (https://github.com/wowsims/forever, MIT License), not "
+            "ForeverDB's weights. See _build/simulated.py."]
 
 
 def _sources_note(db) -> list:
@@ -92,6 +110,17 @@ def _sources_note(db) -> list:
             "the phase that source needs;",
             f"the {len(filled.added)} pieces added from the game among them stay flagged u and 9, with the source "
             "to show. See _build/questie.py."]
+
+
+def _costs_note(db) -> list:
+    """Says what was laid over the data for the vendors who take a currency (corrections.price)."""
+    priced = getattr(db, "priced", None)
+    if not priced or not priced.changed:
+        return []
+    return [f"Changed from ForeverDB's data: {len(priced.freed)} items of a vendor who sells to both factions count for "
+            f"both, and {len(priced.items)} items carry the price",
+            f"their vendor asks in a currency (written down {priced.date}), {len(priced.read)} of them read at the vendor. "
+            "See _build/corrections/costs.json."]
 
 
 def _drops_note(db) -> list:
@@ -109,14 +138,16 @@ def lists_file(db, all_ladders) -> str:
         *_corrections_note(db),
         "  S <spec> <name> <role> <style>      style: any, 2h, dw (dual wield), shield",
         "  L <spec> <list> <slot> <entries>    list: pve, pvp; entries best first, separated by spaces",
-        "An entry is id:score*10:flags:twin:limit, empty fields at the end left out.",
+        "An entry is id:score*10:flags:twin:limit:rank, empty fields at the end left out.",
         "  flags: a Alliance only, h Horde only (with a twin: the other faction wears the twin id),",
         "         s seen in Forever, n new in Forever, u no known source, U unique, t two-hander, r random bonus,",
         "         p a PvP reward (a PvP rank, the honor quartermasters, a battleground, a Premier set): the addon",
         "           leaves those out of the PvE list, and counts them in the PvP list, until its option says otherwise,",
+        "         v a Premier piece, sold for honor even when the data gives it no source,",
         "         a digit: the content phase the item needs (none: before the raids, 1: Forever's first raids,",
         "         9: a raid known from Classic data only); see _build/phases.py",
         "  limit: only one item of that category can be worn (rings and trinkets)",
+        f"  rank: the PvP rank it needs, {ranks.NOT_SOLD} for a Classic rank reward no vendor sells; see _build/ranks.py",
         "A PvP-rank reward is in both lists, ranked on its stats; foreverdb.net/bis leaves those out of its PvE pages.",
     ))
     lines.append("ns.data.lists = {")
@@ -164,6 +195,8 @@ def items_file(db, all_ladders) -> str:
         if item is None:
             continue  # a twin ForeverDB has no line for: the addon falls back to the game's own item data
         sources = phases.shown_sources(item)[:SOURCES_PER_ITEM]  # the first one is what the addon shows
+        if not sources and ranks.sold_for_honor(item):
+            sources = [["p", str(ranks.required(item, db.gear.get(item_id))), item["side"], "f"]]
         for source in sources:
             if source[0] == "d" and source[1].isdigit():
                 instances.add(int(source[1]))
@@ -174,11 +207,12 @@ def items_file(db, all_ladders) -> str:
     lines = _header(db, "Where each listed item comes from: id|name|groups|flags|source~source", (
         *_sources_note(db),
         *_drops_note(db),
+        *_costs_note(db),
         "  groups: q quest, Q dungeon quest, v vendor, c crafted, d dungeon boss, r raid, w world drop, R rare,",
         "          p PvP rank, e reputation, x container, u no known source",
         "  flags:  s seen in Forever, n new in Forever, r random bonus, U unique",
         "A source is kind^fields^label:",
-        "  q^quest^title^level^side^label[^uiMap^x^y^spot label]    v^npc^name^uiMap^x^y^copper^side^label",
+        "  q^quest^title^level^side^label[^uiMap^x^y^spot label]    v^npc^name^uiMap^x^y^price^side^label",
         "  d^instance^boss^percent^raid^label                       m^npc^name^percent^label (a creature)",
         "  R^npc^name^percent^label (a rare)                        c^profession^skill^spell^label",
         "  w^level from^level to^label (world drop)                 o^chest^percent^label",
@@ -186,6 +220,7 @@ def items_file(db, all_ladders) -> str:
         "  r^faction^standing^name^label",
         "  label: s Seen in Forever, c Clue (unconfirmed), f Forever client, k Classic data, t QuestieDB,",
         "         w counted in Forever (Wowhead Forever's loot counts)",
+        "  price: in copper, or <the currency's item id>:<amount> (ns.data.currencies), then :b while it is the beta's",
     ))
     lines.append(f"ns.data.items = {_block(rows)}")
     lines.append("-- Instances: name^kind^uiMap of the entrance^zone")
@@ -198,6 +233,12 @@ def items_file(db, all_ladders) -> str:
             if '"' in value or "\\" in value:
                 raise ValueError(f"unexpected character in instance {instance}")
             lines.append(f'[{instance}]="{value}",')
+    lines.append("}")
+    lines.append("-- Currencies, by their item id: the game's currency id^English name")
+    lines.append("ns.data.currencies = {")
+    priced = getattr(db, "priced", None)
+    for item_id, record in sorted(priced.currencies.items() if priced else ()):
+        lines.append(f'[{item_id}]="{record.get("currency", "")}^{_field(record["name"])}",')
     lines.append("}")
     return "\n".join(lines) + "\n"
 
@@ -358,6 +399,58 @@ def reputation_file(db, all_ladders, reading: dict) -> str:
     return "\n".join(lines) + "\n"
 
 
+def _consumable_token(entry: tuple, twins=frozenset()) -> str:
+    item, phase, score = entry
+    return f"{item}:{phase or ''}:{score}" + (":t" if item in twins else "")
+
+
+def _listed_token(entry: tuple) -> str:
+    item, phase = entry
+    return f"{item}:{phase}" if phase else str(item)
+
+
+def consumables_file(db) -> str:
+    lists = consumable_lists.build(db)
+    situational = consumable_lists.situational(db)
+    read = consumables.load()
+    lines = _header(db, f"The consumables per spec at level {db.meta['cap']}, ranked category by category.", (
+        f"What each one does is read from its tooltip in the game (build {read.get('build', '?')}, _build/consumables.py); "
+        "the lists are made by _build/consumable_lists.py.",
+        "  C <spec> <list> <category> <entries>   ranked, best first; an entry is id:phase:score*10, no phase before the raids,",
+        "                                         and :t when it shares the place of the entry before it (sharp and blunt stones)",
+        "  U <spec> <list> <category> <ids>       listed without rank: the stat weights do not cover what it does",
+        "  categories: " + " ".join(consumable_lists.CATEGORIES),
+        f"The addon shows the first {consumable_lists.PER_CATEGORY} of the character's phase and what ties with the last of them.",
+        "Every category stands alone: nothing here says how they stack, or that they make a set.",
+    ))
+    lines.append("ns.data.consumables = {")
+    for cls in sorted(db.classes):
+        block = []
+        for spec in sorted(lists[cls]):
+            for mode in consumable_lists.MODES:
+                for category in consumable_lists.CATEGORIES:
+                    shelf = lists[cls][spec][mode].get(category)
+                    if shelf and shelf.ranked:
+                        tokens = " ".join(_consumable_token(entry, shelf.twins) for entry in shelf.ranked)
+                        block.append("\t".join(("C", str(spec), mode, category, tokens)))
+                    if shelf and shelf.unranked:
+                        tokens = " ".join(map(_listed_token, shelf.unranked))
+                        block.append("\t".join(("U", str(spec), mode, category, tokens)))
+        lines.append(f"{cls} = {_block(block)},")
+    lines.append("}")
+    lines.append("-- Per class, for every spec and both lists, without rank: what protects or helps in a fight that asks for it.")
+    lines.append("ns.data.consumableSituational = {")
+    for cls in sorted(db.classes):
+        lines.append(f'{cls} = "{" ".join(map(_listed_token, consumable_lists.situational(db, cls)))}",')
+    lines.append("}")
+    lines.append("-- id|name|effect|where it comes from|label (f read from the game client)|zone rule "
+                 "(only:<place> usable nowhere else, bonus:<place> a bonus that works there alone)")
+    info = consumable_lists.info_rows(db, consumable_lists.used_ids(lists, situational))
+    rows = ["|".join([str(item)] + [_field(text) for text in info[item]]) for item in sorted(info)]
+    lines.append(f"ns.data.consumableInfo = {_block(rows)}")
+    return "\n".join(lines) + "\n"
+
+
 def meta_file(db) -> str:
     lines = _header(db, "What the data files were built from.")
     lines.append("ns.data.meta = {")
@@ -370,6 +463,8 @@ def meta_file(db) -> str:
     lines.append(f'    phases = {{ {", ".join(map(str, phases.PHASES))} }},')
     lines.append(f"    phase = {phases.CURRENT},  -- the phase the game is in")
     lines.append(f"    alternatives = {ladders.MAX_ALTERNATIVES},  -- picks the lists keep after the best one(s) of a slot")
+    lines.append(f"    seasonStart = {ranks.SEASON_START},  -- when the PvP season began (server time)")
+    lines.append(f"    rankCaps = {{ {', '.join(map(str, ranks.WEEKLY_CAPS))} }},  -- the highest PvP rank of each week of the season")
     lines.append("}")
     return "\n".join(lines) + "\n"
 
@@ -383,6 +478,7 @@ def write_all(db, all_ladders, out_dir) -> dict[str, int]:
         "Lists.lua": lists_file(db, all_ladders),
         "Items.lua": items_file(db, all_ladders),
         "Enchants.lua": enchants_file(db, all_ladders),
+        "Consumables.lua": consumables_file(db),
         "Names.lua": names_file(db),
         "Reputation.lua": reputation_file(db, all_ladders, reputations.load()),
     }

@@ -2,7 +2,7 @@
 
 **The best gear for every class and spec of WoW Forever, in one window and in your item tooltips.**
 
-Easy BIS is a BIS list for every class and spec: the best-in-slot (BIS) item of every slot at level 60, for PvE and PvP, with the alternatives behind it and where each piece comes from. Plan your pre-BIS gear before the raids, follow your full BIS gear set as new phases open, and keep track of what to farm next. It knows the enchants too, and it lays your spec's best set out as a character sheet.
+Easy BIS is a BIS list for every class and spec: the best-in-slot (BIS) item of every slot at level 60, for PvE and PvP, with the alternatives behind it and where each piece comes from. Plan your pre-BIS gear before the raids, follow your full BIS gear set as new phases open, and keep track of what to farm next. It knows the enchants and the consumables too, and it lays your spec's best set out as a character sheet.
 
 ## The window
 
@@ -25,6 +25,15 @@ Type `/easybis` (or `/ebis`), or click the minimap button.
 ![The Enchants tab](https://raw.githubusercontent.com/jBeyondstars/EasyBIS/main/docs/screenshots/enchants.png)
 
 **Enchants** gives the best enchant of every slot, its effect and how to get it.
+
+![The Consumables tab](https://raw.githubusercontent.com/jBeyondstars/EasyBIS/main/docs/screenshots/consumables.png)
+
+**Consumables** ranks flasks, elixirs, food, scrolls, weapon stones and oils and combat potions on your spec's stat weights, and healing potions, mana potions and bandages on the amount they restore, for PvE and PvP.
+
+- Each category is ranked on its own: the tab does not tell you which ones stack.
+- What each consumable does is read from its tooltip in the game.
+- Flasks of maximum health or mana, and protection and utility potions, are listed without a rank.
+- A bonus that only works in some zones or against some creatures does not count in the ranking, and is shown next to the item.
 
 ## In your tooltips
 

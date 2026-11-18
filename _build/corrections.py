@@ -46,6 +46,10 @@ A drop that is not confirmed is checked against the loot counts of Wowhead Forev
 (corrections/drops.json, confirm): `build.py --import-drops` reads them (drops.py). The boss they name
 and the rate they count replace Classic's, with the label w, which the addon shows like a source seen in
 Forever. A source ForeverDB saw itself stays as it is.
+
+What a vendor asks in a currency is laid over the data as well (corrections/costs.json, price): the data
+says 0 for it. The same file names the vendors who sell to both factions, whose items the data keeps for
+one. Neither changes a score: the lists rank on stats, and the price is there to be read.
 """
 from __future__ import annotations
 
@@ -60,6 +64,7 @@ FILE = Path(__file__).resolve().parent / "corrections" / "weapons.json"
 GAME_FILE = FILE.with_name("game.json")
 SOURCES_FILE = FILE.with_name("sources.json")
 DROPS_FILE = FILE.with_name("drops.json")
+COSTS_FILE = FILE.with_name("costs.json")
 ABOUT = ("Weapon stats read in the game with the EasyBIS_Capture tool (_build/capture_addon), laid over "
          "ForeverDB's data by _build/corrections.py. Written by `python build.py --import-capture`: do not edit.")
 
@@ -442,6 +447,103 @@ def fill(db, reading: dict) -> Filled:
         elif isinstance(where, int) and (db.instances.get(where) or ["", ""])[1] == "raid":
             db.enchant_raids[enchant] = phases.RAID_INSTANCES.get(where, phases.NEW_RAID)
         report.enchants.append(enchant)
+    return report
+
+
+# -- what the vendors ask in a currency --------------------------------------------------------------------
+
+# Where a vendor's source holds its price and the faction it sells to: V is ForeverDB's short form, v the full one.
+_PRICE_FIELD = {"V": 2, "v": 6}
+_SIDE_FIELD = {"V": 3, "v": 7}
+
+
+@dataclass
+class Priced:
+    """What price() did with the vendors of corrections/costs.json."""
+    date: str = ""                                   # when the prices were written down
+    currencies: dict = field(default_factory=dict)   # the currency's item id -> {"name", "currency"}
+    items: list = field(default_factory=list)        # ids given a price
+    read: list = field(default_factory=list)         # of those, the ones whose price was read at the vendor
+    freed: list = field(default_factory=list)        # ids the data kept for one faction, sold to both
+    absent: list = field(default_factory=list)       # ids of the file the data does not say that vendor sells
+
+    @property
+    def changed(self) -> bool:
+        return bool(self.items or self.freed)
+
+
+def load_costs(path=COSTS_FILE) -> dict:
+    """{"date", "currencies": {item: {"name", "currency"}}, "vendors": {npc: {"name", "neutral", "paid_in",
+    "items": {item: {"name", "price", and once read at the vendor "build" and "date"}}}}}, empty without a file."""
+    path = Path(path)
+    if not path.exists():
+        return {}
+    data = json.loads(path.read_text(encoding="utf-8"))
+    data["currencies"] = {int(item_id): record for item_id, record in data.get("currencies", {}).items()}
+    data["vendors"] = {int(npc): {**vendor, "items": {int(item_id): record for item_id, record in vendor["items"].items()}}
+                       for npc, vendor in data.get("vendors", {}).items()}
+    return data
+
+
+def save_costs(costs: dict, path=COSTS_FILE) -> None:
+    """Write the costs file, an item to a line."""
+    def text(value):
+        return json.dumps(value, ensure_ascii=False)
+
+    def block(records, indent):
+        return ",\n".join(f'{indent}"{key}": {text(record)}' for key, record in sorted(records.items()))
+
+    vendors = []
+    for npc, vendor in sorted(costs["vendors"].items()):
+        fields = "".join(f"      {text(key)}: {text(value)},\n" for key, value in vendor.items() if key != "items")
+        vendors.append(f'    "{npc}": {{\n{fields}      "items": {{\n{block(vendor["items"], " " * 8)}\n      }}\n    }}')
+    Path(path).write_text(
+        f'{{\n  "about": {text(costs["about"])},\n  "date": {text(costs["date"])},\n'
+        f'  "currencies": {{\n{block(costs["currencies"], " " * 4)}\n  }},\n'
+        '  "vendors": {\n' + ",\n".join(vendors) + "\n  }\n}\n", encoding="utf-8", newline="\n")
+
+
+def _seller(source: list):
+    """The npc id of a vendor's source, None for any other source."""
+    return int(source[1]) if source[0] in _PRICE_FIELD and source[1].isdigit() else None
+
+
+def price(db, costs: dict) -> Priced:
+    """Open the items of a neutral vendor to both factions and write what the vendors ask in a currency;
+    the report is kept as db.priced.
+
+    An item only that vendor sells loses the faction the data keeps it for. One with a twin, or another
+    source, has a reason for it that this file knows nothing of, and stays as it is. A price goes in the
+    price field of the vendor's source as "<currency's item id>:<amount>", followed by ":b" while it is the
+    beta's and no window of the vendor has shown it (capture.read_prices).
+    """
+    report = Priced(date=costs.get("date", ""))
+    db.priced = report
+    vendors = costs.get("vendors", {})
+    neutral = {npc for npc, vendor in vendors.items() if vendor.get("neutral")}
+    for item_id, item in sorted(db.items.items()):
+        sellers = [_seller(source) for source in item["sources"]]
+        if item["side"] and not item["twin"] and sellers and all(npc in neutral for npc in sellers):
+            item["side"] = ""
+            for source in item["sources"]:
+                source[_SIDE_FIELD[source[0]]] = ""
+            report.freed.append(item_id)
+
+    used = set()
+    for npc, vendor in sorted(vendors.items()):
+        for item_id, record in sorted(vendor["items"].items()):
+            sold = [source for source in db.items.get(item_id, {}).get("sources", ()) if _seller(source) == npc]
+            if not sold:
+                report.absent.append(item_id)
+                continue
+            beta = "" if "build" in record else ":b"
+            for source in sold:
+                source[_PRICE_FIELD[source[0]]] = f"{vendor['paid_in']}:{record['price']}{beta}"
+            report.items.append(item_id)
+            if not beta:
+                report.read.append(item_id)
+            used.add(vendor["paid_in"])
+    report.currencies = {item_id: costs["currencies"][item_id] for item_id in sorted(used)}
     return report
 
 

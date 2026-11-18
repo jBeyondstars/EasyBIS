@@ -12,6 +12,7 @@ import os
 import re
 import sys
 import tempfile
+import types
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -25,12 +26,15 @@ import audit  # noqa: E402
 import build  # noqa: E402
 import capture  # noqa: E402
 import compare_site  # noqa: E402
+import consumable_lists  # noqa: E402
+import consumables  # noqa: E402
 import corrections  # noqa: E402
 import drops  # noqa: E402
 import fdb  # noqa: E402
 import ladders  # noqa: E402
 import luaout  # noqa: E402
 import phases  # noqa: E402
+import ranks  # noqa: E402
 import questie  # noqa: E402
 import reputations  # noqa: E402
 
@@ -56,8 +60,8 @@ local function lists()
             local kind, spec, list, slot, entries = line:match("^(%a)\t(%d+)\t([^\t]*)\t([^\t]*)\t?(.*)$")
             if kind == "L" then
                 for entry in entries:gmatch("%S+") do
-                    local id, score, flags, twin, limit = entry:match("^(%d+):(%d+):?([%a%d]*):?(%d*):?(.*)$")
-                    out[#out + 1] = table.concat({ cls, spec, list, slot, id, score, flags, twin, limit }, ",")
+                    local id, score, flags, twin, limit, rank = entry:match("^(%d+):(%d+):?([%a%d]*):?(%d*):?([%a%d]*):?(%d*)$")
+                    out[#out + 1] = table.concat({ cls, spec, list, slot, id, score, flags, twin, limit, rank }, ",")
                 end
             end
         end
@@ -227,6 +231,61 @@ class GeneratorTest(unittest.TestCase):
                         for slot in core:
                             visible = [e for e in slots[slot] if e.passes(flt)]
                             self.assertTrue(visible, f"{token} {spec} {mode} {slot} {flt}: nothing to show")
+
+    def test_the_second_trinket_is_one_of_the_alternatives(self):
+        """With three alternatives asked for, a trinket slot lists four items: the two best and two more."""
+        def trinket(item_id, score, limit=None):
+            return ladders.Entry(item_id=item_id, score=score, side="", twin=None, seen=True, new=False,
+                                 unsourced=False, unique=False, two_hand=False, random=False, limit=limit)
+        ladder = [trinket(20071, 12.0, "TalismanofBattle"), trinket(271903, 12.0),
+                  trinket(21117, 11.0, "TalismanofBattle"), trinket(271906, 11.0), trinket(1490, 9.0)]
+        best, alternatives = ladders.picks("trinket", ladder, 3)
+        self.assertEqual([e.item_id for e in best], [20071, 271903])
+        self.assertEqual([e.item_id for e in alternatives], [21117, 271906], "the fifth item is left out")
+        best, alternatives = ladders.picks("head", ladder, 3)
+        self.assertEqual(len(best) + len(alternatives), 4, "a slot with one best pick lists three after it")
+
+    def test_the_rank_an_item_needs(self):
+        """Forever's PvP gear by slot, and the rank rewards of Classic, which no vendor sells."""
+        def needs(item_id):
+            return ranks.required(self.db.items[item_id], self.db.gear.get(item_id))
+        self.assertEqual(needs(272453), ranks.NO_RANK, "Premier Magus Footwraps, of the blue set")
+        self.assertEqual(needs(272578), 3, "Premier Sergeant's Cloak")
+        self.assertEqual(needs(274969), 4, "Premier Master Sergeant's Insignia")
+        self.assertEqual(needs(272787), 13, "Premier Field Marshal's Plate Helm")
+        self.assertEqual(needs(272856), 14, "Premier Grand Marshal's Mageblade")
+        self.assertEqual(needs(17602), ranks.NOT_SOLD, "Field Marshal's Headdress")
+        self.assertEqual(needs(23451), ranks.NOT_SOLD, "Grand Marshal's Mageblade")
+        self.assertEqual(needs(16342), ranks.NOT_SOLD, "Sergeant's Cape")
+        self.assertEqual(needs(19595), ranks.NO_RANK, "Dryad's Wrist Bindings, of a battleground's faction")
+        epic = {self.db.gear[i]["inv"]: needs(i) for i, item in self.db.items.items()
+                if item["name"].startswith(ranks.PREMIER) and self.db.gear.get(i, {}).get("req") == 60
+                and self.db.gear[i]["inv"] in ranks.SEAL_RANKS}
+        self.assertEqual(epic, ranks.SEAL_RANKS, "every armor slot of the epic set has its seal's rank")
+
+    def test_the_rank_cap_leaves_out_what_the_week_does_not_allow(self):
+        def entry(**fields):
+            return ladders.Entry(item_id=1, score=1.0, side="", twin=None, seen=True, new=False, unsourced=False,
+                                 unique=False, two_hand=False, random=False, limit=None, **fields)
+        everything = ("a", False, False, phases.PRE_RAID, True, None)
+        week_3 = ("a", False, False, phases.PRE_RAID, True, 6)
+        self.assertTrue(entry(rank=13).passes(everything))
+        self.assertFalse(entry(rank=13).passes(week_3))
+        self.assertTrue(entry(rank=13).passes((*week_3[:5], 13)))
+        self.assertTrue(entry(rank=4).passes(week_3))
+        self.assertFalse(entry(rank=ranks.NOT_SOLD).passes((*week_3[:5], 14)), "not even at rank 14")
+        blue = ladders.Entry(
+            item_id=1, score=1.0, side="", twin=None, seen=False, new=True, unsourced=True, unique=False,
+            two_hand=False, random=False, limit=None, honor=True)
+        self.assertFalse(blue.passes(everything), "with no source, it stays out of a list that ignores the cap")
+        self.assertTrue(blue.passes(week_3), "the honor quartermasters sell it")
+        self.assertEqual(ranks.filter_caps(), (3, 5, 8, 9, 11, 12, 13, 14))
+
+    def test_entry_encoding_with_a_rank(self):
+        entry = ladders.Entry(item_id=272787, score=50.0, side="a", twin=272788, seen=False, new=True,
+                              unsourced=True, unique=False, two_hand=False, random=False, limit=None,
+                              pvp=True, rank=13, honor=True)
+        self.assertEqual(luaout.encode_entry(entry), "272787:500:anupv:272788::13")
 
     def test_entry_encoding(self):
         entry = ladders.Entry(item_id=22748, score=51.24, side="a", twin=22747, seen=True, new=False,
@@ -426,6 +485,15 @@ class GeneratorTest(unittest.TestCase):
                 for enchants in luaout.best_enchants(self.enchant_ladder(token, spec), phases.PRE_RAID).values():
                     self.assertFalse(set(enchants) & set(phases.RAID_ENCHANTS), f"{token} {spec}")
 
+    def test_a_hunter_holds_nothing_in_the_off_hand(self):
+        for spec in self.db.classes["HUNTER"]["specs"]:
+            for mode in ladders.MODES:
+                held = [entry.item_id for entry in self.full[("HUNTER", spec, mode, "off")]
+                        if self.db.gear[entry.item_id]["inv"] == ladders.INV_HELD]
+                self.assertEqual(held, [], f"Hunter {spec} {mode}")
+        site = ladders.full_ladder(self.db, "HUNTER", 1, "pve", "off", rank_rewards=False)
+        self.assertIn(22329, [entry.item_id for entry in site], "the site's rule keeps them")
+
     def test_enchant_groups_fit_the_spec(self):
         """A weapon, shield, held or ranged enchant is listed only for a spec whose PvE list holds such an item."""
         specs = {(token, spec["name"]): set(self.enchant_ladder(token, index))
@@ -467,7 +535,7 @@ class GeneratorTest(unittest.TestCase):
                 for mode, slots in modes.items():
                     for slot, entries in slots.items():
                         for entry in entries:
-                            fields = (luaout.encode_entry(entry).split(":") + [""] * 5)[:5]
+                            fields = (luaout.encode_entry(entry).split(":") + [""] * 6)[:6]
                             expected.append(",".join([token, str(spec), mode, slot] + fields))
         self.assertEqual(sorted(lists().split("\n")), sorted(expected))
 
@@ -524,6 +592,7 @@ class GeneratorTest(unittest.TestCase):
         before = fdb.load(CACHE, corrected=False)
         corrections.apply(before, corrections.load())   # the weapons' stats, not the game's items
         corrections.fill(before, corrections.load_sources())   # ... and the sources read in QuestieDB
+        corrections.price(before, corrections.load_costs())    # ... and who the neutral vendors sell to
         corrections.assign_sides(before)   # ... and the side of Theramore's pieces
         was = ladders.build_all(before)
         gone = set(game.dropped)
@@ -698,7 +767,11 @@ C_Item = {
 function GetBuildInfo() return "1.0.0", "1", "Nov 13 2026", 16001 end
 function GetLocale() return stub.locale or "enUS" end
 function InCombatLockdown() return stub.combat end
-function CreateFrame() return { SetScript = function(_, _, script) stub.script = script end } end
+function CreateFrame()
+    return { RegisterEvent = function() end, SetScript = function(_, kind, script)
+        if kind == "OnEvent" then stub.event = script else stub.script = script end
+    end }
+end
 function date() return "2026-11-15 12:30" end
 SlashCmdList = {}
 function stub.add(id, loaded, lines, stats)
@@ -847,10 +920,11 @@ class HoleTest(unittest.TestCase):
         db.gear[ROBE] = {"inv": 20, "req": 60, "stats": {7: 20}, "dps": 0.0, "armor": 0.0, "wand": False}
         db.gear[404] = dict(db.gear[ROBE], req=30)   # left out of the lists, and of too low a level to matter
         self.assertEqual(capture.capture_ids(db), {"weapons": [SCEPTER, MACE, ROD, STAFF], "pool": [WAND, ORB],
-                                                   "unlisted": [ROBE], "twins": []})
+                                                   "unlisted": [ROBE], "twins": [], "consumables": []})
         with tempfile.TemporaryDirectory() as folder:
             target, counts = capture.write_tool(db, folder)
-            self.assertEqual((target.name, counts), ("EasyBIS_Capture", {"weapons": 4, "pool": 2, "unlisted": 1, "twins": 0}))
+            self.assertEqual((target.name, counts), ("EasyBIS_Capture", {"weapons": 4, "pool": 2, "unlisted": 1, "twins": 0,
+                                                                  "consumables": 0}))
             self.assertEqual(sorted(path.name for path in target.iterdir()),
                              ["Capture.lua", "EasyBIS_Capture.toc", "Ids.lua"])
             # the raid piece first, the weapons last: the game may stop answering before the end
@@ -935,10 +1009,11 @@ class HoleTest(unittest.TestCase):
         db = tiny_db()
         db.gear[ROBE] = {"inv": 20, "req": 60, "stats": {7: 20}, "dps": 0.0, "armor": 120.0, "wand": False}
         check = capture.check_capture(db, text)
-        self.assertEqual(check.asked, {"weapons": 4, "pool": 2, "unlisted": 1, "twins": 0})
-        self.assertEqual(check.read, {"weapons": 2, "pool": 2, "unlisted": 1, "twins": 0})
+        self.assertEqual(check.asked, {"weapons": 4, "pool": 2, "unlisted": 1, "twins": 0, "consumables": 0})
+        self.assertEqual(check.read, {"weapons": 2, "pool": 2, "unlisted": 1, "twins": 0, "consumables": 0})
         # the staff is not in the game's own item table: it was not asked for, and the report names it
-        self.assertEqual(check.absent, {"weapons": [(STAFF, "Channeling Staff")], "pool": [], "unlisted": [], "twins": []})
+        self.assertEqual(check.absent, {"weapons": [(STAFF, "Channeling Staff")], "pool": [], "unlisted": [], "twins": [],
+                                        "consumables": []})
         self.assertEqual(check.sample, (1, 0))
         report = "\n".join(build.check_report(check))
         self.assertIn("Not in the game's own item table, so not asked for: 1 weapons. Of 1 of them asked for all "
@@ -1702,6 +1777,572 @@ class DropsTest(unittest.TestCase):
         self.assertEqual(loaded["about"], corrections.DROPS_ABOUT)
         self.assertEqual(loaded["items"][HOOD]["seen"], [self.EMBERSEER])
         self.assertEqual(corrections.load_drops(Path(folder) / "gone.json"), {})
+
+
+class ConsumableListTest(unittest.TestCase):
+    TITANS, WISDOM, SUPREME_POWER, NATURAL_SWIFTNESS = 13510, 13511, 13512, 274276
+    ELEMENTAL_STONE, DENSE_STONE, WIZARD_OIL = 18262, 12404, 20749
+    MAJOR_MANA, REJUVENATION, MCWEAKSAUCE = 13444, 18253, 23579
+    HEAVY_RUNECLOTH, ARATHI_BANDAGE, DRAUGHT = 14530, 20234, 17348
+    ALTERAC_BANDAGE, MIGHTY_RAGE, IMBUE_FLAME, CRYOBLAST = 19307, 13442, 277500, 277499
+    AGILITY_III, AGILITY_IV = 4425, 10309
+    DENSE_WEIGHTSTONE, SOLID_STONE, SOLID_WEIGHTSTONE, HEAVY_STONE, HEAVY_WEIGHTSTONE = 12643, 7964, 7965, 2871, 3241
+
+    @classmethod
+    def setUpClass(cls):
+        cls.db = fdb.load(CACHE)
+        cls.lists = consumable_lists.build(cls.db)
+
+    def shelf(self, token, spec, mode, category):
+        return self.lists[token][spec][mode][category]
+
+    def ranked(self, token, spec, mode, category):
+        return [entry[0] for entry in self.shelf(token, spec, mode, category).ranked]
+
+    def test_the_score_is_weight_times_stat(self):
+        weights = {3: 1.0, 32: 0.5, "armor": 0.1, "dps": 5.0}
+        self.assertEqual(consumable_lists.score({"stats": {"3": 25, "32": 28, "armor": 100, "7": 50}}, weights, "Melee DPS"), 49)
+
+    def test_a_condition_counts_for_nothing(self):
+        record = {"stats": {"7": 30}, "conditional": {"32": 28}, "condition": {"kind": "zone", "what": "Mount Hyjal"}}
+        self.assertEqual(consumable_lists.score(record, {7: 1.0, 32: 1.0}, "Melee DPS"), 30)
+        self.assertEqual(consumable_lists.effect(record), "+30 Stamina; +2% Critical Strike in Mount Hyjal only")
+
+    def test_what_holds_for_spells_counts_for_casters(self):
+        record = {"stats": {"45": 36}, "spell_stats": {"32": 14}}
+        weights = {45: 1.0, 32: 1.0}
+        self.assertEqual(consumable_lists.score(record, weights, "Caster DPS"), 50)
+        self.assertEqual(consumable_lists.score(record, weights, "Melee DPS"), 36)
+
+    def test_what_goes_on_a_melee_weapon_counts_for_melee(self):
+        stone = {"stats": {"32": 28}, "text": "Increase critical chance on a melee weapon by 2% for 30 minutes."}
+        for role, value in (("Melee DPS", 28), ("Tank", 28), ("Caster DPS", 0), ("Healer", 0), ("Ranged DPS", 0)):
+            self.assertEqual(consumable_lists.score(stone, {32: 1.0}, role), value, role)
+
+    def test_weapon_damage_counts_as_damage_per_second(self):
+        stone = {"extras": {consumables.WEAPON_DAMAGE: 8}, "text": "Increase the damage of a blunt weapon by 8."}
+        self.assertEqual(consumable_lists.score(stone, {"dps": 5.0}, "Melee DPS"), 5.0 * 8 / consumable_lists.WEAPON_SPEED)
+        self.assertIn(self.DENSE_STONE, self.ranked("WARRIOR", 1, "pve", "weapon"))
+
+    def test_shown_keeps_what_ties_with_the_last(self):
+        entries = [(1, 0, 50), (2, 0, 40), (3, 0, 30), (4, 0, 30), (5, 0, 20)]
+        self.assertEqual([entry[0] for entry in consumable_lists.shown(entries, 0)], [1, 2, 3, 4])
+        later = [(1, 9, 50), (2, 0, 40), (3, 0, 30), (4, 0, 20), (5, 0, 10)]
+        self.assertEqual([entry[0] for entry in consumable_lists.shown(later, 0)], [2, 3, 4])
+        self.assertEqual([entry[0] for entry in consumable_lists.shown(later, 9)], [1, 2, 3])
+
+    def test_every_spec_has_its_lists(self):
+        for token, specs in self.lists.items():
+            for spec, modes in specs.items():
+                for mode in consumable_lists.MODES:
+                    for category in ("flask", "elixir", "food", "scroll", "combat", "healing", "bandage"):
+                        with self.subTest(token=token, spec=spec, mode=mode, category=category):
+                            self.assertIn(category, modes[mode])
+
+    def test_each_phase_shows_the_best_of_what_it_has(self):
+        records = consumables.load()["items"]
+        for token, spec, mode in (("WARRIOR", 2, "pve"), ("MAGE", 2, "pvp"), ("PRIEST", 2, "pve")):
+            for category, shelf in self.lists[token][spec][mode].items():
+                scores = [entry[2] for entry in shelf.ranked]
+                self.assertEqual(scores, sorted(scores, reverse=True), category)
+                self.assertTrue(all(not records[entry[0]].get("unread") for entry in shelf.ranked))
+
+    def test_maximum_health_and_mana_are_listed_without_rank(self):
+        for token, spec in (("WARRIOR", 3), ("MAGE", 2), ("PRIEST", 2)):
+            flasks = self.shelf(token, spec, "pve", "flask")
+            self.assertNotIn(self.TITANS, [entry[0] for entry in flasks.ranked])
+            self.assertIn(self.TITANS, [item for item, _ in flasks.unranked])
+        self.assertIn(self.WISDOM, [item for item, _ in self.shelf("MAGE", 2, "pve", "flask").unranked])
+
+    def test_no_mana_for_who_has_none(self):
+        for token in consumable_lists.NO_MANA:
+            for spec, modes in self.lists[token].items():
+                self.assertNotIn("mana", modes["pve"])
+                self.assertNotIn(self.WISDOM, [item for item, _ in modes["pve"]["flask"].unranked])
+        self.assertIn(self.MAJOR_MANA, self.ranked("MAGE", 2, "pve", "mana"))
+
+    def test_a_potion_that_restores_both_is_on_both_lists(self):
+        self.assertIn(self.REJUVENATION, self.ranked("MAGE", 2, "pve", "healing"))
+        self.assertIn(self.REJUVENATION, self.ranked("MAGE", 2, "pve", "mana"))
+
+    def test_the_condition_of_a_flask_stays_in_its_effect(self):
+        rows = consumable_lists.info_rows(self.db, [self.NATURAL_SWIFTNESS])
+        self.assertIn("Mount Hyjal", rows[self.NATURAL_SWIFTNESS][1])
+        self.assertIn(self.NATURAL_SWIFTNESS, self.ranked("WARRIOR", 3, "pve", "flask"))
+
+    def test_the_recipes_placed_by_hand_are_recipes_of_the_data(self):
+        data = self.db.consumables
+        origins = consumable_lists.load_origins()
+        self.assertEqual(len(origins), 16)
+        for item, origin in origins.items():
+            with self.subTest(item=item):
+                self.assertEqual(data.catalogue[item]["name"], origin["name"])
+                self.assertEqual(bool(data.recipes.get(item)), "container" not in origin, "a recipe makes it, or it is held")
+                self.assertEqual(len(set(origin) & {*consumable_lists._ORIGIN_SAID, "container"}), 1, "one way to have it")
+
+    def test_where_a_recipe_placed_by_hand_is_learned(self):
+        said = {item: row[2] for item, row in consumable_lists.info_rows(self.db, [249870, 250071, 13446, 286152]).items()}
+        self.assertEqual(said[249870], "Cooking 250: recipe drops from Deadwind Ogre Mage (Deadwind Pass)")
+        self.assertEqual(said[250071], "Cooking 275: recipe from the quest Now We're Cooking (Mount Hyjal)")
+        self.assertEqual(said[13446], "First Aid 275: recipe sold by Pexmit (Mount Hyjal)")
+        self.assertEqual(said[286152], "Cooking 225: recipe found in Deadwind Pass")
+
+    def test_what_players_cannot_get_is_not_listed(self):
+        left_out = consumable_lists.unobtainable()
+        self.assertEqual(left_out, {23684, 23578, 23579, 13460})
+        self.assertFalse(left_out & consumable_lists.used_ids(self.lists, consumable_lists.situational(self.db)))
+        self.assertIn(self.NATURAL_SWIFTNESS, self.ranked("WARRIOR", 3, "pve", "flask"), "an unknown source is not a reason")
+
+    def test_a_scroll_held_in_a_bundle(self):
+        scroll = 277492
+        self.assertEqual(consumable_lists.info_rows(self.db, [scroll])[scroll][2], "Container: Bundle of Scrolls")
+        bosses = consumable_lists._raid_bosses(self.db)
+        self.assertEqual(consumable_lists.item_phase(scroll, self.db.consumables, bosses), phases.PRE_RAID)
+        self.assertEqual(consumable_lists.item_phase(277499, self.db.consumables, bosses), phases.LATER, "nothing says where this one is")
+
+    def test_the_data_goes_before_a_recipe_placed_by_hand(self):
+        recipe = {"profession": "Alchemy", "skill": 300, "learned": "i7"}
+        data = types.SimpleNamespace(recipes={5: [recipe]}, facts={7: {"drops": ["A Named Boss"]}})
+        self.assertEqual(consumable_lists.where(5, data, {5: {"drops": "Somebody Else"}}),
+                         "Alchemy 300: recipe drops from A Named Boss")
+
+    def test_an_unknown_recipe_does_not_hide_a_known_source(self):
+        rows = consumable_lists.info_rows(self.db, [9030, 274276])
+        self.assertEqual(rows[9030][2], "Quest: Uldaman Reagent Run")
+        self.assertEqual(rows[274276][2], "Alchemy 300: recipe, source unknown")
+
+    def test_what_is_tied_to_a_zone_says_so(self):
+        rows = consumable_lists.info_rows(self.db, [19066, self.NATURAL_SWIFTNESS, 13446])
+        self.assertEqual(rows[19066][4], "only:Warsong Gulch")
+        self.assertEqual(rows[self.NATURAL_SWIFTNESS][4], "bonus:Mount Hyjal, Hyjal Summit, and the Barrow Deeps")
+        self.assertEqual(rows[13446][4], "")
+        slayer = {"conditional": {"38": 45}, "condition": {"kind": "creature", "what": "Demons"}}
+        self.assertEqual(consumable_lists.zone_rule(slayer), "", "a kind of creature is not a place")
+
+    def test_what_works_in_one_place_is_for_the_pvp_list(self):
+        self.assertNotIn(self.DRAUGHT, self.ranked("MAGE", 2, "pve", "healing"))
+        self.assertIn(self.DRAUGHT, self.ranked("HUNTER", 2, "pvp", "healing"))
+
+    def test_a_tie_goes_to_what_works_everywhere(self):
+        ranked = self.ranked("HUNTER", 2, "pvp", "bandage")
+        self.assertIn(self.HEAVY_RUNECLOTH, ranked)
+        self.assertNotIn(self.ARATHI_BANDAGE, ranked)
+
+    def test_a_bandage_for_one_battleground_is_not_for_the_pve_list(self):
+        for token, specs in self.lists.items():
+            for spec in specs:
+                self.assertNotIn(self.ALTERAC_BANDAGE, self.ranked(token, spec, "pve", "bandage"), (token, spec))
+
+    def test_what_a_class_cannot_use_is_not_listed_for_it(self):
+        records = consumables.load()["items"]
+        for token, specs in self.lists.items():
+            for spec, modes in specs.items():
+                for mode, shelves in modes.items():
+                    for category, shelf in shelves.items():
+                        for item in [entry[0] for entry in shelf.ranked] + [item for item, _ in shelf.unranked]:
+                            allowed = records[item].get("classes", [token])
+                            self.assertIn(token, allowed, (token, spec, mode, category, item))
+        self.assertIn(self.MIGHTY_RAGE, self.ranked("WARRIOR", 2, "pve", "combat"))
+        self.assertNotIn(self.MIGHTY_RAGE, self.ranked("PALADIN", 3, "pve", "combat"))
+        self.assertIn(self.IMBUE_FLAME, self.ranked("MAGE", 2, "pve", "weapon"))
+        self.assertNotIn(self.IMBUE_FLAME, self.ranked("WARLOCK", 3, "pve", "weapon"))
+
+    def test_situational_holds_what_the_class_can_use(self):
+        self.assertIn(self.CRYOBLAST, dict(consumable_lists.situational(self.db, "MAGE")))
+        self.assertNotIn(self.CRYOBLAST, dict(consumable_lists.situational(self.db, "WARRIOR")))
+        self.assertIn(self.CRYOBLAST, dict(consumable_lists.situational(self.db)), "the data's rows hold every class's")
+
+    def test_an_item_the_game_holds_twice_is_listed_once(self):
+        records = {1: {"name": "Steak"}, 2: {"name": "Steak"}, 4: {"name": "Soup"}}
+        entries = [(1, 0, 150), (2, 9, 150), (4, 0, 150)]
+        self.assertEqual(consumable_lists._distinct(entries, records), [(1, 0, 150), (4, 0, 150)])
+        names = consumables.load()["items"]
+        for token, specs in self.lists.items():
+            for spec, modes in specs.items():
+                for mode, shelves in modes.items():
+                    for category, shelf in shelves.items():
+                        listed = [(names[entry[0]]["name"], entry[2]) for entry in shelf.ranked]
+                        self.assertEqual(len(listed), len(set(listed)), (token, spec, mode, category))
+
+    def test_a_weaker_rank_gives_way_to_the_stronger_one(self):
+        records = {1: {"name": "Scroll of Agility IV"}, 2: {"name": "Scroll of Agility III"}, 3: {"name": "Scroll of Wit IV"},
+                   4: {"name": "Scroll of Wit III"}}
+        entries = [(1, 0, 170), (2, 0, 130), (3, 9, 160), (4, 0, 120)]
+        self.assertEqual(consumable_lists._distinct(entries, records), [(1, 0, 170), (3, 9, 160), (4, 0, 120)],
+                         "Wit III stays for the phases before Wit IV")
+        self.assertNotIn(self.AGILITY_III, self.ranked("ROGUE", 2, "pve", "scroll"))
+        self.assertIn(self.AGILITY_IV, self.ranked("ROGUE", 2, "pve", "scroll"))
+
+    def test_no_list_shows_two_ranks_of_a_scroll(self):
+        names = consumables.load()["items"]
+        for token, specs in self.lists.items():
+            for spec, modes in specs.items():
+                for mode, shelves in modes.items():
+                    for phase in phases.PHASES:
+                        listed = [names[entry[0]]["name"].rsplit(" ", 1)[0] for entry in
+                                  consumable_lists.shown(shelves["scroll"].ranked, phase)]
+                        self.assertEqual(len(listed), len(set(listed)), (token, spec, mode, phase))
+
+    def test_a_sharp_and_a_blunt_stone_share_a_place(self):
+        entries = [(1, 0, 50), (2, 0, 50), (3, 0, 40), (4, 0, 30), (5, 0, 30), (6, 0, 20)]
+        self.assertEqual([entry[0] for entry in consumable_lists.shown(entries, 0, twins=frozenset({2, 5}))], [1, 2, 3, 4, 5])
+        shelf = self.shelf("PALADIN", 3, "pve", "weapon")
+        self.assertEqual(shelf.twins, frozenset({self.DENSE_WEIGHTSTONE, self.SOLID_WEIGHTSTONE, self.HEAVY_WEIGHTSTONE}))
+        shows = lambda phase: [entry[0] for entry in consumable_lists.shown(shelf.ranked, phase, twins=shelf.twins)]
+        self.assertEqual(shows(phases.PRE_RAID), [self.DENSE_STONE, self.DENSE_WEIGHTSTONE, self.SOLID_STONE,
+                                                  self.SOLID_WEIGHTSTONE, self.HEAVY_STONE, self.HEAVY_WEIGHTSTONE])
+        self.assertEqual(shows(phases.LATER), [self.DENSE_STONE, self.DENSE_WEIGHTSTONE, self.ELEMENTAL_STONE,
+                                               self.SOLID_STONE, self.SOLID_WEIGHTSTONE])
+
+    def test_the_phase_of_a_consumable(self):
+        data, bosses = self.db.consumables, consumable_lists._raid_bosses(self.db)
+        phase = lambda item: consumable_lists.item_phase(item, data, bosses)
+        self.assertEqual(phase(self.ELEMENTAL_STONE), phases.raid_phase("mc"), "its recipe drops from Molten Core's bosses")
+        self.assertEqual(phase(self.REJUVENATION), phases.PRE_RAID, "a quest gives it too")
+        self.assertEqual(phase(self.MCWEAKSAUCE), phases.LATER, "no known source")
+        self.assertEqual(phase(self.TITANS), phases.PRE_RAID, "a dungeon boss drops the recipe")
+
+    def test_situational_is_listed_without_rank(self):
+        listed = dict(consumable_lists.situational(self.db))
+        names = consumable_lists.info_rows(self.db, listed)
+        found = {row[0] for row in names.values()}
+        self.assertLessEqual({"Limited Invulnerability Potion", "Greater Fire Protection Potion", "Free Action Potion"}, found)
+        self.assertFalse([name for name in found if name.startswith("Potion of Experience")],
+                         "a potion that gives levels is nothing to bring to a fight at the level cap")
+
+    def test_the_tooltips_to_read_include_what_the_tab_names(self):
+        self.assertLessEqual(set(consumables.ALWAYS_READ), set(consumables.consumable_ids(self.db.consumables)))
+
+    def test_the_data_file(self):
+        text = luaout.consumables_file(self.db)
+        self.assertTrue(text.startswith(self.db.header))
+        self.assertNotRegex(text.lower().replace("easy bis", ""), r"\bbis\b|best set|optimal")
+        info = {int(number) for number in re.findall(r"^(\d+)\|", text, re.M)}
+        named = {int(number) for number in re.findall(r"(?:^|[\t ])(\d+)(?::\d*:\d+|:\d+)?(?= |$)", text, re.M)
+                 if int(number) > 100}
+        self.assertLessEqual(consumable_lists.used_ids(self.lists), info)
+        self.assertTrue(info)
+        self.assertTrue(named)
+        for line in re.findall(r"^\d+\|.*$", text, re.M):
+            self.assertEqual(line.count("|"), 5, line)
+
+    def test_every_difference_with_the_coach_has_a_reason(self):
+        compared, found = consumable_lists.coach_differences(self.db, self.lists)
+        self.assertGreater(compared, 0)
+        self.assertLess(len(found), compared)
+        for difference in found:
+            self.assertTrue(difference.why, difference.line())
+
+
+class PricesTest(unittest.TestCase):
+    """What the vendors ask in a currency, and who they sell to (corrections.price)."""
+    PIX, REAL = 227853, 226404
+    CLOAK, BELT = 272411, 272393   # a piece ForeverDB keeps for the Horde; one it gives no source for
+    RELICS = {228175, 228176, *range(272427, 272437)}
+    CRATE = 272151   # sold for 5 Reals, seen at the vendor: no piece of gear, so not in the data
+
+    @classmethod
+    def setUpClass(cls):
+        cls.db = fdb.load(CACHE)
+        cls.published = fdb.load(CACHE, corrected=False)
+        cls.costs = corrections.load_costs()
+
+    def flag(self, item_id) -> str:
+        """What follows a price in the data: nothing once the vendor's window has shown it."""
+        return "" if "build" in self.costs["vendors"][self.PIX]["items"][item_id] else ":b"
+
+    def sold_by_pix(self, item) -> list:
+        return [source for source in item["sources"] if source[0] in ("V", "v") and source[1] == str(self.PIX)]
+
+    def test_the_vendor_of_the_reals_sells_to_both_factions(self):
+        self.assertEqual(self.published.items[self.CLOAK]["side"], "h", "the data changed: this may have retired")
+        sold = [item for item in self.db.items.values() if self.sold_by_pix(item)]
+        self.assertGreaterEqual(len(sold), 24)
+        for item in sold:
+            self.assertEqual(item["side"], "", item["name"])
+            for source in self.sold_by_pix(item):
+                self.assertEqual(source[{"V": 3, "v": 7}[source[0]]], "", item["name"])
+
+    def test_every_price_is_on_its_item(self):
+        prices = self.costs["vendors"][self.PIX]["items"]
+        self.assertGreaterEqual(len(prices), 38)
+        for item_id, record in prices.items():
+            item = self.db.items.get(item_id)
+            if item is None:
+                continue
+            self.assertEqual(item["name"], record["name"])
+            for source in self.sold_by_pix(item):
+                self.assertEqual(source[{"V": 2, "v": 6}[source[0]]], f"{self.REAL}:{record['price']}{self.flag(item_id)}", item["name"])
+        self.assertEqual(set(self.db.priced.absent), self.RELICS | {self.CRATE}, "the data has no entry for a relic")
+        self.assertEqual(len(self.db.priced.items), 25)
+
+    def test_the_data_file_says_the_price_and_the_currency(self):
+        text = luaout.items_file(self.db, ladders.build_all(self.db))
+        self.assertIn(f"{self.CLOAK}|Arcanoweave Cloak|v|sn|v^{self.PIX}^Pix Xizzix^1434^28.5^75.8^{self.REAL}:75{self.flag(self.CLOAK)}^^s", text)
+        self.assertIn(f"{self.BELT}|Magician's Cord|v|n|v^{self.PIX}^Pix Xizzix^1434^28.52^75.86^{self.REAL}:100{self.flag(self.BELT)}^^t", text)
+        self.assertIn(f'[{self.REAL}]="3469^Tarnished Undermine Real",', text)
+
+    def test_a_price_moves_no_score(self):
+        """The lists rank on stats: the same pieces come in the same order, with the same scores."""
+        with mock.patch.object(corrections, "load_costs", return_value={}):
+            unpriced = fdb.load(CACHE)
+        for token, data in self.db.classes.items():
+            for spec in data["specs"]:
+                for slot, _ in ladders.SLOTS:
+                    ours, theirs = (ladders.full_ladder(db, token, spec, "pve", slot) for db in (self.db, unpriced))
+                    self.assertEqual([(e.item_id, e.stored) for e in ours], [(e.item_id, e.stored) for e in theirs])
+
+    def test_only_what_the_neutral_vendor_alone_sells_is_opened(self):
+        def vendor(npc):
+            return ["V", str(npc), "0", "h", "s"]
+
+        def item(sources, twin=None):
+            return {"name": "Piece", "side": "h", "twin": twin, "sources": sources}
+
+        db = types.SimpleNamespace(items={
+            1: item([vendor(5)]), 2: item([vendor(5)], twin=9), 3: item([vendor(5), vendor(6)]),
+            4: item([vendor(6)]), 5: item([["d", "1", "Boss", "1", "0", "s"]]), 6: item([]),
+        })
+        costs = {"date": "today", "currencies": {7: {"name": "Coin", "currency": 8}},
+                 "vendors": {5: {"neutral": True, "paid_in": 7, "items": {1: {"price": 3}, 4: {"price": 3}}}}}
+        report = corrections.price(db, costs)
+        self.assertEqual(report.freed, [1])
+        self.assertEqual({key: db.items[key]["side"] for key in db.items}, {1: "", 2: "h", 3: "h", 4: "h", 5: "h", 6: "h"})
+        self.assertEqual(db.items[1]["sources"], [["V", "5", "7:3:b", "", "s"]])
+        self.assertEqual((report.items, report.absent, list(report.currencies)), ([1], [4], [7]))
+
+    def test_a_price_read_at_the_vendor_is_not_the_betas_any_more(self):
+        db = types.SimpleNamespace(items={1: {"name": "Piece", "side": "", "twin": None, "sources": [["V", "5", "0", "", "s"]]},
+                                          2: {"name": "Piece", "side": "", "twin": None, "sources": [["V", "5", "0", "", "s"]]}})
+        costs = {"currencies": {7: {"name": "Coin", "currency": 8}}, "vendors": {5: {"paid_in": 7, "items": {
+            1: {"price": 3, "build": "1.0.0.1", "date": "2026-11-18"}, 2: {"price": 4}}}}}
+        report = corrections.price(db, costs)
+        self.assertEqual([db.items[key]["sources"][0][2] for key in (1, 2)], ["7:3", "7:4:b"])
+        self.assertEqual((report.items, report.read), ([1, 2], [1]))
+
+    def test_the_costs_file_is_written_as_it_was_read(self):
+        written = corrections.COSTS_FILE.read_bytes()
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "costs.json"
+            corrections.save_costs(corrections.load_costs(), path)
+            self.assertEqual(path.read_bytes(), written)
+
+
+# What a vendor's window shows, in the stand-ins of the capture tool's game.
+VENDOR_STUB = r"""
+local stub = ...
+stub.window, stub.timers = {}, {}
+C_Timer = { After = function(_, callback) stub.timers[#stub.timers + 1] = callback end }
+function UnitGUID() return stub.guid end
+function UnitName() return "Pix Xizzix" end
+function GetMerchantNumItems() return #stub.window end
+function GetMerchantItemID(index) return stub.window[index].id end
+function GetMerchantItemInfo(index)
+    local row = stub.window[index]
+    return row.name, 1, row.copper or 0, 1, -1, true, true, row.cost ~= nil
+end
+function GetMerchantItemCostInfo(index) return stub.window[index].cost and #stub.window[index].cost or 0 end
+function GetMerchantItemCostItem(index, slot)
+    local cost = stub.window[index].cost[slot]
+    return 1, cost[1], cost[2], cost[3]
+end
+function stub.wait()
+    local timers = stub.timers
+    stub.timers = {}
+    for _, callback in ipairs(timers) do callback() end
+end
+"""
+REAL_LINK = "|cffffffff|Hitem:226404::::::::60:::::|h[Tarnished Undermine Real]|h|r"
+
+
+@unittest.skipIf(lupa is None, "lupa is not installed")
+class VendorToolTest(unittest.TestCase):
+    """Capture.lua in front of a vendor's window."""
+    GUID = "Creature-0-5250-0-1434-227853-00004F2A1B"   # kind-0-server-instance-zone-npc-spawn
+
+    def setUp(self):
+        self.lua = lupa.LuaRuntime(unpack_returned_tuples=True)
+        self.stub = self.lua.execute(CAPTURE_STUB)
+        self.lua.eval("function(code, stub) assert(load(code))(stub) end")(VENDOR_STUB, self.stub)
+        self.stub.guid = self.GUID
+        self.source = (BUILD / "capture_addon" / "Capture.lua").read_text(encoding="utf-8")
+        self.stub.run(self.source, "")
+
+    def show(self, *rows):
+        """Fills the window; a row is (item id, name, copper, costs), a cost (amount, link, name)."""
+        table = self.lua.table_from
+        self.stub.window = table([self.lua.table(
+            id=item_id, name=name, copper=copper,
+            cost=table([table(list(cost)) for cost in costs]) if costs is not None else None)
+            for item_id, name, copper, costs in rows])
+
+    def kept(self):
+        db = self.lua.globals().EasyBISCaptureDB
+        return db.vendors.v227853 if db and db.vendors else None
+
+    def chat(self):
+        return "\n".join(str(line) for line in self.stub.chat.values())
+
+    def test_the_window_is_kept_as_the_importer_reads_it(self):
+        self.show((272411, "Arcanoweave Cloak", 0, [(75, REAL_LINK, "Real")]),
+                  (272393, "Magician's Cord", 0, [(100, "|Hcurrency:3469:0|h[Real]|h", "Real")]),
+                  (5, "Odd; Thing", 300, [(2, None, "Odd; Coin")]), (6, "Thread", 40, None))
+        self.stub.event(None, "MERCHANT_SHOW")
+        self.assertEqual(self.kept().split("\n"), [
+            "1|1.0.0|1|enUS|2026-11-15 12:30|Pix Xizzix", "5\tOdd; Thing\t300\tnOdd  Coin:2", "6\tThread\t40\t",
+            "272393\tMagician's Cord\t0\tc3469:100", "272411\tArcanoweave Cloak\t0\ti226404:75"])
+        self.assertIn("Pix Xizzix: the prices of 4 items are kept.", self.chat())
+        self.assertIn("--import-prices", self.chat())
+        saved = 'EasyBISCaptureDB = {\n["vendors"] = {\n["v227853"] = "' + self.kept().replace("\n", "\\n") + '",\n},\n}\n'
+        vendor = capture.parse_vendors(saved)[227853]
+        self.assertEqual((vendor["name"], vendor["game"], vendor["locale"], vendor["date"]),
+                         ("Pix Xizzix", "1.0.0.1", "enUS", "2026-11-15"))
+        self.assertEqual(vendor["items"][272411], {"name": "Arcanoweave Cloak", "copper": 0, "costs": [("i", "226404", 75)]})
+        self.assertEqual(vendor["items"][272393]["costs"], [("c", "3469", 100)])
+        self.assertEqual(vendor["items"][5]["costs"], [("n", "Odd  Coin", 2)])
+        self.assertEqual(vendor["items"][6], {"name": "Thread", "copper": 40, "costs": []})
+
+    def test_what_the_game_has_not_said_is_waited_for(self):
+        self.show((272411, "Arcanoweave Cloak", 0, [(75, REAL_LINK, "Real")]), (272393, None, 0, [(100, REAL_LINK, "Real")]))
+        self.stub.event(None, "MERCHANT_SHOW")
+        self.assertNotIn("272393", self.kept())
+        self.assertNotIn("are kept", self.chat(), "nothing is said while the window loads")
+        self.show((272411, "Arcanoweave Cloak", 0, [(75, REAL_LINK, "Real")]),
+                  (272393, "Magician's Cord", 0, [(100, REAL_LINK, "Real")]))
+        self.stub.wait()
+        self.assertIn("272393\tMagician's Cord", self.kept())
+        self.assertEqual(self.chat().count("are kept"), 1)
+
+    def test_a_window_that_never_loads_says_so(self):
+        self.show((272411, "Arcanoweave Cloak", 0, [(75, REAL_LINK, "Real")]), (272393, "Magician's Cord", 0, [(0, REAL_LINK, "Real")]))
+        self.stub.event(None, "MERCHANT_SHOW")
+        for _ in range(12):
+            self.stub.wait()
+        self.assertIn("1 items of the window did not load", self.chat())
+        self.assertEqual(len(self.stub.timers), 0, "it stops asking")
+
+    def test_a_vendor_who_takes_only_money_is_not_kept(self):
+        self.show((6, "Thread", 40, None))
+        self.stub.event(None, "MERCHANT_SHOW")
+        self.assertIsNone(self.kept())
+        self.assertEqual(self.chat(), "")
+
+    def test_the_windows_of_two_classes_add_up_in_one_game_build(self):
+        self.show((272411, "Arcanoweave Cloak", 0, [(75, REAL_LINK, "Real")]))
+        self.stub.event(None, "MERCHANT_SHOW")
+        self.stub.event(None, "MERCHANT_CLOSED")
+        self.show((272393, "Magician's Cord", 0, [(100, REAL_LINK, "Real")]))
+        self.stub.event(None, "MERCHANT_SHOW")
+        self.assertIn("272411\t", self.kept())
+        self.assertIn("272393\t", self.kept())
+        self.stub.event(None, "MERCHANT_CLOSED")
+        self.stub.locale = "frFR"   # another reading of the game: what the other one said does not add up with it
+        self.show((272393, "Magician's Cord", 0, [(100, REAL_LINK, "Real")]))
+        self.stub.event(None, "MERCHANT_SHOW")
+        self.assertNotIn("272411\t", self.kept())
+
+    def test_a_filtered_window_says_so(self):
+        globals_ = self.lua.globals()
+        globals_.LE_LOOT_FILTER_ALL = 1
+        globals_.GetMerchantFilter = self.lua.eval("function() return 2 end")
+        self.show((272411, "Arcanoweave Cloak", 0, [(75, REAL_LINK, "Real")]))
+        self.stub.event(None, "MERCHANT_SHOW")
+        self.assertIn("The window is filtered", self.chat())
+
+    def test_starting_a_capture_again_keeps_the_vendors(self):
+        self.show((272411, "Arcanoweave Cloak", 0, [(75, REAL_LINK, "Real")]))
+        self.stub.event(None, "MERCHANT_SHOW")
+        self.lua.globals().SlashCmdList.EASYBISCAPTURE("all")
+        self.assertIn("272411\t", self.kept())
+
+
+class PriceImportTest(unittest.TestCase):
+    """What the vendors' windows say of corrections/costs.json (capture.read_prices)."""
+
+    def costs(self):
+        return {"about": "test", "date": "2026-11-01", "currencies": {7: {"name": "Coin", "currency": 8}},
+                "vendors": {5: {"name": "Pix", "neutral": True, "paid_in": 7, "items": {
+                    1: {"name": "Same", "price": 10}, 2: {"name": "Dearer", "price": 10}, 3: {"name": "Unseen", "price": 10},
+                    4: {"name": "Strange", "price": 10}}}}}
+
+    @staticmethod
+    def window(items, npc=5):
+        rows = {item_id: {"name": name, "copper": copper, "costs": costs} for item_id, (name, copper, costs) in items.items()}
+        return {npc: {"name": "Pix", "game": "1.60.1.70938", "locale": "frFR", "date": "2026-11-18", "items": rows}}
+
+    def test_every_case_of_a_window(self):
+        costs = self.costs()
+        reading = capture.read_prices(costs, self.window({
+            1: ("Pareil", 0, [("i", "7", 10)]), 2: ("Plus cher", 0, [("c", "8", 12)]), 4: ("Bizarre", 0, [("i", "99", 10)]),
+            9: ("Nouveau", 0, [("n", "Coin", 30)]), 10: ("Fil", 40, []),
+        }), {9: "New Piece"})
+        items = costs["vendors"][5]["items"]
+        self.assertEqual(reading.confirmed, [1])
+        self.assertEqual(reading.changed, [(2, "Dearer", 10, 12)])
+        self.assertEqual(reading.added, [(9, "New Piece", 30)])
+        self.assertEqual(reading.other, [(4, "Strange", "10 of i99")])
+        self.assertEqual(reading.unseen, [(3, "Unseen")])
+        self.assertEqual(reading.read, 3)
+        self.assertEqual(reading.unread, 2, "the one not shown and the one asked for in something else")
+        read = {"build": "1.60.1.70938", "date": "2026-11-18"}
+        self.assertEqual(items[1], {"name": "Same", "price": 10, **read}, "the English name stays")
+        self.assertEqual(items[2], {"name": "Dearer", "price": 12, **read})
+        self.assertEqual(items[3], {"name": "Unseen", "price": 10}, "not shown: neither read nor taken away")
+        self.assertEqual(items[4], {"name": "Strange", "price": 10})
+        self.assertEqual(items[9], {"name": "New Piece", "price": 30, **read})
+        self.assertNotIn(10, items, "what only money buys is none of the file's business")
+        self.assertEqual(costs["date"], "2026-11-18")
+
+    def test_money_on_top_of_the_currency_is_not_a_price_the_file_can_say(self):
+        costs = self.costs()
+        reading = capture.read_prices(costs, self.window({1: ("Same", 500, [("i", "7", 10)])}))
+        self.assertEqual((reading.read, reading.other), (0, [(1, "Same", "10 of i7, 500 copper")]))
+        self.assertEqual(costs["date"], "2026-11-01")
+
+    def test_a_vendor_the_file_does_not_have_is_named_and_left_out(self):
+        costs = self.costs()
+        reading = capture.read_prices(costs, self.window({1: ("Same", 0, [("i", "7", 10)])}, npc=6))
+        self.assertEqual((reading.read, reading.strangers), (0, [(6, "Pix", 1)]))
+        self.assertEqual(costs, self.costs())
+
+    def saved(self, *rows):
+        body = "\\n".join(("1|1.60.1|70938|enUS|2026-11-18 12:30|Pix",) + rows)
+        return f'\nEasyBISCaptureDB = {{\n["vendors"] = {{\n["v5"] = "{body}",\n}},\n}}\n'
+
+    def test_the_file_is_written_when_something_was_read(self):
+        db = types.SimpleNamespace(items={})
+        with tempfile.TemporaryDirectory() as folder:
+            kept, saved = Path(folder) / "costs.json", Path(folder) / "EasyBIS_Capture.lua"
+            corrections.save_costs(self.costs(), kept)
+            before = kept.read_bytes()
+            saved.write_text(self.saved("1\\tSame\\t0\\ti99:10"), encoding="utf-8")
+            self.assertEqual(capture.import_prices(db, saved, kept).read, 0)
+            self.assertEqual(kept.read_bytes(), before, "nothing read, nothing written")
+            saved.write_text(self.saved("1\\tSame\\t0\\ti7:10"), encoding="utf-8")
+            self.assertEqual(capture.import_prices(db, saved, kept).confirmed, [1])
+            self.assertEqual(corrections.load_costs(kept)["vendors"][5]["items"][1]["build"], "1.60.1.70938")
+            saved.write_text("EasyBISCaptureDB = nil\n", encoding="utf-8")
+            with self.assertRaises(ValueError):
+                capture.import_prices(db, saved, kept)
+
+    def test_the_vendors_do_not_pass_for_tooltips(self):
+        text = self.saved("1\\tSame\\t0\\ti7:10").replace("EasyBISCaptureDB = {",
+                                                               'EasyBISCaptureDB = {\n["meta"] = "1|1.0.0|1|enUS|2026-11-15 12:30",')
+        self.assertEqual(capture.parse_saved(text)["items"], {})
+
+    def test_the_saved_variable_with_the_vendors_is_found(self):
+        with tempfile.TemporaryDirectory() as folder:
+            game = Path(folder)
+            self.assertIsNone(capture.find_vendors(game))
+            for account, text in (("A", self.saved("1\\tSame\\t0\\ti7:10")), ("B", "EasyBISCaptureDB = nil\n")):
+                path = game / "WTF" / "Account" / account / "SavedVariables" / capture.SAVED
+                path.parent.mkdir(parents=True)
+                path.write_text(text, encoding="utf-8")
+            self.assertEqual(capture.find_vendors(game).parent.parent.name, "A")
+
+    def test_an_unknown_format_asks_for_the_tool_again(self):
+        with self.assertRaises(ValueError):
+            capture.parse_vendors(self.saved().replace('"1|1.60.1', '"2|1.60.1'))
 
 
 if __name__ == "__main__":

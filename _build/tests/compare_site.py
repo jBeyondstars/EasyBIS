@@ -22,7 +22,9 @@ TIE = 0.1  # scores closer than this are a tie: either order is right
 
 def site_order(slot: str, ladder: list) -> tuple[list, object]:
     """Our picks laid out as the site lays them out: ([top, next, next], second ring or trinket)."""
-    best, alternatives = ladders.picks(slot, ladder)
+    # the site lists two picks after the top one, and the second ring or trinket on top of those
+    count = ladders.ALTERNATIVES + (1 if slot in ladders.PAIRED else 0)
+    best, alternatives = ladders.picks(slot, ladder, count)
     second = best[1] if len(best) > 1 else None
     return best[:1] + alternatives, second
 

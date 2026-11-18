@@ -18,6 +18,10 @@ it keeps per list: out of the PvE list and in the PvP list until the player
 says otherwise. Every entry says whether it is one (pvp_reward), which is
 wider than the site's rule: the Premier sets and the battlegrounds' rewards
 count too.
+
+One more choice differs from the site, for now: a Hunter's lists leave out what
+is held in the off hand, until the game confirms what those pieces give a
+Hunter. It is the developer's decision, and full_ladder's one line to remove.
 """
 from __future__ import annotations
 
@@ -25,6 +29,8 @@ from dataclasses import dataclass
 from itertools import product
 
 import phases
+import ranks
+import simulated
 
 # Easy BIS slot -> the ForeverDB pools it reads. Rings and trinkets fill two slots from one pool.
 SLOTS = (
@@ -37,7 +43,7 @@ PAIRED = frozenset(("finger", "trinket"))
 MODES = {"pve": "raid", "pvp": "pvp"}  # Easy BIS list -> ForeverDB weight profile
 
 SOURCE_GROUPS = frozenset("qQvcdrwRpex")  # ForeverDB's source groups, minus "u" (no known source)
-PVP_RANK_GROUP = "p"
+PVP_RANK_GROUP = ranks.RANK_GROUP
 # What else is a PvP reward, besides the PvP-rank rewards: what the honor quartermasters and the
 # battlegrounds' supply officers sell, by the npc id the data gives them, what a battleground's faction
 # gives, and Forever's Premier sets. The quartermasters sell 80 Premier pieces in the data, which has no
@@ -53,7 +59,7 @@ PVP_VENDORS = {
 }
 # The League of Arathor, The Defilers, Frostwolf Clan, Stormpike Guard, Warsong Outriders, Silverwing Sentinels
 PVP_FACTIONS = frozenset((509, 510, 729, 730, 889, 890))
-PVP_SET = "Premier "
+PVP_SET = ranks.PREMIER
 PVP_REWARDS = {"pve": False, "pvp": True}  # whether a list counts them until the player says otherwise
 ALTERNATIVES = 2      # picks shown after the best one(s), until the player asks for more
 MAX_ALTERNATIVES = 6  # ... up to this many: what the data files keep of a ladder
@@ -61,13 +67,15 @@ MAX_ALTERNATIVES = 6  # ... up to this many: what the data files keep of a ladde
 HEALING = 41
 SPELL_DAMAGE = (42, 45, 84, 85, 86, 87, 88, 89)
 HIT = 31
-INV_SHIELD, INV_ONE_HAND, INV_OFF_HAND, INV_TWO_HAND, INV_THROWN = 14, 13, 22, 17, 25
+INV_SHIELD, INV_ONE_HAND, INV_OFF_HAND, INV_TWO_HAND, INV_THROWN, INV_HELD = 14, 13, 22, 17, 25, 23
 RANGED_INV = (15, 25, 26)
 
 # What the addon can filter on at run time: faction, items with no known source, items seen in Forever only,
-# the content phase the list stops at, and whether the PvP rewards count in the list (the addon's default:
-# they do in the PvP list and not in the PvE one, PVP_REWARDS).
-FILTERS = tuple(product(("a", "h"), (False, True), (False, True), phases.PHASES, (True, False)))
+# the content phase the list stops at, whether the PvP rewards count in the list (the addon's default:
+# they do in the PvP list and not in the PvE one, PVP_REWARDS), and the PvP rank the week's cap allows
+# (None: the list does not follow the cap).
+RANK_CAPS = (None, *ranks.filter_caps())
+FILTERS = tuple(product(("a", "h"), (False, True), (False, True), phases.PHASES, (True, False), RANK_CAPS))
 
 
 @dataclass(frozen=True)
@@ -85,6 +93,8 @@ class Entry:
     limit: str | None  # only one item of this category can be worn
     phase: int = phases.PRE_RAID  # the content phase it arrives with (phases.py)
     pvp: bool = False  # a PvP reward (pvp_reward): what the addon's option leaves out of a list
+    rank: int = ranks.NO_RANK  # the PvP rank it needs (ranks.required)
+    honor: bool = False  # a Premier piece: sold for honor, even when the data gives it no source
 
     @property
     def stored(self) -> int:
@@ -98,14 +108,19 @@ class Entry:
         return self.twin
 
     def passes(self, flt) -> bool:
-        """flt: (faction, with the items of no known source, seen in Forever only, phase), and whether the
-        PvP rewards count in the list, which they do when the filter does not say."""
+        """flt: (faction, with the items of no known source, seen in Forever only, phase), then whether the
+        PvP rewards count in the list, which they do when the filter does not say, and the rank the week's
+        cap allows, None when the list does not follow it. A list that follows the cap counts the Premier
+        pieces it allows, source known or not: the honor quartermasters sell them."""
         side, with_unsourced, seen_only, phase, *rest = flt
+        cap = rest[1] if len(rest) > 1 else None
         if self.shown(side) is None or self.phase > phase:
             return False
         if self.pvp and rest and not rest[0]:
             return False
-        if self.unsourced and not with_unsourced:
+        if cap is not None and self.rank > cap:
+            return False
+        if self.unsourced and not with_unsourced and not (cap is not None and self.honor):
             return False
         return self.seen or not seen_only
 
@@ -165,7 +180,8 @@ def full_ladder(db, cls: str, spec: int, mode: str, slot: str, level: int | None
                 rank_rewards: bool = True) -> list[Entry]:
     """Every pick for the slot, best first, with no faction or source filter applied.
 
-    rank_rewards=False leaves the PvP-rank rewards out of the PvE list, as foreverdb.net/bis does.
+    rank_rewards=False is foreverdb.net/bis's rule: the PvP-rank rewards are left out of the PvE list, and a
+    Hunter's list keeps what is held in the off hand.
     """
     level = level or db.meta["cap"]
     data = db.classes[cls]
@@ -176,8 +192,10 @@ def full_ladder(db, cls: str, spec: int, mode: str, slot: str, level: int | None
     healer, hunter = spec_def["role"] == "Healer", cls == "HUNTER"
     dual_wields = level >= db.dual_wield.get(cls, 99)
     min_score = data["min"].get(profile, 1)
+    # The specs a simulator ranked (simulated.py). The site's rule and other levels stay on the weights.
+    ranked = simulated.ranking(db, cls, spec, mode, slot) if rank_rewards and level == db.meta["cap"] else None
 
-    entries, seen_ids = [], set()
+    entries, seen_ids, weighed = [], set(), {}
     for pool in dict(SLOTS)[slot]:
         for item_id, item_level in data["pools"].get(pool, ()):
             if item_level > level or item_id in seen_ids:
@@ -191,6 +209,8 @@ def full_ladder(db, cls: str, spec: int, mode: str, slot: str, level: int | None
                 continue
             if hunter and gear["inv"] == INV_THROWN:
                 continue
+            if hunter and rank_rewards and gear["inv"] == INV_HELD:
+                continue
             if not healer and HEALING in stats and not any(stat in stats for stat in SPELL_DAMAGE):
                 continue
             sourced = bool(item["groups"] & groups)
@@ -201,16 +221,19 @@ def full_ladder(db, cls: str, spec: int, mode: str, slot: str, level: int | None
             if not (value >= min_score or (value > 0 and armour_only)):
                 continue
             flags = item["flags"]
+            weighed[item_id] = value
             entries.append(Entry(
-                item_id=item_id, score=value, side=item["side"], twin=item["twin"],
+                item_id=item_id, score=ranked.value(item_id, value) if ranked else value,
+                side=item["side"], twin=item["twin"],
                 seen="s" in flags, new="n" in flags, unsourced=not sourced, unique="U" in flags,
                 two_hand=gear["inv"] == INV_TWO_HAND, random="r" in flags, limit=item["limit"],
-                phase=phases.item_phase(item), pvp=pvp_reward(item)))
+                phase=phases.item_phase(item), pvp=pvp_reward(item),
+                rank=ranks.required(item, gear), honor=ranks.sold_for_honor(item)))
 
     # A few twin pairs have both ids in the pool: keep the Alliance one, which names the other as its twin.
     ids = {entry.item_id for entry in entries}
     entries = [entry for entry in entries if not (entry.side == "h" and entry.twin in ids)]
-    entries.sort(key=lambda entry: (-entry.score, entry.item_id))
+    entries.sort(key=lambda entry: (-entry.score, -weighed[entry.item_id], entry.item_id))
     return entries
 
 
@@ -219,6 +242,8 @@ def picks(slot: str, visible: list[Entry], alternatives: int = ALTERNATIVES) -> 
 
     Rings and trinkets have two best picks: the second is the next one that can
     be worn with the first (not from the same "only one of these" category).
+    That second pick is one of the alternatives asked for: a slot lists the
+    best pick and at most `alternatives` items after it, whatever the slot.
     """
     if not visible:
         return [], []
@@ -229,7 +254,7 @@ def picks(slot: str, visible: list[Entry], alternatives: int = ALTERNATIVES) -> 
         if second:
             best.append(second)
     others = [entry for entry in visible if entry not in best]
-    return best, others[:alternatives]
+    return best, others[:alternatives - (len(best) - 1)]
 
 
 def weapon_lists(main: list[Entry], off: list[Entry]) -> tuple[list[Entry], list[Entry]]:

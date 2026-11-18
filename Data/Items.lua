@@ -6,11 +6,13 @@
 -- the 455 pieces added from the game among them stay flagged u and 9, with the source to show. See _build/questie.py.
 -- Confirmed in Forever: 712 items take the boss and the rate Wowhead Forever counted, and 20 the boss it counted in place of the data's,
 -- read in the DungeonJournal 2.0.11 and GearQuest Forever addons, labelled w. See _build/drops.py.
+-- Changed from ForeverDB's data: 15 items of a vendor who sells to both factions count for both, and 25 items carry the price
+-- their vendor asks in a currency (written down 2026-11-18), 13 of them read at the vendor. See _build/corrections/costs.json.
 --   groups: q quest, Q dungeon quest, v vendor, c crafted, d dungeon boss, r raid, w world drop, R rare,
 --           p PvP rank, e reputation, x container, u no known source
 --   flags:  s seen in Forever, n new in Forever, r random bonus, U unique
 -- A source is kind^fields^label:
---   q^quest^title^level^side^label[^uiMap^x^y^spot label]    v^npc^name^uiMap^x^y^copper^side^label
+--   q^quest^title^level^side^label[^uiMap^x^y^spot label]    v^npc^name^uiMap^x^y^price^side^label
 --   d^instance^boss^percent^raid^label                       m^npc^name^percent^label (a creature)
 --   R^npc^name^percent^label (a rare)                        c^profession^skill^spell^label
 --   w^level from^level to^label (world drop)                 o^chest^percent^label
@@ -18,6 +20,7 @@
 --   r^faction^standing^name^label
 --   label: s Seen in Forever, c Clue (unconfirmed), f Forever client, k Classic data, t QuestieDB,
 --          w counted in Forever (Wowhead Forever's loot counts)
+--   price: in copper, or <the currency's item id>:<amount> (ns.data.currencies), then :b while it is the beta's
 local _, ns = ...
 ns.data = ns.data or {}
 ns.data.items = [==[
@@ -33,17 +36,16 @@ ns.data.items = [==[
 1443|Jeweled Amulet of Cainwyn|w||w^0^0^k
 1486|Tree Bark Jacket|dw|s|d^48^^0^0^s~m^4810^Twilight Reaver^0^s
 1490|Guardian Talisman|Q||q^1445^The Temple of Atal'Hakkar^45^h^k~q^1475^Into The Temple of Atal'Hakkar^45^a^k
-1713|Ankh of Life|w||w^0^0^k
 1716|Robe of the Magi|wx|s|m^4329^Firemane Scout^0^s
 1728|Teebu's Blazing Longsword|wx||x^16885^Heavy Junkbox^k~w^0^0^k
 1929|Silk-threaded Trousers|dw|s|d^36^^0^0^s~m^1729^Defias Evoker^0^s
 1935|Assassin's Blade|dw|s|d^33^Wolf Master Nandos^11.11^0^s
 1936|Goblin Screwdriver|w|s|w^0^0^k
+1937|Buzz Saw|d|s|d^36^Sneed^42.86^0^s
 1980|Underworld Band|u||
 1981|Icemail Jerkin|w||m^262477^Cinderscale Warrior^^t
 2032|Gallan Cuffs|q|s|q^1164^To Steal From Thieves^31^h^s
 2041|Tunic of Westfall|Q|s|q^166^The Defias Brotherhood^17^a^s
-2043|Ring of Forlorn Spirits|q|s|q^98^The Legend of Stalvan^30^a^s
 2098|Double-barreled Shotgun|w|s|w^0^0^k
 2099|Dwarven Hand Cannon|w||w^0^0^k
 2100|Precisely Calibrated Boomstick|u||
@@ -102,7 +104,6 @@ ns.data.items = [==[
 4652|Salbac Shield|q|s|q^733^Scrounging^35^a^s
 4653|Ironheel Boots|q|s|q^733^Scrounging^35^a^s
 4717|Mail Combat Belt|dwx|s|m^4287^Scarlet Gallant^0^s~d^90^Mekgineer Thermaplugg^0.43^0^k
-4726|Chief Brigadier Cloak|dwx|s|d^90^Mekgineer Thermaplugg^0.43^0^k
 4727|Chief Brigadier Girdle|wx|s|x^4636^Strong Iron Lockbox^k~x^6827^Box of Supplies^k
 4737|Imperial Leather Spaulders|wx|s|o^Ancient Treasure^1.7^k~o^Captain's Chest^1.3^k
 4738|Imperial Leather Belt|wx|s|o^Ancient Treasure^1.9^k~o^Captain's Chest^0.8^k
@@ -112,7 +113,6 @@ ns.data.items = [==[
 4980|Prospector Gloves|Q|s|q^704^Agmond's Fate^33^a^s
 4987|Dwarf Captain's Sword|q|s|q^762^An Ambassador of Evil^39^a^s
 5183|Pulsating Hydra Heart|R|s|R^3398^Gesharahan^25^s
-5193|Cape of the Brotherhood|d|s|d^36^Edwin VanCleef^19.05^0^s
 5194|Taskmaster Axe|d|s|d^36^Sneed^14.29^0^s
 5213|Scorching Wand|dwx|s|d^90^Mekgineer Thermaplugg^0.43^0^k~d^90^Grubbis^0.39^0^k
 5214|Wand of Eventide|Rdwx|s|d^90^^0^0^s~m^6226^Mechano-Flamewalker^0^s
@@ -161,8 +161,6 @@ ns.data.items = [==[
 6720|Spirit Hunter Headdress|q|s|q^1136^Frostmaw^32^h^s
 6727|Razzeric's Racing Grips|q|s|q^1189^Safety First^36^^s
 6742|Stonefist Girdle|Q|s|q^1101^The Crone of the Kraul^29^a^s~q^1102^A Vengeful Fate^29^h^s
-6748|Monkey Ring|Q|s|q^1144^Willix the Importer^25^^s
-6750|Snake Hoop|Q|s|q^1144^Willix the Importer^25^^s
 6752|Lancer Boots|Q|s|q^1142^Mortality Wanes^25^a^s
 6773|Kolkar Marauder Chain|q|s|q^96222^Khan Hratha^37^^s~q^1380^Khan Hratha^37^^s
 6774|Traitor's Finger|q|s|q^96222^Khan Hratha^37^^s~q^1380^Khan Hratha^37^^s
@@ -233,7 +231,6 @@ ns.data.items = [==[
 9416|Grimlok's Charge|d|s|d^70^Grimlok^0^0^s
 9418|Stoneslayer|d|s|d^70^Archaedas^0^0^s
 9435|Reticulated Bone Gauntlets|wx|s|x^6827^Box of Supplies^k~w^0^0^k
-9447|Electrocutioner Lagnut|d|s|d^90^Electrocutioner 6000^30.2^0^w
 9448|Spidertank Oilrag|d|s|d^90^Electrocutioner 6000^100^0^s
 9450|Gnomebot Operating Boots|d|s|d^90^Crowd Pummeler 9-60^20^0^s
 9454|Acidic Walkers|d|s|d^90^Viscous Fallout^16.67^0^s
@@ -249,7 +246,6 @@ ns.data.items = [==[
 9534|Engineer's Guild Headpiece|Q|s|q^2768^Divino-matic Rod^42^^s
 9538|Talvash's Gold Ring|q|s|q^2948^Gnome Improvement^30^a^s
 9588|Nogg's Gold Ring|q||q^2950^Nogg's Ring Redo^30^h^k
-9605|Repairman's Cape|Q|s|q^2930^Data Rescue^25^a^s
 9623|Civinad Robes|Q|s|q^2841^Rig Wars^30^h^s~q^2929^The Grand Betrayal^30^a^s
 9624|Triprunner Dungarees|Q|s|q^2841^Rig Wars^30^h^s~q^2929^The Grand Betrayal^30^a^s
 9625|Dual Reinforced Leggings|Q|s|q^2841^Rig Wars^30^h^s~q^2929^The Grand Betrayal^30^a^s
@@ -303,8 +299,6 @@ ns.data.items = [==[
 11623|Spritecaster Cape|d||d^230^Houndmaster Grebmar^25.3^0^w
 11626|Blackveil Cape|d||d^230^High Interrogator Gerstahn^22.9^0^w
 11662|Ban'thok Sash|w||m^9030^Ok'thor the Breaker^27.1^w
-11669|Naglering|d||d^230^Golem Lord Argelmach^20.5^0^w
-11677|Graverot Cape|w||m^9031^Anub'shiah^15.9^w
 11679|Rubicund Armguards|w||m^9029^Eviscerator^28.6^w
 11686|Girdle of Beastial Fury|w||m^9029^Eviscerator^21.9^w
 11703|Stonewall Girdle|w||m^9028^Grizzle^19^w
@@ -322,7 +316,6 @@ ns.data.items = [==[
 11787|Shalehusk Boots|d||d^230^Panzor the Invincible^22^0^w
 11805|Rubidium Hammer|d||d^230^Bael'Gar^23.8^0^w
 11807|Sash of the Burning Heart|d||d^230^Bael'Gar^22.8^0^w
-11815|Hand of Justice|d||d^230^Emperor Dagran Thaurissan^19.2^0^w
 11819|Second Wind|d||d^230^Golem Lord Argelmach^24.2^0^w
 11820|Royal Decorated Armor|d||d^230^General Angerforge^18^0^w
 11821|Warstrife Leggings|d||d^230^General Angerforge^13^0^w
@@ -391,7 +384,6 @@ ns.data.items = [==[
 12784|Arcanite Reaper|c||c^Blacksmithing^300^16994^f
 12895|Breastplate of the Chromatic Flight|Q||q^5166^Breastplate of the Chromatic Flight^57^^k
 12903|Legguards of the Chromatic Defier|Q||q^5167^Legplates of the Chromatic Defier^57^^k
-12926|Flaming Band|d||d^229^Pyroguard Emberseer^17.9^0^w
 12927|Truestrike Shoulders|d||d^229^Pyroguard Emberseer^15.6^0^w
 12929|Emberfury Talisman|d||d^229^Pyroguard Emberseer^21.9^0^w
 12935|Warmaster Legguards|d||d^229^Warchief Rend Blackhand^16.1^0^w
@@ -443,7 +435,6 @@ ns.data.items = [==[
 13177|Talisman of Evasion|d||d^229^War Master Voone^16.8^0^w
 13178|Rosewine Circle|d||d^229^Urok Doomhowl^24.5^0^w
 13179|Brazecore Armguards|d||d^229^War Master Voone^17^0^w
-13203|Armswake Cloak|d||d^229^Ghok Bashguud^31.2^0^w
 13205|Rhombeard Protector|d||d^229^Gizrul the Slavener^23.8^0^w
 13208|Bleak Howler Armguards|d||d^229^Gizrul the Slavener^25.4^0^w
 13210|Pads of the Dread Wolf|d||d^229^Halycon^22.4^0^w
@@ -488,7 +479,6 @@ ns.data.items = [==[
 13498|Handcrafted Mastersmith Leggings|d||d^229^Goraluk Anvilcrack^29.4^0^w
 13502|Handcrafted Mastersmith Girdle|d||d^229^Goraluk Anvilcrack^22.9^0^w
 13505|Runeblade of Baron Rivendare|d||d^329^Baron Rivendare^0.1^0^w
-13524|Skull of Burning Shadows|d||d^329^Maleki the Pallid^15^0^w
 13535|Coldtouch Phantom Wraps|d||d^329^Baroness Anastari^11.2^0^w
 13871|Frostweave Pants|c||c^Tailoring^235^18424^f
 13937|Headmaster's Charge|d||d^289^Darkmaster Gandling^2.6^0^w
@@ -501,7 +491,6 @@ ns.data.items = [==[
 13958|Wyrmthalak's Shackles|Q||q^4903^Warlord's Command^55^h^k~q^5081^Maxwell's Mission^55^a^k
 13959|Omokk's Girth Restrainer|Q||q^4903^Warlord's Command^55^h^k~q^5081^Maxwell's Mission^55^a^k
 13960|Heart of the Fiend|dw||d^289^Kirtonos^23.2^0^w~m^10506^Kirtonos the Herald^23.2^w
-13962|Vosh'gajin's Strand|Q||q^4903^Warlord's Command^55^h^k~q^5081^Maxwell's Mission^55^a^k
 13963|Voone's Vice Grips|Q||q^4903^Warlord's Command^55^h^k~q^5081^Maxwell's Mission^55^a^k
 13964|Witchblade|u||d^289^Darkmaster Gandling^14.8^0^w
 13966|Mark of Tyranny|Q||q^4974^For The Horde!^55^h^k~q^5102^General Drakkisath's Demise^55^a^k
@@ -540,7 +529,6 @@ ns.data.items = [==[
 14555|Alcor's Sunrazor|wx||x^16885^Heavy Junkbox^k~w^0^0^k
 14557|The Lion Horn of Stormwind|w||w^0^0^k
 14573|Bristlebark Amice|dw|s|d^34^Targorr the Dread^0.01^0^k~d^34^Dextren Ward^0.01^0^k
-14602|Warden's Cloak|dwx|s|d^129^Mordresh Fire Eye^100^0^s~m^7357^Mordresh Fire Eye^0^s
 14604|Warden's Wizard Hat|w|s|m^12219^Barbed Lasher^0^s
 14612|Bloodmail Legguards|d||d^289^Lord Alexei Barov^2.8^0^w~d^289^Instructor Malicia^0.4^0^w
 14614|Bloodmail Belt|d||d^289^Lord Alexei Barov^2.8^0^w~d^289^Instructor Malicia^1.2^0^w
@@ -866,7 +854,6 @@ ns.data.items = [==[
 18322|Waterspout Boots|d||d^429^Hydrospawn^22.6^0^w
 18323|Satyr's Bow|d||d^429^Zevrim Thornhoof^14.5^0^w
 18327|Whipvine Cord|d||d^429^Alzzin the Wildshaper^16.1^0^w
-18328|Shadewood Cloak|d||d^429^Alzzin the Wildshaper^19.3^0^w
 18337|Orphic Bracers|w||w^0^0^k
 18338|Wand of Arcane Potency|w||w^0^0^k
 18346|Threadbare Trousers|d||d^429^Tsu'zee^33.33^0^k
@@ -978,7 +965,6 @@ ns.data.items = [==[
 18700|Malefic Bracers|w||w^0^0^k
 18701|Innervating Band|w||w^0^0^k
 18702|Belt of the Ordained|w||w^0^0^k
-18706|Arena Master|w||o^Arena Treasure Chest^100^k
 18709|Arena Wristguards|w||o^Arena Treasure Chest^7^k
 18713|Rhok'delar, Longbow of the Ancient Keepers|u|U|
 18715|Lok'delar, Stave of the Ancient Keepers|u|U|
@@ -1038,7 +1024,6 @@ ns.data.items = [==[
 18876|Grand Marshal's Claymore|p||p^14^a^f
 18877|High Warlord's Greatsword|p||p^14^h^f
 18879|Heavy Dark Iron Ring|u|U|
-19024|Arena Grand Master|q||q^7838^Arena Grandmaster^1^^t
 19040|Zorbin's Mega-Slicer|q|s|q^7003^Zapped Giants^45^^s
 19044|Might of the Timbermaw|c||c^Leatherworking^265^23703^f
 19047|Wisdom of the Timbermaw|c||c^Tailoring^255^23662^f
@@ -1066,6 +1051,7 @@ ns.data.items = [==[
 19098|Stormpike Sage's Pendant|v|s|v^13217^Thanthaldis Snowgleam^1416^39.5^81.7^71648^a^s
 19101|Whiteout Staff|vw|U|v^13219^Jekyll Flandring^1416^62.8^59.3^397057^h^k~m^13218^Grunnda Wolfheart^0.02^k
 19102|Crackling Staff|v|sU|v^13217^Thanthaldis Snowgleam^1416^39.5^81.7^398525^a^s
+19103|Frostbite|vw|U|v^13219^Jekyll Flandring^1416^62.8^59.3^319995^h^k~m^13218^Grunnda Wolfheart^0.02^k
 19106|Ice Barbed Spear|q||q^7181^The Legend of Korrak^55^h^k~q^7202^Korrak the Bloodrager^55^a^k
 19107|Bloodseeker|q||q^7181^The Legend of Korrak^55^h^k~q^7202^Korrak the Bloodrager^55^a^k
 19108|Wand of Biting Cold|q||q^7181^The Legend of Korrak^55^h^k~q^7202^Korrak the Bloodrager^55^a^k
@@ -1120,19 +1106,15 @@ ns.data.items = [==[
 19510|Legionnaire's Band|v|U|v^14754^Kelm Hargunth^1413^46.7^8.4^75000^h^s
 19511|Legionnaire's Band|v|U|v^14754^Kelm Hargunth^1413^46.7^8.4^60000^h^s
 19512|Legionnaire's Band|v|U|v^14754^Kelm Hargunth^1413^46.7^8.4^45000^h^s
-19513|Legionnaire's Band|v|U|v^14754^Kelm Hargunth^1413^46.7^8.4^20000^h^s
 19514|Protector's Band|v|sU|v^14753^Illiyana Moonblaze^1440^61.5^83.8^75000^a^s
 19515|Protector's Band|v|sU|v^14753^Illiyana Moonblaze^1440^61.5^83.8^45000^a^s
 19516|Protector's Band|v|sU|v^14753^Illiyana Moonblaze^1440^61.5^83.8^60000^a^s
-19517|Protector's Band|v|sU|v^14753^Illiyana Moonblaze^1440^61.5^83.8^20000^a^s
 19518|Advisor's Ring|v|U|v^14754^Kelm Hargunth^1413^46.7^8.4^75000^h^s
 19519|Advisor's Ring|v|U|v^14754^Kelm Hargunth^1413^46.7^8.4^60000^h^s
 19520|Advisor's Ring|v|U|v^14754^Kelm Hargunth^1413^46.7^8.4^45000^h^s
-19521|Advisor's Ring|v|U|v^14754^Kelm Hargunth^1413^46.7^8.4^20000^h^s
 19522|Lorekeeper's Ring|v|sU|v^14753^Illiyana Moonblaze^1440^61.5^83.8^75000^a^s
 19523|Lorekeeper's Ring|v|sU|v^14753^Illiyana Moonblaze^1440^61.5^83.8^60000^a^s
 19524|Lorekeeper's Ring|v|sU|v^14753^Illiyana Moonblaze^1440^61.5^83.8^45000^a^s
-19525|Lorekeeper's Ring|v|sU|v^14753^Illiyana Moonblaze^1440^61.5^83.8^20000^a^s
 19526|Battle Healer's Cloak|v|U|v^14754^Kelm Hargunth^1413^46.7^8.4^90580^h^s
 19527|Battle Healer's Cloak|v|U|v^14754^Kelm Hargunth^1413^46.7^8.4^48159^h^s
 19528|Battle Healer's Cloak|v|U|v^14754^Kelm Hargunth^1413^46.7^8.4^23904^h^s
@@ -1152,9 +1134,11 @@ ns.data.items = [==[
 19542|Scout's Blade|v|U|v^14754^Kelm Hargunth^1413^46.7^8.4^297673^h^s
 19543|Scout's Blade|v|U|v^14754^Kelm Hargunth^1413^46.7^8.4^174910^h^s
 19544|Scout's Blade|v|U|v^14754^Kelm Hargunth^1413^46.7^8.4^86791^h^s
+19545|Scout's Blade|v|U|v^14754^Kelm Hargunth^1413^46.7^8.4^34845^h^s
 19546|Sentinel's Blade|v|sU|v^14753^Illiyana Moonblaze^1440^61.5^83.8^280715^a^s
 19547|Sentinel's Blade|v|sU|v^14753^Illiyana Moonblaze^1440^61.5^83.8^164981^a^s
 19548|Sentinel's Blade|v|sU|v^14753^Illiyana Moonblaze^1440^61.5^83.8^81882^a^s
+19549|Sentinel's Blade|v|sU|v^14753^Illiyana Moonblaze^1440^61.5^83.8^35372^a^s
 19550|Legionnaire's Sword|v|U|v^14754^Kelm Hargunth^1413^46.7^8.4^274611^h^s
 19551|Legionnaire's Sword|v|U|v^14754^Kelm Hargunth^1413^46.7^8.4^160783^h^s
 19554|Protector's Sword|v|sU|v^14753^Illiyana Moonblaze^1440^61.5^83.8^274611^a^s
@@ -1389,7 +1373,6 @@ ns.data.items = [==[
 21203|Signet Ring of the Bronze Dragonflight|eq|U|q^8754^The Path of the Conqueror^60^^k~r^910^5^Brood of Nozdormu^f
 21204|Signet Ring of the Bronze Dragonflight|eq|U|q^8755^The Path of the Conqueror^60^^k~r^910^6^Brood of Nozdormu^f
 21205|Signet Ring of the Bronze Dragonflight|eq|U|q^8756^The Qiraji Conqueror^60^^k~r^910^7^Brood of Nozdormu^f
-21207|Signet Ring of the Bronze Dragonflight|eq|U|q^8758^The Path of the Invoker^60^^k~r^910^4^Brood of Nozdormu^f
 21208|Signet Ring of the Bronze Dragonflight|eq|U|q^8759^The Path of the Invoker^60^^k~r^910^5^Brood of Nozdormu^f
 21209|Signet Ring of the Bronze Dragonflight|eq|U|q^8760^The Path of the Invoker^60^^k~r^910^6^Brood of Nozdormu^f
 21210|Signet Ring of the Bronze Dragonflight|eq|U|q^8761^The Grand Invoker^60^^k~r^910^7^Brood of Nozdormu^f
@@ -1454,7 +1437,6 @@ ns.data.items = [==[
 21398|Hammer of the Gathering Storm|Q||q^8706^Hammer of the Gathering Storm^60^h^k
 21400|Cloak of the Gathering Storm|Q||q^8690^Cloak of the Gathering Storm^60^h^k
 21401|Scythe of the Unseen Path|Q||q^8712^Scythe of the Unseen Path^60^^k
-21402|Signet of the Unseen Path|Q|U|q^8704^Signet of the Unseen Path^60^^k
 21403|Cloak of the Unseen Path|Q||q^8696^Cloak of the Unseen Path^60^^k
 21404|Dagger of Veiled Shadows|Q||q^8709^Dagger of Veiled Shadows^60^^k
 21406|Cloak of Veiled Shadows|Q||q^8693^Cloak of Veiled Shadows^60^^k
@@ -1463,7 +1445,6 @@ ns.data.items = [==[
 21410|Gavel of Infinite Wisdom|Q||q^8705^Gavel of Infinite Wisdom^60^^k
 21412|Shroud of Infinite Wisdom|Q||q^8689^Shroud of Infinite Wisdom^60^^k
 21413|Blade of Vaulted Secrets|Q||q^8707^Blade of Vaulted Secrets^60^^k
-21414|Band of Vaulted Secrets|Q|U|q^8699^Band of Vaulted Secrets^60^^k
 21415|Drape of Vaulted Secrets|Q||q^8691^Drape of Vaulted Secrets^60^^k
 21417|Ring of Unspoken Names|Q|U|q^8702^Ring of Unspoken Names^60^^k
 21418|Shroud of Unspoken Names|Q||q^8694^Shroud of Unspoken Names^60^^k
@@ -1622,7 +1603,6 @@ ns.data.items = [==[
 22247|Faith Healer's Boots|d||d^229^Warchief Rend Blackhand^14.4^0^w
 22253|Tome of the Lost|d||d^229^General Drakkisath^20.1^0^w
 22254|Wand of Eternal Light|dw||d^230^Warbringer Construct^0.09^0^k~m^9476^Watchman Doomgrip^0.75^k
-22255|Magma Forged Band|dw||d^230^Warbringer Construct^0.02^0^k~m^9476^Watchman Doomgrip^0.22^k
 22256|Mana Shaping Handwraps|dw||d^230^Warbringer Construct^0.18^0^k~m^9476^Watchman Doomgrip^1.91^k
 22266|Flarethorn|w||m^9027^Gorosh the Dervish^32.8^w
 22267|Spellweaver's Turban|d||d^229^General Drakkisath^18.1^0^w
@@ -2041,7 +2021,6 @@ ns.data.items = [==[
 252470|Warden's Leather Boots|c|n|c^Leatherworking^235^1255045^f
 252474|Skulker's Leather Waistguard|c|n|c^Leatherworking^250^1255034^f
 252475|Warden's Leather Waistguard|c|n|c^Leatherworking^250^1255033^f
-252476|Skycaller's Leather Waistguard|c|n|c^Leatherworking^250^1255032^f
 252477|Mender's Leather Waistguard|c|n|c^Leatherworking^250^1255031^f
 252483|Dawn Armor|c|n|c^Leatherworking^300^1255015^f
 252484|Timbermaw Tunic|c|n|c^Leatherworking^300^1255014^f
@@ -2114,8 +2093,6 @@ ns.data.items = [==[
 270032|Cultist's Armguards|Q|sn|q^6561^Blackfathom Villainy^22^h^s~q^1200^Blackfathom Villainy^22^a^s
 270036|Magistrate's Pantaloons|Q|sn|q^378^The Fury Runs Deep^22^a^s
 270043|Dreamer's Chestguard|q|sn|q^6922^Baron Aquanis^25^h^s
-270051|Ladimore Heirloom Ring|q|sn|q^231^A Daughter's Love^30^a^s
-270053|Ring of Ruin|q|sn|q^98^The Legend of Stalvan^30^a^s
 270056|Stromgarde Librarian Leggings|q|sn|q^682^Stromgarde Badges^32^a^s
 270057|Stromgarde Operative Pants|q|sn|q^682^Stromgarde Badges^32^a^s
 270059|Restorer's Fine Gloves|Q|sn|q^704^Agmond's Fate^33^a^s
@@ -2153,7 +2130,6 @@ ns.data.items = [==[
 271214|Rotmender's Treads|dw|sn|d^2999^Rath'mael^20^0^s~m^250657^Rath'mael^0^s
 271216|Scepter of the Abandoned|dw|sn|d^2999^The Abandoned^40^0^s~m^250631^The Abandoned^0^s
 271664|Hornbeam Heft|Q|sn|q^95646^Horrors in the Highland^26^a^s
-271716|Explorer's League Dustcover|Q|sn|q^98824^Prehistoric Prism^26^a^s
 271719|Furs of the Earthen Ring|Q|sn|q^98823^Earthen Echo^26^h^s
 271740|Knife-Polishing Rag|Q|sn|q^95682^Open the Maw^26^h^s
 271767|Healer's Staff|Q|sn|q^98824^Prehistoric Prism^26^a^s~q^98823^Earthen Echo^26^h^s
@@ -2170,7 +2146,6 @@ ns.data.items = [==[
 271910|Theramore Signet|ev|snU|v^263569^NPC 263569^1413^63.4^58.7^31813^h^s~r^2799^5^Theramore Expeditionary Force^f
 271913|Militant's Band|ev|snU|v^263569^NPC 263569^1413^63.4^58.7^111169^h^s~r^2799^5^Theramore Expeditionary Force^f
 271914|Militant's Band|ev|snU|v^263569^NPC 263569^1413^63.4^58.7^65332^h^s~r^2799^5^Theramore Expeditionary Force^f
-271915|Militant's Band|ev|snU|v^263569^NPC 263569^1413^63.4^58.7^32426^h^s~r^2799^5^Theramore Expeditionary Force^f
 271917|Seal of the Expedition|ev|sn|v^263569^NPC 263569^1413^63.4^58.7^112862^h^s~r^2799^5^Theramore Expeditionary Force^f
 271918|Seal of the Expedition|ev|sn|v^263569^NPC 263569^1413^63.4^58.7^66323^h^s~r^2799^5^Theramore Expeditionary Force^f
 271919|Seal of the Expedition|ev|sn|v^263569^NPC 263569^1413^63.4^58.7^33800^h^s~r^2799^5^Theramore Expeditionary Force^f
@@ -2243,133 +2218,146 @@ ns.data.items = [==[
 272106|Darkspear Epaulets|ev|sn|v^263570^Creeg Bothunk^1413^65^34.6^189616^h^s~r^2798^7^Darkspear Raiders^f
 272107|Darkspear Mantle|ev|sn|v^263570^Creeg Bothunk^1413^65^34.6^220641^h^s~r^2798^7^Darkspear Raiders^f
 272108|Darkspear Spaulders|ev|sn|v^263570^Creeg Bothunk^1413^65^34.6^221462^h^s~r^2798^7^Darkspear Raiders^f
-272393|Magician's Cord|v|n|v^227853^Pix Xizzix^1434^28.52^75.86^^^t
-272394|Penitent's Cinch|v|n|v^227853^Pix Xizzix^1434^28.52^75.86^^^t
-272395|Assassin's Waistguard|v|n|v^227853^Pix Xizzix^1434^28.52^75.86^^^t
-272396|Shifter's Belt|v|sn|v^227853^Pix Xizzix^1434^28.5^75.8^0^h^s
-272397|Ranger's Belt|v|n|v^227853^Pix Xizzix^1434^28.52^75.86^^^t
-272398|Caretaker's Cord|v|sn|v^227853^Pix Xizzix^1434^28.5^75.8^0^h^s
-272399|Stormseeker's Girdle|v|n|v^227853^Pix Xizzix^1434^28.52^75.86^^^t
-272401|Elunite Cord|v|sn|v^227853^Pix Xizzix^1434^28.5^75.8^0^h^s
-272403|Valiant's Waistguard|v|n|v^227853^Pix Xizzix^1434^28.52^75.86^^^t
-272404|Vindicator's Belt|v|n|v^227853^Pix Xizzix^1434^28.52^75.86^^^t
-272405|Redeemer's Waistcord|v|n|v^227853^Pix Xizzix^1434^28.52^75.86^^^t
-272406|Channeler's Ring|v|snU|v^227853^Pix Xizzix^1434^28.5^75.8^0^h^s
-272407|Blessed Band of Light|v|snU|v^227853^Pix Xizzix^1434^28.5^75.8^0^h^s
-272408|Cutthroat's Signet|v|snU|v^227853^Pix Xizzix^1434^28.5^75.8^0^h^s
-272409|Ring of Awareness|v|snU|v^227853^Pix Xizzix^1434^28.5^75.8^0^h^s
-272410|Windseeker's Belt|v|n|v^227853^Pix Xizzix^1434^28.52^75.86^^^t
-272411|Arcanoweave Cloak|v|sn|v^227853^Pix Xizzix^1434^28.5^75.8^0^h^s
-272413|Drape of Recovery|v|sn|v^227853^Pix Xizzix^1434^28.5^75.8^0^h^s
-272414|Howler's Furs|v|sn|v^227853^Pix Xizzix^1434^28.5^75.8^0^h^s
-272415|Stalwart Cloak|v|sn|v^227853^Pix Xizzix^1434^28.5^75.8^0^h^s
-272437|Adaptive Combat Assistant|v|sn|v^227853^Pix Xizzix^1434^28.5^75.8^0^h^s
-272438|Weakness Analyzer|v|sn|v^227853^Pix Xizzix^1434^28.5^75.8^0^h^s
-272439|Serenity Field|v|sn|v^227853^Pix Xizzix^1434^28.5^75.8^0^h^s
-272440|Defender's Grip Stabilizer|v|sn|v^227853^Pix Xizzix^1434^28.5^75.8^0^h^s
+272393|Magician's Cord|v|n|v^227853^Pix Xizzix^1434^28.52^75.86^226404:100:b^^t
+272394|Penitent's Cinch|v|n|v^227853^Pix Xizzix^1434^28.52^75.86^226404:100^^t
+272395|Assassin's Waistguard|v|n|v^227853^Pix Xizzix^1434^28.52^75.86^226404:100:b^^t
+272396|Shifter's Belt|v|sn|v^227853^Pix Xizzix^1434^28.5^75.8^226404:100:b^^s
+272397|Ranger's Belt|v|n|v^227853^Pix Xizzix^1434^28.52^75.86^226404:100:b^^t
+272398|Caretaker's Cord|v|sn|v^227853^Pix Xizzix^1434^28.5^75.8^226404:100:b^^s
+272399|Stormseeker's Girdle|v|n|v^227853^Pix Xizzix^1434^28.52^75.86^226404:100:b^^t
+272401|Elunite Cord|v|sn|v^227853^Pix Xizzix^1434^28.5^75.8^226404:100:b^^s
+272403|Valiant's Waistguard|v|n|v^227853^Pix Xizzix^1434^28.52^75.86^226404:100:b^^t
+272404|Vindicator's Belt|v|n|v^227853^Pix Xizzix^1434^28.52^75.86^226404:100:b^^t
+272405|Redeemer's Waistcord|v|n|v^227853^Pix Xizzix^1434^28.52^75.86^226404:100:b^^t
+272406|Channeler's Ring|v|snU|v^227853^Pix Xizzix^1434^28.5^75.8^226404:75^^s
+272407|Blessed Band of Light|v|snU|v^227853^Pix Xizzix^1434^28.5^75.8^226404:75^^s
+272408|Cutthroat's Signet|v|snU|v^227853^Pix Xizzix^1434^28.5^75.8^226404:75^^s
+272409|Ring of Awareness|v|snU|v^227853^Pix Xizzix^1434^28.5^75.8^226404:75^^s
+272410|Windseeker's Belt|v|n|v^227853^Pix Xizzix^1434^28.52^75.86^226404:100:b^^t
+272411|Arcanoweave Cloak|v|sn|v^227853^Pix Xizzix^1434^28.5^75.8^226404:75^^s
+272413|Drape of Recovery|v|sn|v^227853^Pix Xizzix^1434^28.5^75.8^226404:75^^s
+272414|Howler's Furs|v|sn|v^227853^Pix Xizzix^1434^28.5^75.8^226404:75^^s
+272415|Stalwart Cloak|v|sn|v^227853^Pix Xizzix^1434^28.5^75.8^226404:75^^s
+272437|Adaptive Combat Assistant|v|sn|v^227853^Pix Xizzix^1434^28.5^75.8^226404:125^^s
+272438|Weakness Analyzer|v|sn|v^227853^Pix Xizzix^1434^28.5^75.8^226404:125^^s
+272439|Serenity Field|v|sn|v^227853^Pix Xizzix^1434^28.5^75.8^226404:125^^s
+272440|Defender's Grip Stabilizer|v|sn|v^227853^Pix Xizzix^1434^28.5^75.8^226404:125^^s
 272452|Premier High Warlord's Blade|v||v^14581^Sergeant Thunderhorn^1454^36.9^67.1^0^^s
-272453|Premier Magus Footwraps|u|n|
-272454|Premier Magus Cuffs|u|n|
-272455|Premier Magus Gloves|u|n|
-272457|Premier Magus Hood|u|n|
-272458|Premier Magus Pants|u|n|
-272459|Premier Magus Robes|u|n|
-272462|Premier Dragonhide Boots|u|n|
+272453|Premier Magus Footwraps|u|n|p^0^^f
+272454|Premier Magus Cuffs|u|n|p^0^^f
+272455|Premier Magus Gloves|u|n|p^0^^f
+272457|Premier Magus Hood|u|n|p^0^^f
+272458|Premier Magus Pants|u|n|p^0^^f
+272459|Premier Magus Robes|u|n|p^0^^f
+272461|Premier Kodohide Armguards|u|n|p^0^^f
+272462|Premier Dragonhide Boots|u|n|p^0^^f
+272464|Premier Kodohide Gauntlets|u|n|p^0^^f
 272465|Premier Shadowhide Armguards|v|sn|v^12792^Lady Palanseer^1454^37.2^64.7^0^^s
 272467|Premier Shadowhide Vices|v|sn|v^12792^Lady Palanseer^1454^37.2^64.7^0^^s
 272468|Premier Shadowhide Girdle|v|sn|v^12792^Lady Palanseer^1454^37.2^64.7^0^^s
-272470|Premier Dragonhide Trousers|u|n|
-272471|Premier Dragonhide Helm|u|n|
+272469|Premier Dragonhide Spaulders|u|n|p^0^^f
+272470|Premier Dragonhide Trousers|u|n|p^0^^f
+272471|Premier Dragonhide Helm|u|n|p^0^^f
+272472|Premier Dragonhide Breastplate|u|n|p^0^^f
 272473|Premier Shadowhide Hauberk|v|sn|v^12792^Lady Palanseer^1454^37.2^64.7^0^^s
 272474|Premier Shadowhide Headguard|v|sn|v^12792^Lady Palanseer^1454^37.2^64.7^0^^s
 272475|Premier Shadowhide Mantle|v|sn|v^12792^Lady Palanseer^1454^37.2^64.7^0^^s
 272476|Premier Shadowhide Leggings|v|sn|v^12792^Lady Palanseer^1454^37.2^64.7^0^^s
-272477|Premier Mortarplate Boots|u|n|
-272478|Premier Mortarplate Gloves|u|n|
-272479|Premier Mortarplate Armor|u|n|
-272484|Premier Mail Walkers|u|n|
-272486|Premier Mail Helm|u|n|
-272487|Premier Mail Chestpiece|u|n|
-272494|Premier Chain Girdle|u|n|
-272495|Premier Chain Gauntlets|u|n|
-272496|Premier Chain Boots|u|n|
-272498|Premier Warlord's Magus Cowl|u||
-272499|Premier General's Magus Trousers|u||
-272500|Premier Warlord's Magus Raiment|u||
-272501|Premier General's Magus Amice|u||
-272502|Premier Legionnaire's Magus Sash|u||
-272503|Premier Legionnaire's Magus Cuffs|u||
-272504|Premier Centurion's Magus Boots|u||
-272505|Premier Champion's Magus Handguards|u||
-272506|Premier Warlord's Mortarplate Armor|u||
-272507|Premier Warlord's Mortarplate Headpiece|u||
-272508|Premier General's Mortarplate Leggings|u||
-272509|Premier General's Mortarplate Shoulders|u||
-272510|Premier Centurion's Mortarplate Boots|u||
-272511|Premier Legionnaire's Mortarplate Armguards|u||
-272512|Premier Legionnaire's Mortarplate Girdle|u||
-272513|Premier Champion's Mortarplate Gauntlets|u||
-272514|Premier Warlord's Dragonhide Hauberk|u||
-272515|Premier Warlord's Dragonhide Helmet|u||
-272516|Premier General's Dragonhide Epaulets|u||
-272517|Premier General's Dragonhide Leggings|u||
-272518|Premier Legionnaire's Dragonhide Bracers|u||
-272519|Premier Centurion's Dragonhide Boots|u||
-272520|Premier Champion's Dragonhide Gloves|u||
-272521|Premier Legionnaire's Dragonhide Belt|u||
-272522|Premier Legionnaire's Shadowhide Girdle|u||
-272523|Premier Centurion's Shadowhide Treads|u||
-272524|Premier Legionnaire's Shadowhide Armsplints|u||
-272525|Premier Champion's Shadowhide Mitts|u||
-272526|Premier Warlord's Shadowhide Helm|u||
-272527|Premier General's Shadowhide Spaulders|u||
-272528|Premier Warlord's Shadowhide Breastplate|u||
-272529|Premier General's Shadowhide Legguards|u||
-272530|Premier Warlord's Chain Chestpiece|u||
-272531|Premier Warlord's Chain Helmet|u||
-272532|Premier General's Chain Legguards|u||
-272533|Premier General's Chain Shoulders|u||
-272534|Premier Centurion's Chain Sabatons|u||
-272535|Premier Legionnaire's Chain Wristguards|u||
-272536|Premier Champion's Chain Gloves|u||
-272537|Premier Legionnaire's Chain Girdle|u||
-272538|Premier Centurion's Linked Boots|u||
-272539|Premier Champion's Linked Gauntlets|u||
-272540|Premier Legionnaire's Linked Waistband|u||
-272541|Premier Legionnaire's Linked Bracers|u||
-272542|Premier Warlord's Linked Armor|u||
-272543|Premier Warlord's Linked Helm|u||
-272544|Premier General's Linked Leggings|u||
-272545|Premier General's Linked Spaulders|u||
-272548|Premier Felweave Robe|u|n|
-272549|Premier Felweave Shoulders|u|n|
-272550|Premier Felweave Belt|u|n|
-272552|Premier Felweave Boots|u|n|
-272553|Premier Felweave Gloves|u|n|
-272554|Premier Centurion's Felweave Boots|u||
-272555|Premier Legionnaire's Felweave Bracers|u||
-272556|Premier Champion's Felweave Gloves|u||
-272557|Premier Legionnaire's Felweave Belt|u||
-272558|Premier General's Felweave Mantle|u||
-272559|Premier Warlord's Felweave Hood|u||
-272560|Premier Warlord's Felweave Robe|u||
-272561|Premier General's Felweave Pants|u||
-272562|Premier Satin Cowl|u|n|
-272563|Premier Satin Trousers|u|n|
-272564|Premier Satin Vestments|u|n|
-272565|Premier Satin Shoulderpads|u|n|
-272568|Premier Satin Boots|u|n|
-272569|Premier Satin Gloves|u|n|
-272570|Premier Centurion's Satin Boots|u||
-272571|Premier Legionnaire's Satin Bracers|u||
-272572|Premier Champion's Satin Gloves|u||
-272573|Premier Legionnaire's Satin Cinch|u||
-272574|Premier General's Satin Mantle|u||
-272575|Premier Warlord's Satin Cowl|u||
-272576|Premier Warlord's Satin Robes|u||
-272577|Premier General's Satin Leggings|u||
+272477|Premier Mortarplate Boots|u|n|p^0^^f
+272478|Premier Mortarplate Gloves|u|n|p^0^^f
+272479|Premier Mortarplate Armor|u|n|p^0^^f
+272480|Premier Mortarplate Headguard|u|n|p^0^^f
+272481|Premier Mortarplate Legguards|u|n|p^0^^f
+272484|Premier Mail Walkers|u|n|p^0^^f
+272485|Premier Linked Grips|u|n|p^0^^f
+272486|Premier Mail Helm|u|n|p^0^^f
+272487|Premier Mail Chestpiece|u|n|p^0^^f
+272489|Premier Linked Shoulders|u|n|p^0^^f
+272490|Premier Chain Breastplate|u|n|p^0^^f
+272492|Premier Chain Leggings|u|n|p^0^^f
+272494|Premier Chain Girdle|u|n|p^0^^f
+272495|Premier Chain Gauntlets|u|n|p^0^^f
+272496|Premier Chain Boots|u|n|p^0^^f
+272498|Premier Warlord's Magus Cowl|u||p^13^h^f
+272499|Premier General's Magus Trousers|u||p^12^h^f
+272500|Premier Warlord's Magus Raiment|u||p^13^h^f
+272501|Premier General's Magus Amice|u||p^12^h^f
+272502|Premier Legionnaire's Magus Sash|u||p^8^h^f
+272503|Premier Legionnaire's Magus Cuffs|u||p^8^h^f
+272504|Premier Centurion's Magus Boots|u||p^9^h^f
+272505|Premier Champion's Magus Handguards|u||p^10^h^f
+272506|Premier Warlord's Mortarplate Armor|u||p^13^h^f
+272507|Premier Warlord's Mortarplate Headpiece|u||p^13^h^f
+272508|Premier General's Mortarplate Leggings|u||p^12^h^f
+272509|Premier General's Mortarplate Shoulders|u||p^12^h^f
+272510|Premier Centurion's Mortarplate Boots|u||p^9^h^f
+272511|Premier Legionnaire's Mortarplate Armguards|u||p^8^h^f
+272512|Premier Legionnaire's Mortarplate Girdle|u||p^8^h^f
+272513|Premier Champion's Mortarplate Gauntlets|u||p^10^h^f
+272514|Premier Warlord's Dragonhide Hauberk|u||p^13^h^f
+272515|Premier Warlord's Dragonhide Helmet|u||p^13^h^f
+272516|Premier General's Dragonhide Epaulets|u||p^12^h^f
+272517|Premier General's Dragonhide Leggings|u||p^12^h^f
+272518|Premier Legionnaire's Dragonhide Bracers|u||p^8^h^f
+272519|Premier Centurion's Dragonhide Boots|u||p^9^h^f
+272520|Premier Champion's Dragonhide Gloves|u||p^10^h^f
+272521|Premier Legionnaire's Dragonhide Belt|u||p^8^h^f
+272522|Premier Legionnaire's Shadowhide Girdle|u||p^8^h^f
+272523|Premier Centurion's Shadowhide Treads|u||p^9^h^f
+272524|Premier Legionnaire's Shadowhide Armsplints|u||p^8^h^f
+272525|Premier Champion's Shadowhide Mitts|u||p^10^h^f
+272526|Premier Warlord's Shadowhide Helm|u||p^13^h^f
+272527|Premier General's Shadowhide Spaulders|u||p^12^h^f
+272528|Premier Warlord's Shadowhide Breastplate|u||p^13^h^f
+272529|Premier General's Shadowhide Legguards|u||p^12^h^f
+272530|Premier Warlord's Chain Chestpiece|u||p^13^h^f
+272531|Premier Warlord's Chain Helmet|u||p^13^h^f
+272532|Premier General's Chain Legguards|u||p^12^h^f
+272533|Premier General's Chain Shoulders|u||p^12^h^f
+272534|Premier Centurion's Chain Sabatons|u||p^9^h^f
+272535|Premier Legionnaire's Chain Wristguards|u||p^8^h^f
+272536|Premier Champion's Chain Gloves|u||p^10^h^f
+272537|Premier Legionnaire's Chain Girdle|u||p^8^h^f
+272538|Premier Centurion's Linked Boots|u||p^9^h^f
+272539|Premier Champion's Linked Gauntlets|u||p^10^h^f
+272540|Premier Legionnaire's Linked Waistband|u||p^8^h^f
+272541|Premier Legionnaire's Linked Bracers|u||p^8^h^f
+272542|Premier Warlord's Linked Armor|u||p^13^h^f
+272543|Premier Warlord's Linked Helm|u||p^13^h^f
+272544|Premier General's Linked Leggings|u||p^12^h^f
+272545|Premier General's Linked Spaulders|u||p^12^h^f
+272548|Premier Felweave Robe|u|n|p^0^^f
+272549|Premier Felweave Shoulders|u|n|p^0^^f
+272550|Premier Felweave Belt|u|n|p^0^^f
+272551|Premier Felweave Bracers|u|n|p^0^^f
+272552|Premier Felweave Boots|u|n|p^0^^f
+272553|Premier Felweave Gloves|u|n|p^0^^f
+272554|Premier Centurion's Felweave Boots|u||p^9^h^f
+272555|Premier Legionnaire's Felweave Bracers|u||p^8^h^f
+272556|Premier Champion's Felweave Gloves|u||p^10^h^f
+272557|Premier Legionnaire's Felweave Belt|u||p^8^h^f
+272558|Premier General's Felweave Mantle|u||p^12^h^f
+272559|Premier Warlord's Felweave Hood|u||p^13^h^f
+272560|Premier Warlord's Felweave Robe|u||p^13^h^f
+272561|Premier General's Felweave Pants|u||p^12^h^f
+272562|Premier Satin Cowl|u|n|p^0^^f
+272563|Premier Satin Trousers|u|n|p^0^^f
+272564|Premier Satin Vestments|u|n|p^0^^f
+272565|Premier Satin Shoulderpads|u|n|p^0^^f
+272566|Premier Satin Sash|u|n|p^0^^f
+272567|Premier Satin Cuffs|u|n|p^0^^f
+272568|Premier Satin Boots|u|n|p^0^^f
+272569|Premier Satin Gloves|u|n|p^0^^f
+272570|Premier Centurion's Satin Boots|u||p^9^h^f
+272571|Premier Legionnaire's Satin Bracers|u||p^8^h^f
+272572|Premier Champion's Satin Gloves|u||p^10^h^f
+272573|Premier Legionnaire's Satin Cinch|u||p^8^h^f
+272574|Premier General's Satin Mantle|u||p^12^h^f
+272575|Premier Warlord's Satin Cowl|u||p^13^h^f
+272576|Premier Warlord's Satin Robes|u||p^13^h^f
+272577|Premier General's Satin Leggings|u||p^12^h^f
 272578|Premier Sergeant's Cloak|v|sn|v^12793^Brave Stonehide^1454^36.6^65.9^0^^s
-272582|Premier Dragonhide Armguards|u|n|
+272582|Premier Dragonhide Armguards|u|n|p^0^^f
 272589|Premier Sergeant's Cape|v|sn|v^12793^Brave Stonehide^1454^36.6^65.9^0^^s
 272591|Premier High Warlord's Shield Wall|v||v^14581^Sergeant Thunderhorn^1454^36.9^67.1^0^^s
 272592|Premier High Warlord's Cleaver|v||v^14581^Sergeant Thunderhorn^1454^36.9^67.1^0^^s
@@ -2386,30 +2374,35 @@ ns.data.items = [==[
 272603|Premier High Warlord's War Staff|v||v^14581^Sergeant Thunderhorn^1454^36.9^67.1^0^^s
 272604|Premier High Warlord's Greatsword|v||v^14581^Sergeant Thunderhorn^1454^36.9^67.1^0^^s
 272608|Premier Shadowhide Walkers|v|sn|v^12792^Lady Palanseer^1454^37.2^64.7^0^^s
-272609|Premier Linked Greaves|u|n|
-272611|Premier Silken Walkers|u|n|
-272614|Premier Dragonhide Grips|u|n|
-272617|Premier Mail Vices|u|n|
-272625|Premier Linked Hauberk|u|n|
-272626|Premier Kodohide Chestpiece|u|n|
-272627|Premier Kodohide Leggings|u|n|
-272630|Premier Felweave Legguards|u|n|
-272634|Premier Silken Tunic|u|n|
-272636|Premier Mail Legguards|u|n|
-272637|Premier Mortarplate Shoulders|u|n|
-272640|Premier Chain Shoulders|u|n|
-272641|Premier Kodohide Headguard|u|n|
-272642|Premier Kodohide Shoulders|u|n|
-272643|Premier Felweave Cowl|u|n|
-272648|Premier Mail Pauldrons|u|n|
-272650|Premier Silken Mantle|u|n|
-272656|Premier Lunarhide Leggings|u|n|
-272657|Premier Dreadweave Legguards|u|n|
-272663|Premier Silken Legguards|u|n|
-272669|Premier Lunarhide Headguard|u|n|
-272670|Premier Lunarhide Shoulders|u|n|
-272671|Premier Dreadweave Cowl|u|n|
-272680|Premier Magus Mantle|u|n|
+272609|Premier Linked Greaves|u|n|p^0^^f
+272611|Premier Silken Walkers|u|n|p^0^^f
+272614|Premier Dragonhide Grips|u|n|p^0^^f
+272617|Premier Mail Vices|u|n|p^0^^f
+272619|Premier Silken Handwraps|u|n|p^0^^f
+272625|Premier Linked Hauberk|u|n|p^0^^f
+272626|Premier Kodohide Chestpiece|u|n|p^0^^f
+272627|Premier Kodohide Leggings|u|n|p^0^^f
+272630|Premier Felweave Legguards|u|n|p^0^^f
+272634|Premier Silken Tunic|u|n|p^0^^f
+272636|Premier Mail Legguards|u|n|p^0^^f
+272637|Premier Mortarplate Shoulders|u|n|p^0^^f
+272640|Premier Chain Shoulders|u|n|p^0^^f
+272641|Premier Kodohide Headguard|u|n|p^0^^f
+272642|Premier Kodohide Shoulders|u|n|p^0^^f
+272643|Premier Felweave Cowl|u|n|p^0^^f
+272647|Premier Linked Headguard|u|n|p^0^^f
+272648|Premier Mail Pauldrons|u|n|p^0^^f
+272649|Premier Silken Hood|u|n|p^0^^f
+272650|Premier Silken Mantle|u|n|p^0^^f
+272656|Premier Lunarhide Leggings|u|n|p^0^^f
+272657|Premier Dreadweave Legguards|u|n|p^0^^f
+272663|Premier Silken Legguards|u|n|p^0^^f
+272669|Premier Lunarhide Headguard|u|n|p^0^^f
+272670|Premier Lunarhide Shoulders|u|n|p^0^^f
+272671|Premier Dreadweave Cowl|u|n|p^0^^f
+272677|Premier Mooncloth Hood|u|n|p^0^^f
+272678|Premier Mooncloth Mantle|u|n|p^0^^f
+272680|Premier Magus Mantle|u|n|p^0^^f
 272681|Premier High Warlord's Battle Mace|v||v^14581^Sergeant Thunderhorn^1454^36.9^67.1^0^^s
 272682|Premier High Warlord's Destroyer|v||v^14581^Sergeant Thunderhorn^1454^36.9^67.1^0^^s
 272683|Premier High Warlord's Spellblade|v||v^14581^Sergeant Thunderhorn^1454^36.9^67.1^0^^s
@@ -2418,109 +2411,124 @@ ns.data.items = [==[
 272693|Premier Grand Marshal's Longsword|v|sn|v^12782^Captain O'Neal^1453^74.4^67.7^0^^s
 272698|Premier Sergeant's Cloak|v|sn|v^12781^Master Sergeant Biggins^1453^75.2^67.2^0^^s
 272699|Premier Sergeant's Cape|v|sn|v^12781^Master Sergeant Biggins^1453^75.2^67.2^0^^s
-272701|Premier Silk Boots|u|n|
-272703|Premier Silk Gloves|u|n|
-272704|Premier Leather Boots|u|n|
-272705|Premier Beasthide Footwraps|u|n|
-272708|Premier Leather Gauntlets|u|n|
-272709|Premier Beasthide Gloves|u|n|
-272710|Premier Leather Belt|u|n|
-272713|Premier Chainmail Boots|u|n|
+272701|Premier Silk Boots|u|n|p^0^^f
+272702|Premier Silk Cuffs|u|n|p^0^^f
+272703|Premier Silk Gloves|u|n|p^0^^f
+272704|Premier Leather Boots|u|n|p^0^^f
+272705|Premier Beasthide Footwraps|u|n|p^0^^f
+272707|Premier Beasthide Armsplints|u|n|p^0^^f
+272708|Premier Leather Gauntlets|u|n|p^0^^f
+272709|Premier Beasthide Gloves|u|n|p^0^^f
+272710|Premier Leather Belt|u|n|p^0^^f
+272712|Premier Chainmail Girdle|u|n|p^0^^f
+272713|Premier Chainmail Boots|u|n|p^0^^f
+272715|Premier Chainmail Gauntlets|u|n|p^0^^f
 272716|Premier Plate Boots|v|sn|v^12777^Captain Dirgehammer^1453^75.9^67^0^^s
 272717|Premier Plate Gauntlets|v|sn|v^12777^Captain Dirgehammer^1453^75.9^67^0^^s
-272718|Premier Chevalier Sabatons|u|n|
-272719|Premier Chevalier Gauntlets|u|n|
-272722|Premier Silk Raiment|u|n|
-272723|Premier Silk Leggings|u|n|
-272724|Premier Silk Spaulders|u|n|
-272725|Premier Silk Crown|u|n|
-272726|Premier Leather Armor|u|n|
-272728|Premier Leather Legguards|u|n|
-272733|Premier Beasthide Shroud|u|n|
+272718|Premier Chevalier Sabatons|u|n|p^0^^f
+272719|Premier Chevalier Gauntlets|u|n|p^0^^f
+272720|Premier Chevalier Cinch|u|n|p^0^^f
+272721|Premier Chevalier Armsplints|u|n|p^0^^f
+272722|Premier Silk Raiment|u|n|p^0^^f
+272723|Premier Silk Leggings|u|n|p^0^^f
+272724|Premier Silk Spaulders|u|n|p^0^^f
+272725|Premier Silk Crown|u|n|p^0^^f
+272726|Premier Leather Armor|u|n|p^0^^f
+272727|Premier Leather Veil|u|n|p^0^^f
+272728|Premier Leather Legguards|u|n|p^0^^f
+272729|Premier Leather Spaulders|u|n|p^0^^f
+272731|Premier Beasthide Leggings|u|n|p^0^^f
+272732|Premier Beasthide Epaulets|u|n|p^0^^f
+272733|Premier Beasthide Shroud|u|n|p^0^^f
+272736|Premier Chainmail Pauldrons|u|n|p^0^^f
 272738|Premier Plate Helm|v|sn|v^12777^Captain Dirgehammer^1453^75.9^67^0^^s
 272739|Premier Plate Chestguard|v|sn|v^12777^Captain Dirgehammer^1453^75.9^67^0^^s
 272740|Premier Plate Leggings|v|sn|v^12777^Captain Dirgehammer^1453^75.9^67^0^^s
 272741|Premier Plate Pauldrons|v|sn|v^12777^Captain Dirgehammer^1453^75.9^67^0^^s
-272742|Premier Chevalier Breastplate|u|n|
-272743|Premier Chevalier Headguard|u|n|
-272745|Premier Chevalier Shoulders|u|n|
-272746|Premier Knight-Champion's Silk Footwraps|u|n|
-272747|Premier Knight-Captain's Silk Bracers|u|n|
-272748|Premier Knight-Captain's Silk Sash|u|n|
-272749|Premier Lieutenant Commander's Silk Gloves|u|n|
-272750|Premier Field Marshal's Silk Coronet|u|n|
-272751|Premier Marshal's Silk Leggings|u|n|
-272752|Premier Field Marshal's Silk Vestments|u|n|
-272753|Premier Marshal's Silk Spaulders|u|n|
-272754|Premier Knight-Captain's Beasthide Bracers|u|n|
-272755|Premier Knight-Champion's Leather Footguards|u|n|
-272756|Premier Knight-Captain's Beasthide Waistguard|u|n|
-272757|Premier Lieutenant Commander's Beasthide Gauntlets|u|n|
-272758|Premier Marshal's Beasthide Spaulders|u|n|
-272759|Premier Marshal's Beasthide Legguards|u|n|
-272760|Premier Field Marshal's Beasthide Helmet|u|n|
-272761|Premier Field Marshal's Beasthide Breastplate|u|n|
-272762|Premier Field Marshal's Leather Chestpiece|u|n|
-272763|Premier Lieutenant Commander's Leather Handgrips|u|n|
-272764|Premier Field Marshal's Leather Mask|u|n|
-272765|Premier Marshal's Leather Leggings|u|n|
-272766|Premier Marshal's Leather Epaulets|u|n|
-272767|Premier Knight-Captain's Leather Cinch|u|n|
-272768|Premier Knight-Champion's Beasthide Boots|u|n|
-272769|Premier Knight-Captain's Leather Armsplints|u|n|
-272770|Premier Knight-Captain's Chainmail Bracers|u|n|
-272771|Premier Knight-Champion's Chainmail Boots|u|n|
-272772|Premier Lieutenant Commander's Chainmail Grips|u|n|
-272773|Premier Knight-Captain's Chainmail Girdle|u|n|
-272774|Premier Field Marshal's Chainmail Helm|u|n|
-272775|Premier Field Marshal's Chainmail Breastplate|u|n|
-272776|Premier Marshal's Chainmail Legguards|u|n|
-272777|Premier Marshal's Chainmail Spaulders|u|n|
-272778|Premier Knight-Captain's Chevalier Armguards|u|n|
-272779|Premier Knight-Captain's Chevalier Belt|u|n|
-272780|Premier Lieutenant Commander's Chevalier Gloves|u|n|
-272781|Premier Knight-Champion's Chevalier Boots|u|n|
-272782|Premier Field Marshal's Chevalier Chestplate|u|n|
-272783|Premier Field Marshal's Chevalier Faceguard|u|n|
-272784|Premier Marshal's Chevalier Legplates|u|n|
-272785|Premier Marshal's Chevalier Pauldrons|u|n|
-272786|Premier Field Marshal's Plate Armor|u|n|
-272787|Premier Field Marshal's Plate Helm|u|n|
-272788|Premier Marshal's Plate Legguards|u|n|
-272789|Premier Marshal's Plate Shoulderguards|u|n|
-272790|Premier Knight-Captain's Plate Bracers|u|n|
-272791|Premier Knight-Captain's Plate Girdle|u|n|
-272792|Premier Knight-Champion's Plate Boots|u|n|
-272793|Premier Lieutenant Commander's Plate Gauntlets|u|n|
-272794|Premier Dreadweave Boots|u|n|
-272796|Premier Dreadweave Gloves|u|n|
-272797|Premier Dreadweave Belt|u|n|
-272800|Premier Dreadweave Robe|u|n|
-272801|Premier Dreadweave Mantle|u|n|
-272802|Premier Field Marshal's Dreadweave Coronal|u|n|
-272803|Premier Marshal's Dreadweave Leggings|u|n|
-272804|Premier Marshal's Dreadweave Shoulders|u|n|
-272805|Premier Field Marshal's Dreadweave Robe|u|n|
-272806|Premier Knight-Captain's Dreadweave Cuffs|u|n|
-272807|Premier Knight-Champion's Dreadweave Boots|u|n|
-272808|Premier Lieutenant Commander's Dreadweave Gloves|u|n|
-272809|Premier Knight-Captain's Dreadweave Sash|u|n|
-272810|Premier Voidcloth Boots|u|n|
-272812|Premier Voidcloth Gloves|u|n|
-272814|Premier Voidcloth Diadem|u|n|
-272815|Premier Voidcloth Leggings|u|n|
-272816|Premier Voidcloth Robes|u|n|
-272817|Premier Voidcloth Amice|u|n|
-272818|Premier Field Marshal's Voidcloth Headdress|u|n|
-272819|Premier Marshal's Voidcloth Pants|u|n|
-272820|Premier Marshal's Voidcloth Mantle|u|n|
-272821|Premier Field Marshal's Voidcloth Vestments|u|n|
-272822|Premier Knight-Captain's Voidcloth Bracers|u|n|
-272823|Premier Knight-Champion's Voidcloth Sandals|u|n|
-272824|Premier Lieutenant Commander's Voidcloth Gloves|u|n|
-272825|Premier Knight-Captain's Voidcloth Sash|u|n|
+272742|Premier Chevalier Breastplate|u|n|p^0^^f
+272743|Premier Chevalier Headguard|u|n|p^0^^f
+272744|Premier Chevalier Leggings|u|n|p^0^^f
+272745|Premier Chevalier Shoulders|u|n|p^0^^f
+272746|Premier Knight-Champion's Silk Footwraps|u|n|p^9^a^f
+272747|Premier Knight-Captain's Silk Bracers|u|n|p^8^a^f
+272748|Premier Knight-Captain's Silk Sash|u|n|p^8^a^f
+272749|Premier Lieutenant Commander's Silk Gloves|u|n|p^10^a^f
+272750|Premier Field Marshal's Silk Coronet|u|n|p^13^a^f
+272751|Premier Marshal's Silk Leggings|u|n|p^12^a^f
+272752|Premier Field Marshal's Silk Vestments|u|n|p^13^a^f
+272753|Premier Marshal's Silk Spaulders|u|n|p^12^a^f
+272754|Premier Knight-Captain's Beasthide Bracers|u|n|p^8^a^f
+272755|Premier Knight-Champion's Leather Footguards|u|n|p^9^a^f
+272756|Premier Knight-Captain's Beasthide Waistguard|u|n|p^8^a^f
+272757|Premier Lieutenant Commander's Beasthide Gauntlets|u|n|p^10^a^f
+272758|Premier Marshal's Beasthide Spaulders|u|n|p^12^a^f
+272759|Premier Marshal's Beasthide Legguards|u|n|p^12^a^f
+272760|Premier Field Marshal's Beasthide Helmet|u|n|p^13^a^f
+272761|Premier Field Marshal's Beasthide Breastplate|u|n|p^13^a^f
+272762|Premier Field Marshal's Leather Chestpiece|u|n|p^13^a^f
+272763|Premier Lieutenant Commander's Leather Handgrips|u|n|p^10^a^f
+272764|Premier Field Marshal's Leather Mask|u|n|p^13^a^f
+272765|Premier Marshal's Leather Leggings|u|n|p^12^a^f
+272766|Premier Marshal's Leather Epaulets|u|n|p^12^a^f
+272767|Premier Knight-Captain's Leather Cinch|u|n|p^8^a^f
+272768|Premier Knight-Champion's Beasthide Boots|u|n|p^9^a^f
+272769|Premier Knight-Captain's Leather Armsplints|u|n|p^8^a^f
+272770|Premier Knight-Captain's Chainmail Bracers|u|n|p^8^a^f
+272771|Premier Knight-Champion's Chainmail Boots|u|n|p^9^a^f
+272772|Premier Lieutenant Commander's Chainmail Grips|u|n|p^10^a^f
+272773|Premier Knight-Captain's Chainmail Girdle|u|n|p^8^a^f
+272774|Premier Field Marshal's Chainmail Helm|u|n|p^13^a^f
+272775|Premier Field Marshal's Chainmail Breastplate|u|n|p^13^a^f
+272776|Premier Marshal's Chainmail Legguards|u|n|p^12^a^f
+272777|Premier Marshal's Chainmail Spaulders|u|n|p^12^a^f
+272778|Premier Knight-Captain's Chevalier Armguards|u|n|p^8^a^f
+272779|Premier Knight-Captain's Chevalier Belt|u|n|p^8^a^f
+272780|Premier Lieutenant Commander's Chevalier Gloves|u|n|p^10^a^f
+272781|Premier Knight-Champion's Chevalier Boots|u|n|p^9^a^f
+272782|Premier Field Marshal's Chevalier Chestplate|u|n|p^13^a^f
+272783|Premier Field Marshal's Chevalier Faceguard|u|n|p^13^a^f
+272784|Premier Marshal's Chevalier Legplates|u|n|p^12^a^f
+272785|Premier Marshal's Chevalier Pauldrons|u|n|p^12^a^f
+272786|Premier Field Marshal's Plate Armor|u|n|p^13^a^f
+272787|Premier Field Marshal's Plate Helm|u|n|p^13^a^f
+272788|Premier Marshal's Plate Legguards|u|n|p^12^a^f
+272789|Premier Marshal's Plate Shoulderguards|u|n|p^12^a^f
+272790|Premier Knight-Captain's Plate Bracers|u|n|p^8^a^f
+272791|Premier Knight-Captain's Plate Girdle|u|n|p^8^a^f
+272792|Premier Knight-Champion's Plate Boots|u|n|p^9^a^f
+272793|Premier Lieutenant Commander's Plate Gauntlets|u|n|p^10^a^f
+272794|Premier Dreadweave Boots|u|n|p^0^^f
+272795|Premier Dreadweave Bracers|u|n|p^0^^f
+272796|Premier Dreadweave Gloves|u|n|p^0^^f
+272797|Premier Dreadweave Belt|u|n|p^0^^f
+272800|Premier Dreadweave Robe|u|n|p^0^^f
+272801|Premier Dreadweave Mantle|u|n|p^0^^f
+272802|Premier Field Marshal's Dreadweave Coronal|u|n|p^13^a^f
+272803|Premier Marshal's Dreadweave Leggings|u|n|p^12^a^f
+272804|Premier Marshal's Dreadweave Shoulders|u|n|p^12^a^f
+272805|Premier Field Marshal's Dreadweave Robe|u|n|p^13^a^f
+272806|Premier Knight-Captain's Dreadweave Cuffs|u|n|p^8^a^f
+272807|Premier Knight-Champion's Dreadweave Boots|u|n|p^9^a^f
+272808|Premier Lieutenant Commander's Dreadweave Gloves|u|n|p^10^a^f
+272809|Premier Knight-Captain's Dreadweave Sash|u|n|p^8^a^f
+272810|Premier Voidcloth Boots|u|n|p^0^^f
+272811|Premier Voidcloth Cuffs|u|n|p^0^^f
+272812|Premier Voidcloth Gloves|u|n|p^0^^f
+272814|Premier Voidcloth Diadem|u|n|p^0^^f
+272815|Premier Voidcloth Leggings|u|n|p^0^^f
+272816|Premier Voidcloth Robes|u|n|p^0^^f
+272817|Premier Voidcloth Amice|u|n|p^0^^f
+272818|Premier Field Marshal's Voidcloth Headdress|u|n|p^13^a^f
+272819|Premier Marshal's Voidcloth Pants|u|n|p^12^a^f
+272820|Premier Marshal's Voidcloth Mantle|u|n|p^12^a^f
+272821|Premier Field Marshal's Voidcloth Vestments|u|n|p^13^a^f
+272822|Premier Knight-Captain's Voidcloth Bracers|u|n|p^8^a^f
+272823|Premier Knight-Champion's Voidcloth Sandals|u|n|p^9^a^f
+272824|Premier Lieutenant Commander's Voidcloth Gloves|u|n|p^10^a^f
+272825|Premier Knight-Captain's Voidcloth Sash|u|n|p^8^a^f
 272828|Premier Plate Wristguards|v|sn|v^12777^Captain Dirgehammer^1453^75.9^67^0^^s
-272835|Premier Lunarhide Armsplints|u|n|
+272834|Premier Dreamhide Armsplints|u|n|p^0^^f
+272835|Premier Lunarhide Armsplints|u|n|p^0^^f
 272838|Premier Grand Marshal's Aegis|v|sn|v^12782^Captain O'Neal^1453^74.4^67.7^0^^s
 272839|Premier Grand Marshal's Handaxe|v|sn|v^12782^Captain O'Neal^1453^74.4^67.7^0^^s
 272840|Premier Grand Marshal's Sunderer|v|sn|v^12782^Captain O'Neal^1453^74.4^67.7^0^^s
@@ -2535,9 +2543,10 @@ ns.data.items = [==[
 272849|Premier Grand Marshal's Glaive|v|sn|v^12782^Captain O'Neal^1453^74.4^67.7^0^^s
 272850|Premier Grand Marshal's Stave|v|sn|v^12782^Captain O'Neal^1453^74.4^67.7^0^^s
 272851|Premier Grand Marshal's Claymore|v|sn|v^12782^Captain O'Neal^1453^74.4^67.7^0^^s
-272852|Premier Luminous Breastplate|u|n|
-272854|Premier Luminous Headguard|u|n|
-272855|Premier Luminous Shoulders|u|n|
+272852|Premier Luminous Breastplate|u|n|p^0^^f
+272853|Premier Luminous Leggings|u|n|p^0^^f
+272854|Premier Luminous Headguard|u|n|p^0^^f
+272855|Premier Luminous Shoulders|u|n|p^0^^f
 272856|Premier Grand Marshal's Mageblade|v|sn|v^12782^Captain O'Neal^1453^74.4^67.7^0^^s
 272857|Premier Grand Marshal's Warhammer|v|sn|v^12782^Captain O'Neal^1453^74.4^67.7^0^^s
 272858|Premier Grand Marshal's Demolisher|v|sn|v^12782^Captain O'Neal^1453^74.4^67.7^0^^s
@@ -2573,112 +2582,115 @@ ns.data.items = [==[
 273054|Cartilage Shapers|d|sn|d^2959^Lyn the Ignored^25^0^s
 273137|Skum's Bucket|dw|sn|d^43^Skum^12.5^0^s~m^3674^Skum^0^s
 273289|Ogre Loincloth|dw|sn|d^36^Rhahk'Zor^26.32^0^s~m^644^Rhahk'Zor^0^s
+273324|Premier Mortarplate Girdle|u|n|p^0^^f
 273325|Premier Plate Girdle|v|sn|v^12777^Captain Dirgehammer^1453^75.9^67^0^^s
-273327|Premier Knight-Captain's Luminous Armguards|u|n|
-273328|Premier Knight-Captain's Luminous Belt|u|n|
-273329|Premier Lieutenant Commander's Luminous Gloves|u|n|
-273330|Premier Knight-Champion's Luminous Boots|u|n|
-273331|Premier Field Marshal's Luminous Chestplate|u|n|
-273332|Premier Field Marshal's Luminous Faceguard|u|n|
-273333|Premier Marshal's Luminous Legplates|u|n|
-273334|Premier Marshal's Luminous Pauldrons|u|n|
-273336|Premier Centurion's Mail Boots|u||
-273337|Premier Champion's Mail Gauntlets|u||
-273338|Premier Legionnaire's Mail Waistband|u||
-273339|Premier Legionnaire's Mail Bracers|u||
-273340|Premier Warlord's Mail Armor|u||
-273341|Premier Warlord's Mail Helm|u||
-273342|Premier General's Mail Leggings|u||
-273343|Premier General's Mail Spaulders|u||
-273344|Premier Centurion's Ringmail Boots|u||
-273345|Premier Champion's Ringmail Gauntlets|u||
-273346|Premier Legionnaire's Ringmail Waistband|u||
-273347|Premier Legionnaire's Ringmail Bracers|u||
-273348|Premier Warlord's Ringmail Armor|u||
-273349|Premier Warlord's Ringmail Helm|u||
-273350|Premier General's Ringmail Leggings|u||
-273351|Premier General's Ringmail Spaulders|u||
-273353|Premier Mail Wristguards|u|n|
-273356|Premier Ringmail Helm|u|n|
-273357|Premier Ringmail Chestpiece|u|n|
-273359|Premier Ringmail Legguards|u|n|
-273360|Premier Ringmail Pauldrons|u|n|
-273361|Premier Ringmail Wristguards|u|n|
-273363|Premier Luminous Gauntlets|u|n|
-273364|Premier Luminous Armsplints|u|n|
-273365|Premier Luminous Sabatons|u|n|
-273368|Premier Lunarhide Gloves|u|n|
-273370|Premier Lunarhide Footwraps|u|n|
-273371|Premier Lunarhide Tunic|u|n|
-273374|Premier Dreamhide Headguard|u|n|
-273375|Premier Dreamhide Shoulders|u|n|
-273380|Premier Dreamhide Tunic|u|n|
-273382|Premier Wyrmhide Gauntlets|u|n|
-273383|Premier Wyrmhide Treads|u|n|
-273384|Premier Wyrmhide Chestpiece|u|n|
-273385|Premier Wyrmhide Leggings|u|n|
-273386|Premier Wyrmhide Headguard|u|n|
-273387|Premier Wyrmhide Shoulders|u|n|
-273389|Premier Knight-Captain's Lunarhide Bracers|u|n|
-273390|Premier Knight-Captain's Lunarhide Waistguard|u|n|
-273391|Premier Lieutenant Commander's Lunarhide Gauntlets|u|n|
-273392|Premier Marshal's Lunarhide Spaulders|u|n|
-273393|Premier Marshal's Lunarhide Legguards|u|n|
-273394|Premier Field Marshal's Lunarhide Helmet|u|n|
-273395|Premier Field Marshal's Lunarhide Breastplate|u|n|
-273396|Premier Knight-Champion's Lunarhide Boots|u|n|
-273397|Premier Knight-Captain's Dreamhide Bracers|u|n|
-273398|Premier Knight-Captain's Dreamhide Waistguard|u|n|
-273399|Premier Lieutenant Commander's Dreamhide Gauntlets|u|n|
-273400|Premier Marshal's Dreamhide Spaulders|u|n|
-273401|Premier Marshal's Dreamhide Legguards|u|n|
-273402|Premier Field Marshal's Dreamhide Helmet|u|n|
-273403|Premier Field Marshal's Dreamhide Breastplate|u|n|
-273404|Premier Knight-Champion's Dreamhide Boots|u|n|
-273405|Premier Warlord's Wyrmhide Hauberk|u||
-273406|Premier Warlord's Wyrmhide Helmet|u||
-273407|Premier General's Wyrmhide Epaulets|u||
-273408|Premier General's Wyrmhide Leggings|u||
-273409|Premier Legionnaire's Wyrmhide Bracers|u||
-273410|Premier Centurion's Wyrmhide Boots|u||
-273411|Premier Champion's Wyrmhide Gloves|u||
-273412|Premier Legionnaire's Wyrmhide Belt|u||
-273413|Premier Warlord's Kodohide Hauberk|u||
-273414|Premier Warlord's Kodohide Helmet|u||
-273415|Premier General's Kodohide Epaulets|u||
-273416|Premier General's Kodohide Leggings|u||
-273417|Premier Legionnaire's Kodohide Bracers|u||
-273418|Premier Centurion's Kodohide Boots|u||
-273419|Premier Champion's Kodohide Gloves|u||
-273420|Premier Legionnaire's Kodohide Belt|u||
-273421|Premier Field Marshal's Mooncloth Headdress|u|n|
-273422|Premier Marshal's Mooncloth Pants|u|n|
-273423|Premier Marshal's Mooncloth Mantle|u|n|
-273424|Premier Field Marshal's Mooncloth Vestments|u|n|
-273425|Premier Knight-Captain's Mooncloth Bracers|u|n|
-273426|Premier Knight-Champion's Mooncloth Sandals|u|n|
-273427|Premier Lieutenant Commander's Mooncloth Gloves|u|n|
-273428|Premier Knight-Captain's Mooncloth Sash|u|n|
-273429|Premier Centurion's Silken Boots|u||
-273430|Premier Legionnaire's Silken Bracers|u||
-273431|Premier Champion's Silken Gloves|u||
-273432|Premier Legionnaire's Silken Cinch|u||
-273433|Premier General's Silken Mantle|u||
-273434|Premier Warlord's Silken Cowl|u||
-273435|Premier Warlord's Silken Robes|u||
-273436|Premier General's Silken Leggings|u||
-273444|Premier Mooncloth Cuffs|u|n|
-273447|Premier Mooncloth Leggings|u|n|
-273448|Premier Mooncloth Robes|u|n|
-273449|Premier Mooncloth Cord|u|n|
-273450|Premier Silken Cuffs|u|n|
+273327|Premier Knight-Captain's Luminous Armguards|u|n|p^8^a^f
+273328|Premier Knight-Captain's Luminous Belt|u|n|p^8^a^f
+273329|Premier Lieutenant Commander's Luminous Gloves|u|n|p^10^a^f
+273330|Premier Knight-Champion's Luminous Boots|u|n|p^9^a^f
+273331|Premier Field Marshal's Luminous Chestplate|u|n|p^13^a^f
+273332|Premier Field Marshal's Luminous Faceguard|u|n|p^13^a^f
+273333|Premier Marshal's Luminous Legplates|u|n|p^12^a^f
+273334|Premier Marshal's Luminous Pauldrons|u|n|p^12^a^f
+273336|Premier Centurion's Mail Boots|u||p^9^h^f
+273337|Premier Champion's Mail Gauntlets|u||p^10^h^f
+273338|Premier Legionnaire's Mail Waistband|u||p^8^h^f
+273339|Premier Legionnaire's Mail Bracers|u||p^8^h^f
+273340|Premier Warlord's Mail Armor|u||p^13^h^f
+273341|Premier Warlord's Mail Helm|u||p^13^h^f
+273342|Premier General's Mail Leggings|u||p^12^h^f
+273343|Premier General's Mail Spaulders|u||p^12^h^f
+273344|Premier Centurion's Ringmail Boots|u||p^9^h^f
+273345|Premier Champion's Ringmail Gauntlets|u||p^10^h^f
+273346|Premier Legionnaire's Ringmail Waistband|u||p^8^h^f
+273347|Premier Legionnaire's Ringmail Bracers|u||p^8^h^f
+273348|Premier Warlord's Ringmail Armor|u||p^13^h^f
+273349|Premier Warlord's Ringmail Helm|u||p^13^h^f
+273350|Premier General's Ringmail Leggings|u||p^12^h^f
+273351|Premier General's Ringmail Spaulders|u||p^12^h^f
+273353|Premier Mail Wristguards|u|n|p^0^^f
+273356|Premier Ringmail Helm|u|n|p^0^^f
+273357|Premier Ringmail Chestpiece|u|n|p^0^^f
+273359|Premier Ringmail Legguards|u|n|p^0^^f
+273360|Premier Ringmail Pauldrons|u|n|p^0^^f
+273361|Premier Ringmail Wristguards|u|n|p^0^^f
+273363|Premier Luminous Gauntlets|u|n|p^0^^f
+273364|Premier Luminous Armsplints|u|n|p^0^^f
+273365|Premier Luminous Sabatons|u|n|p^0^^f
+273368|Premier Lunarhide Gloves|u|n|p^0^^f
+273370|Premier Lunarhide Footwraps|u|n|p^0^^f
+273371|Premier Lunarhide Tunic|u|n|p^0^^f
+273373|Premier Dreamhide Leggings|u|n|p^0^^f
+273374|Premier Dreamhide Headguard|u|n|p^0^^f
+273375|Premier Dreamhide Shoulders|u|n|p^0^^f
+273380|Premier Dreamhide Tunic|u|n|p^0^^f
+273381|Premier Wyrmhide Armguards|u|n|p^0^^f
+273382|Premier Wyrmhide Gauntlets|u|n|p^0^^f
+273383|Premier Wyrmhide Treads|u|n|p^0^^f
+273384|Premier Wyrmhide Chestpiece|u|n|p^0^^f
+273385|Premier Wyrmhide Leggings|u|n|p^0^^f
+273386|Premier Wyrmhide Headguard|u|n|p^0^^f
+273387|Premier Wyrmhide Shoulders|u|n|p^0^^f
+273389|Premier Knight-Captain's Lunarhide Bracers|u|n|p^8^a^f
+273390|Premier Knight-Captain's Lunarhide Waistguard|u|n|p^8^a^f
+273391|Premier Lieutenant Commander's Lunarhide Gauntlets|u|n|p^10^a^f
+273392|Premier Marshal's Lunarhide Spaulders|u|n|p^12^a^f
+273393|Premier Marshal's Lunarhide Legguards|u|n|p^12^a^f
+273394|Premier Field Marshal's Lunarhide Helmet|u|n|p^13^a^f
+273395|Premier Field Marshal's Lunarhide Breastplate|u|n|p^13^a^f
+273396|Premier Knight-Champion's Lunarhide Boots|u|n|p^9^a^f
+273397|Premier Knight-Captain's Dreamhide Bracers|u|n|p^8^a^f
+273398|Premier Knight-Captain's Dreamhide Waistguard|u|n|p^8^a^f
+273399|Premier Lieutenant Commander's Dreamhide Gauntlets|u|n|p^10^a^f
+273400|Premier Marshal's Dreamhide Spaulders|u|n|p^12^a^f
+273401|Premier Marshal's Dreamhide Legguards|u|n|p^12^a^f
+273402|Premier Field Marshal's Dreamhide Helmet|u|n|p^13^a^f
+273403|Premier Field Marshal's Dreamhide Breastplate|u|n|p^13^a^f
+273404|Premier Knight-Champion's Dreamhide Boots|u|n|p^9^a^f
+273405|Premier Warlord's Wyrmhide Hauberk|u||p^13^h^f
+273406|Premier Warlord's Wyrmhide Helmet|u||p^13^h^f
+273407|Premier General's Wyrmhide Epaulets|u||p^12^h^f
+273408|Premier General's Wyrmhide Leggings|u||p^12^h^f
+273409|Premier Legionnaire's Wyrmhide Bracers|u||p^8^h^f
+273410|Premier Centurion's Wyrmhide Boots|u||p^9^h^f
+273411|Premier Champion's Wyrmhide Gloves|u||p^10^h^f
+273412|Premier Legionnaire's Wyrmhide Belt|u||p^8^h^f
+273413|Premier Warlord's Kodohide Hauberk|u||p^13^h^f
+273414|Premier Warlord's Kodohide Helmet|u||p^13^h^f
+273415|Premier General's Kodohide Epaulets|u||p^12^h^f
+273416|Premier General's Kodohide Leggings|u||p^12^h^f
+273417|Premier Legionnaire's Kodohide Bracers|u||p^8^h^f
+273418|Premier Centurion's Kodohide Boots|u||p^9^h^f
+273419|Premier Champion's Kodohide Gloves|u||p^10^h^f
+273420|Premier Legionnaire's Kodohide Belt|u||p^8^h^f
+273421|Premier Field Marshal's Mooncloth Headdress|u|n|p^13^a^f
+273422|Premier Marshal's Mooncloth Pants|u|n|p^12^a^f
+273423|Premier Marshal's Mooncloth Mantle|u|n|p^12^a^f
+273424|Premier Field Marshal's Mooncloth Vestments|u|n|p^13^a^f
+273425|Premier Knight-Captain's Mooncloth Bracers|u|n|p^8^a^f
+273426|Premier Knight-Champion's Mooncloth Sandals|u|n|p^9^a^f
+273427|Premier Lieutenant Commander's Mooncloth Gloves|u|n|p^10^a^f
+273428|Premier Knight-Captain's Mooncloth Sash|u|n|p^8^a^f
+273429|Premier Centurion's Silken Boots|u||p^9^h^f
+273430|Premier Legionnaire's Silken Bracers|u||p^8^h^f
+273431|Premier Champion's Silken Gloves|u||p^10^h^f
+273432|Premier Legionnaire's Silken Cinch|u||p^8^h^f
+273433|Premier General's Silken Mantle|u||p^12^h^f
+273434|Premier Warlord's Silken Cowl|u||p^13^h^f
+273435|Premier Warlord's Silken Robes|u||p^13^h^f
+273436|Premier General's Silken Leggings|u||p^12^h^f
+273443|Premier Mooncloth Boots|u|n|p^0^^f
+273444|Premier Mooncloth Cuffs|u|n|p^0^^f
+273445|Premier Mooncloth Gloves|u|n|p^0^^f
+273447|Premier Mooncloth Leggings|u|n|p^0^^f
+273448|Premier Mooncloth Robes|u|n|p^0^^f
+273449|Premier Mooncloth Cord|u|n|p^0^^f
+273450|Premier Silken Cuffs|u|n|p^0^^f
 273637|Blade of Silverlaine|dw|sn|d^33^Baron Silverlaine^33.33^0^s~m^3887^Baron Silverlaine^0^s
 273643|Worgenbane Talisman|dw|sn|d^33^Commander Springvale^22.22^0^s~m^4278^Commander Springvale^0^s
 273646|Half-Eaten Boots|dw|sn|d^33^Fenrus the Devourer^11.11^0^s~m^4274^Fenrus the Devourer^0^s
 273647|Worgpelt Leggings|dw|sn|d^33^Wolf Master Nandos^33.33^0^s~m^3927^Wolf Master Nandos^0^s
 273805|Blackrock Harness|dw|sn|d^34^Targorr the Dread^50^0^s~m^1696^Targorr the Dread^0^s
-273806|Dark Horde Band|dw|sn|d^34^Targorr the Dread^25^0^s~m^1696^Targorr the Dread^0^s
-273807|Demolition Girdle|dw|sn|d^34^Kam Deepfury^17.65^0^s~m^1666^Kam Deepfury^0^s
 273808|Bridgebreaker Bindings|dw|sn|d^34^Kam Deepfury^52.94^0^s~m^1666^Kam Deepfury^0^s
 273824|Defias Jailbreakers|dw|sn|d^34^Bazil Thredd^50^0^s~m^1716^Bazil Thredd^0^s
 273825|Red Wool Cloak|dw|sn|d^34^Bazil Thredd^12.5^0^s~m^1716^Bazil Thredd^0^s
@@ -2701,36 +2713,36 @@ ns.data.items = [==[
 274180|Premier Flatmail Leggings|v|sn|v^12777^Captain Dirgehammer^1453^75.9^67^0^^s
 274181|Premier Flatmail Shoulders|v|sn|v^12777^Captain Dirgehammer^1453^75.9^67^0^^s
 274182|Premier Flatmail Wristguards|v|sn|v^12777^Captain Dirgehammer^1453^75.9^67^0^^s
-274183|Premier Knight-Champion's Flatmail Boots|u|n|
-274184|Premier Lieutenant Commander's Flatmail Gauntlets|u|n|
-274185|Premier Knight-Captain's Flatmail Waistband|u|n|
-274186|Premier Knight-Captain's Flatmail Bracers|u|n|
-274187|Premier Field Marshal's Flatmail Armor|u|n|
-274188|Premier Field Marshal's Flatmail Helm|u|n|
-274189|Premier Marshal's Flatmail Leggings|u|n|
-274190|Premier Marshal's Flatmail Spaulders|u|n|
+274183|Premier Knight-Champion's Flatmail Boots|u|n|p^9^a^f
+274184|Premier Lieutenant Commander's Flatmail Gauntlets|u|n|p^10^a^f
+274185|Premier Knight-Captain's Flatmail Waistband|u|n|p^8^a^f
+274186|Premier Knight-Captain's Flatmail Bracers|u|n|p^8^a^f
+274187|Premier Field Marshal's Flatmail Armor|u|n|p^13^a^f
+274188|Premier Field Marshal's Flatmail Helm|u|n|p^13^a^f
+274189|Premier Marshal's Flatmail Leggings|u|n|p^12^a^f
+274190|Premier Marshal's Flatmail Spaulders|u|n|p^12^a^f
 274192|Premier Flatmail Greaves|v|sn|v^12777^Captain Dirgehammer^1453^75.9^67^0^^s
 274193|Premier Scalemail Vices|v|sn|v^12777^Captain Dirgehammer^1453^75.9^67^0^^s
 274194|Premier Flatmail Hauberk|v|sn|v^12777^Captain Dirgehammer^1453^75.9^67^0^^s
 274195|Premier Scalemail Legguards|v|sn|v^12777^Captain Dirgehammer^1453^75.9^67^0^^s
 274196|Premier Flatmail Headguard|v|sn|v^12777^Captain Dirgehammer^1453^75.9^67^0^^s
 274197|Premier Scalemail Pauldrons|v|sn|v^12777^Captain Dirgehammer^1453^75.9^67^0^^s
-274198|Premier Knight-Champion's Scalemail Boots|u|n|
-274199|Premier Lieutenant Commander's Scalemail Gauntlets|u|n|
-274200|Premier Knight-Captain's Scalemail Waistband|u|n|
-274201|Premier Knight-Captain's Scalemail Bracers|u|n|
-274202|Premier Field Marshal's Scalemail Armor|u|n|
-274203|Premier Field Marshal's Scalemail Helm|u|n|
-274204|Premier Marshal's Scalemail Leggings|u|n|
-274205|Premier Marshal's Scalemail Spaulders|u|n|
-274206|Premier Knight-Champion's Linkmail Boots|u|n|
-274207|Premier Lieutenant Commander's Linkmail Gauntlets|u|n|
-274208|Premier Knight-Captain's Linkmail Waistband|u|n|
-274209|Premier Knight-Captain's Linkmail Bracers|u|n|
-274210|Premier Field Marshal's Linkmail Armor|u|n|
-274211|Premier Field Marshal's Linkmail Helm|u|n|
-274212|Premier Marshal's Linkmail Leggings|u|n|
-274213|Premier Marshal's Linkmail Spaulders|u|n|
+274198|Premier Knight-Champion's Scalemail Boots|u|n|p^9^a^f
+274199|Premier Lieutenant Commander's Scalemail Gauntlets|u|n|p^10^a^f
+274200|Premier Knight-Captain's Scalemail Waistband|u|n|p^8^a^f
+274201|Premier Knight-Captain's Scalemail Bracers|u|n|p^8^a^f
+274202|Premier Field Marshal's Scalemail Armor|u|n|p^13^a^f
+274203|Premier Field Marshal's Scalemail Helm|u|n|p^13^a^f
+274204|Premier Marshal's Scalemail Leggings|u|n|p^12^a^f
+274205|Premier Marshal's Scalemail Spaulders|u|n|p^12^a^f
+274206|Premier Knight-Champion's Linkmail Boots|u|n|p^9^a^f
+274207|Premier Lieutenant Commander's Linkmail Gauntlets|u|n|p^10^a^f
+274208|Premier Knight-Captain's Linkmail Waistband|u|n|p^8^a^f
+274209|Premier Knight-Captain's Linkmail Bracers|u|n|p^8^a^f
+274210|Premier Field Marshal's Linkmail Armor|u|n|p^13^a^f
+274211|Premier Field Marshal's Linkmail Helm|u|n|p^13^a^f
+274212|Premier Marshal's Linkmail Leggings|u|n|p^12^a^f
+274213|Premier Marshal's Linkmail Spaulders|u|n|p^12^a^f
 274214|Premier Flatmail Girdle|v|sn|v^12777^Captain Dirgehammer^1453^75.9^67^0^^s
 274215|Premier Scalemail Wristguards|v|sn|v^12777^Captain Dirgehammer^1453^75.9^67^0^^s
 274217|Premier Linkmail Walkers|v|sn|v^12777^Captain Dirgehammer^1453^75.9^67^0^^s
@@ -2742,30 +2754,36 @@ ns.data.items = [==[
 274223|Premier Linkmail Wristguards|v|sn|v^12777^Captain Dirgehammer^1453^75.9^67^0^^s
 274224|Premier Linkmail Girdle|v|sn|v^12777^Captain Dirgehammer^1453^75.9^67^0^^s
 274225|Premier Scalemail Girdle|v|sn|v^12777^Captain Dirgehammer^1453^75.9^67^0^^s
-274226|Premier Scaled Sabatons|u|n|
-274227|Premier Scaled Gauntlets|u|n|
-274230|Premier Scaled Breastplate|u|n|
-274234|Premier Legionnaire's Scaled Armguards|u||
-274235|Premier Legionnaire's Scaled Belt|u||
-274236|Premier Champion's Scaled Gloves|u||
-274237|Premier Centurion's Scaled Boots|u||
-274238|Premier Warlord's Scaled Chestplate|u||
-274239|Premier Warlord's Scaled Faceguard|u||
-274240|Premier General's Scaled Legplates|u||
-274241|Premier General's Scaled Pauldrons|u||
-274244|Premier Lamellar Breastplate|u|n|
-274246|Premier Lamellar Headguard|u|n|
-274247|Premier Lamellar Shoulders|u|n|
-274248|Premier Legionnaire's Lamellar Armguards|u||
-274249|Premier Legionnaire's Lamellar Belt|u||
-274250|Premier Champion's Lamellar Gloves|u||
-274251|Premier Centurion's Lamellar Boots|u||
-274252|Premier Warlord's Lamellar Chestplate|u||
-274253|Premier Warlord's Lamellar Faceguard|u||
-274254|Premier General's Lamellar Legplates|u||
-274255|Premier General's Lamellar Pauldrons|u||
-274256|Premier Lamellar Gauntlets|u|n|
-274258|Premier Lamellar Sabatons|u|n|
+274226|Premier Scaled Sabatons|u|n|p^0^^f
+274227|Premier Scaled Gauntlets|u|n|p^0^^f
+274229|Premier Scaled Armsplints|u|n|p^0^^f
+274230|Premier Scaled Breastplate|u|n|p^0^^f
+274231|Premier Scaled Headguard|u||p^0^^f
+274232|Premier Scaled Leggings|u|n|p^0^^f
+274233|Premier Scaled Shoulders|u|n|p^0^^f
+274234|Premier Legionnaire's Scaled Armguards|u||p^8^h^f
+274235|Premier Legionnaire's Scaled Belt|u||p^8^h^f
+274236|Premier Champion's Scaled Gloves|u||p^10^h^f
+274237|Premier Centurion's Scaled Boots|u||p^9^h^f
+274238|Premier Warlord's Scaled Chestplate|u||p^13^h^f
+274239|Premier Warlord's Scaled Faceguard|u||p^13^h^f
+274240|Premier General's Scaled Legplates|u||p^12^h^f
+274241|Premier General's Scaled Pauldrons|u||p^12^h^f
+274244|Premier Lamellar Breastplate|u|n|p^0^^f
+274245|Premier Lamellar Leggings|u|n|p^0^^f
+274246|Premier Lamellar Headguard|u|n|p^0^^f
+274247|Premier Lamellar Shoulders|u|n|p^0^^f
+274248|Premier Legionnaire's Lamellar Armguards|u||p^8^h^f
+274249|Premier Legionnaire's Lamellar Belt|u||p^8^h^f
+274250|Premier Champion's Lamellar Gloves|u||p^10^h^f
+274251|Premier Centurion's Lamellar Boots|u||p^9^h^f
+274252|Premier Warlord's Lamellar Chestplate|u||p^13^h^f
+274253|Premier Warlord's Lamellar Faceguard|u||p^13^h^f
+274254|Premier General's Lamellar Legplates|u||p^12^h^f
+274255|Premier General's Lamellar Pauldrons|u||p^12^h^f
+274256|Premier Lamellar Gauntlets|u|n|p^0^^f
+274257|Premier Lamellar Armsplints|u|n|p^0^^f
+274258|Premier Lamellar Sabatons|u|n|p^0^^f
 274290|Painwalker Buckler|dw|sn|d^189^Interrogator Vishas^9.09^0^s~m^3983^Interrogator Vishas^0^s
 274292|Houndmaster Boomerang|dw|sn|d^189^Houndmaster Loksey^0^0^s~m^3974^Houndmaster Loksey^0^s
 274293|Spellsever Crossbow|dw|sn|d^189^Arcanist Doan^0^0^s~m^6487^Arcanist Doan^0^s
@@ -2804,7 +2822,6 @@ ns.data.items = [==[
 274749|Souvenir Sea Shell|ev|sn|v^265575^Gezzy Gunkgear^1434^28.4^74.8^16643^h^s~r^21^5^Booty Bay^f
 274750|Reflective Wristguards|ev|sn|v^265576^Rettrick^1446^51.7^28.8^27439^^s~r^369^4^Gadgetzan^f
 274751|Sunburn Spaulders|ev|sn|v^265576^Rettrick^1446^51.7^28.8^29423^^s~r^369^4^Gadgetzan^f
-274752|Sandstorm Cover|ev|sn|v^265576^Rettrick^1446^51.7^28.8^23565^^s~r^369^4^Gadgetzan^f
 274753|Jhordy's Misplaced Screwdriver|ev|sn|v^265576^Rettrick^1446^51.7^28.8^94614^^s~r^369^5^Gadgetzan^f
 274754|Suspicious Spare Part|ev|sn|v^265576^Rettrick^1446^51.7^28.8^37989^^s~r^369^5^Gadgetzan^f
 274757|Substandard Belt Chain|e|n|r^577^4^Everlook^f
@@ -2840,7 +2857,7 @@ ns.data.items = [==[
 275049|Farholde Bastion|q|sn|q^94890^Quest 94890^41^^s
 275052|Orc Bone Bow|q|sn|q^95066^The Rog'mar Situation^34^^s
 275390|Shallow Bindings|u|n|
-275437|Premier Silken Sash|u|n|
+275437|Premier Silken Sash|u|n|p^0^^f
 275606|Venomspew Footpads|c|n|c^Tailoring^295^1297122^f
 275608|Swarmtender's Cord|c|n|c^Tailoring^290^1297124^f
 275609|Swarmtender's Footpads|c|n|c^Tailoring^295^1297125^f
@@ -2851,11 +2868,9 @@ ns.data.items = [==[
 275711|Chimaera Wing Cape|u|n|
 275736|Horn of Ve'han|u|n|
 275737|Hermit's Pauldron|u|n|
-275738|Jereman's Bauble|u|n|
 275741|Ketharas' Linked Belt|u|n|
 275968|Initiate's Signet of Ferocity|e|n|r^2819^4^The Watchers^f
 275969|Initiate's Signet of Brilliance|e|n|r^2819^4^The Watchers^f
-275970|Initiate's Signet of Resolve|e|n|r^2819^4^The Watchers^f
 275971|Initiate's Signet of Vigilance|e|n|r^2819^4^The Watchers^f
 275972|Tracker's Signet of Ferocity|e|n|r^2819^5^The Watchers^f
 275973|Tracker's Signet of Brilliance|e|n|r^2819^5^The Watchers^f
@@ -2897,7 +2912,6 @@ ns.data.items = [==[
 276879|Backroom Bulwark|u|n|
 276884|Verek's Loyal Wraps|d|n|d^230^Verek^^0^t
 276898|Salve and Salvation|Q|sn|q^96800^Past Due^33^^s
-276899|Knucklebound Thimble|Q|sn|q^96800^Past Due^33^^s
 276903|Shimmerwine Shanker|q|sn|q^96609^Quest 96609^47^^s
 277117|Savage Gladiator Shoulders|u|n|
 277202|Artifact Seeker's Pendant|u|n|
@@ -2941,7 +2955,6 @@ ns.data.items = [==[
 279270|Cloak of Earth and Sky|c|n|c^Tailoring^300^1306544^f
 279273|Hyper Deluxe Sniper Rifle Mk XVII|c|n|c^Engineering^300^1306547^f
 279480|Bigger Rock on Bigger Stick|q|sn|q^94982^Quest 94982^40^^s
-279835|Vine Pruner's Cloak|Q|sn|q^92456^A Green Sample^28^a^s
 279836|Thorn Protecting Girdle|Q|sn|q^92456^A Green Sample^28^a^s
 279838|Arcane Infused Rod|Q|sn|q^92457^Starving Arcane^28^^s
 279839|Spellguard Pauldrons|Q|sn|q^92458^Heart of Disruption^28^^s
@@ -3035,7 +3048,6 @@ ns.data.items = [==[
 284587|Ankle Slicers|u|n|
 284716|Band of the Better Half|u|n|
 284866|Windserpent Scaled Cloak|R|n|R^5349^Arash-ethis^^t
-285330|Signet of the Zhevra|R|sn|R^5831^Swiftmane^0^s
 285338|Kodohide Legguards|R|sn|R^5827^Brontus^0^s
 285346|Alliance Outrunner's Sword|u|sn|
 285348|Alliance Outrunner Healing Rod|R|sn|R^5799^Hannah Bladeleaf^0^s
@@ -3102,4 +3114,8 @@ ns.data.instances = {
 [2959]="City of Dalaran^dungeon^1421^Silverpine Forest",
 [2998]="Excavation Site: Wetlands^dungeon^1437^Wetlands",
 [2999]="Ruins of Lordaeron^dungeon^1420^Tirisfal Glades",
+}
+-- Currencies, by their item id: the game's currency id^English name
+ns.data.currencies = {
+[226404]="3469^Tarnished Undermine Real",
 }

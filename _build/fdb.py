@@ -9,22 +9,35 @@ load() lays what was read in the game over ForeverDB's data (corrections.py):
 the stats its data lacks, the pieces its lists leave out, and it drops the
 items the game does not have. Then it gives the items that have no source in
 the data the one read in QuestieDB (corrections.fill), and checks the drops
-that are not confirmed against the ones counted in Forever (corrections.confirm).
-So the build and the tests rank the same database; load(..., corrected=False)
+that are not confirmed against the ones counted in Forever (corrections.confirm),
+and writes what the vendors ask in a currency (corrections.price). So the build and the tests rank the same database; load(..., corrected=False)
 is ForeverDB's data as published.
 """
 from __future__ import annotations
 
 import re
+from dataclasses import dataclass, field
 from pathlib import Path
 
 import corrections
+import simulated
 
 DATA_FILES = ("GearFinder.lua", "Gear.lua", "GearSources.lua", "Enhance.lua", "Meta.lua")
+# What the Consumables tab reads. A build of the gear lists does without them: see Database.consumables.
+CONSUMABLE_FILES = ("Consumables.lua", "Recipes.lua", "Items.lua", "Coach.lua")
 HEADER_PREFIX = "-- Data: ForeverDB.net (https://foreverdb.net)"
 
 _PAIR = re.compile(r'\[(\d+)\]="([^"]*)"')
 _BLOCK = re.compile(r"^([A-Z]+)=\[==\[\n(.*?)\]==\]", re.S | re.M)
+_TEXT = r'"((?:[^"\\]|\\.)*)"'
+_NUMBER = r"(-?\d+(?:\.\d+)?)"
+_CATALOGUE_ROW = re.compile(rf'\{{(\d+),{_TEXT},{_TEXT},{_TEXT},{_NUMBER},{_NUMBER},(\d+),(\d+),(\d+)\}}')
+_RECIPE_ROW = re.compile(rf'\{{(\d+),{_TEXT},(\d+),(\d+),(\d+),(\d+),(\d+),{_NUMBER},{_TEXT},{_TEXT},(\d+),(\d+),(\d+)'
+                         rf'(?:,{_NUMBER},{_NUMBER})?\}}')
+_PROFESSION = re.compile(r'(?:\{|,)(?:\["([^"]+)"\]|([A-Z][A-Za-z]*))=\{\{')   # ["First Aid"]={{ or Alchemy={{
+_FACTS = re.compile(rf'\[(\d+)\]={_TEXT}')
+_COACH_PROFILE = re.compile(r'^ns\.coachData\.profiles\["([\w-]+)"\] = (.*)$', re.M)
+_COACH_ENTRY = re.compile(rf'\{{kind="consumable",id=(\d+),name={_TEXT},value={_NUMBER}')
 
 
 def b36(text: str) -> int:
@@ -36,6 +49,11 @@ def _stat_key(text: str):
     return int(text) if text.isdigit() else text
 
 
+def _unquote(text: str) -> str:
+    """A Lua string's text: its \\" and \\\\ as the characters they stand for."""
+    return re.sub(r"\\(.)", r"\1", text)
+
+
 def _table_line(text: str, name: str) -> str:
     """The single line that holds `ns.<name> = {...}`."""
     prefix = f"ns.{name} = "
@@ -45,6 +63,20 @@ def _table_line(text: str, name: str) -> str:
                 raise ValueError(f"ns.{name} holds an escaped quote, which this reader does not handle")
             return line
     raise ValueError(f"ns.{name} not found")
+
+
+@dataclass
+class Consumables:
+    """ForeverDB's consumables data, as published. It says what exists and where it comes from; what an item
+    does is read in the game (consumables.py), because this catalogue keeps one effect and one number per item."""
+    catalogue: dict = field(default_factory=dict)  # item -> {"name", "kind", "family", "level", "strength",
+    #                                                 "profession" (a name, or ""), "vendor", "leftover"}
+    recipes: dict = field(default_factory=dict)    # item made -> [{"profession", "spell", "name", "skill", "count",
+    #                                                 "reagents": {item: n}, "learned", "camp", "new"}]
+    facts: dict = field(default_factory=dict)      # item -> {"made": [(profession, skill)], "vendors": [(count,
+    #                                                 first vendor, zone)], "drops": [names], "quests": [names]}
+    coach: dict = field(default_factory=dict)      # "warrior-fury" -> {"role", "class", "spec", "entries": [(item,
+    #                                                 name, share of the damage lost without it)]}, at the level cap
 
 
 class Database:
@@ -70,6 +102,17 @@ class Database:
         self.aligned = None     # what corrections.align changed (a corrections.Alignment), None for the published data
         self.filled = None      # what corrections.fill changed (a corrections.Filled), None for the published data
         self.confirmed = None   # what corrections.confirm changed (a corrections.Confirmed), None for the published data
+        self.priced = None      # what corrections.price changed (a corrections.Priced), None for the published data
+        self.simulated = None   # the PvE lists WoWSims Forever ranked (a simulated.Reading), None for the published data
+        self.data_dir = None    # the folder this was read from
+        self._consumables = None
+
+    @property
+    def consumables(self):
+        """ForeverDB's consumables data, read the first time it is asked for; None without its files."""
+        if self._consumables is None and self.data_dir is not None:
+            self._consumables = read_consumables(self.data_dir)
+        return self._consumables
 
 
 def load(data_dir, corrected: bool = True) -> Database:
@@ -79,7 +122,9 @@ def load(data_dir, corrected: bool = True) -> Database:
         corrections.align(db, corrections.load_game())
         corrections.fill(db, corrections.load_sources())
         corrections.confirm(db, corrections.load_drops())
+        corrections.price(db, corrections.load_costs())
         corrections.assign_sides(db)
+        db.simulated = simulated.load() if simulated.IN_USE else simulated.Reading()
     return db
 
 
@@ -91,6 +136,7 @@ def _read(data_dir) -> Database:
             raise ValueError(f"{name} does not start with ForeverDB's credit line")
 
     db = Database()
+    db.data_dir = data_dir
     db.header = texts["GearFinder.lua"].split("\n", 1)[0]
     meta = texts["Meta.lua"]
     db.meta = {
@@ -191,3 +237,95 @@ def _read_enchants(db: Database, text: str) -> None:
         db.enchants[token] = per_spec
     for enchant, raw in re.findall(r'\["([si]\d+)"\]="([^"]*)"', info):
         db.enchant_info[enchant] = raw.split("|")
+
+
+# -- the consumables --------------------------------------------------------------------------------------
+
+def read_consumables(data_dir) -> Consumables | None:
+    """The four files of the Consumables tab, parsed as text; None while one of them is not there yet."""
+    data_dir = Path(data_dir)
+    if not all((data_dir / name).exists() for name in CONSUMABLE_FILES):
+        return None
+    texts = {name: (data_dir / name).read_text(encoding="utf-8") for name in CONSUMABLE_FILES}
+    for name, text in texts.items():
+        if not text.startswith(HEADER_PREFIX):
+            raise ValueError(f"{name} does not start with ForeverDB's credit line")
+    professions = re.findall(_TEXT, re.search(r"^ns\.professions = (.*)$", texts["Items.lua"], re.M).group(1))
+    return Consumables(catalogue=_read_catalogue(texts["Consumables.lua"], professions),
+                       recipes=_read_recipes(texts["Recipes.lua"]),
+                       facts=_read_facts(texts["Items.lua"], professions),
+                       coach=_read_coach(texts["Coach.lua"]))
+
+
+def _whole_line(text: str, name: str) -> str:
+    """The line of `ns.<name> = ...`; unlike _table_line, it may hold escaped quotes."""
+    found = re.search(rf"^ns\.{name} = (.*)$", text, re.M)
+    if not found:
+        raise ValueError(f"ns.{name} not found")
+    return found.group(1)
+
+
+def _read_catalogue(text: str, professions: list) -> dict:
+    line = _whole_line(text, "consumables")
+    rows = _CATALOGUE_ROW.findall(line)
+    if len(rows) != line.count("},{") + 1:
+        raise ValueError("Consumables.lua: a row of ns.consumables has a form this reader does not know")
+    catalogue = {}
+    for item, name, kind, family, level, strength, made, vendor, leftover in rows:
+        catalogue[int(item)] = {
+            "name": _unquote(name), "kind": kind, "family": _unquote(family), "level": int(float(level)),
+            "strength": float(strength), "profession": professions[int(made) - 1] if int(made) else "",
+            "vendor": vendor == "1", "leftover": leftover == "1"}
+    return catalogue
+
+
+def _read_recipes(text: str) -> dict:
+    line = _whole_line(text, "recipes")
+    marks = list(_PROFESSION.finditer(line))
+    recipes, seen = {}, 0
+    for index, mark in enumerate(marks):
+        end = marks[index + 1].start() if index + 1 < len(marks) else len(line)
+        for row in _RECIPE_ROW.findall(line[mark.end() - 2:end]):
+            seen += 1
+            recipes.setdefault(int(row[6]), []).append({
+                "profession": mark.group(1) or mark.group(2), "spell": int(row[0]), "name": _unquote(row[1]), "skill": int(row[2]),
+                "count": float(row[7]), "reagents": {int(item): int(count) for item, count in
+                                                     re.findall(r"(\d+):(\d+)", row[8])},
+                "learned": row[9], "camp": int(row[10]), "new": row[11] == "1"})
+    if seen != line.count("},{") + len(marks):
+        raise ValueError("Recipes.lua: a row of ns.recipes has a form this reader does not know")
+    return recipes
+
+
+def _read_facts(text: str, professions: list) -> dict:
+    facts = {}
+    for item, raw in _FACTS.findall(_whole_line(text, "items")):
+        record = {"made": [], "vendors": [], "drops": [], "quests": []}
+        for fact in _unquote(raw).split("|"):
+            kind, fields = fact[:1], fact[1:].split("~")
+            if kind == "m" and len(fields) >= 2 and fields[0].isdigit():
+                record["made"].append((professions[int(fields[0])], int(fields[1])))
+            elif kind == "v" and len(fields) >= 3:
+                record["vendors"].append((int(fields[0]) if fields[0].isdigit() else 0, fields[1], fields[2]))
+            elif kind == "d":
+                record["drops"].append(fields[0])
+            elif kind == "q":
+                record["quests"].append(fields[0])
+        facts[int(item)] = record
+    return facts
+
+
+def _read_coach(text: str) -> dict:
+    """What ForeverDB's simulator asks each spec to have up before the pull, in the bracket of the level cap."""
+    coach = {}
+    for slug, body in _COACH_PROFILE.findall(text):
+        start = body.find("levels={60,60}")
+        if start < 0:
+            continue
+        end = body.find("levels={", start + 1)
+        bracket = body[start:end if end > 0 else len(body)]
+        field_of = lambda name: (re.search(rf'{name}="([^"]*)"', body) or [None, ""])[1]
+        coach[slug] = {"role": field_of("role"), "class": field_of("class"), "spec": field_of("specName"),
+                       "entries": [(int(item), _unquote(name), float(value))
+                                   for item, name, value in _COACH_ENTRY.findall(bracket)]}
+    return coach

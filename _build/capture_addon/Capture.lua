@@ -28,7 +28,7 @@ there, later.
 The saved variable is plain text, so the generator reads it without running it:
   EasyBISCaptureDB = {
       meta = "format|game version|build|locale|date",
-      items = { [item id] = "line\nline\n...\n#stats KEY=value;KEY=value" },
+      items = { [item id] = "line\nline\n...\n#use spell\tname\tdescription\n#stats KEY=value;KEY=value" },
       missing = "id id id",        -- the items of the list that were not read
       absent = "id id id",         -- of those, the ones the game's own item table does not list: not asked for
       sample = "asked:answered",   -- a few of the absent ones were asked for all the same, as a check
@@ -36,9 +36,23 @@ The saved variable is plain text, so the generator reads it without running it:
   }
 A line is a tooltip line: its left text, then a tab and its right text when it
 has one. The stats are the game's own item stat table (C_Item.GetItemStats).
+The #use line is there for an item that casts a spell when used, when the game
+says which: what a consumable does is that spell's description.
+
+Opening the window of a vendor who takes something else than money keeps what
+it shows, without a command. `python -I _build/build.py --import-prices` lays
+that over _build/corrections/costs.json. In the same saved variable:
+  vendors = { ["v<npc id>"] = "format|game version|build|locale|date|vendor's name\n<row>\n<row>..." }
+A row is: item id, tab, name, tab, price in copper, tab, what else it costs, by
+semicolons: i<item id>:<amount>, c<currency id>:<amount>, or n<name>:<amount>
+when the game gives nothing but a name. A window may show a class only what it
+can use, so the rows read in one game build add up from one window to the next.
 ]]
 
 local FORMAT = 1
+local VENDOR_FORMAT = 1
+local VENDOR_TRIES = 8    -- times a window is read again while the game fetches what it shows
+local VENDOR_WAIT = 0.5   -- seconds between two of them
 local STEP = 0.25     -- seconds between two steps
 local WINDOW = 8      -- items asked for and not answered yet, at most
 local ASKS = 3        -- items asked for per step, at most: 12 a second
@@ -51,6 +65,7 @@ local RETRY = 200     -- items not answered for that are asked for once more at 
 local SAMPLE = 16     -- items the game's table does not list that are asked for all the same
 local SAY = 30        -- seconds between two progress lines
 local LOG = 10        -- seconds between two entries of the log
+local SPELL_TRIES = 8 -- steps an item waits for the description of the spell it casts, at most: 2 seconds
 
 local PREFIX = "|cff33ff99Easy BIS capture|r: "
 
@@ -166,11 +181,41 @@ local function Ask(id)
     end
 end
 
--- Keeps the item's tooltip; false while the game shows nothing but a name.
+local GetSpell = (C_Item and C_Item.GetItemSpell) or GetItemSpell
+local Describe = (C_Spell and C_Spell.GetSpellDescription) or GetSpellDescription
+local LoadSpell = C_Spell and C_Spell.RequestLoadSpellData
+local spellTries = {}
+
+-- The "#use" line of an item that casts a spell, or nil; and false while the description is on its way.
+local function UseLine(id)
+    if not GetSpell then return nil, true end
+    local ok, name, spell = pcall(GetSpell, id)
+    if not ok or type(spell) ~= "number" then return nil, true end
+    local description
+    if Describe then
+        local done, text = pcall(Describe, spell)
+        description = done and Text(text) or nil
+    end
+    if not description and Describe then
+        spellTries[id] = (spellTries[id] or 0) + 1
+        if spellTries[id] <= SPELL_TRIES then
+            if LoadSpell then pcall(LoadSpell, spell) end
+            return nil, false
+        end
+    end
+    return "#use " .. spell .. "\t" .. (Text(name) or "") .. "\t" .. (description or ""), true
+end
+
+-- Keeps the item's tooltip; false while the game shows nothing but a name, or has not said yet what the
+-- spell it casts does.
 local function Read(id)
     local lines = TooltipLines(id)
     if #lines < 2 then return false end
+    local use, ready = UseLine(id)
+    if not ready then return false end
+    if use then lines[#lines + 1] = use end
     EasyBISCaptureDB.items[id] = table.concat(lines, "\n") .. "\n#stats " .. Stats(id)
+    spellTries[id] = nil
     return true
 end
 
@@ -358,6 +403,12 @@ local function Ids()
     return ids
 end
 
+-- "version|build|locale": the game a reading holds for.
+local function GameLabel()
+    local version, build = GetBuildInfo()
+    return table.concat({ version or "?", build or "?", GetLocale and GetLocale() or "?" }, "|")
+end
+
 local function Start(again)
     if run then
         Say("already reading. /ebiscapture stop to stop.")
@@ -367,24 +418,31 @@ local function Start(again)
         Say("not in combat: the game hides tooltip values there.")
         return
     end
-    local version, build = GetBuildInfo()
-    local game = table.concat({ version or "?", build or "?", GetLocale and GetLocale() or "?" }, "|")
+    local game = GameLabel()
     local db = EasyBISCaptureDB
     local same = type(db) == "table" and type(db.items) == "table" and type(db.meta) == "string"
         and db.meta:match("^%d+|(.*)|[^|]*$") == game
-    if again or not same then db = { items = {} } end   -- another game build: its tooltips may have changed
+    if again or not same then   -- another game build: its tooltips may have changed. The vendors' prices stay.
+        db = { items = {}, vendors = type(db) == "table" and db.vendors or nil }
+    end
     db.meta = table.concat({ FORMAT, game, date("%Y-%m-%d %H:%M") }, "|")
     db.missing = ""
     db.log = (type(db.log) == "string" and #db.log < 20000 and (db.log .. "\n") or "") .. date("%H:%M")
     EasyBISCaptureDB = db
 
-    local ids, queue, absent = Ids(), {}, {}
+    local ids, queue, absent, kept = Ids(), {}, {}, 0
     for _, id in ipairs(ids) do
-        if not db.items[id] then
-            if Listed(id) then queue[#queue + 1] = id else absent[#absent + 1] = id end
+        if db.items[id] then
+            kept = kept + 1
+        elseif Listed(id) then
+            queue[#queue + 1] = id
+        else
+            absent[#absent + 1] = id
         end
     end
-    if #absent > #queue then   -- the game's table is of no help in this game: every item is asked for
+    -- the game's table is of no help in this game: every item is asked for. What was read already counts
+    -- for the table, or a list that grew after a whole capture would ask again for what the game lacks.
+    if #absent > #queue + kept then
         for _, id in ipairs(absent) do queue[#queue + 1] = id end
         absent = {}
     end
@@ -407,6 +465,162 @@ local function Start(again)
     end
     driver:SetScript("OnUpdate", OnUpdate)
 end
+
+---------------------------------------------------------------------------
+-- What the vendors ask
+---------------------------------------------------------------------------
+
+local function VendorId()
+    local guid = UnitGUID and UnitGUID("npc")
+    if (issecretvalue and issecretvalue(guid)) or type(guid) ~= "string" then return nil end
+    return guid:match("^Creature%-%d+%-%d+%-%d+%-%d+%-(%d+)%-")
+end
+
+local function MerchantItem(index)
+    local id = GetMerchantItemID and GetMerchantItemID(index)
+    if id then return id end
+    local link = GetMerchantItemLink and GetMerchantItemLink(index)
+    return type(link) == "string" and tonumber(link:match("item:(%d+)")) or nil
+end
+
+-- The row's name, its price in copper, and whether it costs something else than money.
+local function MerchantRow(index)
+    if C_MerchantFrame and C_MerchantFrame.GetItemInfo then
+        local ok, info = pcall(C_MerchantFrame.GetItemInfo, index)
+        if ok and type(info) == "table" then return info.name, info.price, info.hasExtendedCost end
+    end
+    if GetMerchantItemInfo then
+        local name, _, price, _, _, _, _, extended = GetMerchantItemInfo(index)
+        return name, price, extended
+    end
+end
+
+-- One of the things a row costs, as the header of this file writes it; nil while the game has not said.
+local function CostOf(index, slot)
+    local _, amount, link, name = GetMerchantItemCostItem(index, slot)
+    if type(amount) ~= "number" or amount <= 0 then return nil end
+    local text = type(link) == "string" and link or ""
+    local item, currency = text:match("item:(%d+)"), text:match("currency:(%d+)")
+    if item then return ("i%s:%d"):format(item, amount) end
+    if currency then return ("c%s:%d"):format(currency, amount) end
+    name = Text(name)
+    return name and ("n%s:%d"):format((name:gsub(";", " ")), amount) or nil
+end
+
+-- The row's item and its line; nil while the game has not said all of it.
+local function VendorLine(index)
+    local id = MerchantItem(index)
+    local name, copper, extended = MerchantRow(index)
+    name = Text(name)
+    if not id or not name then return nil end
+    local count = GetMerchantItemCostInfo and GetMerchantItemCostInfo(index) or 0
+    if extended and count == 0 then return nil end
+    local costs = {}
+    for slot = 1, count do
+        costs[slot] = CostOf(index, slot)
+        if not costs[slot] then return nil end
+    end
+    return id, ("%d\t%s\t%d\t%s"):format(id, name, copper or 0, table.concat(costs, ";"))
+end
+
+-- The rows kept of a vendor, when they were read in this game.
+local function KeptRows(text, game)
+    local rows = {}
+    if type(text) ~= "string" or text:match("^%d+|([^|]*|[^|]*|[^|]*)|") ~= game then return rows end
+    for line in text:gmatch("\n([^\n]+)") do
+        rows[tonumber(line:match("^%d+"))] = line
+    end
+    return rows
+end
+
+-- Reads the window and keeps it when something else than money pays for what it shows.
+-- { shown = rows read, missing = rows the game has not said yet, kept = rows kept of the vendor, paid = kept or not }
+local function ReadVendor(npc)
+    local db = EasyBISCaptureDB
+    local key, game = "v" .. npc, GameLabel()
+    local rows = KeptRows(type(db) == "table" and type(db.vendors) == "table" and db.vendors[key], game)
+    local read = { shown = 0, missing = 0, kept = 0, paid = false }
+    for index = 1, GetMerchantNumItems() do
+        local id, line = VendorLine(index)
+        if id then
+            rows[id] = line
+            read.shown = read.shown + 1
+        else
+            read.missing = read.missing + 1
+        end
+    end
+    local ids = {}
+    for id, line in pairs(rows) do
+        ids[#ids + 1] = id
+        read.paid = read.paid or line:match("\t[icn][^\t]*$") ~= nil
+    end
+    read.kept = #ids
+    if not read.paid then return read end
+    table.sort(ids)
+    local name = Text(UnitName and UnitName("npc")) or "?"
+    local lines = { ("%d|%s|%s|%s"):format(VENDOR_FORMAT, game, date("%Y-%m-%d %H:%M"), name) }
+    for _, id in ipairs(ids) do lines[#lines + 1] = rows[id] end
+    if type(db) ~= "table" then db = {} end
+    if type(db.vendors) ~= "table" then db.vendors = {} end
+    db.vendors[key] = table.concat(lines, "\n")
+    EasyBISCaptureDB = db
+    read.name = name
+    return read
+end
+
+-- Whether the window leaves out part of what the vendor sells.
+local function Filtered()
+    if not GetMerchantFilter or not LE_LOOT_FILTER_ALL then return false end
+    local ok, filter = pcall(GetMerchantFilter)
+    return ok and filter ~= LE_LOOT_FILTER_ALL
+end
+
+local window   -- the vendor's window that is open: { npc, tries, timer, said }
+
+local function ReportVendor(read)
+    local filtered = Filtered()
+    local said = table.concat({ read.kept, read.missing, tostring(filtered) }, ":")
+    if window.said == said then return end
+    window.said = said
+    Say(("%s: the prices of %d items are kept."):format(read.name, read.kept))
+    if read.missing > 0 then
+        Say(("%d items of the window did not load: close it and open it again."):format(read.missing))
+    end
+    if filtered then Say("The window is filtered: choose All in its menu to read all this vendor sells.") end
+    Say("Type /reload to save, then run: python -I _build/build.py --import-prices")
+end
+
+local function LookAtVendor()
+    if not window or window.timer then return end
+    local read = ReadVendor(window.npc)
+    if (read.missing > 0 or read.shown == 0) and window.tries < VENDOR_TRIES then
+        local this = window
+        this.tries, this.timer = this.tries + 1, true
+        C_Timer.After(VENDOR_WAIT, function()
+            this.timer = nil
+            if window == this then LookAtVendor() end
+        end)
+        return
+    end
+    if read.missing == 0 then window.tries = 0 end
+    if read.paid then ReportVendor(read) end
+end
+
+local watcher = CreateFrame("Frame")
+watcher:RegisterEvent("MERCHANT_SHOW")
+watcher:RegisterEvent("MERCHANT_UPDATE")
+watcher:RegisterEvent("MERCHANT_CLOSED")
+watcher:SetScript("OnEvent", function(_, event)
+    if event == "MERCHANT_CLOSED" then
+        window = nil
+        return
+    end
+    if event == "MERCHANT_SHOW" then
+        local npc = VendorId()
+        window = npc and { npc = npc, tries = 0 } or nil
+    end
+    LookAtVendor()
+end)
 
 SLASH_EASYBISCAPTURE1 = "/ebiscapture"
 SlashCmdList["EASYBISCAPTURE"] = function(message)

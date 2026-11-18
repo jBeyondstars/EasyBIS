@@ -25,6 +25,10 @@ https://github.com/jBeyondstars/EasyBIS
      - items the game does not have are left out of the lists, and pieces it
        has that ForeverDB does not list are added, as items with no known
        source.
+   The items of Pix Xizzix, a vendor of neutral Booty Bay, count for both
+   factions where the data keeps them for one, and carry the price he asks
+   in Tarnished Undermine Reals (_build/corrections/costs.json), where the
+   data says 0.
    One thing is added to ForeverDB's data: where an item or an enchant
    comes from, for the ones its data gives no source, read in QuestieDB
    (section 4). Those sources carry the label t in Data/Items.lua and
@@ -33,6 +37,18 @@ https://github.com/jBeyondstars/EasyBIS
    data leaves to both sides, are given to the Alliance: its vendor and every
    quest of the faction are the Alliance's alone (section 4).
    Those changes are Easy BIS's, not ForeverDB's (_build/corrections.py).
+   The Consumables tab (Data/Consumables.lua) is made from ForeverDB's
+   catalogue of consumables, recipes, item sources and stat weights. What
+   each consumable does is not ForeverDB's: it is read from the item's
+   tooltip in the game with the same developer's tool, and kept in
+   _build/corrections/consumables.json. Where sixteen of the consumables
+   come from, which ForeverDB's data does not say, is written by hand in
+   _build/corrections/recipe_origins.json, from QuestieDB (section 4), the
+   WhatsTraining addon (MIT License) and Wowhead Forever's pages of the items.
+   The ranking of those effects, per category, is Easy BIS's own
+   (_build/consumable_lists.py). ForeverDB's
+   coach profiles are only compared with it, in a report for the developer
+   (_build/tests/compare_coach.py), and are not part of the addon.
    Copyright (C) 2026 ForeverDB.net. GPL-3.0 with an attribution term
    (GPL-3.0 section 7(b)). If you reuse these files or data taken from them:
      - keep the line that starts
