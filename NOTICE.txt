@@ -61,13 +61,24 @@ https://github.com/jBeyondstars/EasyBIS
    makes for contributions older than that licence. Nothing of QuestieDB's
    code is part of Easy BIS, and Easy BIS does not need Questie to run.
 
-5. World of Warcraft
+5. Drops counted in Forever
+   The sources labelled w (the boss that drops an item and how often) come
+   from the loot counts recorded by Wowhead Forever
+   (https://www.wowhead.com/forever), as two addons shared by players hold
+   them: DungeonJournal by Exehn and GearQuest Forever by Henrik8210. They
+   are read by _build/drops.py and kept in _build/corrections/drops.json.
+   Nothing of those addons' code is part of Easy BIS, and Easy BIS does not
+   need them to run. Neither addon states a licence: their authors can ask
+   for this data to be removed, and it will be.
+
+6. World of Warcraft
    World of Warcraft, WoW Forever and their names, places and icons are
    trademarks or property of Blizzard Entertainment, Inc. Item names and
    numbers come from the game. Easy BIS is not affiliated with or endorsed by
-   Blizzard Entertainment, by ForeverDB.net or by the Questie team.
+   Blizzard Entertainment, by ForeverDB.net, by the Questie team, by Wowhead
+   or by the authors of the addons named above.
 
-6. The logo
+7. The logo
    The logo (Media/*.tga, made from _build/art/*) was made for Easy BIS by its
    author with an image generator, and is part of Easy BIS under the same
    licence.

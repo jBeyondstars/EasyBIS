@@ -14,6 +14,10 @@
                                        keep the sources QuestieDB has for the items the data gives none
                                        (questie.py), then build; FOLDER defaults to the QuestieDB addon
                                        installed next to Easy BIS
+    python build.py --import-drops [FOLDER]
+                                       keep the drops Wowhead Forever counted, as the DungeonJournal and GearQuest
+                                       Forever addons hold them (drops.py), then build; FOLDER defaults to the
+                                       AddOns folder Easy BIS is in
 
 The local copy is _build/cache/ForeverDB. Data from ForeverDB.net
 (https://foreverdb.net), GPL-3.0 with an attribution term: see NOTICE.txt.
@@ -30,6 +34,7 @@ sys.path.insert(0, str(HERE))
 import audit  # noqa: E402
 import capture  # noqa: E402
 import corrections  # noqa: E402
+import drops  # noqa: E402
 import fdb  # noqa: E402
 import ladders  # noqa: E402
 import luaout  # noqa: E402
@@ -116,6 +121,15 @@ def build(cache_dir: Path = CACHE, out_dir: Path = OUT, details: bool = False) -
               + (f"; {len(filled.listed)} more have a source in ForeverDB's data by now" if filled.listed else "")
               + ".")
 
+    confirmed = db.confirmed
+    if not confirmed or not confirmed.known:
+        print("Drops: none counted in Forever yet. The bosses and the rates stay Classic's (--import-drops).")
+    else:
+        print(f"Drops (DungeonJournal {confirmed.journal}, read {confirmed.date}): {len(confirmed.items)} items have their "
+              f"boss confirmed and the rate counted in Forever, {len(confirmed.named)} of them with a boss the data did "
+              f"not name; {len(confirmed.moved)} take the boss counted in place of the data's; "
+              f"{len(confirmed.disputed)} are named for another creature on too little to change them.")
+
     findings = audit.run(db, all_ladders, read_in_game=frozenset(observed))
     suspicious = audit.suspicious(findings)
     print(f"Audit: {audit.summary(findings)}." + ("" if details or not findings else " Details: build.py --audit"))
@@ -183,6 +197,9 @@ def main(argv=None) -> int:
     parser.add_argument("--import-questie", nargs="?", const="", metavar="FOLDER",
                         help="keep the sources QuestieDB has for the items the data gives none; FOLDER defaults "
                              "to the QuestieDB addon installed next to Easy BIS")
+    parser.add_argument("--import-drops", nargs="?", const="", metavar="FOLDER",
+                        help="keep the drops Wowhead Forever counted, read in the DungeonJournal and GearQuest Forever "
+                             "addons; FOLDER defaults to the AddOns folder Easy BIS is in")
     args = parser.parse_args(argv)
 
     if args.addon:
@@ -264,6 +281,19 @@ def main(argv=None) -> int:
               f"{reading['asked']['enchants']} enchants the data gives no source, it has one for "
               f"{len(reading['items'])} and {len(reading['enchants'])}. "
               f"Kept in {corrections.SOURCES_FILE.relative_to(HERE.parent)}.")
+    if args.import_drops is not None:
+        folder = Path(args.import_drops) if args.import_drops else ADDONS
+        if drops.find(folder) is None:
+            print(f"No {drops.JOURNAL} addon in {folder}: install it, or name the AddOns folder that has it.")
+            return 1
+        try:
+            reading = drops.collect(fdb.load(CACHE), folder)
+        except ValueError as error:
+            print(f"{folder}: {error}")
+            return 1
+        corrections.save_drops(reading, corrections.DROPS_FILE)
+        print(f"DungeonJournal {reading['journal']} and GearQuest Forever {reading['gearquest']}: drops counted for "
+              f"{len(reading['items'])} items of the data. Kept in {corrections.DROPS_FILE.name}.")
     suspicious = build(details=args.audit)
     return 1 if args.audit and suspicious else 0
 

@@ -93,6 +93,16 @@ def _sources_note(db) -> list:
             "to show. See _build/questie.py."]
 
 
+def _drops_note(db) -> list:
+    """Says which drops were confirmed from the counts of Wowhead Forever (corrections.confirm)."""
+    confirmed = getattr(db, "confirmed", None)
+    if not confirmed or not confirmed.changed:
+        return []
+    return [f"Confirmed in Forever: {len(confirmed.items)} items take the boss and the rate Wowhead Forever counted, and "
+            f"{len(confirmed.moved)} the boss it counted in place of the data's,",
+            f"read in the DungeonJournal {confirmed.journal} and GearQuest Forever addons, labelled w. See _build/drops.py."]
+
+
 def lists_file(db, all_ladders) -> str:
     lines = _header(db, f"Best-in-slot ladders at level {db.meta['cap']}, one text block per class.", (
         *_corrections_note(db),
@@ -162,6 +172,7 @@ def items_file(db, all_ladders) -> str:
 
     lines = _header(db, "Where each listed item comes from: id|name|groups|flags|source~source", (
         *_sources_note(db),
+        *_drops_note(db),
         "  groups: q quest, Q dungeon quest, v vendor, c crafted, d dungeon boss, r raid, w world drop, R rare,",
         "          p PvP rank, e reputation, x container, u no known source",
         "  flags:  s seen in Forever, n new in Forever, r random bonus, U unique",
@@ -172,7 +183,8 @@ def items_file(db, all_ladders) -> str:
         "  w^level from^level to^label (world drop)                 o^chest^percent^label",
         "  x^item^container^label                                   p^rank^side^label",
         "  r^faction^standing^name^label",
-        "  label: s Seen in Forever, c Clue (unconfirmed), f Forever client, k Classic data, t QuestieDB",
+        "  label: s Seen in Forever, c Clue (unconfirmed), f Forever client, k Classic data, t QuestieDB,",
+        "         w counted in Forever (Wowhead Forever's loot counts)",
     ))
     lines.append(f"ns.data.items = {_block(rows)}")
     lines.append("-- Instances: name^kind^uiMap of the entrance^zone")

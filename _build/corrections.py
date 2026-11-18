@@ -41,6 +41,11 @@ reads it (questie.py). An item of ForeverDB's lists that gets a source this way 
 the source to show and nothing else: it stays flagged and of the last phase (see fill). The source
 carries the label t, which the addon marks like Classic data: read in another database, not confirmed
 in Forever. A source ForeverDB comes to give is used instead: that part retires by itself too.
+
+A drop that is not confirmed is checked against the loot counts of Wowhead Forever two other addons hold
+(corrections/drops.json, confirm): `build.py --import-drops` reads them (drops.py). The boss they name
+and the rate they count replace Classic's, with the label w, which the addon shows like a source seen in
+Forever. A source ForeverDB saw itself stays as it is.
 """
 from __future__ import annotations
 
@@ -54,6 +59,7 @@ import phases
 FILE = Path(__file__).resolve().parent / "corrections" / "weapons.json"
 GAME_FILE = FILE.with_name("game.json")
 SOURCES_FILE = FILE.with_name("sources.json")
+DROPS_FILE = FILE.with_name("drops.json")
 ABOUT = ("Weapon stats read in the game with the EasyBIS_Capture tool (_build/capture_addon), laid over "
          "ForeverDB's data by _build/corrections.py. Written by `python build.py --import-capture`: do not edit.")
 
@@ -420,4 +426,150 @@ def fill(db, reading: dict) -> Filled:
         elif isinstance(where, int) and (db.instances.get(where) or ["", ""])[1] == "raid":
             db.enchant_raids[enchant] = phases.RAID_INSTANCES.get(where, phases.NEW_RAID)
         report.enchants.append(enchant)
+    return report
+
+
+# -- the drops counted in Forever -------------------------------------------------------------------------
+
+DROPS_ABOUT = ("What Wowhead Forever recorded of the items' drops, read in the DungeonJournal addon (seen: per boss, "
+               "the drops, the kills and the percent) and in the GearQuest Forever addon (tooltip: the creature it "
+               "names) by _build/drops.py, and laid over the data by _build/corrections.py. Written by "
+               "`python build.py --import-drops`: do not edit.")
+DROP_LABEL = "w"
+UNSURE = frozenset("kct")        # Classic's data, a clue, QuestieDB: not seen in Forever
+MIN_DROPS = 3                    # what it takes to say another boss drops an item: one drop may be a stray record
+_CREATURES = ("d", "m", "R")     # the sources whose third field names a creature and the fourth its rate
+_CERTAIN_FIRST = {"s": 0, "f": 0, DROP_LABEL: 1}
+
+
+@dataclass
+class Confirmed:
+    """What confirm() did with the drops counted in Forever."""
+    journal: str = ""                               # the DungeonJournal they were read in
+    date: str = ""
+    known: int = 0                                  # items the file says something of
+    items: list = field(default_factory=list)       # ids with a drop confirmed
+    named: list = field(default_factory=list)       # of which the data named the dungeon and not the boss
+    moved: list = field(default_factory=list)       # ids whose boss was another one: the counted one replaces it
+    disputed: list = field(default_factory=list)    # ids named for another creature, on too little to replace it
+
+    @property
+    def changed(self) -> bool:
+        return bool(self.items or self.moved)
+
+
+def load_drops(path=DROPS_FILE) -> dict:
+    """{"journal", "gearquest", "date", "items": {id: {"name", "seen": [...], "tooltip": {...}}}}, empty without a file."""
+    path = Path(path)
+    if not path.exists():
+        return {}
+    data = json.loads(path.read_text(encoding="utf-8"))
+    data["items"] = {int(item_id): record for item_id, record in data.get("items", {}).items()}
+    return data
+
+
+def save_drops(reading: dict, path=DROPS_FILE) -> None:
+    """One item per line, in id order, so another reading shows as a short difference."""
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    head = {name: reading.get(name, "") for name in ("journal", "gearquest", "date")}
+    rows = [f'    "{item_id}": {json.dumps(reading["items"][item_id], ensure_ascii=False, sort_keys=True)}'
+            for item_id in sorted(reading.get("items", {}))]
+    text = ("{\n" + f'  "about": {json.dumps(DROPS_ABOUT)},\n'
+            + "".join(f'  "{name}": {json.dumps(value)},\n' for name, value in head.items())
+            + '  "items": {\n' + ",\n".join(rows) + "\n  }\n}\n")
+    path.write_bytes(text.encode("utf-8"))
+
+
+def _boss_words(name: str) -> str:
+    return " ".join(re.sub(r"[^a-z0-9]+", " ", name.lower().replace("'", "")).split())
+
+
+def _same_boss(name: str, counted: str) -> bool:
+    """Whether two names are one creature, however each source spells it (Ras Frostwhisper, Ras Frostwhisperer)
+    and when one names a pair (Morphaz and Hazzas) or the journal gives two names for one line (A / B)."""
+    one = _boss_words(name)
+    for other in map(_boss_words, counted.split(" / ")):
+        if one and other and (one.startswith(other) or other.startswith(one)
+                              or set(one.split()) <= set(other.split()) or set(other.split()) <= set(one.split())):
+            return True
+    return False
+
+
+def _place(name: str) -> str:
+    """A dungeon's name without what tells its wings apart (Upper Blackrock Spire, Dire Maul: East) or what only
+    one source calls it by (The Stockade, Stormwind Stockade)."""
+    return re.sub(r"^(the|upper|lower|stormwind) ", "", name.split(":")[0].strip().lower())
+
+
+def _instance(db, dungeon: str):
+    """The id of the data's dungeon the journal names, or None."""
+    wanted = _place(dungeon)
+    return next((number for number, fields in sorted(db.instances.items())
+                 if _place(fields[0]) == wanted and (fields + ["", ""])[1] != "raid"), None)
+
+
+def _number(text: str):
+    return int(text) if text.isdigit() else None
+
+
+def _counted_drop(db, source: list, seen: list, tooltip) -> dict | None:
+    """What was counted of this source: an entry of the journal or the tooltip, or None."""
+    if source[2]:
+        return next((entry for entry in seen if _same_boss(source[2], entry["boss"])),
+                    tooltip if tooltip and _same_boss(source[2], tooltip["boss"]) else None)
+    # the data names the dungeon alone: a boss of that dungeon; a boss of another one says the dungeon is wrong
+    return next((entry for entry in seen if _instance(db, entry["dungeon"]) == _number(source[1])),
+                None if seen else tooltip)
+
+
+def confirm(db, reading: dict) -> Confirmed:
+    """Lay the drops counted in Forever over the sources that are not confirmed; the report is kept as db.confirmed.
+
+    A source whose boss was counted takes the rate counted and the label w, and comes first among the
+    item's sources: the addon shows the first one. Where the journal counts another boss, often enough to
+    be no stray record, that boss replaces the creatures the data names: as a boss of its dungeon, or as a
+    creature when the data has no such dungeon. A tooltip alone replaces nothing: it names one creature,
+    when several may drop the item. What ForeverDB saw itself is left alone.
+    """
+    report = Confirmed(journal=reading.get("journal", ""), date=reading.get("date", ""),
+                       known=len(reading.get("items", {})))
+    db.confirmed = report
+    for item_id in sorted(reading.get("items", {})):
+        item, record = db.items.get(item_id), reading["items"][item_id]
+        if item is None:
+            continue
+        unsure = [source for source in item["sources"] if source[0] in _CREATURES and source[-1] in UNSURE]
+        if not unsure:
+            continue
+        seen, tooltip, found = record.get("seen", []), record.get("tooltip"), False
+        for source in unsure:
+            counted = _counted_drop(db, source, seen, tooltip)
+            if counted is None:
+                continue
+            if not source[2]:
+                source[2] = counted["boss"].split(" / ")[0]
+                report.named.append(item_id)
+            source[3], source[-1] = f"{counted['percent']:g}", DROP_LABEL
+            found = True
+        if found:
+            item["sources"].sort(key=lambda source: _CERTAIN_FIRST.get(source[-1], 2))
+            report.items.append(item_id)
+            continue
+        if any(source[0] in _CREATURES and source[-1] not in UNSURE for source in item["sources"]):
+            continue
+        best = next((entry for entry in seen if entry["drops"] >= MIN_DROPS), None)
+        if best is None:
+            report.disputed.append(item_id)
+            continue
+        rest = [source for source in item["sources"] if source not in unsure]
+        number, boss, percent = _instance(db, best["dungeon"]), best["boss"].split(" / ")[0], f"{best['percent']:g}"
+        counted = ["d", str(number), boss, percent, "0", DROP_LABEL] if number else ["m", "0", boss, percent, DROP_LABEL]
+        item["sources"] = [counted, *rest]
+        if not item.get("added"):   # a piece added from the game stays with the items of no known source (fill)
+            groups = set(item["groups"]) | {"d"}
+            if not any(source[0] in ("m", "R", "w") for source in rest):
+                groups -= {"w", "R"}
+            item["groups"] = frozenset(groups)
+        report.moved.append(item_id)
     return report

@@ -26,6 +26,7 @@ import build  # noqa: E402
 import capture  # noqa: E402
 import compare_site  # noqa: E402
 import corrections  # noqa: E402
+import drops  # noqa: E402
 import fdb  # noqa: E402
 import ladders  # noqa: E402
 import luaout  # noqa: E402
@@ -548,7 +549,8 @@ class GeneratorTest(unittest.TestCase):
         self.assertLessEqual(set(filled.added), set(self.db.aligned.added))
         for item_id in filled.items:
             item, was = self.db.items[item_id], self.published.items.get(item_id)
-            self.assertTrue(item["sources"] and all(source[-1] == "t" for source in item["sources"]), item_id)
+            self.assertTrue(item["sources"] and all(source[-1] in ("t", corrections.DROP_LABEL)
+                                                    for source in item["sources"]), item_id)
             if item_id in filled.added:
                 self.assertIsNone(was)
                 self.assertEqual((item["groups"], item["phase"]), (frozenset("u"), phases.LATER), item["name"])
@@ -1518,6 +1520,157 @@ class SourcesTest(unittest.TestCase):
                 self.assertEqual(build.main(["--import-questie", str(Path(folder) / "nowhere")]), 1)
             self.assertIn("of the 7 items and 3 enchants the data gives no source, it has one for 5 and 3", said[0])
             self.assertIn("No QuestieDB_Forever.toc", said[-1])
+
+
+DROP_RATES = f"""FDJ.DROP_RATES = FDJ.DROP_RATES or {{}}
+FDJ.DROP_RATES["Upper Blackrock Spire"] = {{
+    ["Pyroguard Emberseer"] = {{ -- NPC 9816, 301 kills on Wowhead Forever
+        [{HOOD}] = 15.6, -- Hood of Tests (47/301)
+        [{CLOAK}] = 0.3, -- Cloak of Tests (1/301)
+    }},
+    ["Lord Valthalak"] = {{ -- NPC 16042, only 3 kills on Wowhead Forever: Classic Wowhead's numbers (1049 kills)
+        [{BELT}] = 9, -- Belt of Tests (94/1049)
+    }},
+}}
+FDJ.DROP_RATES["Blackrock Depths"] = {{
+    ["Theldren"] = {{ -- Arena Spoils (object 181074), opened 172 times on Wowhead Forever
+        [{GEM}] = 31.4, -- Gem of Tests (54/172)
+    }},
+}}
+"""
+AUDIT_TIPS = (f'    [{CHARM}]="Charm of Tests\\nDropped by: Mizzle the Crafty\\nDrop Chance: 2.5%",\n'
+              f'    [{SEAL}]="Seal of Tests\\nSell Price: 1 2 3",\n')
+
+
+def drop_addons(folder) -> Path:
+    """An AddOns folder holding the two addons drops.py reads."""
+    addons = Path(folder)
+    (addons / drops.JOURNAL / "Data").mkdir(parents=True)
+    (addons / drops.JOURNAL / drops.RATES).write_text(DROP_RATES, encoding="utf-8")
+    (addons / drops.JOURNAL / f"{drops.JOURNAL}.toc").write_text("## Version: 2.0.11\n", encoding="utf-8")
+    (addons / drops.GEARQUEST).mkdir()
+    (addons / drops.GEARQUEST / f"{drops.GEARQUEST}.toc").write_text("## Version: 1.2.2\n", encoding="utf-8")
+    (addons / f"{drops.GEARQUEST}_ROGUE").mkdir()
+    (addons / f"{drops.GEARQUEST}_ROGUE" / drops.TIPS).write_text(AUDIT_TIPS, encoding="utf-8")
+    return addons
+
+
+class DropsTest(unittest.TestCase):
+    def db(self, **sources):
+        db = sourceless_db()
+        db.instances = {229: ["Blackrock Spire", "dungeon"], 230: ["Blackrock Depths", "dungeon"]}
+        for name, listed in sources.items():
+            db.items[globals()[name]].update(sources=listed, groups=frozenset("w"))
+        return db
+
+    def reading(self, **records):
+        return {"journal": "2.0.11", "date": "2026-11-18",
+                "items": {globals()[name]: record for name, record in records.items()}}
+
+    EMBERSEER = {"boss": "Pyroguard Emberseer", "dungeon": "Upper Blackrock Spire", "drops": 47, "kills": 301,
+                 "percent": 15.6}
+    THELDREN = {"boss": "Theldren", "dungeon": "Blackrock Depths", "drops": 54, "kills": 172, "percent": 31.4}
+
+    def test_the_counts_are_read_in_the_addons(self):
+        journal = drops.read_journal(DROP_RATES)
+        self.assertEqual(journal[HOOD], [self.EMBERSEER])
+        self.assertEqual(journal[GEM], [self.THELDREN], "a chest is counted by the times it was opened")
+        self.assertNotIn(BELT, journal, "Classic's numbers say nothing of Forever")
+        self.assertEqual(drops.read_tips(AUDIT_TIPS), {CHARM: {"boss": "Mizzle the Crafty", "percent": 2.5}})
+        with tempfile.TemporaryDirectory() as folder:
+            self.assertIsNone(drops.find(folder))
+            with self.assertRaises(ValueError):
+                drops.collect(sourceless_db(), folder)
+            addons = drop_addons(folder)
+            self.assertEqual(drops.find(addons), addons / drops.JOURNAL)
+            reading = drops.collect(sourceless_db(), addons, today="2026-11-18")
+        self.assertEqual((reading["journal"], reading["gearquest"], reading["date"]), ("2.0.11", "1.2.2", "2026-11-18"))
+        self.assertEqual(sorted(reading["items"]), sorted((HOOD, CLOAK, GEM, CHARM)))
+        self.assertEqual(reading["items"][CHARM], {"name": "Charm of Tests",
+                                                   "tooltip": {"boss": "Mizzle the Crafty", "percent": 2.5}})
+
+    def test_a_counted_drop_confirms_the_source(self):
+        db = self.db(HOOD=[["d", "229", "Other Boss", "9", "0", "k"], ["d", "229", "Pyroguard Emberseer", "20", "0", "k"]],
+                     BELT=[["d", "229", "Ras Frostwhisperer", "20", "0", "t"]],
+                     GEM=[["d", "229", "", "5", "0", "k"]],
+                     CHARM=[["m", "7", "Mizzle the Crafty", "1", "c"]])
+        frost = {**self.EMBERSEER, "boss": "Ras Frostwhisper"}
+        report = corrections.confirm(db, self.reading(HOOD={"seen": [self.EMBERSEER]}, BELT={"seen": [frost]},
+                                                      GEM={"seen": [self.EMBERSEER]},
+                                                      CHARM={"tooltip": {"boss": "Mizzle the Crafty", "percent": 2.5}}))
+        self.assertIs(db.confirmed, report)
+        self.assertEqual(db.items[HOOD]["sources"], [["d", "229", "Pyroguard Emberseer", "15.6", "0", "w"],
+                                                     ["d", "229", "Other Boss", "9", "0", "k"]],
+                         "the addon shows the first source: the one counted")
+        self.assertEqual(db.items[BELT]["sources"], [["d", "229", "Ras Frostwhisperer", "15.6", "0", "w"]])
+        self.assertEqual(db.items[GEM]["sources"], [["d", "229", "Pyroguard Emberseer", "15.6", "0", "w"]])
+        self.assertEqual(db.items[CHARM]["sources"], [["m", "7", "Mizzle the Crafty", "2.5", "w"]])
+        self.assertEqual((sorted(report.items), report.named, report.moved, report.disputed),
+                         (sorted((HOOD, BELT, GEM, CHARM)), [GEM], [], []))
+        self.assertTrue(report.changed)
+
+    def test_another_boss_needs_more_than_a_stray_record(self):
+        db = self.db(HOOD=[["m", "8", "Deep Stinger", "0.02", "k"]],
+                     BELT=[["m", "8", "Deep Stinger", "0.02", "k"]],
+                     GEM=[["m", "8", "Deep Stinger", "0.02", "k"]],
+                     CHARM=[["d", "229", "Seen Boss", "4", "0", "s"], ["m", "8", "Deep Stinger", "0.02", "k"]])
+        db.items[RELIC].update(sources=[["d", "230", "A Guard", "", "0", "t"]], groups=frozenset("u"), added=True,
+                               phase=phases.LATER)
+        db.items[SEAL].update(sources=[["d", "229", "", "0", "0", "c"]], groups=frozenset("d"))
+        stray = {**self.EMBERSEER, "drops": 1, "percent": 0.3}
+        elsewhere = {"boss": "Bonesnout the Unbroken", "dungeon": "Blackmaw Hold", "drops": 77, "kills": 221, "percent": 34.8}
+        report = corrections.confirm(db, self.reading(
+            HOOD={"seen": [self.THELDREN]}, BELT={"seen": [stray]},
+            GEM={"tooltip": {"boss": "Mizzle the Crafty", "percent": 2.5}}, CHARM={"seen": [self.THELDREN]},
+            RELIC={"seen": [self.THELDREN]}, SEAL={"seen": [elsewhere]}))
+        self.assertEqual(db.items[SEAL]["sources"], [["m", "0", "Bonesnout the Unbroken", "34.8", "w"]],
+                         "a dungeon the data does not have: the boss, and not the wrong dungeon")
+        db.instances[34] = ["Stormwind Stockade", "dungeon"]
+        self.assertEqual(corrections._instance(db, "The Stockade"), 34)
+        self.assertEqual(db.items[HOOD]["sources"], [["d", "230", "Theldren", "31.4", "0", "w"]])
+        self.assertEqual(db.items[HOOD]["groups"], frozenset("d"), "no longer a world drop")
+        self.assertEqual(db.items[BELT]["sources"], [["m", "8", "Deep Stinger", "0.02", "k"]])
+        self.assertEqual(db.items[GEM]["sources"], [["m", "8", "Deep Stinger", "0.02", "k"]], "a tooltip names one creature")
+        self.assertEqual(db.items[CHARM]["sources"][0], ["d", "229", "Seen Boss", "4", "0", "s"], "ForeverDB saw it itself")
+        self.assertEqual(db.items[RELIC]["sources"], [["d", "230", "Theldren", "31.4", "0", "w"]])
+        self.assertEqual(db.items[RELIC]["groups"], frozenset("u"), "a piece added from the game stays unsourced in the lists")
+        self.assertEqual((report.items, report.moved, report.disputed),
+                         ([], sorted((HOOD, RELIC, SEAL)), sorted((BELT, GEM))))
+        # nothing read yet: nothing changes
+        untouched = self.db(HOOD=[["m", "8", "Deep Stinger", "0.02", "k"]])
+        self.assertFalse(corrections.confirm(untouched, {}).changed)
+        self.assertEqual(untouched.items[HOOD]["sources"], [["m", "8", "Deep Stinger", "0.02", "k"]])
+
+    def test_the_data_files_say_where_the_drops_come_from(self):
+        db = self.db(HOOD=[["d", "229", "Pyroguard Emberseer", "20", "0", "k"]])
+        db.classes["PRIEST"]["pools"]["head"] = [(HOOD, 60)]
+        db.gear[HOOD] = {"inv": 1, "kind": "4.1", "req": 60, "stats": {45: 10}, "dps": 0.0, "armor": 0.0, "wand": False}
+        corrections.confirm(db, self.reading(HOOD={"seen": [self.EMBERSEER]}))
+        kept = ladders.build_all(db)
+        text = luaout.items_file(db, kept)
+        self.assertIn(f"\n{HOOD}|Hood of Tests|w||d^229^Pyroguard Emberseer^15.6^0^w\n", text)
+        self.assertIn("Confirmed in Forever: 1 items take the boss and the rate Wowhead Forever counted", text)
+        self.assertNotIn("Confirmed in Forever", luaout.lists_file(db, kept), "the lists do not depend on it")
+
+    def test_the_build_imports_the_drops(self):
+        with tempfile.TemporaryDirectory() as folder:
+            addons = drop_addons(Path(folder) / "AddOns")
+            kept = Path(folder) / "drops.json"
+            said = []
+            with mock.patch.object(corrections, "DROPS_FILE", kept), \
+                    mock.patch.object(build, "build", lambda details=False: 0), \
+                    mock.patch.object(fdb, "load", lambda cache, corrected=True: sourceless_db()), \
+                    mock.patch("builtins.print", lambda *words: said.append(" ".join(map(str, words)))):
+                self.assertEqual(build.main(["--import-drops", str(addons)]), 0)
+                self.assertEqual(build.main(["--import-drops", str(Path(folder) / "nowhere")]), 1)
+            self.assertIn("drops counted for 4 items of the data", said[0])
+            self.assertIn("No ForeverDungeonJournal addon", said[-1])
+            written = kept.read_bytes()
+            self.assertNotIn(b"\r", written)
+            loaded = corrections.load_drops(kept)
+        self.assertEqual(loaded["about"], corrections.DROPS_ABOUT)
+        self.assertEqual(loaded["items"][HOOD]["seen"], [self.EMBERSEER])
+        self.assertEqual(corrections.load_drops(Path(folder) / "gone.json"), {})
 
 
 if __name__ == "__main__":

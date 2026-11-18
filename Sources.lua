@@ -11,7 +11,7 @@ Where an item comes from, in words (its first source in Data\Items.lua).
       zone       the dungeon or the zone, when the data has one
       percent    the drop chance as text, or ""
       origin     how the data is known: s seen in Forever, c a clue, f the Forever client, k Classic data,
-                 t read in QuestieDB
+                 t read in QuestieDB, w counted in Forever (Wowhead Forever's loot counts)
       The source said is the item's first one. Among the sources read in QuestieDB (t), a quest or a
       vendor of the other faction is passed over when the item has another: a set sold in Ironforge
       and in Orgrimmar names the vendor of the player's side.
@@ -183,10 +183,10 @@ function Sources.IconText(category)
     return ("|T%s:14:14|t"):format(texture)
 end
 
--- Said only when the data is less than sure: "s" (seen in Forever) and "f" (read in Forever's
--- files) need no remark.
+-- Said only when the data is less than sure: "s" (seen in Forever), "f" (read in Forever's files)
+-- and "w" (counted in Forever) need no remark.
 function Sources.OriginName(letter)
-    if not letter or letter == "" or letter == "s" or letter == "f" then return nil end
+    if not letter or letter == "" or letter == "s" or letter == "f" or letter == "w" then return nil end
     local key = "ORIGIN_" .. letter
     local text = L[key]
     return text ~= key and text or nil

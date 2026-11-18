@@ -8,9 +8,10 @@ and Auto.lua decode. ForeverDB's data is GPL-3.0 with an attribution term:
 load() lays what was read in the game over ForeverDB's data (corrections.py):
 the stats its data lacks, the pieces its lists leave out, and it drops the
 items the game does not have. Then it gives the items that have no source in
-the data the one read in QuestieDB (corrections.fill). So the build and the
-tests rank the same database; load(..., corrected=False) is ForeverDB's data
-as published.
+the data the one read in QuestieDB (corrections.fill), and checks the drops
+that are not confirmed against the ones counted in Forever (corrections.confirm).
+So the build and the tests rank the same database; load(..., corrected=False)
+is ForeverDB's data as published.
 """
 from __future__ import annotations
 
@@ -68,6 +69,7 @@ class Database:
         self.corrected = None   # what corrections.apply changed (a corrections.Report), None for the published data
         self.aligned = None     # what corrections.align changed (a corrections.Alignment), None for the published data
         self.filled = None      # what corrections.fill changed (a corrections.Filled), None for the published data
+        self.confirmed = None   # what corrections.confirm changed (a corrections.Confirmed), None for the published data
 
 
 def load(data_dir, corrected: bool = True) -> Database:
@@ -76,6 +78,7 @@ def load(data_dir, corrected: bool = True) -> Database:
         corrections.apply(db, corrections.load())
         corrections.align(db, corrections.load_game())
         corrections.fill(db, corrections.load_sources())
+        corrections.confirm(db, corrections.load_drops())
     return db
 
 

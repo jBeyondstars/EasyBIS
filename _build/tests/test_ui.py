@@ -213,8 +213,8 @@ class WindowTest(unittest.TestCase):
         self.assertEqual(row.sub.text, "Mail", "the header names the slot, the row says the item's type")
         self.assertEqual(row.sourceIcon.texture, "Interface\\TargetingFrame\\UI-RaidTargetingIcon_8")
         self.assertFalse(row.kind.shown, "on one line the picture stands for the category")
-        self.assertEqual(strip_colors(row.detail.text), "Warchief Rend Blackhand - Blackrock Spire (17%) *",
-                         "Classic data is a sign, not two words on every row")
+        self.assertEqual(strip_colors(row.detail.text), "Warchief Rend Blackhand - Blackrock Spire (15%)",
+                         "a drop counted in Forever wears no sign")
         self.assertEqual(row.height, ONE_LINE)
         self.assertFalse(row.remove.shown)
 
@@ -224,9 +224,9 @@ class WindowTest(unittest.TestCase):
         self.assertLess(second.bar.width, BAR, "an alternative's bar is shorter")
         self.assertEqual(second.sub.text, "", "the item type is not known before the game loads the item")
 
-        # what was seen in Forever or read in its files wears no sign
+        # what was seen or counted in Forever or read in its files wears no sign
         for frame in self.frames(game):
-            if frame.data.kind == "item" and frame.data.source.origin in ("f", "s"):
+            if frame.data.kind == "item" and frame.data.source.origin in ("f", "s", "w"):
                 self.assertNotIn("*", strip_colors(frame.detail.text))
                 self.assertNotIn("Forever", strip_colors(frame.detail.text))
 
@@ -234,8 +234,8 @@ class WindowTest(unittest.TestCase):
         game.ns.SetOption(game.ns, "compact", False)
         self.assertEqual(row.height, ROW)
         self.assertTrue(row.kind.shown)
-        self.assertEqual(strip_colors(row.kind.text), "Dungeon *")
-        self.assertEqual(row.detail.text, "Warchief Rend Blackhand - Blackrock Spire (17%)")
+        self.assertEqual(strip_colors(row.kind.text), "Dungeon")
+        self.assertEqual(row.detail.text, "Warchief Rend Blackhand - Blackrock Spire (15%)")
         self.assertEqual(strip_colors(row.rank.text), "BIS")
 
     def test_rows_use_larger_fonts(self):
@@ -848,7 +848,7 @@ class WindowTest(unittest.TestCase):
         describe, line = game.ns.Sources.Describe, game.ns.Sources.Line
         eye = describe(EYE_OF_REND)
         self.assertEqual((eye.category, eye.detail, eye.zone, eye.percent, eye.origin),
-                         ("dungeon", "Warchief Rend Blackhand", "Blackrock Spire", "17%", "k"))
+                         ("dungeon", "Warchief Rend Blackhand", "Blackrock Spire", "15%", "w"))
         tunic = describe(TIMBERMAW_TUNIC)
         self.assertEqual((tunic.category, line(tunic), tunic.origin), ("crafted", "Leatherworking (300)", "f"))
         rank = describe(GRAND_MARSHALS_SUNDERER)
@@ -865,6 +865,7 @@ class WindowTest(unittest.TestCase):
         self.assertEqual(game.ns.Sources.OriginMark("k"), "*")
         self.assertEqual(game.ns.Sources.OriginRemark("k"), "* Source from Classic's data, not confirmed in Forever.")
         self.assertEqual((game.ns.Sources.OriginMark("s"), game.ns.Sources.OriginRemark("s")), ("", None))
+        self.assertEqual((game.ns.Sources.OriginMark("w"), game.ns.Sources.OriginRemark("w")), ("", None))
         # a source read in QuestieDB wears the sign Classic's data does, and says where it is from
         self.assertEqual(game.ns.Sources.OriginName("t"), "Questie's data")
         self.assertEqual(game.ns.Sources.OriginMark("t"), "*")
@@ -882,7 +883,7 @@ class WindowTest(unittest.TestCase):
             self.assertTrue(game.ns.Sources.Icon(category)[0].startswith("Interface\\"), category)
             self.assertNotEqual(game.ns.Sources.CategoryName(category), "SRC_" + category)
         self.assertEqual(game.ns.Sources.OriginName("c"), "Clue, unconfirmed")
-        for letter in ("s", "f", ""):
+        for letter in ("s", "f", "w", ""):
             self.assertIsNone(game.ns.Sources.OriginName(letter), f"origin {letter!r} needs no remark")
 
     def test_every_listed_item_can_be_described(self):
@@ -901,7 +902,7 @@ class WindowTest(unittest.TestCase):
         game = Game(locale="frFR")
         game.stub.zoneNames[229] = "Pic Rochenoire"
         eye = game.ns.Sources.Describe(EYE_OF_REND)
-        self.assertEqual(game.ns.Sources.Line(eye), "Warchief Rend Blackhand - Pic Rochenoire (17 %)")
+        self.assertEqual(game.ns.Sources.Line(eye), "Warchief Rend Blackhand - Pic Rochenoire (15 %)")
         self.assertEqual(game.ns.Sources.CategoryName(eye.category), "Donjon")
         self.assertEqual(game.ns.Sources.Line(game.ns.Sources.Describe(TIMBERMAW_TUNIC)), "Travail du cuir (300)")
         game.ns.Browser.Open()
@@ -956,8 +957,8 @@ class WindowTest(unittest.TestCase):
         self.assertEqual((tooltip.points[1][1], tooltip.points[1][3]), ("TOPRIGHT", "TOPLEFT"))
         # what the row shortens is in the tooltip in full
         lines = [strip_colors(line[1]) for line in tooltip.lines.values()]
-        self.assertIn("Source: Dungeon - Warchief Rend Blackhand - Blackrock Spire (17%)", lines)
-        self.assertIn("* Source from Classic's data, not confirmed in Forever.", lines)
+        self.assertIn("Source: Dungeon - Warchief Rend Blackhand - Blackrock Spire (15%)", lines)
+        self.assertNotIn("* Source from Classic's data, not confirmed in Forever.", lines)
         game.stub.run(rows[1], "OnEnter")
         lines = [strip_colors(line[1]) for line in tooltip.lines.values()]
         self.assertTrue(any(re.match(r"Score for this slot: \d+% of the best pick's\.", line) for line in lines), lines)
@@ -1260,7 +1261,7 @@ class WindowTest(unittest.TestCase):
         head = cells[0]
         self.assertEqual(head.name.text, "|cffa335eeEye of Rend|r", "the name wears the quality color")
         self.assertIn("UI-RaidTargetingIcon_8", head.where.text, "a picture says what kind of source it is")
-        self.assertEqual(plain(head.where.text), "Blackrock Spire *", "the place, in a few words")
+        self.assertEqual(plain(head.where.text), "Blackrock Spire", "the place, in a few words")
         self.assertTrue(head.icon.shown)
         self.assertFalse(head.mirrored)
         self.assertEqual(head.points[1][1], "TOPLEFT")
@@ -1389,8 +1390,8 @@ class WindowTest(unittest.TestCase):
         self.assertFalse(game.lua.globals().ShoppingTooltip1.shown)
         game.stub.run(head, "OnEnter")
         lines = [strip_colors(line[1]) for line in tooltip.lines.values()]
-        self.assertIn("Source: Dungeon - Warchief Rend Blackhand - Blackrock Spire (17%)", lines)
-        self.assertIn("* Source from Classic's data, not confirmed in Forever.", lines)
+        self.assertIn("Source: Dungeon - Warchief Rend Blackhand - Blackrock Spire (15%)", lines)
+        self.assertNotIn("* Source from Classic's data, not confirmed in Forever.", lines)
         self.assertEqual(lines[-1], "Click to see this slot's other picks.")
         self.assertFalse(any(line.startswith("Score for this slot") for line in lines))
         game.stub.run(chest, "OnEnter")
