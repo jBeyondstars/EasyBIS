@@ -159,37 +159,41 @@ local function Flatten(choices, into)
     return into
 end
 
-local function OpenMenu(owner, choices, current, choose)
-    if MenuUtil and MenuUtil.CreateContextMenu then
+local function FillChoices(parent, list, current, choose, close)
+    for _, choice in ipairs(list) do
+        if choice.children then
+            FillChoices(parent:CreateButton(choice.text), choice.children, current, choose, close)
+        else
+            parent:CreateRadio(choice.text,
+                function() return current() == choice.value end,
+                function()
+                    choose(choice.value)
+                    return close
+                end)
+        end
+    end
+end
+
+local function SetupChoices(button, choices, current, choose)
+    if button.SetupMenu then
         local close = MenuResponse and MenuResponse.Close
-        MenuUtil.CreateContextMenu(owner, function(_, root)
+        button:SetupMenu(function(_, root)
             if root.SetScrollMode then root:SetScrollMode(420) end
-            local function Fill(parent, list)
-                for _, choice in ipairs(list) do
-                    if choice.children then
-                        Fill(parent:CreateButton(choice.text), choice.children)
-                    else
-                        parent:CreateRadio(choice.text,
-                            function() return current() == choice.value end,
-                            function()
-                                choose(choice.value)
-                                return close
-                            end)
-                    end
-                end
-            end
-            Fill(root, choices)
+            FillChoices(root, choices(), current, choose, close)
         end)
         return
     end
-    local flat = Flatten(choices, {})
-    for index, choice in ipairs(flat) do
-        if choice.value == current() then
-            choose(flat[index % #flat + 1].value)
-            return
+    button:SetScript("OnClick", function()
+        Widgets.Click()
+        local flat = Flatten(choices(), {})
+        for index, choice in ipairs(flat) do
+            if choice.value == current() then
+                choose(flat[index % #flat + 1].value)
+                return
+            end
         end
-    end
-    if flat[1] then choose(flat[1].value) end
+        if flat[1] then choose(flat[1].value) end
+    end)
 end
 
 local function SpecKey(class, spec)
@@ -532,9 +536,7 @@ end
 local function CreateRow(parent)
     local row = CreateFrame("Button", nil, parent)
     row:SetHeight(ROW_HEIGHT)
-    local highlight = row:CreateTexture(nil, "HIGHLIGHT")
-    highlight:SetAllPoints()
-    highlight:SetColorTexture(1, 1, 1, 0.07)
+    Widgets.ListHighlight(row, "HIGHLIGHT", 0.32)
 
     -- a consumable tied to a zone: a blue tint over the row and a small map on its picture
     row.zoneBack = row:CreateTexture(nil, "BACKGROUND")
@@ -835,65 +837,60 @@ local OPTION_GROUPS = {
     { "compact", "minimap" },
 }
 
-local function OpenOptionsMenu(owner)
-    if not (MenuUtil and MenuUtil.CreateContextMenu) then return end
+local function FillOptionsMenu(_, root)
     local refresh = MenuResponse and MenuResponse.Refresh
-    MenuUtil.CreateContextMenu(owner, function(_, root)
-        root:CreateTitle(L.OPTIONS)
-        for index, group in ipairs(OPTION_GROUPS) do
-            if index > 1 and root.CreateDivider then root:CreateDivider() end
-            for _, option in ipairs(group) do
-                root:CreateCheckbox(L["OPT_" .. option],
-                    function() return ns:GetOption(option) end,
+    root:CreateTitle(L.OPTIONS)
+    for index, group in ipairs(OPTION_GROUPS) do
+        if index > 1 and root.CreateDivider then root:CreateDivider() end
+        for _, option in ipairs(group) do
+            root:CreateCheckbox(L["OPT_" .. option],
+                function() return ns:GetOption(option) end,
+                function()
+                    ns:SetOption(option, not ns:GetOption(option))
+                    return refresh
+                end)
+        end
+        if index == 2 then
+            local rewards = root:CreateButton(L.OPT_PVP_REWARDS)
+            for _, list in ipairs(ns.LISTS) do
+                rewards:CreateCheckbox(L.OPT_PVP_LIST:format(ns.ListName(list)),
+                    function() return ns:PvPRewards(list) end,
                     function()
-                        ns:SetOption(option, not ns:GetOption(option))
+                        ns:SetPvPRewards(list, not ns:PvPRewards(list))
                         return refresh
                     end)
             end
-            if index == 2 then
-                local rewards = root:CreateButton(L.OPT_PVP_REWARDS)
-                for _, list in ipairs(ns.LISTS) do
-                    rewards:CreateCheckbox(L.OPT_PVP_LIST:format(ns.ListName(list)),
-                        function() return ns:PvPRewards(list) end,
-                        function()
-                            ns:SetPvPRewards(list, not ns:PvPRewards(list))
-                            return refresh
-                        end)
-                end
-                local counts = root:CreateButton(L.OPT_ALT_COUNT)
-                for count = ns.ALTERNATIVES, ns.MaxAlternatives() do
-                    counts:CreateRadio(tostring(count),
-                        function() return ns.Alternatives() == count end,
-                        function()
-                            ns:SetAlternatives(count)
-                            return refresh
-                        end)
-                end
+            local counts = root:CreateButton(L.OPT_ALT_COUNT)
+            for count = ns.ALTERNATIVES, ns.MaxAlternatives() do
+                counts:CreateRadio(tostring(count),
+                    function() return ns.Alternatives() == count end,
+                    function()
+                        ns:SetAlternatives(count)
+                        return refresh
+                    end)
             end
         end
-    end)
+    end
 end
 
 local function Build()
     window = CreateWindow()
     Browser.window = window
     window.grip = CreateGrip(window)
+    window.facets = { sources = {}, zones = {} }
 
     -- Filters
     window.spec = Widgets.Dropdown(window, L.FILTER_SPEC, 176)
     window.spec:SetPoint("TOPLEFT", 66, -26)
-    window.spec.button:SetScript("OnClick", function(self)
-        Widgets.Click()
-        OpenMenu(self, SpecChoices(),
-            function() return SpecKey(state.class, state.spec) end,
-            function(value)
-                local class, spec = value:match("^(%u+):(%d+)$")
-                state.class, state.spec = class, tonumber(spec)
-                state.source, state.zone = nil, nil
-                SaveState()
-                Refresh()
-            end)
-    end)
+    SetupChoices(window.spec.button, SpecChoices,
+        function() return SpecKey(state.class, state.spec) end,
+        function(value)
+            local class, spec = value:match("^(%u+):(%d+)$")
+            state.class, state.spec = class, tonumber(spec)
+            state.source, state.zone = nil, nil
+            SaveState()
+            Refresh()
+        end)
 
     window.listLabel = window:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     window.listLabel:SetPoint("TOPLEFT", window.spec, "TOPRIGHT", 10, 0)
@@ -914,36 +911,30 @@ local function Build()
     -- Not the window's own: the phase is the character's, and tooltips follow it too.
     window.phase = Widgets.Dropdown(window, L.FILTER_PHASE, 100)
     window.phase:SetPoint("BOTTOMLEFT", window.list, "BOTTOMRIGHT", 8, 0)
-    window.phase.button:SetScript("OnClick", function(self)
-        if ns:GetOption("availableNow") then return end   -- only the game's phase is available now
-        Widgets.Click()
-        OpenMenu(self, PhaseChoices(), ns.Phase, function(value) ns:SetPhase(value) end)
-    end)
+    SetupChoices(window.phase.button, PhaseChoices, ns.Phase, function(value) ns:SetPhase(value) end)
 
     window.slot = Widgets.Dropdown(window, L.FILTER_SLOT, 116)
     window.slot:SetPoint("BOTTOMLEFT", window.phase, "BOTTOMRIGHT", 8, 0)
-    window.slot.button:SetScript("OnClick", function(self)
-        Widgets.Click()
-        if state.tab == "consumables" then
-            OpenMenu(self, CategoryChoices(), function() return state.category or ALL end, Choose("category"))
-        else
-            OpenMenu(self, SlotChoices(), function() return state.slot or ALL end, Choose("slot"))
-        end
-    end)
+    SetupChoices(window.slot.button,
+        function() return state.tab == "consumables" and CategoryChoices() or SlotChoices() end,
+        function()
+            if state.tab == "consumables" then return state.category or ALL end
+            return state.slot or ALL
+        end,
+        function(value)
+            state[state.tab == "consumables" and "category" or "slot"] = value ~= ALL and value or nil
+            Refresh()
+        end)
 
     window.source = Widgets.Dropdown(window, L.FILTER_SOURCE, 116)
     window.source:SetPoint("BOTTOMLEFT", window.slot, "BOTTOMRIGHT", 8, 0)
-    window.source.button:SetScript("OnClick", function(self)
-        Widgets.Click()
-        OpenMenu(self, SourceChoices(window.facets), function() return state.source or ALL end, Choose("source"))
-    end)
+    SetupChoices(window.source.button, function() return SourceChoices(window.facets) end,
+        function() return state.source or ALL end, Choose("source"))
 
     window.zone = Widgets.Dropdown(window, L.FILTER_ZONE, 124)
     window.zone:SetPoint("BOTTOMLEFT", window.source, "BOTTOMRIGHT", 8, 0)
-    window.zone.button:SetScript("OnClick", function(self)
-        Widgets.Click()
-        OpenMenu(self, ZoneChoices(window.facets), function() return state.zone or ALL end, Choose("zone"))
-    end)
+    SetupChoices(window.zone.button, function() return ZoneChoices(window.facets) end,
+        function() return state.zone or ALL end, Choose("zone"))
 
     -- On every tab: the items, the enchants, the character sheet and the tooltips all follow it.
     window.available = Widgets.Check(window, L.OPT_availableNow,
@@ -986,13 +977,13 @@ local function Build()
     Widgets.MarkNew(window.tabs.buttons[4], L.TAB_NEW)
     window.tabs:SetPoint("BOTTOMLEFT", 10, 28)
 
-    window.options = Widgets.Button(window, L.OPTIONS, 88, true)
+    window.options = Widgets.MenuButton(window, L.OPTIONS, 88)
     window.options:SetPoint("BOTTOMRIGHT", -28, 28)
-    window.options:SetScript("OnClick", function(self)
-        Widgets.Click()
-        OpenOptionsMenu(self)
-    end)
-    window.options:SetShown(MenuUtil ~= nil and MenuUtil.CreateContextMenu ~= nil)
+    if window.options.SetupMenu then
+        window.options:SetupMenu(FillOptionsMenu)
+    else
+        window.options:Hide()
+    end
 
     window.alts = Widgets.Toggle(window, L.TOGGLE_ALTS,
         function() return ns:GetOption("listAlts") end,
@@ -1056,7 +1047,7 @@ Refresh = function()
     window.spec:Set(ClassHex(state.class) .. ns.ClassName(state.class) .. "|r "
         .. ns.SpecName(ns.Index.SpecName(state.class, state.spec) or ""), false)
     window.phase:Set(ns.PhaseName(ns.Phase()), false)
-    window.phase:SetAlpha(ns:GetOption("availableNow") and 0.5 or 1)
+    window.phase.button:SetEnabled(not ns:GetOption("availableNow"))
     window.slot.label:SetText(consumables and L.FILTER_CATEGORY or L.FILTER_SLOT)
     if consumables then
         window.slot:Set(state.category and ns.Consumables.KeyName(state.category) or L.ALL_CATEGORIES, state.category ~= nil)

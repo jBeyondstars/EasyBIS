@@ -1,17 +1,12 @@
-# Easy BIS 1.2.0
-
-## New
-
-- **Consumables tab.** Flasks, elixirs, food, scrolls, weapon stones and oils, and combat potions are ranked on your spec's stat weights. Healing potions, mana potions and bandages are ranked on the amount they restore. Lists are available for PvE and PvP.
-  - Each category is ranked on its own: the tab does not tell you which consumables stack.
-  - Every consumable shows its effect and where to get it.
-  - Consumables tied to a zone are marked in blue.
-- **Available now.** A new checkbox in the window, or `/easybis now`, shows only what you can get today: PvP ranks up to this week's cap, raids that are open, and items with a known source.
-- **Prices in Tarnished Undermine Reals.** Items sold by Pix Xizzix in Booty Bay show their price and how many Reals you have. The Character tab adds up what is left to pay for the set. A price not yet confirmed in the game is marked as coming from the Forever beta.
+# Easy BIS 1.3.0
 
 ## Changed
 
-- Pix Xizzix's items now count for both factions.
-- Premier pieces sold for honor now show Honor as their source.
-- The "Alternatives per slot" option now counts the second ring or trinket among the alternatives.
-- Hunter lists leave out items held in the off hand for now, until what they give a Hunter is confirmed in the game.
+- **A new look.** The window now uses the game's own artwork, so it fits in with the rest of your interface.
+  - The filters are the game's dropdown menus, with submenus for the specs and a scroll bar for long lists.
+  - The tabs, the PvE and PvP switch and the Alternatives button take the game's buttons, and the checkboxes are the game's checkboxes.
+  - The Options button opens its menu like the game's filter buttons.
+  - Rows light up like the game's quest list when you hover them, on every tab and on the character sheet.
+  - The Add an item dialog takes the game's dialog frame and search box, and its suggestions show in a tooltip.
+- A filter that narrows the list still shows its label in gold.
+- The Phase menu is greyed out while **Available now** is checked, since only the game's current phase is available then.

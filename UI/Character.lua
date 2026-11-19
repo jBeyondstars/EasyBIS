@@ -120,9 +120,7 @@ local function CreateCell(parent, mirrored)
     local cell = CreateFrame("Button", nil, parent)
     cell:SetSize(COLUMN, FRAME)
     cell.mirrored = mirrored
-    local highlight = cell:CreateTexture(nil, "HIGHLIGHT")
-    highlight:SetAllPoints()
-    highlight:SetColorTexture(1, 1, 1, 0.07)
+    Widgets.ListHighlight(cell, "HIGHLIGHT", 0.30)
 
     local side = mirrored and "RIGHT" or "LEFT"
     cell.border = cell:CreateTexture(nil, "BACKGROUND")

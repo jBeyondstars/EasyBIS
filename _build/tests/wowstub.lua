@@ -43,6 +43,16 @@ local function NewWidget(kind, name, template)
     }, widgetMeta)
     if template == "ScrollFrameTemplate" or template == "UIPanelScrollFrameTemplate" then
         widget.ScrollBar = NewWidget("Slider")
+    elseif template == "UICheckButtonArtTemplate" then
+        for _, key in ipairs({ "Normal", "Pushed", "Highlight", "Checked", "DisabledChecked" }) do
+            widget[key .. "Texture"] = NewWidget("Texture")
+        end
+    elseif kind == "DropdownButton" then
+        widget.Text = NewWidget("FontString")
+        widget.Background = NewWidget("Texture")
+        widget.scripts.OnMouseDown = function(self, button)
+            if button == "LeftButton" then self:OpenMenu() end
+        end
     end
     return widget
 end
@@ -55,7 +65,7 @@ for _, method in ipairs({
     "SetWordWrap", "SetJustifyH", "SetColorTexture", "SetTexCoord",
     "SetHighlightTexture", "SetScrollChild", "UpdateScrollChildRect", "Raise", "SetAllPoints", "SetDesaturated",
     "SetResizable", "SetResizeBounds", "StartSizing", "SetNormalTexture", "SetPushedTexture", "SetAutoFocus",
-    "SetMaxLetters",
+    "SetMaxLetters", "SetBlendMode",
 }) do
     METHODS[method] = Noop
 end
@@ -109,6 +119,14 @@ function METHODS:GetFrameLevel() return 1 end
 function METHODS:IsMouseOver() return false end
 function METHODS:IsForbidden() return false end
 function METHODS:SetAlpha(alpha) self.alpha = alpha end
+function METHODS:SetEnabled(enabled) self.enabled = enabled end
+function METHODS:IsEnabled() return self.enabled ~= false end
+function METHODS:LockHighlight() self.highlightLocked = true end
+function METHODS:UnlockHighlight() self.highlightLocked = false end
+for _, key in ipairs({ "Normal", "Pushed", "Highlight", "Checked", "DisabledChecked" }) do
+    local field = key .. "Texture"
+    METHODS["Get" .. field] = function(self) return self[field] end
+end
 
 function METHODS:SetScript(name, handler) self.scripts[name] = handler end
 function METHODS:GetScript(name) return self.scripts[name] end
@@ -127,10 +145,17 @@ function METHODS:CreateFontString(_, _, fontObject)
 end
 function METHODS:CreateTexture() return NewWidget("Texture") end
 function METHODS:GetFontString()
-    self.fontString = self.fontString or NewWidget("FontString")
+    if not self.fontString then
+        self.fontString = NewWidget("FontString")
+        self.fontString:SetText(self.text)
+    end
     return self.fontString
 end
-function METHODS:SetText(text) self.text = text end
+function METHODS:SetText(text)
+    self.text = text
+    if self.kind == "DropdownButton" then self.Text:SetText(text) end
+    if self.fontString then self.fontString:SetText(text) end
+end
 function METHODS:GetText() return self.text end
 function METHODS:SetTitle(text) self.title = text end
 function METHODS:SetTextColor(r, g, b) self.color = { r, g, b } end
@@ -167,6 +192,11 @@ function METHODS:GetOwner() return self.owner end
 
 function CreateFrame(kind, name, _, template)
     local frame = NewWidget(kind, name, template)
+    if kind == "DropdownButton" then
+        frame.SetupMenu = stub.setupMenu
+        frame.OpenMenu = stub.openMenu
+        if template == "WowStyle1DropdownTemplate" then frame.OverrideText = METHODS.SetText end
+    end
     stub.frames[#stub.frames + 1] = frame
     if name then _G[name] = frame end
     return frame
@@ -361,6 +391,15 @@ function MenuUtil.CreateContextMenu(owner, generator)
     return root
 end
 
+function stub.setupMenu(button, generator)
+    button.menuGenerator = generator
+    if button:IsShown() then generator(button, NewMenu()) end
+end
+
+function stub.openMenu(button)
+    return MenuUtil.CreateContextMenu(button, button.menuGenerator)
+end
+
 ---------------------------------------------------------------------------
 -- What the tests drive
 ---------------------------------------------------------------------------
@@ -394,6 +433,7 @@ end
 
 -- Runs a widget's script, as a click or the mouse would.
 function stub.run(widget, script, ...)
+    if (script == "OnClick" or script == "OnMouseDown") and not widget:IsEnabled() then return end
     local handler = widget.scripts[script]
     assert(handler, "the widget has no " .. script .. " script")
     return handler(widget, ...)
