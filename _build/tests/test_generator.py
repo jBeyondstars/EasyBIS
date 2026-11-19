@@ -947,8 +947,9 @@ class HoleTest(unittest.TestCase):
                                                                   "consumables": 0}))
             self.assertEqual(sorted(path.name for path in target.iterdir()),
                              ["Capture.lua", "EasyBIS_Capture.toc", "Ids.lua"])
-            # the raid piece first, the weapons last: the game may stop answering before the end
-            self.assertIn("\n20 8 9 1 2 3 7\n", (target / "Ids.lua").read_text(encoding="utf-8"))
+            # the pieces of the lists first, then the weapons; the raid piece left out of the lists last: the server
+            # does not answer for an item it lacks, and the capture stops on a long silence
+            self.assertIn("\n8 9 1 2 3 7 20\n", (target / "Ids.lua").read_text(encoding="utf-8"))
             listed = [line for line in (target / "EasyBIS_Capture.toc").read_text(encoding="utf-8").splitlines()
                       if line and not line.startswith("#")]
             self.assertEqual(listed, ["Ids.lua", "Capture.lua"])

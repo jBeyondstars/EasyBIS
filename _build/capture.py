@@ -37,9 +37,13 @@ FORMAT = 1
 VENDOR_FORMAT = 1
 POOLS = ("mh", "2h", "oh")
 UNLISTED_FROM = 50   # required level from which a piece ForeverDB left out of its lists is worth reading
-# The order the groups of capture_ids are read in. The game's server stops answering when too much is
-# asked of it, so what is not known from anywhere else comes first, and the weapons, read already, last.
-ORDER = ("consumables", "unlisted", "twins", "pool", "weapons")
+# The order the groups of capture_ids are read in. The server never answers for an item it does not have,
+# though the client's own table lists it, and the tool takes a long silence for a server that no longer answers
+# and stops: on 2026-11-18 and 2026-11-19 every capture stopped at the first of the "unlisted" pieces numbered
+# from 220794 (665 of the 666 left), which the server does not answer for. So the pieces of the lists come first,
+# then the weapons, and last the groups such items are in: the other faction's versions, read to learn whether
+# the server has them, and the pieces left out of the lists.
+ORDER = ("consumables", "pool", "weapons", "twins", "unlisted")
 GEAR_GROUPS = ORDER[1:]   # the groups that say which pieces of gear the game has (game_reading)
 COMPLETE = 0.85   # the share of its list a capture has to hold for the rest to be what the game does not have
 

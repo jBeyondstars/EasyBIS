@@ -19,7 +19,10 @@ writes Ids.lua.
 The game gets an item's data from the server when it is asked for, and it
 does not always answer: on 2026-11-15 two runs that asked for 8,600 items got
 nothing back for half an hour, and a third, an hour later, got them all at 32
-a second. The cause is not known. So only a few items are waited for at a
+a second. The cause is not known. Nor does it ever answer for an item it
+does not have, though the client's own table lists it: on 2026-11-18 and
+2026-11-19 every capture stopped on such items, so Ids.lua puts the groups
+they are in last (capture.ORDER). So only a few items are waited for at a
 time, and a few asked for per second. When nothing has arrived for STALL
 seconds the capture says so, waits and tries again; after GIVE_UP seconds of
 silence it stops by itself. What was read is kept: /ebiscapture goes on from
