@@ -1075,6 +1075,7 @@ local function Build()
         end)
     window.tabs:Layout(nil, 10)   -- five tabs: narrower each, so the credit keeps its room
     Widgets.MarkNew(window.tabs.buttons[4], L.TAB_NEW)
+    Widgets.MarkNew(window.tabs.buttons[5], L.TAB_NEW)
     window.tabs:SetPoint("BOTTOMLEFT", 10, 28)
 
     window.options = Widgets.MenuButton(window, L.OPTIONS, 88)

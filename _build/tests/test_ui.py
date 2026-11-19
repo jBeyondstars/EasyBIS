@@ -2432,18 +2432,21 @@ class WindowTest(unittest.TestCase):
             self.assertEqual(len(window.tabs.buttons), 5)
             self.assertLess(window.tabs.width, 400, locale)
 
-    def test_the_consumables_tab_is_marked_new(self):
+    def test_the_new_tabs_are_marked_new(self):
         for locale in ("enUS", "frFR"):
             game = self.open(locale=locale)
             window = game.ns.Browser.window
-            items, consumables = window.tabs.buttons[1], window.tabs.buttons[4]
-            self.assertEqual(consumables.newBadge.text.text, "New", locale)
-            self.assertTrue(consumables.newBadge.shown)
-            self.assertIsNone(items.newBadge)
-            game.stub.run(consumables, "OnClick")
-            self.assertTrue(consumables.highlightLocked)
-            self.assertTrue(consumables.newBadge.shown, "the badge stays on the open tab")
-            self.assertEqual(consumables.newBadge.points[1][3], "TOPRIGHT", "on the corner, so the credit keeps its room")
+            buttons = window.tabs.buttons
+            for index in (1, 2, 3):
+                self.assertIsNone(buttons[index].newBadge, (locale, index))
+            for index in (4, 5):   # Consumables, Reputations
+                tab = buttons[index]
+                self.assertEqual(tab.newBadge.text.text, "New", (locale, index))
+                self.assertTrue(tab.newBadge.shown)
+                game.stub.run(tab, "OnClick")
+                self.assertTrue(tab.highlightLocked)
+                self.assertTrue(tab.newBadge.shown, "the badge stays on the open tab")
+                self.assertEqual(tab.newBadge.points[1][3], "TOPRIGHT", "on the corner, so the credit keeps its room")
 
     def test_the_consumables_tab_in_french(self):
         game = self.open_consumables(locale="frFR")
