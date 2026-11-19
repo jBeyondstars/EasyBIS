@@ -1,3 +1,11 @@
+# Easy BIS 1.5.0
+
+## New
+
+- **Lists ranked by simulation.** The PvE lists of nine damage specs are now ranked with WoWSims Forever's simulator instead of stat weights: Arms and Fury Warrior, Combat and Subtlety Rogue, Arcane, Fire and Frost Mage, Balance Druid and Beast Mastery Hunter. An item's score is the damage per second it adds, so items with an effect finally count: Hand of Justice, Thunderfury, Destiny and the like.
+- **Estimated items.** Until the simulator has measured them, the PvE lists of Retribution Paladin, Assassination Rogue and Enhancement Shaman take the items with an effect where a close spec's simulation ranks them. They read **Estimated**, with no score and no bar, and are never a best pick. Their own score comes with their spec's simulation.
+- The other damage specs come in a later version. Tanks and healers keep ForeverDB's weights.
+
 # Easy BIS 1.4.0
 
 ## New

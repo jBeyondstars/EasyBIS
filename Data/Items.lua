@@ -24,6 +24,8 @@
 local _, ns = ...
 ns.data = ns.data or {}
 ns.data.items = [==[
+647|Destiny|w||w^0^0^k
+867|Gloves of Holy Might|u||
 873|Staff of Jordan|u||
 888|Naga Battle Gloves|d|s|d^48^Lady Sarevess^41.67^0^s
 892|Gnoll Casting Gloves|w|s|m^1009^Mosshide Mistweaver^0^s
@@ -46,6 +48,7 @@ ns.data.items = [==[
 1981|Icemail Jerkin|w||m^262477^Cinderscale Warrior^^t
 2032|Gallan Cuffs|q|s|q^1164^To Steal From Thieves^31^h^s
 2041|Tunic of Westfall|Q|s|q^166^The Defias Brotherhood^17^a^s
+2043|Ring of Forlorn Spirits|q|s|q^98^The Legend of Stalvan^30^a^s
 2098|Double-barreled Shotgun|w|s|w^0^0^k
 2099|Dwarven Hand Cannon|w||w^0^0^k
 2100|Precisely Calibrated Boomstick|u||
@@ -64,6 +67,7 @@ ns.data.items = [==[
 2943|Eye of Paleth|q|s|q^293^Cleansing the Eye^25^a^s
 2954|Night Watch Pantaloons|q|s|q^55^Morbent Fel^27^a^s
 3037|Whipwood Recurve Bow|dwx|s|d^90^^0^0^s~m^6227^Mechano-Frostwalker^0^s
+3078|Naga Heartpiercer|d|s|d^48^Lady Sarevess^8.33^0^s
 3230|Black Wolf Bracers|d|s|d^33^Fenrus the Devourer^44.44^0^s
 3415|Staff of the Friar|dw|s|d^48^^0^0^s~m^4813^Twilight Shadowmage^0^s
 3475|Cloak of Flames|w||w^0^0^k
@@ -105,7 +109,6 @@ ns.data.items = [==[
 4653|Ironheel Boots|q|s|q^733^Scrounging^35^a^s
 4717|Mail Combat Belt|dwx|s|m^4287^Scarlet Gallant^0^s~d^90^Mekgineer Thermaplugg^0.43^0^k
 4727|Chief Brigadier Girdle|wx|s|x^4636^Strong Iron Lockbox^k~x^6827^Box of Supplies^k
-4737|Imperial Leather Spaulders|wx|s|o^Ancient Treasure^1.7^k~o^Captain's Chest^1.3^k
 4738|Imperial Leather Belt|wx|s|o^Ancient Treasure^1.9^k~o^Captain's Chest^0.8^k
 4744|Arcane Runed Bracers|q|s|q^684^Wanted!  Marez Cowl^34^a^s
 4745|War Rider Bracers|q|s|q^685^Wanted!  Otto and Falconcrest^35^a^s
@@ -113,11 +116,13 @@ ns.data.items = [==[
 4980|Prospector Gloves|Q|s|q^704^Agmond's Fate^33^a^s
 4987|Dwarf Captain's Sword|q|s|q^762^An Ambassador of Evil^39^a^s
 5183|Pulsating Hydra Heart|R|s|R^3398^Gesharahan^25^s
+5192|Thief's Blade|d|s|d^36^Mr. Smite^38.1^0^s
 5194|Taskmaster Axe|d|s|d^36^Sneed^14.29^0^s
 5213|Scorching Wand|dwx|s|d^90^Mekgineer Thermaplugg^0.43^0^k~d^90^Grubbis^0.39^0^k
 5214|Wand of Eventide|Rdwx|s|d^90^^0^0^s~m^6226^Mechano-Flamewalker^0^s
 5247|Rod of Sorrow|q|s|q^685^Wanted!  Otto and Falconcrest^35^a^s
 5249|Burning Sliver|q|s|q^504^Crushridge Warmongers^35^a^s
+5250|Charred Wand|q|s|q^567^Dangerous!^23^h^s
 5267|Scarlet Kris|rw|U|m^11447^Mushgog^5.19^k~d^249^Onyxia^2.52^1^k
 5739|Barbaric Harness|c|s|c^Leatherworking^185^6661^f
 5962|Guardian Pants|c|s|c^Leatherworking^155^7147^f
@@ -145,6 +150,7 @@ ns.data.items = [==[
 6460|Cobrahn's Grasp|d|s|d^43^Lord Cobrahn^22.22^0^s
 6468|Deviate Scale Belt|c|s|c^Leatherworking^90^7955^f
 6504|Wingblade|Q|s|q^914^Leaders of the Fang^17^h^s
+6622|Sword of Zeal|rw||w^0^0^k~d^249^Onyxia^2.52^1^k
 6627|Mutant Scale Breastplate|d|s|d^43^Mutanus the Devourer^14.29^0^s
 6641|Haunting Blade|d|s|d^33^^0^0^s
 6670|Panther Armor|q|s|q^1089^The Den^24^h^s
@@ -161,6 +167,7 @@ ns.data.items = [==[
 6720|Spirit Hunter Headdress|q|s|q^1136^Frostmaw^32^h^s
 6727|Razzeric's Racing Grips|q|s|q^1189^Safety First^36^^s
 6742|Stonefist Girdle|Q|s|q^1101^The Crone of the Kraul^29^a^s~q^1102^A Vengeful Fate^29^h^s
+6750|Snake Hoop|Q|s|q^1144^Willix the Importer^25^^s
 6752|Lancer Boots|Q|s|q^1142^Mortality Wanes^25^a^s
 6773|Kolkar Marauder Chain|q|s|q^96222^Khan Hratha^37^^s~q^1380^Khan Hratha^37^^s
 6774|Traitor's Finger|q|s|q^96222^Khan Hratha^37^^s~q^1380^Khan Hratha^37^^s
@@ -170,9 +177,11 @@ ns.data.items = [==[
 6803|Prophetic Cane|Q|s|q^1048^Into The Scarlet Monastery^37^h^s
 6829|Sword of Serenity|Q|s|q^1053^In the Name of the Light^35^a^s
 6830|Bonebiter|Q|s|q^1053^In the Name of the Light^35^a^s
+6831|Black Menace|Q|s|q^1053^In the Name of the Light^35^a^s
 6898|Orb of Soran'ruk|Q|s|q^1740^The Orb of Soran'ruk^20^^s
 6901|Glowing Thresher Cape|d|s|d^48^Old Serra'kis^62.5^0^s
 6903|Gaze Dreamer Pants|d|s|d^48^Twilight Lord Kelris^50^0^s
+6904|Bite of Serra'kis|d|s|d^48^Old Serra'kis^25^0^s
 6905|Reef Axe|d|s|d^48^Geilhast^16.67^0^s
 6908|Ghamoo-ra's Bind|d|s|d^48^Ghamoo-ra^25^0^s
 6910|Leech Pants|d|s|d^48^Aku'mai^33.33^0^s
@@ -183,7 +192,6 @@ ns.data.items = [==[
 7053|Azure Silk Cloak|c|s|c^Tailoring^140^8786^f
 7057|Green Silken Shoulders|c|s|c^Tailoring^165^8774^f
 7373|Dusky Leather Leggings|c|s|c^Leatherworking^140^9195^f
-7513|Ragefire Wand|q||q^1952^Mage's Wand^35^^k
 7514|Icefury Wand|q||q^1952^Mage's Wand^35^^k
 7515|Celestial Orb|q||q^1958^Celestial Power^35^^k
 7673|Talvash's Enhancing Necklace|Q||q^2361^Restoring the Necklace^39^a^k
@@ -219,6 +227,7 @@ ns.data.items = [==[
 8176|Nightscape Headband|c|s|c^Leatherworking^200^10507^f
 8183|Precision Bow|dwx|s|d^34^^0^0^s~m^4805^Blackfathom Sea Witch^0^s
 8188|Explosive Shotgun|dwx|s|m^4657^Maraudine Windchaser^0^s~d^90^Mekgineer Thermaplugg^0.43^0^k
+8190|Hanzo Sword|x||x^5758^Mithril Lockbox^k
 9393|Beacon of Hope|d||d^70^Shadowforge Relic Hunter^0.01^0^k~d^70^Shadowforge Darkcaster^0.01^0^k
 9407|Stoneweaver Leggings|d|s|d^70^Ironaya^0^0^s
 9408|Ironshod Bludgeon|d|s|d^70^Ironaya^0^0^s
@@ -254,6 +263,7 @@ ns.data.items = [==[
 9645|Gnomish Inventor Boots|q|s|q^836^Rescue OOX-09/HL!^43^^s
 9646|Gnomish Water Sinking Device|q|s|q^836^Rescue OOX-09/HL!^43^^s
 9698|Gloves of Insight|q|s|q^1440^Return to Vahlarriel^30^a^s
+10019|Dreamweave Gloves|c||c^Tailoring^205^12067^f
 10020|Stormcloth Vest|c||c^Tailoring^190^12068^f
 10025|Shadoweave Mask|c||c^Tailoring^200^12086^f
 10033|Red Mageweave Headband|c||c^Tailoring^200^12084^f
@@ -267,10 +277,12 @@ ns.data.items = [==[
 10358|Duracin Bracers|Q|s|q^2418^Power Stones^31^^s
 10359|Everlast Boots|Q|s|q^2418^Power Stones^31^^s
 10399|Blackened Defias Armor|d|s|d^36^Edwin VanCleef^14.29^0^s
+10400|Blackened Defias Leggings|d|s|d^36^^0^0^s
 10402|Blackened Defias Boots|d|s|d^36^Gilnid^19.05^0^s
 10403|Blackened Defias Belt|d|s|d^36^Captain Greenskin^23.81^0^s
 10410|Leggings of the Fang|d|s|d^43^Lord Cobrahn^44.44^0^s
 10411|Footpads of the Fang|d|s|d^43^Lord Serpentis^0^0^s
+10413|Gloves of the Fang|dw|s|d^43^^0^0^s~m^3840^Druid of the Fang^0^s
 10572|Freezing Shard|dw||d^129^Withered Warrior^0.02^0^k~d^129^Withered Reaver^0.02^0^k
 10624|Stinging Bow|dw||d^109^Shade of Eranikus^0.02^0^k~d^109^Jammal'an the Prophet^0.02^0^k
 10653|Trailblazer Boots|q|s|q^3514^Horde Presence^24^h^s
@@ -278,6 +290,7 @@ ns.data.items = [==[
 10659|Shard of the Splithooves|q||q^2701^Heroes of Old^52^^k
 10711|Dragon's Blood Necklace|Q|s|q^1048^Into The Scarlet Monastery^37^h^s
 10748|Wanderlust Boots|q|s|q^1364^Mazen's Behest^37^a^s
+10761|Coldrage Dagger|d|s|d^129^Amnennar the Coldbringer^33.8^0^w
 10762|Robes of the Lich|d|s|d^129^Amnennar the Coldbringer^0^0^s
 10763|Icemetal Barbute|d|s|d^129^Amnennar the Coldbringer^100^0^s
 10764|Deathchill Armor|d|s|d^129^Amnennar the Coldbringer^0^0^s
@@ -286,10 +299,14 @@ ns.data.items = [==[
 10767|Savage Boar's Guard|d|s|d^129^Ragglesnout^100^0^s
 10769|Glowing Eye of Mordresh|d|s|d^129^Mordresh Fire Eye^100^0^s
 10770|Mordresh's Lifeless Skull|d|s|d^129^Mordresh Fire Eye^0^0^s
+10772|Glutton's Cleaver|d|s|d^129^Glutton^100^0^s
 10774|Fleshhide Shoulders|d|s|d^129^Glutton^32.3^0^w
 10776|Silky Spider Cape|d|s|d^129^Tuten'kash^50^0^s
 10823|Vanquisher's Sword|Q|s|q^3341^Bring the End^37^h^s~q^3636^Bring the Light^39^a^s
+10837|Tooth of Eranikus|d||d^109^Shade of Eranikus^26.4^0^w
+10847|Dragon's Call|d||d^109^Shade of Eranikus^2^0^w
 11262|Orb of Lorica|Q|s|q^1053^In the Name of the Light^35^a^s
+11263|Nether Force Wand|q||q^1952^Mage's Wand^35^^k
 11302|Uther's Strength|rwx||w^0^0^k~d^249^Onyxia^2.52^1^k
 11305|Dense Shortbow|v|s|v^14846^Lhara^1429^41.3^69.8^25814^^s
 11307|Massive Longbow|v|s|v^5122^Skolmin Goldfury^1455^71.7^66.1^67952^^s
@@ -300,6 +317,7 @@ ns.data.items = [==[
 11626|Blackveil Cape|d||d^230^High Interrogator Gerstahn^22.9^0^w
 11662|Ban'thok Sash|w||m^9030^Ok'thor the Breaker^27.1^w
 11679|Rubicund Armguards|w||m^9029^Eviscerator^28.6^w
+11684|Ironfoe|d||d^230^Emperor Dagran Thaurissan^1.2^0^w
 11686|Girdle of Beastial Fury|w||m^9029^Eviscerator^21.9^w
 11703|Stonewall Girdle|w||m^9028^Grizzle^19^w
 11726|Savage Gladiator Chain|w||m^9027^Gorosh the Dervish^10.3^w
@@ -316,12 +334,14 @@ ns.data.items = [==[
 11787|Shalehusk Boots|d||d^230^Panzor the Invincible^22^0^w
 11805|Rubidium Hammer|d||d^230^Bael'Gar^23.8^0^w
 11807|Sash of the Burning Heart|d||d^230^Bael'Gar^22.8^0^w
+11815|Hand of Justice|d||d^230^Emperor Dagran Thaurissan^19.2^0^w
 11819|Second Wind|d||d^230^Golem Lord Argelmach^24.2^0^w
 11820|Royal Decorated Armor|d||d^230^General Angerforge^18^0^w
 11821|Warstrife Leggings|d||d^230^General Angerforge^13^0^w
 11822|Omnicast Boots|d||d^230^Golem Lord Argelmach^21.2^0^w
 11823|Luminary Kilt|d||d^230^Golem Lord Argelmach^23.7^0^w
 11832|Burst of Knowledge|d||d^230^Ambassador Flamelash^26.9^0^w
+11839|Chief Architect's Monocle|d||d^230^Fineous Darkvire^21.1^0^w
 11841|Senior Designer's Pantaloons|d||d^230^Fineous Darkvire^25.8^0^w
 11884|Moonlit Amice|q|s|q^1440^Return to Vahlarriel^30^a^s
 11904|Spirit of Aquementas|q||q^3962^It's Dangerous to Go Alone^51^^k
@@ -340,13 +360,13 @@ ns.data.items = [==[
 12082|Wyrmhide Spaulders|Q||q^4024^A Taste of Flame^53^^k
 12103|Star of Mystaria|d||d^329^Balnazzar^17.5^0^w
 12110|Raincaster Drape|Q||q^4063^The Rise of the Machines^53^h^k
-12113|Sunborne Cape|Q||q^3907^Disharmony of Fire^51^h^k~q^4263^Incendius!^51^a^k
 12248|Daring Dirk|v|s|v^14846^Lhara^1429^41.3^69.8^32029^^s
 12254|Well Oiled Cloak|v|s|v^12023^Kharedon^1450^56.6^29.8^22416^^s
 12255|Pale Leggings|v|s|v^3315^Tor'phan^1454^62.6^50.4^34987^h^s
 12256|Cindercloth Leggings|v|s|v^3316^Handor^1454^62.8^44.8^43828^^s
 12462|Embrace of the Wind Serpent|d||d^109^Avatar of Hakkar^1.7^0^w
 12465|Nightfall Drape|d||d^109^Hazzas^4.2^0^w~d^109^Morphaz^4.2^0^w
+12470|Sandstalker Ankleguards|d||d^209^Zerillis^42.5^0^w
 12471|Desertwalker Cane|d||d^209^Dustwraith^37.6^0^w
 12532|Spire of the Stoneshaper|dw||d^230^Golem Lord Argelmach^0.02^0^k~d^230^Bael'Gar^0.02^0^k
 12543|Songstone of Ironforge|Q||q^4363^The Princess's Surprise^54^a^k
@@ -361,12 +381,12 @@ ns.data.items = [==[
 12557|Ebonsteel Spaulders|d||d^230^Princess Moira Bronzebeard^22.2^0^w
 12584|Grand Marshal's Longsword|p||p^14^a^f
 12587|Eye of Rend|d||d^229^Warchief Rend Blackhand^15.1^0^w
+12589|Dustfeather Sash|w||m^10264^Solakar Flamewreath^26.8^w
 12590|Felstriker|d||d^229^Warchief Rend Blackhand^1.4^0^w
 12592|Blackblade of Shahram|d||d^229^General Drakkisath^1^0^w
 12602|Draconian Deflector|d||d^229^General Drakkisath^21.4^0^w
 12603|Nightbrace Tunic|w||m^10264^Solakar Flamewreath^18.3^w
 12604|Starfire Tiara|d||d^229^Jed Runewatcher^32.9^0^w
-12606|Crystallized Girdle|w||m^10264^Solakar Flamewreath^17.1^w
 12618|Enchanted Thorium Breastplate|c||c^Blacksmithing^300^16745^f
 12620|Enchanted Thorium Helm|c||c^Blacksmithing^300^16742^f
 12625|Dawnbringer Shoulders|c||c^Blacksmithing^265^16660^f
@@ -382,6 +402,7 @@ ns.data.items = [==[
 12774|Dawn's Edge|c||c^Blacksmithing^250^16970^f
 12783|Heartseeker|c||c^Blacksmithing^300^16995^f
 12784|Arcanite Reaper|c||c^Blacksmithing^300^16994^f
+12798|Annihilator|c||c^Blacksmithing^300^16991^f
 12895|Breastplate of the Chromatic Flight|Q||q^5166^Breastplate of the Chromatic Flight^57^^k
 12903|Legguards of the Chromatic Defier|Q||q^5167^Legplates of the Chromatic Defier^57^^k
 12927|Truestrike Shoulders|d||d^229^Pyroguard Emberseer^15.6^0^w
@@ -408,21 +429,23 @@ ns.data.items = [==[
 13036|Assassination Blade|rw||w^0^0^k~d^249^Onyxia^2.52^1^k
 13039|Skull Splitting Crossbow|w||w^0^0^k
 13040|Heartseeking Crossbow|rw||w^0^0^k~d^249^Onyxia^2.52^1^k
+13051|Witchfury|w|s|m^7397^Earthen Stonecarver^0^s
 13052|Warmonger|wx||x^5758^Mithril Lockbox^k~w^0^0^k
 13056|Frenzied Striker|dx||d^289^Darkmaster Gandling^0.04^0^k
 13062|Thunderwood|w|s|w^0^0^k
 13070|Sapphiron's Scale Boots|rw||w^0^0^k~d^249^Onyxia^2.52^1^k
 13087|River Pride Choker|wx|s|x^4634^Iron Lockbox^k~w^0^0^k
+13089|Skibi's Pendant|wx||x^4638^Reinforced Steel Lockbox^k~w^0^0^k
 13091|Medallion of Grand Marshal Morris|rw||w^0^0^k~d^249^Onyxia^2.52^1^k
 13095|Assault Band|wx|sU|m^4331^Firemane Ash Tail^0^s
 13098|Painweaver Band|d||d^229^General Drakkisath^21.1^0^w
+13101|Wolfrunner Shoes|dwx||d^289^Darkmaster Gandling^0.01^0^k~m^11447^Mushgog^5.19^k
 13102|Cassandra's Grace|wx||x^10752^Emerald Encrusted Chest^k~w^0^0^k
 13103|Pads of the Venom Spider|wx|s|x^4636^Strong Iron Lockbox^k~x^6827^Box of Supplies^k
 13116|Spaulders of the Unseen|rwx||w^0^0^k~d^249^Onyxia^2.52^1^k
 13118|Serpentine Sash|rwx||w^0^0^k~d^249^Onyxia^2.52^1^k
 13120|Deepfury Bracers|rwx||w^0^0^k~d^249^Onyxia^2.52^1^k
 13122|Dark Phantom Cape|x||x^5758^Mithril Lockbox^k~x^10752^Emerald Encrusted Chest^k
-13130|Windrunner Legguards|rwx||w^0^0^k~d^249^Onyxia^2.52^1^k
 13135|Lordly Armguards|rwx||w^0^0^k~d^249^Onyxia^2.52^1^k
 13139|Guttbuster|rw||m^15816^Qiraji Major He'al-ie^4^k~d^249^Onyxia^2.52^1^k
 13141|Tooth of Gnarr|d||d^229^General Drakkisath^28.4^0^w
@@ -435,6 +458,7 @@ ns.data.items = [==[
 13177|Talisman of Evasion|d||d^229^War Master Voone^16.8^0^w
 13178|Rosewine Circle|d||d^229^Urok Doomhowl^24.5^0^w
 13179|Brazecore Armguards|d||d^229^War Master Voone^17^0^w
+13204|Bashguuder|d||d^229^Ghok Bashguud^37.5^0^w
 13205|Rhombeard Protector|d||d^229^Gizrul the Slavener^23.8^0^w
 13208|Bleak Howler Armguards|d||d^229^Gizrul the Slavener^25.4^0^w
 13210|Pads of the Dread Wolf|d||d^229^Halycon^22.4^0^w
@@ -461,6 +485,8 @@ ns.data.items = [==[
 13368|Bonescraper|d||d^329^Baron Rivendare^11.3^0^w
 13369|Fire Striders|d||d^329^Balnazzar^21.3^0^w
 13373|Band of Flesh|d||d^329^Ramstein the Gorger^10.9^0^w
+13374|Soulstealer Mantle|d||d^329^Ramstein the Gorger^9.1^0^w
+13376|Royal Tribunal Cloak|d||d^329^Magistrate Barthilas^18.9^0^w
 13378|Songbird Blouse|d||d^329^Hearthsinger Forresten^19.2^0^w
 13380|Willey's Portable Howitzer|d||d^329^Cannon Master Willey^18.1^0^w
 13381|Master Cannoneer Boots|d||d^329^Cannon Master Willey^16.8^0^w
@@ -479,7 +505,10 @@ ns.data.items = [==[
 13498|Handcrafted Mastersmith Leggings|d||d^229^Goraluk Anvilcrack^29.4^0^w
 13502|Handcrafted Mastersmith Girdle|d||d^229^Goraluk Anvilcrack^22.9^0^w
 13505|Runeblade of Baron Rivendare|d||d^329^Baron Rivendare^0.1^0^w
+13524|Skull of Burning Shadows|d||d^329^Maleki the Pallid^15^0^w
 13535|Coldtouch Phantom Wraps|d||d^329^Baroness Anastari^11.2^0^w
+13869|Frostweave Tunic|c||c^Tailoring^210^18403^f
+13870|Frostweave Gloves|c||c^Tailoring^215^18411^f
 13871|Frostweave Pants|c||c^Tailoring^235^18424^f
 13937|Headmaster's Charge|d||d^289^Darkmaster Gandling^2.6^0^w
 13938|Bonecreeper Stylus|d||d^289^Darkmaster Gandling^14^0^w
@@ -491,12 +520,16 @@ ns.data.items = [==[
 13958|Wyrmthalak's Shackles|Q||q^4903^Warlord's Command^55^h^k~q^5081^Maxwell's Mission^55^a^k
 13959|Omokk's Girth Restrainer|Q||q^4903^Warlord's Command^55^h^k~q^5081^Maxwell's Mission^55^a^k
 13960|Heart of the Fiend|dw||d^289^Kirtonos^23.2^0^w~m^10506^Kirtonos the Herald^23.2^w
+13961|Halycon's Muzzle|Q||q^4903^Warlord's Command^55^h^k~q^5081^Maxwell's Mission^55^a^k
 13963|Voone's Vice Grips|Q||q^4903^Warlord's Command^55^h^k~q^5081^Maxwell's Mission^55^a^k
 13964|Witchblade|u||d^289^Darkmaster Gandling^14.8^0^w
 13966|Mark of Tyranny|Q||q^4974^For The Horde!^55^h^k~q^5102^General Drakkisath's Demise^55^a^k
 13967|Windreaver Greaves|dw||d^289^Kirtonos^18.4^0^w~m^10506^Kirtonos the Herald^18.4^w
 13969|Loomguard Armbraces|dw||d^289^Kirtonos^18.4^0^w~m^10506^Kirtonos the Herald^18.4^w
+13982|Warblade of Caer Darrow|Q||q^5466^The Lich, Ras Frostwhisper^57^^k
+13984|Darrowspike|Q||q^5466^The Lich, Ras Frostwhisper^57^^k
 14002|Darrowshire Strongguard|Q||q^5466^The Lich, Ras Frostwhisper^57^^k
+14024|Frightalon|dw||d^289^Kirtonos^26.8^0^w~m^10506^Kirtonos the Herald^26.8^w
 14045|Cindercloth Pants|c||c^Tailoring^235^18434^f
 14106|Felcloth Robe|c||c^Tailoring^260^18451^f
 14107|Felcloth Pants|c||c^Tailoring^230^18419^f
@@ -548,6 +581,7 @@ ns.data.items = [==[
 14638|Cadaverous Leggings|d||d^289^Lord Alexei Barov^1.8^0^w~d^289^Instructor Malicia^0.4^0^w
 14640|Cadaverous Gloves|d||d^289^Lord Alexei Barov^2.3^0^w~d^289^Instructor Malicia^0.4^0^w
 14641|Cadaverous Walkers|d||d^289^Lord Alexei Barov^4.1^0^w~d^289^Instructor Malicia^1.2^0^w
+14672|Pridelord Bands|dw||d^349^Princess Theradras^0.19^0^k
 14763|Enduring Cape|Rd|s|d^90^Grubbis^0.39^0^k~d^90^Crowd Pummeler 9-60^0.01^0^k
 14785|Khan's Helmet|w|s|m^12219^Barbed Lasher^0^s
 14833|Tyrant's Gauntlets|w|s|m^4331^Firemane Ash Tail^0^s
@@ -574,9 +608,11 @@ ns.data.items = [==[
 15421|Shroud of the Exile|q||q^5944^In Dreams^55^^k
 15455|Dustfall Robes|q|s|q^661^Hints of a New Plague?^32^a^s
 15456|Lightstep Leggings|q|s|q^661^Hints of a New Plague?^32^a^s
+15468|Windsong Drape|q|s|q^4904^Free at Last^25^h^s
 15587|Ringtail Girdle|q|s|q^6142^Clam Bait^31^h^s
 15588|Bracesteel Belt|q|s|q^6142^Clam Bait^31^h^s
 15698|Wrangling Spaulders|q|s|q^5561^Kodo Roundup^30^^s
+15786|Fernpulse Jerkin|q||q^5121^High Chief Winterfall^54^^k
 15802|Mooncloth Boots|c||c^Tailoring^285^19435^f
 15805|Penelope's Rose|Q||q^5384^Kirtonos the Herald^55^^k
 15854|Dancing Sliver|Q||q^4771^Dawn's Gambit^57^^k
@@ -718,6 +754,7 @@ ns.data.items = [==[
 16677|Beaststalker's Cap|d||d^289^Darkmaster Gandling^11.1^0^w
 16678|Beaststalker's Pants|d||d^329^Baron Rivendare^9^0^w
 16681|Beaststalker's Bindings|w||w^0^0^k
+16685|Magister's Belt|w||w^0^0^k
 16687|Magister's Leggings|d||d^329^Baron Rivendare^8.6^0^w
 16690|Devout Robe|d||d^229^General Drakkisath^10^0^w
 16693|Devout Crown|d||d^289^Darkmaster Gandling^7.4^0^w
@@ -727,6 +764,7 @@ ns.data.items = [==[
 16701|Dreadmist Mantle|d||d^289^Jandice Barov^20^0^w
 16703|Dreadmist Bracers|w||w^0^0^k
 16704|Dreadmist Sandals|d||d^329^Baroness Anastari^15.1^0^w
+16705|Dreadmist Wraps|d||d^289^Lorekeeper Polkelt^21.1^0^w
 16707|Shadowcraft Cap|d||d^289^Darkmaster Gandling^9.2^0^w
 16708|Shadowcraft Spaulders|d||d^329^Cannon Master Willey^21.9^0^w
 16709|Shadowcraft Pants|d||d^329^Baron Rivendare^8.3^0^w
@@ -747,6 +785,7 @@ ns.data.items = [==[
 16736|Belt of Valor|w||w^0^0^k
 16738|Witherseed Gloves|q|s|q^5863^The Dunemaul Compound^44^^s
 16739|Rugwood Mantle|q|s|q^5863^The Dunemaul Compound^44^^s
+16741|Oilrag Handwraps|q|s|q^6504^The Lost Pages^25^h^s
 16789|Captain Rackmore's Tiller|q|s|q^6161^Claim Rackmore's Treasure!^31^^s
 16791|Silkstream Cuffs|q|s|q^6027^Book of the Ancients^33^^s
 16793|Arcmetal Shoulders|q|s|q^6027^Book of the Ancients^33^^s
@@ -811,6 +850,7 @@ ns.data.items = [==[
 17686|Master Hunter's Bow|q|s|q^208^Big Game Hunter^38^^s
 17687|Master Hunter's Rifle|q|s|q^208^Big Game Hunter^38^^s
 17688|Jungle Boots|q|s|q^338^The Green Hills of Stranglethorn^35^^s
+17694|Band of the Fist|Q|s|q^6565^Allegiance to the Old Gods^21^h^s
 17707|Gemshard Heart|d||d^349^Princess Theradras^20.9^0^w
 17710|Charstone Dirk|d||d^349^Princess Theradras^17.3^0^w
 17711|Elemental Rockridge Leggings|d|s|d^349^Princess Theradras^0^0^s
@@ -822,9 +862,12 @@ ns.data.items = [==[
 17721|Gloves of the Greatfather|c||c^Leatherworking^165^21943^f
 17732|Rotgrip Mantle|d|s|d^349^Rotgrip^0^0^s
 17736|Rockgrip Gauntlets|d|s|d^349^Landslide^0^0^s
+17737|Cloud Stone|d||d^349^Landslide^25.5^0^w
 17740|Soothsayer's Headdress|d|s|d^349^Celebras the Cursed^0^0^s
 17743|Resurgence Rod|Q||q^7064^Corruption of Earth and Seed^46^h^k~q^7065^Corruption of Earth and Seed^46^a^k
 17745|Noxious Shooter|d|s|d^349^Noxxion^0^0^s
+17751|Brusslehide Leggings|d||d^349^Razorlash^24.9^0^w
+17754|Infernal Trickster Leggings|d||d^349^Lord Vyletongue^24.1^0^w
 17755|Satyrmane Sash|d||d^349^Lord Vyletongue^22^0^w
 17780|Blade of Eternal Darkness|d||d^349^Princess Theradras^0.12^0^w
 17901|Stormpike Insignia Rank 3|q|U|q^7169^Honored Amongst the Guard^55^a^k
@@ -840,6 +883,7 @@ ns.data.items = [==[
 18168|Force Reactive Disk|u||
 18263|Flarecore Wraps|c||c^Tailoring^300^22759^f
 18282|Core Marksman Rifle|c||c^Engineering^300^22795^f
+18296|Marksman Bands|w||w^0^0^k
 18301|Lethtendris's Wand|d||d^429^Lethtendris^29.63^0^w
 18306|Gloves of Shadowy Mist|d||d^429^Zevrim Thornhoof^16.67^0^w
 18307|Riptide Shoes|d||d^429^Hydrospawn^19.8^0^w
@@ -987,6 +1031,7 @@ ns.data.items = [==[
 18742|Stratholme Militia Shoulderguard|dw||d^329^Malor the Zealous^0.02^0^k
 18743|Gracious Cape|w||w^55^61^k
 18744|Plaguebat Fur Gloves|w||w^55^61^k
+18745|Sacred Cloth Leggings|dw||d^329^Malor the Zealous^0.02^0^k
 18754|Fel Hardened Bracers|d||d^429^Lord Hel'nurath^23.57^0^w
 18756|Dreadguard's Protector|d||d^429^Lord Hel'nurath^23.95^0^w
 18757|Diabolic Mantle|d||d^429^Lord Hel'nurath^22.94^0^w
@@ -1024,6 +1069,7 @@ ns.data.items = [==[
 18876|Grand Marshal's Claymore|p||p^14^a^f
 18877|High Warlord's Greatsword|p||p^14^h^f
 18879|Heavy Dark Iron Ring|u|U|
+19019|Thunderfury, Blessed Blade of the Windseeker|q|U|q^7787^Rise, Thunderfury!^60^^k
 19040|Zorbin's Mega-Slicer|q|s|q^7003^Zapped Giants^45^^s
 19044|Might of the Timbermaw|c||c^Leatherworking^265^23703^f
 19047|Wisdom of the Timbermaw|c||c^Tailoring^255^23662^f
@@ -1333,7 +1379,6 @@ ns.data.items = [==[
 20442|Scout's Medallion|v|U|v^14754^Kelm Hargunth^1413^46.7^8.4^20000^h^s
 20444|Sentinel's Medallion|v|sU|v^14753^Illiyana Moonblaze^1440^61.5^83.8^20000^a^s
 20512|Sanctified Orb|q|U|q^8418^Forging the Mightstone^50^a^k
-20517|Razorsteel Shoulders|q||q^8425^Voodoo Feathers^50^^k
 20521|Fury Visor|q||q^8425^Voodoo Feathers^50^^k
 20530|Robes of Servitude|q||q^8422^Trolls of a Feather^50^^k
 20534|Abyss Shard|q|U|q^8422^Trolls of a Feather^50^^k
@@ -1360,6 +1405,8 @@ ns.data.items = [==[
 21116|Defiler's Talisman|ev||v^15126^Rutherford Twing^1417^73.4^29.7^15230^h^k
 21117|Talisman of Arathor|ev|s|v^15127^Samuel Hawke^1417^46^45.4^28230^a^s~r^509^4^The League of Arathor^f
 21118|Talisman of Arathor|ev|s|v^15127^Samuel Hawke^1417^46^45.4^15230^a^s~r^509^4^The League of Arathor^f
+21119|Talisman of Arathor|ev|s|v^15127^Samuel Hawke^1417^46^45.4^7230^a^s~r^509^4^The League of Arathor^f
+21120|Defiler's Talisman|ev||v^15126^Rutherford Twing^1417^73.4^29.7^7230^h^k
 21126|Death's Sting|u|U|
 21134|Dark Edge of Insanity|u|U|
 21188|Fist of Cenarius|u||q^8573^Champion's Battlegear^60^^t
@@ -1463,6 +1510,7 @@ ns.data.items = [==[
 21532|Drudge Boots|q||q^8736^The Nightmare Manifests^60^^k
 21563|Don Rodrigo's Band|v|sU|v^13217^Thanthaldis Snowgleam^1416^39.5^81.7^755555^^s
 21565|Rune of Perfection|v|s|v^14753^Illiyana Moonblaze^1440^61.5^83.8^40000^^s
+21566|Rune of Perfection|v|s|v^14753^Illiyana Moonblaze^1440^61.5^83.8^20000^^s
 21567|Rune of Duty|v|s|v^14753^Illiyana Moonblaze^1440^61.5^83.8^40000^^s
 21581|Gauntlets of Annihilation|u||
 21582|Grasp of the Old God|u||
@@ -1923,6 +1971,7 @@ ns.data.items = [==[
 226871|Sabatons of Heroism|vx||v^230317^Mokvar^1454^34.91^38.06^^h^t~v^230319^Deliana^1455^43.44^52.13^^a^t
 226872|Chestguard of Heroism|vx||v^230317^Mokvar^1454^34.91^38.06^^h^t~v^230319^Deliana^1455^43.44^52.13^^a^t
 226881|Beastmaster's Treads|vx||v^230317^Mokvar^1454^34.91^38.06^^h^t~v^230319^Deliana^1455^43.44^52.13^^a^t
+226883|Beastmaster's Gauntlets|vx||v^230317^Mokvar^1454^34.91^38.06^^h^t~v^230319^Deliana^1455^43.44^52.13^^a^t
 226930|Sorcerer's Gauntlets|v||v^230317^Mokvar^1454^34.91^38.06^^h^t~v^230319^Deliana^1455^43.44^52.13^^a^t
 226931|Sorcerer's Sandals|v||v^230317^Mokvar^1454^34.91^38.06^^h^t~v^230319^Deliana^1455^43.44^52.13^^a^t
 226950|Virtuous Mitts|vx||v^230317^Mokvar^1454^34.91^38.06^^h^t~v^230319^Deliana^1455^43.44^52.13^^a^t
@@ -1997,6 +2046,7 @@ ns.data.items = [==[
 250573|Warder's Waistguard|c|n|c^Blacksmithing^250^1252322^f
 250574|Prefect's Waistguard|c|n|c^Blacksmithing^250^1252323^f
 250579|Prefect's Pauldrons|c|n|c^Blacksmithing^210^1252328^f
+250581|Officer's Wristguards|c|n|c^Blacksmithing^225^1252330^f
 250582|Sentinel's Wristguards|c|n|c^Blacksmithing^225^1252331^f
 250583|Warder's Wristguards|c|n|c^Blacksmithing^225^1252332^f
 250584|Prefect's Wristguards|c|n|c^Blacksmithing^225^1252333^f
@@ -2019,8 +2069,10 @@ ns.data.items = [==[
 252468|Prowler's Leather Boots|c|n|c^Leatherworking^235^1255047^f
 252469|Skulker's Leather Boots|c|n|c^Leatherworking^235^1255046^f
 252470|Warden's Leather Boots|c|n|c^Leatherworking^235^1255045^f
+252473|Prowler's Leather Waistguard|c|n|c^Leatherworking^250^1255035^f
 252474|Skulker's Leather Waistguard|c|n|c^Leatherworking^250^1255034^f
 252475|Warden's Leather Waistguard|c|n|c^Leatherworking^250^1255033^f
+252476|Skycaller's Leather Waistguard|c|n|c^Leatherworking^250^1255032^f
 252477|Mender's Leather Waistguard|c|n|c^Leatherworking^250^1255031^f
 252483|Dawn Armor|c|n|c^Leatherworking^300^1255015^f
 252484|Timbermaw Tunic|c|n|c^Leatherworking^300^1255014^f
@@ -2035,6 +2087,7 @@ ns.data.items = [==[
 252515|Wisdom's Leather Helm|cdw|sn|d^189^Bloodmage Thalnos^18.18^0^s~m^4543^Bloodmage Thalnos^0^s
 252520|Skulker's Leather Belt|c|sn|c^Leatherworking^150^1255080^f
 252521|Stalker's Leather Belt|c|sn|c^Leatherworking^150^1255079^f
+252540|Skulker's Leather Bracers|c|n|c^Leatherworking^225^1255053^f
 252541|Warden's Leather Bracers|c|n|c^Leatherworking^225^1255052^f
 252542|Skycaller's Leather Bracers|c|n|c^Leatherworking^225^1255051^f
 252543|Mender's Leather Bracers|c|n|c^Leatherworking^225^1255050^f
@@ -2068,7 +2121,6 @@ ns.data.items = [==[
 254097|Frothing Gloves|c|n|c^Tailoring^235^1257474^f
 254099|Fiery Gloves|c|n|c^Tailoring^235^1257475^f
 254101|Black Gloves|c|n|c^Tailoring^235^1257476^f
-254103|Golden Gloves|c|n|c^Tailoring^235^1257477^f
 254107|Gilded Sandals|c|n|c^Tailoring^235^1257479^f
 254109|Frothing Sandals|c|n|c^Tailoring^235^1257480^f
 254111|Fiery Sandals|c|n|c^Tailoring^235^1257481^f
@@ -2093,6 +2145,7 @@ ns.data.items = [==[
 270032|Cultist's Armguards|Q|sn|q^6561^Blackfathom Villainy^22^h^s~q^1200^Blackfathom Villainy^22^a^s
 270036|Magistrate's Pantaloons|Q|sn|q^378^The Fury Runs Deep^22^a^s
 270043|Dreamer's Chestguard|q|sn|q^6922^Baron Aquanis^25^h^s
+270053|Ring of Ruin|q|sn|q^98^The Legend of Stalvan^30^a^s
 270056|Stromgarde Librarian Leggings|q|sn|q^682^Stromgarde Badges^32^a^s
 270057|Stromgarde Operative Pants|q|sn|q^682^Stromgarde Badges^32^a^s
 270059|Restorer's Fine Gloves|Q|sn|q^704^Agmond's Fate^33^a^s
@@ -2577,6 +2630,7 @@ ns.data.items = [==[
 273045|Drape of Shifting Energy|d|sn|d^2959^Mana Elemental^57.14^0^s
 273047|Unstable Crystalline Shoulderpads|d|sn|d^2959^Unstable Sentinel^33^0^w
 273049|Archmagister's Faceted Pendant|d|sn|d^2959^Shade of the Archmage^42.86^0^s
+273051|Violet Sorcerer's Mantle|d|sn|d^2959^Shade of the Archmage^42.86^0^s
 273052|Ponderous Orb|d|sn|d^2959^Shade of the Archmage^14.29^0^s
 273053|Tendonscraper Dagger|d|sn|d^2959^Lyn the Ignored^50^0^s
 273054|Cartilage Shapers|d|sn|d^2959^Lyn the Ignored^25^0^s
@@ -2704,6 +2758,7 @@ ns.data.items = [==[
 274149|Thornweaver Drape|w|sn|m^6168^Roogug^0^s
 274152|Roogug's Severed Head|dw|sn|d^47^Roogug^50^0^s~m^6168^Roogug^0^s
 274158|Death Prophet Spine|d|sn|d^47^Aggem Thorncurse^32^0^w
+274159|Thorncursed Grips|dw|sn|d^47^Aggem Thorncurse^20^0^s~m^4424^Aggem Thorncurse^0^s
 274160|Quilrager Throwing Axe|dw|sn|d^47^Agathelos the Raging^80^0^s~m^4422^Agathelos the Raging^0^s
 274161|Quillord Mail Leggings|dw|sn|d^47^Overlord Ramtusk^40^0^s~m^4420^Overlord Ramtusk^0^s
 274176|Premier Scalemail Walkers|v|sn|v^12777^Captain Dirgehammer^1453^75.9^67^0^^s
@@ -2802,6 +2857,7 @@ ns.data.items = [==[
 274600|Berserker Shackles|w|sn|m^258905^NPC 258905^0^s
 274601|Harpoon of Command|w|sn|m^258924^NPC 258924^0^s
 274602|Brinebelly Leggings|w|sn|m^258924^NPC 258924^0^s
+274603|Dreadfrost Saber|w|sn|m^260042^NPC 260042^0^s
 274604|Frosty Blunderbuss|w|sn|m^260042^NPC 260042^0^s
 274605|Briny Sash|w|sn|m^260042^NPC 260042^0^s
 274606|Bloodspine Staff|w|sn|m^260202^NPC 260202^0^s
@@ -2833,6 +2889,7 @@ ns.data.items = [==[
 274939|Southern Watch Leggings|q|sn|q^94679^Snargl's Snout^35^^s
 274941|Bristle Hills Mystic Robe|q|sn|q^94679^Snargl's Snout^35^^s
 274948|Bottle of Powderfuse Port|q|sn|q^95267^Quest 95267^37^^s
+274952|Jom-jom's Gabbar|q|sn|q^94556^Quest 94556^37^^s
 274955|Clobrok's Block Rock|q|sn|q^94556^Quest 94556^37^^s
 274959|Farholde Horns|q|sn|q^95064^Preventative Measures^34^^s
 274962|Crocskin Waders|q|sn|q^95991^WANTED: Ghostmaw^37^^s
@@ -2861,9 +2918,11 @@ ns.data.items = [==[
 275606|Venomspew Footpads|c|n|c^Tailoring^295^1297122^f
 275608|Swarmtender's Cord|c|n|c^Tailoring^290^1297124^f
 275609|Swarmtender's Footpads|c|n|c^Tailoring^295^1297125^f
+275612|Bileblister Boots|c|n|c^Leatherworking^295^1297128^f
 275617|Scalegut Belt|c|n|c^Leatherworking^290^1297133^f
 275618|Scalegut Treaders|c|n|c^Leatherworking^295^1297134^f
 275621|Broodwatcher's Treaders|c|n|c^Leatherworking^295^1297137^f
+275630|Depleted Eye of Influence|u|n|
 275698|Yaely's Mending Tool|u|n|
 275711|Chimaera Wing Cape|u|n|
 275736|Horn of Ve'han|u|n|
@@ -2892,6 +2951,7 @@ ns.data.items = [==[
 276203|Primitive Fishing Pole|ev|sn|v^255897^Friz Frazzlespark^2548^77.1^52.9^118729^^s~r^2827^5^Powderfuse^f
 276204|Thrash's Trash|ev|sn|v^255897^Friz Frazzlespark^2548^77.1^52.9^61019^^s~r^2827^5^Powderfuse^f
 276337|Thaelemaches' Talisman|u|n|
+276394|Luxurious Smoking Jacket|d|n|d^329^Ezra Grimm^28.2^0^w
 276396|Ezra's Seal of Authenticity|d|n|d^329^Ezra Grimm^30.1^0^w
 276397|Hand of the Zealous|d|n|d^329^Malor the Zealous^37.5^0^w
 276398|Scarlet Malice|d|n|d^329^Malor the Zealous^29.8^0^w
@@ -2922,7 +2982,7 @@ ns.data.items = [==[
 277214|Crusty Cuffs|q|sn|q^97048^Returning to Port^33^^s
 277223|Traveled Gloves|q|sn|q^79242^No Honor Among Thieves^35^^s
 277224|Kurzen Headshrinker's Cinch|q|sn|q^97048^Returning to Port^33^^s
-277234|Alacritous Treads|q|sn|q^95999^WANTED: Incinerator Gar'im^20^a^s
+277226|Disjointed Shoes|q|sn|q^95999^WANTED: Incinerator Gar'im^20^a^s
 277235|Soldier's Visor|q|sn|q^79242^No Honor Among Thieves^35^^s
 277259|Fermented Restoration Potion|u|n|
 277260|Researcher's Night Light|q|n|q^82208^Greater Friend of the Library^35^^t
@@ -3048,16 +3108,18 @@ ns.data.items = [==[
 284587|Ankle Slicers|u|n|
 284716|Band of the Better Half|u|n|
 284866|Windserpent Scaled Cloak|R|n|R^5349^Arash-ethis^^t
+285330|Signet of the Zhevra|R|sn|R^5831^Swiftmane^0^s
 285338|Kodohide Legguards|R|sn|R^5827^Brontus^0^s
 285346|Alliance Outrunner's Sword|u|sn|
 285348|Alliance Outrunner Healing Rod|R|sn|R^5799^Hannah Bladeleaf^0^s
 286428|Band of Bossman|w|sn|m^264773^NPC 264773^0^s
 286429|Big-Belly Belt|w|sn|m^264773^NPC 264773^0^s
-286556|Winds of Tanaris|u|n|
 286590|Silithid Queen's Husk|u|n|
 286613|King Mosh's Tooth|u|n|
 286646|Gill's Gills|w|sn|m^264177^NPC 264177^0^s
 286651|Flamestarter's Signet|w|sn|m^260468^NPC 260468^0^s
+286978|Rotmender's Garb|d|sn|d^2999^Witherfang^20^0^s~d^2999^The Abandoned^10^0^s
+286979|Rotmender's Gloves|d|sn|d^2999^Witherfang^20^0^s~d^2999^Viktor the Vile^10^0^s
 286980|Rotmender's Sash|d|sn|d^2999^The Abandoned^10^0^s~d^2999^Bjork^10^0^s
 286987|Violet Sorcerer's Sandals|w|sn|m^255072^NPC 255072^0^s
 286989|Violet Sorcerer's Wraps|d|sn|d^2959^Arcane Anomaly^14.29^0^s
@@ -3078,6 +3140,7 @@ ns.data.items = [==[
 287029|Nature Guardian's Legguards|u|n|
 287033|Furbolg Berserker's Boots|u|n|
 287034|Grove Subjugator's Blade|w|n|m^255247^Swarming Imp^^t~m^255347^Legashi Slayer^^t
+287035|Demon Worshipper's Necklace|w|n|m^250023^Blackmaw Thrall^^t~m^255247^Swarming Imp^^t
 287036|Satyr's Touch|w|n|m^255247^Swarming Imp^^t~m^255347^Legashi Slayer^^t
 287039|Tattered Explorer's Cuffs|u|n|
 287040|Dinosaur Hide Belt|u|n|

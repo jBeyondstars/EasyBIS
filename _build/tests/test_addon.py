@@ -132,8 +132,9 @@ class AddonTest(unittest.TestCase):
         for slot, entries in visible.items():
             best, alternatives = ladders.picks(slot, entries, count)
             out[slot] = ([e.shown(side) for e in best], [e.shown(side) for e in alternatives])
-            # an alternative that scores exactly as a best pick is its equal
-            out["ties"][slot] = {e.shown(side) for e in alternatives if any(e.stored == b.stored for b in best)}
+            # an alternative that scores exactly as a best pick is its equal; a placed one has no score of its own
+            out["ties"][slot] = {e.shown(side) for e in alternatives
+                                 if not e.placed and any(e.stored == b.stored for b in best)}
         shown = 1 + count
         out["other"] = {"main": [e.shown(side) for e in other_main[:shown]],
                         "off": [e.shown(side) for e in other_off[:shown]]}
@@ -515,8 +516,7 @@ class AddonTest(unittest.TestCase):
         late = self.expected_picks("MAGE", 2, "pve", default_filter(phase=EVERYTHING, pvp=True))
         self.assertEqual((early["twoHand"], early["main"][0]), (False, [MAGEBLADE]), example)
         self.assertEqual((late["twoHand"], late["main"][0]), (True, [ATIESH]), example)
-        self.assertEqual(late["other"]["main"][0], MAGEBLADE, example)
-        self.assertIn(VAULTED_SECRETS, late["other"]["main"], example)
+        self.assertEqual(set(late["other"]["main"][:2]), {MAGEBLADE, VAULTED_SECRETS}, example)
 
         game = Game(cls="MAGE", saved=WITH_PVP)
         before = game.ns.Ladders.For("MAGE", 2, "pve")

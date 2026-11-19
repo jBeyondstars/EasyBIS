@@ -7,6 +7,7 @@ The Lua test needs the `lupa` package and is skipped without it.
 from __future__ import annotations
 
 import copy
+import dataclasses
 import json
 import os
 import re
@@ -37,6 +38,7 @@ import phases  # noqa: E402
 import ranks  # noqa: E402
 import questie  # noqa: E402
 import reputations  # noqa: E402
+import simulated  # noqa: E402
 
 try:
     import lupa
@@ -244,6 +246,86 @@ class GeneratorTest(unittest.TestCase):
         self.assertEqual([e.item_id for e in alternatives], [21117, 271906], "the fifth item is left out")
         best, alternatives = ladders.picks("head", ladder, 3)
         self.assertEqual(len(best) + len(alternatives), 4, "a slot with one best pick lists three after it")
+
+    def test_a_placed_item_is_never_a_best_pick(self):
+        """An item placed from a close spec's simulation (simulated.place) can stand first once a filter hides
+        what was above it: the best pick is still the first one that is not placed, in every slot and weapon list."""
+        def entry(item_id, score, placed=False, two_hand=False, limit=None):
+            return ladders.Entry(item_id=item_id, score=score, side="", twin=None, seen=True, new=False,
+                                 unsourced=False, unique=False, two_hand=two_hand, random=False, limit=limit,
+                                 placed=placed)
+        ladder = [entry(1, 30.0, placed=True), entry(2, 30.0), entry(3, 29.0, placed=True), entry(4, 28.0)]
+        best, alternatives = ladders.picks("head", ladder, 6)
+        self.assertEqual([e.item_id for e in best], [2])
+        self.assertEqual([e.item_id for e in alternatives], [1, 3, 4], "placed items stay alternatives")
+        best, alternatives = ladders.picks("trinket", ladder, 6)
+        self.assertEqual([e.item_id for e in best], [2, 4], "nor is it the second trinket")
+        self.assertEqual(ladders.lead([entry(5, 1.0, placed=True)]).item_id, 5, "unless there is nothing else")
+        self.assertIsNone(ladders.lead([]))
+        # weapons: the two-hander placed first does not weigh against the one-handers
+        main = [entry(10, 99.0, placed=True, two_hand=True), entry(11, 40.0, two_hand=True), entry(12, 30.0)]
+        off = [entry(13, 20.0)]
+        self.assertEqual([e.item_id for e in ladders.weapon_lists(main, off)[0]], [12], "40 < 30 + 20")
+        self.assertEqual([e.item_id for e in ladders.other_weapons(main, off)[0]], [10, 11])
+
+    def test_place_moves_an_item_up_to_its_rank(self):
+        """simulated.place: up to its rank with the score above it, never first; an item already that high, or
+        that the ladder lacks, stays as it is."""
+        def entry(item_id, score):
+            return ladders.Entry(item_id=item_id, score=score, side="", twin=None, seen=True, new=False,
+                                 unsourced=False, unique=False, two_hand=False, random=False, limit=None)
+        ladder = [entry(i, 100.0 - i) for i in range(1, 9)]
+        placed = simulated.place(ladder, [simulated.Placement(item_id=7, rank=3), simulated.Placement(item_id=2, rank=5),
+                                          simulated.Placement(item_id=99, rank=2), simulated.Placement(item_id=8, rank=1)])
+        self.assertEqual([e.item_id for e in placed], [1, 8, 7, 2, 3, 4, 5, 6], "rank 1 is second: never first")
+        moved = {e.item_id: e for e in placed if e.placed}
+        self.assertEqual(sorted(moved), [7, 8], "item 2 was already above its rank")
+        self.assertEqual(moved[8].score, 99.0, "the score of the item above: the ladder stays in order")
+        self.assertEqual(moved[7].score, 99.0)
+        self.assertEqual([e.score for e in placed], sorted((e.score for e in placed), reverse=True))
+        self.assertEqual([e.item_id for e in ladder], list(range(1, 9)), "the ladder given is left alone")
+        # the item it follows rules over the rank: an item more above it does not push it down among the others
+        follows = simulated.Placement(item_id=7, rank=3, after=2)
+        self.assertEqual([e.item_id for e in simulated.place(ladder, [follows])], [1, 2, 7, 3, 4, 5, 6, 8])
+        more = [entry(0, 100.0)] + ladder
+        self.assertEqual([e.item_id for e in simulated.place(more, [follows])], [0, 1, 2, 7, 3, 4, 5, 6, 8])
+        gone = [e for e in ladder if e.item_id != 2]
+        self.assertEqual([e.item_id for e in simulated.place(gone, [follows])], [1, 3, 7, 4, 5, 6, 8],
+                         "without the item it follows: its rank")
+
+    def test_placements_count_until_the_spec_is_measured(self):
+        """placed.json counts in the PvE lists of a spec the simulator has not measured, and nowhere else."""
+        hand = [simulated.Placement(item_id=11815, rank=5)]
+        reading = simulated.Reading(specs={("WARRIOR", 2): simulated.SpecRanking(slots={})},
+                                    placed={("WARRIOR", 2): {"trinket": hand}, ("PALADIN", 3): {"trinket": hand}})
+        db = types.SimpleNamespace(simulated=reading)
+        self.assertEqual(simulated.placements(db, "PALADIN", 3, "pve", "trinket"), hand)
+        self.assertEqual(simulated.placements(db, "PALADIN", 3, "pvp", "trinket"), [])
+        self.assertEqual(simulated.placements(db, "PALADIN", 3, "pve", "neck"), [])
+        self.assertEqual(simulated.placements(db, "WARRIOR", 2, "pve", "trinket"), [], "measured: its own scores")
+
+    def test_the_placed_items_are_in_their_lists(self):
+        """Every placement of placed.json for a spec not yet measured is in its PvE list at its rank, flagged."""
+        reading = self.db.simulated
+        checked = 0
+        for (token, spec), slots in reading.placed.items():
+            if (token, spec) in reading.specs:
+                continue
+            for slot, placements in slots.items():
+                ladder = ladders.full_ladder(self.db, token, spec, "pve", slot)
+                ids = [e.item_id for e in ladder]
+                for placement in placements:
+                    self.assertIn(placement.item_id, ids, f"{token} {spec} {slot}")
+                    index = ids.index(placement.item_id)
+                    where = f"{token} {spec} {slot} {placement.item_id}"
+                    self.assertIn(placement.after, ids, f"{where}: the item it follows left the list")
+                    self.assertLessEqual(index, ids.index(placement.after) + 1, where)
+                    self.assertLessEqual(index + 1, placement.rank, f"{where}: higher than its rank")
+                    self.assertGreater(index, 0, "never first")
+                    checked += 1
+                kept = self.kept[token][spec]["pve"][slot]
+                self.assertTrue(any(e.placed for e in kept), f"{token} {spec} {slot}: the data keeps it")
+        self.assertGreater(checked, 0, "placed.json places nothing")
 
     def test_the_rank_an_item_needs(self):
         """Forever's PvP gear by slot, and the rank rewards of Classic, which no vendor sells."""
@@ -593,10 +675,15 @@ class GeneratorTest(unittest.TestCase):
         corrections.apply(before, corrections.load())   # the weapons' stats, not the game's items
         corrections.fill(before, corrections.load_sources())   # ... and the sources read in QuestieDB
         corrections.price(before, corrections.load_costs())    # ... and who the neutral vendors sell to
+        # ... and what the simulator ranked; placed.json is made on the corrected lists, so both sides leave it out
+        unplaced = dataclasses.replace(self.db.simulated, placed={})
+        before.simulated = unplaced
         corrections.assign_sides(before)   # ... and the side of Theramore's pieces
         was = ladders.build_all(before)
+        after = copy.copy(self.db)
+        after.simulated = unplaced
         gone = set(game.dropped)
-        for token, specs in self.kept.items():
+        for token, specs in ladders.build_all(after).items():
             for spec, modes in specs.items():
                 for mode, slots in modes.items():
                     for flt in ladders.FILTERS:

@@ -16,6 +16,7 @@ content phase the list stops at, and how many alternatives a slot lists.
       other: for the two weapon slots, the weapons of the style that lost (one-handers and their
       off hands when a two-hander is best, two-handers otherwise), offered as alternatives
   Ladders.IsTie(picks, pick)         whether an alternative of a slot scores as much as a best pick
+  Ladders.Lead(picks)                the first pick that can be a best pick (not a placed one, flag e)
 
 The rules are the generator's (_build/ladders.py: picks, weapon_lists,
 other_weapons); the tests check both give the same picks.
@@ -45,8 +46,9 @@ local function ParseEntry(text)
 end
 
 -- flags: s seen in Forever, n new in Forever, u no known source, U unique, t two-hander, r random bonus,
--- p a PvP reward, v a Premier piece (sold for honor, even when the data gives it no source); a digit is the
--- content phase the item needs (entry.phase, 0 without one)
+-- p a PvP reward, v a Premier piece (sold for honor, even when the data gives it no source), e placed from a
+-- close spec's simulation: its score is a stand-in, never shown, and it is never a best pick (Ladders.Lead); a
+-- digit is the content phase the item needs (entry.phase, 0 without one)
 function Ladders.HasFlag(entry, letter)
     return entry.flags:find(letter, 1, true) ~= nil
 end
@@ -106,6 +108,14 @@ local function Visible(entries, filter, list)
     return visible
 end
 
+-- The first pick that can be a best pick: a placed one (flag e) never is, unless the list has nothing else.
+function Ladders.Lead(picks)
+    for _, pick in ipairs(picks) do
+        if not Ladders.HasFlag(pick.entry, "e") then return pick end
+    end
+    return picks[1]
+end
+
 -- Weighs the two weapon slots against each other. When the best two-hander
 -- beats the best main hand plus the best off hand, the main hand lists
 -- two-handers only and the off hand is empty (third value true). Otherwise the
@@ -118,14 +128,15 @@ local function WeaponLists(main, off)
         local list = Ladders.HasFlag(pick.entry, "t") and two or one
         list[#list + 1] = pick
     end
+    local twoBest, oneBest, offBest = Ladders.Lead(two), Ladders.Lead(one), Ladders.Lead(off)
     local others = {}
-    if one[1] then
+    if oneBest then
         for _, pick in ipairs(off) do
-            if pick.entry.id ~= one[1].entry.id then others[#others + 1] = pick end
+            if pick.entry.id ~= oneBest.entry.id then others[#others + 1] = pick end
         end
     end
-    if two[1] and (not one[1]
-        or two[1].entry.score10 >= one[1].entry.score10 + (off[1] and off[1].entry.score10 or 0)) then
+    if twoBest and (not oneBest
+        or twoBest.entry.score10 >= oneBest.entry.score10 + (offBest and offBest.entry.score10 or 0)) then
         return two, {}, true, one, others
     end
     if not one[1] then return main, off, false, {}, {} end
@@ -140,16 +151,17 @@ end
 
 -- best, alternatives. Rings and trinkets have two best picks: the second is the
 -- next one that can be worn with the first. That second pick is one of the count
--- asked for: a slot lists the best pick and at most count items after it.
+-- asked for: a slot lists the best pick and at most count items after it. A placed
+-- item (flag e) is never a best pick.
 local function Picks(slot, visible, count)
     local best, alts = {}, {}
-    local first = visible[1]
+    local first = Ladders.Lead(visible)
     if not first then return best, alts end
     best[1] = first
     if ns.PAIRED[slot] then
-        for index = 2, #visible do
-            local pick = visible[index]
-            if not (first.entry.limit and pick.entry.limit == first.entry.limit) then
+        for _, pick in ipairs(visible) do
+            if pick ~= first and not Ladders.HasFlag(pick.entry, "e")
+                and not (first.entry.limit and pick.entry.limit == first.entry.limit) then
                 best[2] = pick
                 break
             end
@@ -185,8 +197,9 @@ function Ladders.Compute(data, spec, list, filter)
 end
 
 -- An alternative that scores exactly as one of the best picks is its equal, not a second choice.
--- picks: a slot of Compute's result.
+-- picks: a slot of Compute's result. A placed item has no score of its own: it is nobody's equal.
 function Ladders.IsTie(picks, pick)
+    if Ladders.HasFlag(pick.entry, "e") then return false end
     for _, best in ipairs(picks.best) do
         if pick.entry.score10 == best.entry.score10 then return true end
     end

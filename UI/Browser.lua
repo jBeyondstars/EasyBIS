@@ -105,12 +105,13 @@ local function QualityHex(quality)
     return hex
 end
 
--- "BIS", "Tied", "-12%", "Added"; an enchant has no score, so its alternatives read "Alt". A consumable is
+-- "BIS", "Tied", "-12%", "Added", "Estimated" (placed, no score of its own); an enchant has no score, so its alternatives read "Alt". A consumable is
 -- the best of its category and nothing more, so it never reads "BIS".
 local function RankText(row)
     if row.unranked then return GREY_TEXT .. L.RANK_UNRANKED .. "|r" end
     if row.kind == "consumable" and row.bis then return GOLD_TEXT .. L.RANK_BEST .. "|r" end
     if row.custom then return ns.COLOR .. L.RANK_CUSTOM .. "|r" end
+    if row.placed then return GREY_TEXT .. L.RANK_PLACED .. "|r" end
     if row.bis then return GOLD_TEXT .. L.RANK_BIS .. "|r" end
     if row.tie then return GOLD_TEXT .. L.RANK_TIE .. "|r" end
     if row.gap == nil then return GREY_TEXT .. L.RANK_ALT .. "|r" end
@@ -494,6 +495,8 @@ local function ItemTooltip(owner, data, side)
     if unsure then GameTooltip:AddLine(unsure, MUTED[1], MUTED[2], MUTED[3], true) end
     if data.custom then
         GameTooltip:AddLine(L.TIP_CUSTOM, MUTED[1], MUTED[2], MUTED[3], true)
+    elseif data.placed then
+        GameTooltip:AddLine(L.TIP_PLACED, MUTED[1], MUTED[2], MUTED[3], true)
     elseif data.ratio and not data.bis and not data.tie then
         local share = math.floor(data.ratio * 100 + 0.5)
         GameTooltip:AddLine((data.other and L.TIP_SCORE_SET or L.TIP_SCORE):format(share),

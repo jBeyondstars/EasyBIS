@@ -192,6 +192,13 @@ def build(cache_dir: Path = CACHE, out_dir: Path = OUT, details: bool = False) -
         names = ", ".join(f"{db.classes[cls]['specs'][spec]['name']} {cls.title()}" for cls, spec in sorted(reading.specs))
         print(f"Simulation (WoWSims Forever {reading.commit}, {reading.date}): the PvE lists of {names} are ranked on the "
               "damage measured, every other list on ForeverDB's weights.")
+    placed = [(cls, spec, slot, entry.item_id) for cls, specs in all_ladders.items() for spec, modes in specs.items()
+              for slot, entries in modes["pve"].items() for entry in entries if entry.placed]
+    if placed:
+        names = ", ".join(f"{db.classes[cls]['specs'][spec]['name']} {cls.title()}"
+                          for cls, spec in sorted({(cls, spec) for cls, spec, _, _ in placed}))
+        print(f"  Placed from a close spec's simulation, with no score of their own, until theirs: {len(placed)} items "
+              f"in the PvE lists of {names} (corrections/placed.json).")
 
     findings = audit.run(db, all_ladders, read_in_game=frozenset(observed))
     suspicious = audit.suspicious(findings)

@@ -102,18 +102,22 @@ class WindowTest(unittest.TestCase):
                    for slot, _ in ladders.SLOTS}
         two = [e for e in visible["main"] if e.two_hand]
         one = [e for e in visible["main"] if not e.two_hand]
-        two_hand = bool(two) and (not one or two[0].stored >= one[0].stored
-                                  + (visible["off"][0].stored if visible["off"] else 0))
+        lead = ladders.lead   # a placed item (flag e) is never a best pick
+        two_hand = bool(two) and (not one or lead(two).stored >= lead(one).stored
+                                  + (lead(visible["off"]).stored if visible["off"] else 0))
         shown = 1 + count
         other = {slot: entries[:shown] for slot, entries in
                  zip(("main", "off"), ladders.other_weapons(visible["main"], visible["off"]))}
         visible["main"], visible["off"] = ladders.weapon_lists(visible["main"], visible["off"])
 
-        def other_gap(slot, entry) -> int:
-            """A set against a set: one-hander + off hand against the two-hander, or the reverse."""
-            best_main, best_off = visible["main"][0], visible["off"][:1]
+        def other_gap(slot, entry) -> int | None:
+            """A set against a set: one-hander + off hand against the two-hander, or the reverse. A placed
+            item has no score of its own, so no gap."""
+            if entry.placed:
+                return None
+            best_main, best_off = lead(visible["main"]), [lead(visible["off"])] if visible["off"] else []
             if two_hand:
-                partner = other["off" if slot == "main" else "main"][:1]
+                partner = [lead(other["off" if slot == "main" else "main"])] if other["off" if slot == "main" else "main"] else []
                 return self.gap(entry.stored / 10 + (partner[0].stored / 10 if partner else 0), best_main.stored / 10)
             return self.gap(entry.stored / 10, best_main.stored / 10 + (best_off[0].stored / 10 if best_off else 0))
 
@@ -125,7 +129,8 @@ class WindowTest(unittest.TestCase):
             for entry in best:
                 rows.append(("item", entry.shown(side), slot, True, 0))
             for entry in alternatives if alts else []:
-                rows.append(("item", entry.shown(side), slot, False, self.gap(entry.stored / 10, best[0].stored / 10)))
+                rows.append(("item", entry.shown(side), slot, False,
+                             None if entry.placed else self.gap(entry.stored / 10, best[0].stored / 10)))
             if alts and other.get(slot):
                 rows.append(("note", None, slot, None, None))
                 for entry in other[slot]:
@@ -1010,6 +1015,40 @@ class WindowTest(unittest.TestCase):
         mine = [right for left, right in game.lines(item_id) if token.capitalize() in left and name in left]
         self.assertTrue(mine and all("BIS" in right for right in mine), "a tie is as good as the best in tooltips")
 
+    def a_placed_item(self) -> tuple:
+        """(class, spec, slot, item): an alternative a PvE list shows, with six alternatives asked for, that the
+        data placed from a close spec's simulation (flag e). Weapons are left out: their lists are weighed first."""
+        flt = for_list(default_filter(), "pve")
+        for token in test_addon.CLASSES:
+            for spec, modes in self.kept[token].items():
+                for slot, _ in ladders.SLOTS:
+                    if slot in ("main", "off"):
+                        continue
+                    visible = [e for e in modes["pve"][slot] if e.passes(flt)]
+                    _, alternatives = ladders.picks(slot, visible, ladders.MAX_ALTERNATIVES)
+                    placed = next((e for e in alternatives if e.placed), None)
+                    if placed:
+                        return token, spec, slot, placed.shown("a")
+        self.fail("no placed item in the PvE lists: this test needs another example, or placed.json is empty")
+
+    def test_a_placed_item_has_no_score(self):
+        """An item placed from a close spec's simulation reads Estimated, with no bar and no figure."""
+        token, spec, slot, item_id = self.a_placed_item()
+        game = self.open(cls=token, saved=f"EasyBISDB = {{ altCount = {ladders.MAX_ALTERNATIVES} }} "
+                                          f"EasyBISCharDB = {{ class = '{token}', spec = {spec}, list = 'pve' }}")
+        row = next(frame for frame in self.frames(game) if frame.data.kind == "item" and frame.data.id == item_id)
+        self.assertTrue(row.data.placed)
+        self.assertFalse(row.data.bis)
+        self.assertIsNone(row.data.gap)
+        self.assertIsNone(row.data.ratio)
+        self.assertEqual(strip_colors(row.rank.text), "Estimated")
+        self.assertFalse(row.bar.shown, "no score, no bar")
+        game.stub.run(row, "OnEnter")
+        lines = [strip_colors(line[1]) for line in game.lua.globals().GameTooltip.lines.values()]
+        self.assertIn(game.ns.L.TIP_PLACED, lines)
+        score = game.ns.L.TIP_SCORE.split("%")[0]
+        self.assertFalse(any(line.startswith(score) for line in lines), "no score in its tooltip either")
+
     def test_tooltip_opens_beside_the_window(self):
         game = Game(saved=ENHANCEMENT)
         game.stub.itemNames[EYE_OF_REND] = "Eye of Rend"
@@ -1651,12 +1690,12 @@ class WindowTest(unittest.TestCase):
 
     def test_a_faction_nobody_knows_how_to_earn(self):
         """The Watchers' rings stay in the list, a grey "?" after their name that the tooltip explains."""
-        game = self.open(cls="MAGE")
+        game = self.open(cls="PRIEST")   # Discipline: a healer's list, which stays on the weights
         window = game.ns.Browser.window
         rows = self.frames(game)
         watchers = [row for row in rows if row.data.kind == "item" and row.data.reputation
                     and row.data.reputation.factionID == 2819]
-        self.assertTrue(watchers, "the Arcane list keeps The Watchers' rings")
+        self.assertTrue(watchers, "the Discipline list keeps The Watchers' rings")
         for row in watchers:
             self.assertTrue(row.name.text.endswith(" |cff808080?|r"), row.name.text)
         others = [row for row in rows if row.data.kind == "item" and not (row.data.reputation
@@ -1950,9 +1989,31 @@ class WindowTest(unittest.TestCase):
                             self.assertFalse([e for e in entries.values() if e.requirement.kind != "r"])
         self.assertGreater(artisans, 0)
 
-    def crafter_game(self, *professions) -> Game:
-        """Fury's list, where Timbermaw sells three leatherworking patterns; the player has these professions."""
-        game = self.open(saved="EasyBISCharDB = { class = 'WARRIOR', spec = 1, list = 'pve' }", cls="WARRIOR")
+    TIMBERMAW_PIECES = (15065, 19044, 19049)   # made from Timbermaw's patterns 20254, 19326 and 19327
+
+    def timbermaw_spec(self, worn=False) -> tuple:
+        """(class, spec): the first PvE list that shows the pieces of Timbermaw's three leatherworking patterns;
+        worn: one of them is a best pick, on the sheet."""
+        flt = for_list(default_filter(), "pve")
+        pieces = set(self.TIMBERMAW_PIECES)
+        for token in test_addon.CLASSES:
+            for spec, modes in self.kept[token].items():
+                visible = {slot: [e for e in modes["pve"][slot] if e.passes(flt)] for slot, _ in ladders.SLOTS}
+                visible["main"], visible["off"] = ladders.weapon_lists(visible["main"], visible["off"])
+                shown, best = set(), set()
+                for slot, _ in ladders.SLOTS:
+                    picks, alternatives = ladders.picks(slot, visible[slot], ladders.ALTERNATIVES)
+                    shown |= {e.shown("a") for e in picks + alternatives}
+                    best |= {e.shown("a") for e in picks}
+                if pieces <= shown and (not worn or best & pieces):
+                    return token, spec
+        self.fail("no PvE list shows the pieces of Timbermaw's three patterns: these tests need another example")
+
+    def crafter_game(self, *professions, worn=False) -> Game:
+        """A list where Timbermaw sells three leatherworking patterns (timbermaw_spec); the player has these
+        professions."""
+        token, spec = self.timbermaw_spec(worn)
+        game = self.open(saved=f"EasyBISCharDB = {{ class = '{token}', spec = {spec}, list = 'pve' }}", cls=token)
         lua, stub = game.lua, game.stub
         stub.learn(lua.table_from({index: lua.table_from({1: name, 2: rank, 3: line})
                                    for index, (name, rank, line) in enumerate(professions, 1)}))
@@ -2211,14 +2272,14 @@ class WindowTest(unittest.TestCase):
     def test_character_sheet_a_crafters_piece_is_not_earned_by_another_profession(self):
         """A piece made from a recipe of another profession: the crafter's standing, so no gold on the sheet."""
         for profession, earned in ((("Tailoring", 300, 197), False), (("Leatherworking", 300, 165), True)):
-            game = self.crafter_game(profession)
+            game = self.crafter_game(profession, worn=True)
             self.earn(game, 576, 8, 42000, 42000, 43000)
             game.stub.run(game.ns.Browser.window.tabs.buttons[3], "OnClick")
             view = game.ns.Character.view
             cells = [view.cells[index] for index in range(1, len(view.cellData) + 1)
                      if view.cellData[index].reputation and view.cellData[index].reputation.kind == "r"
                      and view.cellData[index].reputation.profession == "Leatherworking"]
-            self.assertTrue(cells, "Fury's sheet has a Timbermaw pattern's piece")
+            self.assertTrue(cells, "the sheet has a Timbermaw pattern's piece")
             for cell in cells:
                 self.assertEqual("Earned" in plain(cell.where.text), earned, profession[0])
                 self.assertEqual("|cffffd100" in cell.where.text, earned, profession[0])
