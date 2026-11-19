@@ -17,6 +17,7 @@ The window's controls use the game's panel, menu and achievement artwork.
   Widgets.MarkNew(button, text)                    a small green badge on its corner
   Widgets.ListHighlight(row, layer, alpha)          a quest-list highlight for an interactive row
   Widgets.Click()                                  the game's click sound
+  Widgets.Scroll(parent)                           a scroll frame and the frame it scrolls: scroll, child
 
 An active filter has a gold label. The green badge marks a new tab.
 ]]
@@ -33,6 +34,19 @@ local CATEGORY_ART = "Interface\\AchievementFrame\\UI-Achievement-Category-"
 
 function Widgets.Click()
     if PlaySound and SOUNDKIT then PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON) end
+end
+
+function Widgets.Scroll(parent)
+    local modern = C_XMLUtil ~= nil and C_XMLUtil.GetTemplateInfo ~= nil
+        and C_XMLUtil.GetTemplateInfo("ScrollFrameTemplate") ~= nil
+    local scroll = CreateFrame("ScrollFrame", nil, parent, modern and "ScrollFrameTemplate" or "UIPanelScrollFrameTemplate")
+    local child = CreateFrame("Frame", nil, scroll)
+    child:SetSize(1, 1)
+    scroll:SetScrollChild(child)
+    -- No bar when there is nothing to scroll: the older template reads the field, the newer its bar's setting.
+    scroll.scrollBarHideable = true
+    if scroll.ScrollBar and scroll.ScrollBar.SetHideIfUnscrollable then scroll.ScrollBar:SetHideIfUnscrollable(true) end
+    return scroll, child
 end
 
 function Widgets.Button(parent, text, width)

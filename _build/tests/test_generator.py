@@ -36,6 +36,7 @@ import luaout  # noqa: E402
 import phases  # noqa: E402
 import ranks  # noqa: E402
 import questie  # noqa: E402
+import reputations  # noqa: E402
 
 try:
     import lupa
@@ -592,6 +593,7 @@ class GeneratorTest(unittest.TestCase):
         corrections.apply(before, corrections.load())   # the weapons' stats, not the game's items
         corrections.fill(before, corrections.load_sources())   # ... and the sources read in QuestieDB
         corrections.price(before, corrections.load_costs())    # ... and who the neutral vendors sell to
+        corrections.assign_sides(before)   # ... and the side of Theramore's pieces
         was = ladders.build_all(before)
         gone = set(game.dropped)
         for token, specs in self.kept.items():
@@ -606,6 +608,55 @@ class GeneratorTest(unittest.TestCase):
                                 lost = {entry.item_id for rows in then[slot] for entry in rows} & gone
                                 self.assertTrue(lost, f"{token} {spec} {mode} {slot} {flt} changed with nothing dropped")
 
+
+    def test_theramores_pieces_are_the_alliances(self):
+        """corrections.assign_sides: no piece sold against Theramore is left to both sides, and no other piece moves."""
+        raw = fdb.load(CACHE, corrected=False)
+        sold = {item_id for item_id, item in raw.items.items()
+                if any(source[0] == "r" and source[1] == "2799" for source in item["sources"])}
+        self.assertTrue(sold)
+        open_to_both = {item_id for item_id in sold if not raw.items[item_id]["side"]}
+        self.assertEqual(set(corrections.assign_sides(raw)), open_to_both)
+        self.assertEqual({raw.items[item_id]["side"] for item_id in sold}, {"a"})
+        self.assertEqual(corrections.assign_sides(raw), [], "a second pass finds nothing left to do")
+
+    def test_reputation_file_matches_the_reading(self):
+        """Data/Reputation.lua says what corrections/reputations.json holds, for the items the lists show."""
+        reading = reputations.load()
+        if not reading:
+            self.skipTest("the reputations were not read yet (corrections/reputations.json)")
+        text = luaout.reputation_file(self.db, self.kept, reading)
+        block = lambda name: re.search(name + r" = \[==\[\n(.*?)\]==\]", text, re.S).group(1).splitlines()
+        factions = {int(line.split("|")[0]): line.split("|") for line in block("factions")}
+        self.assertEqual(set(factions), set(reputations.FACTIONS) & set(factions))
+        self.assertEqual(factions[2819][3:5], ["0", "0"], "nothing is known of how to earn The Watchers")
+        self.assertEqual({number: fields[9] for number, fields in factions.items() if fields[9]},
+                         {number: str(area) for number, area in reputations.BATTLEGROUNDS.items()},
+                         "the battlegrounds' factions name their battleground")
+        shown = luaout.shown_ids(self.kept)
+        for line in block("items"):
+            fields = line.split("|")
+            self.assertIn(int(fields[0]), shown)
+            self.assertIn(int(fields[2]), factions)
+            self.assertIn(fields[3], {"3", "4", "5", "6", "7"})
+            self.assertIn(fields[4], {reputations.WEAR, reputations.QUEST, reputations.RECIPE})
+            if fields[4] == reputations.RECIPE:
+                self.assertTrue(fields[8] and fields[9].isdigit(), f"{fields[0]}: a recipe says its profession and skill")
+                self.assertTrue(fields[10].isdigit(), f"{fields[0]}: a recipe names its recipe item")
+        # a recipe's vendor is the one that sells the recipe: Timbermaw's patterns are Meilosh's, in Felwood
+        rows = {line.split("|")[0]: line.split("|") for line in block("items") + block("enchants")}
+        vendors = {line.split("|")[0]: line.split("|") for line in block("vendors")}
+        if "15065" in rows:
+            self.assertEqual(rows["15065"][4:], ["r", "11557", "", "Pattern: Warbear Woolies", "Leatherworking", "260",
+                                                 "20254"])
+            self.assertEqual(vendors["11557"], ["11557", "Meilosh", "1448", "65.7", "2.8"])
+        if "s23800" in rows:
+            self.assertEqual(rows["s23800"][1:], ["576", "5", "r", "1", "Formula: Enchant Weapon - Agility", "11557",
+                                                  "19445", "Enchanting", "290"])
+        for fields in rows.values():
+            vendor = fields[5] if fields[0][0] != "s" else fields[6]
+            if fields[3 if fields[0][0] == "s" else 4] == reputations.RECIPE and vendor:
+                self.assertIn(vendor, vendors, f"{fields[0]}: the recipe's vendor is in the vendors block")
 
     def test_sources_read_in_questiedb_fill_the_data(self):
         """corrections.fill on the real data: an item of ForeverDB's lists gets a source and its phase, a piece
@@ -896,8 +947,9 @@ class HoleTest(unittest.TestCase):
                                                                   "consumables": 0}))
             self.assertEqual(sorted(path.name for path in target.iterdir()),
                              ["Capture.lua", "EasyBIS_Capture.toc", "Ids.lua"])
-            # the raid piece first, the weapons last: the game may stop answering before the end
-            self.assertIn("\n20 8 9 1 2 3 7\n", (target / "Ids.lua").read_text(encoding="utf-8"))
+            # the pieces of the lists first, then the weapons; the raid piece left out of the lists last: the server
+            # does not answer for an item it lacks, and the capture stops on a long silence
+            self.assertIn("\n8 9 1 2 3 7 20\n", (target / "Ids.lua").read_text(encoding="utf-8"))
             listed = [line for line in (target / "EasyBIS_Capture.toc").read_text(encoding="utf-8").splitlines()
                       if line and not line.startswith("#")]
             self.assertEqual(listed, ["Ids.lua", "Capture.lua"])
@@ -1341,8 +1393,8 @@ def cbor(value) -> bytes:
     def head(major, number):
         if number < 24:
             return bytes([major << 5 | number])
-        size = 1 if number < 256 else 2 if number < 65536 else 4
-        return bytes([major << 5 | {1: 24, 2: 25, 4: 26}[size]]) + number.to_bytes(size, "big")
+        size = 1 if number < 256 else 2 if number < 65536 else 4 if number < 1 << 32 else 8
+        return bytes([major << 5 | {1: 24, 2: 25, 4: 26, 8: 27}[size]]) + number.to_bytes(size, "big")
     if value is None:
         return b"\xf6"
     if isinstance(value, float):
@@ -2120,6 +2172,14 @@ function stub.wait()
     stub.timers = {}
     for _, callback in ipairs(timers) do callback() end
 end
+-- the tooltip of a row: its name, then "Requires <asks>" when the row has asks
+function C_TooltipInfo.GetMerchantItem(index)
+    local row = stub.window[index]
+    if not row then return nil end
+    local lines = { { leftText = row.name }, { leftText = "Requires Level 60" } }
+    if row.asks then lines[#lines + 1] = { leftText = "Requires " .. row.asks } end
+    return { lines = lines }
+end
 """
 REAL_LINK = "|cffffffff|Hitem:226404::::::::60:::::|h[Tarnished Undermine Real]|h|r"
 
@@ -2151,6 +2211,33 @@ class VendorToolTest(unittest.TestCase):
 
     def chat(self):
         return "\n".join(str(line) for line in self.stub.chat.values())
+
+    def test_the_window_keeps_what_each_row_asks(self):
+        """Only the window's tooltip says what the Alterac and Warsong quartermasters ask: it is kept, and read."""
+        self.show((19325, "Don Rodrigo's Band", 0, [(2, REAL_LINK, "Real")]), (17348, "Major Healing Draught", 900, None))
+        self.stub.window[1].asks = "Stormpike Guard - Exalted"
+        self.stub.event(None, "MERCHANT_SHOW")
+        db = self.lua.globals().EasyBISCaptureDB
+        kept = db.asks.a227853
+        self.assertEqual(kept.split("\n"), ["1|1.0.0|1|enUS|2026-11-15 12:30|Pix Xizzix", "17348\t",
+                                            "19325\tStormpike Guard - Exalted"])
+        self.assertIn("Pix Xizzix: 2 items read in the window, 1 of them ask for a reputation.", self.chat())
+        self.assertIn("--import-reputations", self.chat())
+        saved = ('EasyBISCaptureDB = {\n["asks"] = {\n["a227853"] = "' + kept.replace("\n", "\\n") + '",\n},\n'
+                 '["vendors"] = {\n["v227853"] = "' + self.kept().replace("\n", "\\n") + '",\n},\n}\n')
+        asks = capture.parse_asks(saved)
+        self.assertEqual(asks[227853]["name"], "Pix Xizzix")
+        self.assertEqual(asks[227853]["items"], {19325: "Stormpike Guard - Exalted", 17348: ""})
+        self.assertEqual(set(capture.parse_vendors(saved)), {227853}, "the prices and the reputations do not mix")
+        self.assertEqual(reputations.read_windows(asks), {19325: (730, 7), 17348: None})
+        self.assertEqual(reputations.read_windows({1: {**asks[227853], "locale": "frFR"}}), {}, "English only")
+
+    def test_a_window_that_asks_for_nothing_is_not_kept(self):
+        self.show((17348, "Major Healing Draught", 900, None))
+        self.stub.event(None, "MERCHANT_SHOW")
+        db = self.lua.globals().EasyBISCaptureDB
+        self.assertFalse(db and db.asks)
+        self.assertNotIn("ask for a reputation", self.chat())
 
     def test_the_window_is_kept_as_the_importer_reads_it(self):
         self.show((272411, "Arcanoweave Cloak", 0, [(75, REAL_LINK, "Real")]),
@@ -2312,6 +2399,243 @@ class PriceImportTest(unittest.TestCase):
     def test_an_unknown_format_asks_for_the_tool_again(self):
         with self.assertRaises(ValueError):
             capture.parse_vendors(self.saved().replace('"1|1.60.1', '"2|1.60.1'))
+
+
+# -- how a reputation is earned, read in QuestieDB --------------------------------------------------------------
+
+EARNING_ROWS = {
+    # a chain whose two steps share a title: two quests
+    ("Quest", 1, "S"): {1: "The Bloodsail Buccaneers", 4: 37, 17: 33, 22: 2}, ("Quest", 1, "26"): [[21, 75]],
+    ("Quest", 2, "S"): {1: "The Bloodsail Buccaneers", 4: 37, 17: 33}, ("Quest", 2, "13"): [1],
+    ("Quest", 2, "26"): [[21, 75]],
+    # offered only below Neutral, and only at Exalted: listed last, counted nowhere
+    ("Quest", 30, "S"): {1: "Traitor", 4: 40, 17: 33, 24: 1}, ("Quest", 30, "20"): [21, 0],
+    ("Quest", 30, "26"): [[21, 499]],
+    ("Quest", 31, "S"): {1: "Late", 4: 60, 17: 33}, ("Quest", 31, "19"): [21, 42000], ("Quest", 31, "26"): [[21, 200]],
+    # the same repeatable quest at three givers: one
+    **{key: value for number in (3, 4, 5) for key, value in (
+        (("Quest", number, "S"), {1: "Scourgestones", 4: 50, 17: 28, 24: 1}), (("Quest", number, "13"), [9]),
+        (("Quest", number, "26"), [[529, 25]]))},
+    # a quest the game does not have, and one offered only below level 60
+    ("Quest", 40, "S"): {1: "DND FLAG", 4: 60, 17: 1}, ("Quest", 40, "26"): [[529, 500]],
+    ("Quest", 41, "S"): {1: "Bracket", 4: 30, 17: 1, 32: 39}, ("Quest", 41, "26"): [[529, 100]],
+    # two paths that exclude one another, the first with a step after it: the path that gives the most counts
+    ("Quest", 10, "S"): {1: "Path A", 4: 60, 17: 440}, ("Quest", 10, "16"): [20], ("Quest", 10, "26"): [[910, 100]],
+    ("Quest", 11, "S"): {1: "Path A", 4: 60, 17: 440}, ("Quest", 11, "13"): [10], ("Quest", 11, "16"): [20],
+    ("Quest", 11, "19"): [910, 3000], ("Quest", 11, "26"): [[910, 100]],
+    ("Quest", 20, "S"): {1: "Path B", 4: 60, 17: 440}, ("Quest", 20, "16"): [10], ("Quest", 20, "26"): [[910, 150]],
+    # a row with neither level nor zone beside the full quest: an unfinished copy
+    ("Quest", 42, "S"): {1: "Clash", 4: 60, 17: 16606, 24: 1}, ("Quest", 42, "26"): [[2799, 100]],
+    ("Quest", 43, "S"): {1: "Clash"}, ("Quest", 43, "26"): [[2799, 100]],
+    # Forever's Skyborne of the Horde only
+    ("Quest", 50, "S"): {1: "Moonglade", 4: 10, 17: 493, 6: 1 << 33}, ("Quest", 50, "26"): [[609, 25]],
+}
+
+BLACKLIST_LUA = """local QuestieQuestBlacklist = QuestieLoader:CreateModule("QuestieQuestBlacklist")
+function QuestieQuestBlacklist:Load()
+    local questsToBlacklist = {
+        [40] = true, -- not in the game
+        [7704] = Expansions.Current ~= Expansions.Wotlk, -- Only implemented in Wrath
+        [8614] = Expansions.Current >= Expansions.Tbc,
+        [78124] = HIDE_ON_MAP, -- Nar'thalas Almanac
+        [1374] = Expansions.Current >= Expansions.Cata or Questie.IsForever, -- replaced on Forever
+        [2358] = Expansions.Current == Expansions.Era or Expansions.Current >= Expansions.Wotlk,
+        --[302] = true,
+        [78132] = not Questie.IsSoD,
+        [17] = false,
+    }
+
+    return questsToBlacklist
+end
+"""
+
+
+class EarningTest(unittest.TestCase):
+    def test_questies_list_is_read_as_on_forever(self):
+        with tempfile.TemporaryDirectory() as folder:
+            self.assertIsNone(reputations.hidden_quests(folder))
+            path = Path(folder) / reputations.BLACKLIST
+            path.parent.mkdir(parents=True)
+            path.write_text(BLACKLIST_LUA, encoding="utf-8")
+            self.assertEqual(reputations.hidden_quests(folder), {40, 7704, 1374, 2358, 78132})
+            path.write_text(BLACKLIST_LUA.replace("[17] = false", "[17] = SomeCall(1)"), encoding="utf-8")
+            with self.assertRaises(ValueError):
+                reputations.hidden_quests(folder)
+
+    def test_the_quests_one_character_can_do(self):
+        with tempfile.TemporaryDirectory() as folder:
+            store = questie.Store(questie_addon(Path(folder) / "QuestieDB", EARNING_ROWS))
+            found = reputations.earning(store, hidden={40})
+        rows = lambda faction: [row[:3] + row[5:] for row in found[faction]["methods"]]
+        # the steps of a chain stay apart; what helps only below Neutral or at Exalted comes last
+        self.assertEqual(rows(21), [["The Bloodsail Buccaneers", 75, 0, "", "", ""],
+                                    ["The Bloodsail Buccaneers", 75, 0, "", "", ""],
+                                    ["Traitor", 499, 1, "", 3, ""], ["Late", 200, 0, 7, "", ""]])
+        self.assertEqual({name: found[21][name] for name in ("quests", "repeatable", "once")},
+                         {"quests": 4, "repeatable": 0, "once": {"a": 150, "h": 150}})
+        # one quest at three givers; the hidden one and the one below level 60 are left out
+        self.assertEqual(rows(529), [["Scourgestones", 25, 1, "", "", ""]])
+        # the paths: each step knows its branch, and the most one path gives counts
+        self.assertEqual(rows(910), [["Path B", 150, 0, "", "", "10:20"], ["Path A", 100, 0, "", "", "10:10"],
+                                     ["Path A", 100, 0, 4, "", "10:10"]])
+        self.assertEqual(found[910]["once"], {"a": 200, "h": 200})
+        # the unfinished copy is not a quest of its own
+        self.assertEqual(rows(2799), [["Clash", 100, 1, "", "", ""]])
+        # the Skyborne of the Horde are the Horde
+        self.assertEqual(found[609]["methods"][0][3], "h")
+
+    def test_a_battleground_faction_earned_elsewhere_stops_the_import(self):
+        rows = dict(EARNING_ROWS)
+        rows[("Quest", 42, "S")] = {**rows[("Quest", 42, "S")], 17: 1}
+        with tempfile.TemporaryDirectory() as folder:
+            store = questie.Store(questie_addon(Path(folder) / "QuestieDB", rows))
+            with self.assertRaisesRegex(ValueError, "BATTLEGROUNDS"):
+                reputations.earning(store)
+
+
+class CapturedReputationTest(unittest.TestCase):
+    PARSED = {"locale": "enUS", "game": "1.60.1.70959", "date": "2026-11-19", "items": {
+        1: (["Sentinel's Chain Leggings", "Requires Level 60", "Requires Silverwing Sentinels - Honored"], {}),
+        2: (["Outrider's Bow", "Requires Level 58"], {}),
+        3: (["Night Claw", "Requires Nightclaw Druids - Friendly"], {}),
+        4: (["Highlander's Pauldrons", "Requires The League of Arathor - Exalted"], {}),
+        5: (["Stormpike Ring", "Requires Stormpike Guard - Revered"], {}),
+    }}
+
+    def test_the_tooltips_say_what_a_piece_asks(self):
+        facts, others, plain = reputations.read_capture(self.PARSED)
+        self.assertEqual(facts, {1: (890, 5), 4: (509, 7), 5: (730, 6)})
+        self.assertEqual(others, {3: "Nightclaw Druids"})
+        self.assertEqual(plain, {2})
+        self.assertEqual(reputations.read_capture({**self.PARSED, "locale": "frFR"}), ({}, {}, set()),
+                         "the phrase is read in English only")
+
+    def test_the_tooltips_against_the_data(self):
+        reading = {"items": {2: [{"kind": "w", "faction": 889, "standing": 4}],
+                             5: [{"kind": "q", "faction": 730, "standing": 5}]}}
+        found = reputations.check_capture(self.PARSED, {4: (509, 6)}, reading)
+        self.assertEqual(found["same"], [])
+        self.assertEqual(found["differs"], [(4, (509, 6), (509, 7))])
+        self.assertEqual([row[0] for row in found["missing"]], [1, 5], "a quest's gate is not the wearer's")
+        self.assertEqual(found["extra"], [(2, (889, 4), None)])
+        self.assertEqual(found["outside"], [(3, None, "Nightclaw Druids")])
+
+    ATLAS = """
+data["AlteracValley"] = {
+	items = {
+		{ -- Exalted
+			name = ALIL["Exalted"],
+			[ALLIANCE_DIFF] = {
+				{ 1, "f730rep8" },
+				{ 2, 19325 }, -- Don Rodrigo's Band
+			},
+			[HORDE_DIFF] = {
+				{ 1, "f729rep8" },
+				{ 2, 19325 }, -- Don Julio's Band
+			},
+		},
+		{ -- Honored
+			name = ALIL["Honored"],
+			[HORDE_DIFF] = {
+				{ 1, "f729rep6" },
+				{ 2, 19083 }, -- Frostwolf Legionnaire's Cloak
+			},
+		},
+		{
+			name = "No standing",
+			[NORMAL_DIFF] = {
+				{ 1, 12345 },
+			},
+		},
+		{
+			name = ALIL["Revered"],
+			[NORMAL_DIFF] = {
+				{ 1, "f576rep7" },
+				{ 2, 19218 },
+				{ 3, "f576rep2" },
+				{ 4, 999 },
+			},
+		},
+	},
+}
+"""
+
+    def test_atlasloot_tables_say_a_standing_per_side(self):
+        found = reputations.read_atlasloot(self.ATLAS)
+        self.assertEqual(found, {19325: {"a": (730, 7), "h": (729, 7)}, 19083: {"h": (729, 5)},
+                                 19218: {"": (576, 6)}}, "a piece under no standing, or below Neutral, is left out")
+        self.assertEqual(reputations.by_side(found[19325]), {"a": (730, 7), "h": (729, 7)})
+        self.assertEqual(reputations.by_side(found[19083]), {"": (729, 5)}, "one side's piece")
+        self.assertEqual(reputations.by_side({"a": (1234, 5), "h": (729, 5)}), {"": (729, 5)}, "FACTIONS only")
+        with tempfile.TemporaryDirectory() as folder:
+            self.assertEqual(reputations.atlasloot(folder), ({}, ""))
+            addon = Path(folder) / "AtlasLootClassic_PvP"
+            addon.mkdir()
+            (addon / "data.lua").write_text(self.ATLAS, encoding="utf-8")
+            (addon / "AtlasLootClassic_PvP_Forever.toc").write_text("## Version: Forever 1.60.1\n", encoding="utf-8")
+            self.assertEqual(reputations.atlasloot(folder), (found, "AtlasLootClassic_PvP Forever 1.60.1"))
+
+    def test_atlasloot_is_checked_against_the_other_sources(self):
+        atlas = {1: {"a": (730, 7), "h": (729, 7)}, 2: {"": (889, 5)}, 3: {"": (890, 6)}}
+        found = reputations.cross_check(atlas, {"foreverdb": {1: (729, 7), 2: (889, 6), 9: (21, 4)},
+                                                "windows": {3: None}, "tooltips": {}})
+        self.assertEqual(found["foreverdb"], {"agree": 1, "differ": [[2, [889, 6], {"": [889, 5]}]]})
+        self.assertEqual(found["windows"], {"agree": 0, "differ": [[3, None, {"": [890, 6]}]]},
+                         "a window that asks for none disagrees")
+        lines = reputations.check_lines(found)
+        self.assertEqual(len(lines), 2, "a source that speaks of none of AtlasLoot's pieces says nothing")
+        self.assertTrue(lines[0].startswith("AtlasLoot against ForeverDB: 1 items agree, 1 differ (2 [889, 6]"))
+        self.assertIn("3 none", lines[1])
+
+    def test_atlasloot_fills_what_a_quartermaster_asks(self):
+        class Store:
+            zones = types.SimpleNamespace(ui_maps={})
+
+            def ids(self, kind, item_id, field):
+                return [13217, 13218] if item_id == 19325 else []
+
+            def row(self, kind, npc):
+                return {13217: {questie.NPC_NAME: "Thanthaldis Snowgleam"},
+                        13218: {questie.NPC_NAME: "Grunnda Wolfheart"}}.get(npc, {})
+
+            def table(self, kind, npc, field):
+                return {}
+
+        db = types.SimpleNamespace(vendors={13217: ["Thanthaldis Snowgleam", 1459, 50.0, 50.0]}, items={
+            19325: {"sources": [["V", "13217", "0"]]},       # ForeverDB names the Alliance's quartermaster only
+            19083: {"sources": [["V", "13219", "500"]]},
+            30: {"sources": [["q", "7", "A quest"]]},          # not sold: AtlasLoot is not read for it
+            31: {"sources": [["V", "99", "0"]]},
+        })
+        atlas = {19325: {"a": (730, 7), "h": (729, 7)}, 19083: {"h": (729, 5)}, 30: {"": (729, 5)},
+                 31: {"": (1234, 5)}}
+        reader = reputations._Reader(db, Store(), {}, {}, {}, None, atlas)
+        base = {"kind": "w", "read": "atlasloot", "price": 0}
+        self.assertEqual(reader.from_atlas(19325, db.items[19325]), [
+            {**base, "side": "a", "faction": 730, "standing": 7, "vendor": 13217},
+            {**base, "side": "h", "faction": 729, "standing": 7, "vendor": 13218}])
+        self.assertEqual(reader.vendors[13218][0], "Grunnda Wolfheart", "QuestieDB names the Horde's")
+        self.assertEqual(reader.from_atlas(19083, db.items[19083]),
+                         [{**base, "side": "", "faction": 729, "standing": 5, "vendor": 13219, "price": 500}])
+        self.assertEqual(reader.from_atlas(30, db.items[30]), [])
+        self.assertEqual(reader.from_atlas(31, db.items[31]), [])
+        self.assertEqual(reader.outside, {"1234": {31}})
+
+    def test_what_the_build_cannot_place_is_reported(self):
+        db = types.SimpleNamespace(items={
+            10: {"sources": [["V", "14753", "0"]]},        # Silverwing's quartermaster, nothing says the requirement
+            11: {"sources": [["V", "14753", "0"]]},        # the same, read in the game: it asks for one
+            12: {"sources": [["V", "14753", "0"]]},        # the same, its tooltip says nothing: his window may
+            13: {"sources": [["v", "15127", "", "", "", "", "0"]]},   # a vendor a requirement was read for
+            14: {"sources": [["V", "99", "0"]]},           # any other vendor
+            15: {"sources": [["q", "7", "A quest"]]},
+        })
+        reading = {"items": {11: [{"kind": "w", "faction": 890, "standing": 5, "vendor": 14753}],
+                             20: [{"kind": "w", "faction": 509, "standing": 7, "vendor": 15127}]},
+                   "outside": {"Nightclaw Druids": [15, "s9", 16], "1234": [99]}}
+        outside, unasked = reputations.gaps(reading, db, shown={10, 11, 12, 13, 14, 15}, enchants={"s9"})
+        self.assertEqual(outside, {"Nightclaw Druids": [15, "s9"]}, "only what the lists show")
+        self.assertEqual(unasked, {890: [10, 12], 509: [13]})
 
 
 if __name__ == "__main__":

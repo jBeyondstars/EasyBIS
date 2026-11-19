@@ -22,6 +22,7 @@ sys.path.insert(0, str(TESTS))
 import fdb  # noqa: E402
 import ladders  # noqa: E402
 import phases  # noqa: E402
+import reputations  # noqa: E402
 import test_addon  # noqa: E402
 from test_addon import (  # noqa: E402
     ATIESH, EVERYTHING, MAGEBLADE, VAULTED_SECRETS, WITH_PVP, Game, default_filter, for_list, strip_colors)
@@ -758,9 +759,15 @@ class WindowTest(unittest.TestCase):
         self.assertEqual(box.text.text, "Available now")
         self.assertFalse(box.GetChecked(box))
         self.assertTrue(window.phase.button.IsEnabled(window.phase.button))
+        # the filters fill their row: the box sits in the title bar, over the window's border and title
+        self.assertEqual((box.points[1][1], box.points[1][2].name, box.points[1][3]),
+                         ("TOPRIGHT", window.name, "TOPRIGHT"))
+        self.assertGreater(box.GetFrameLevel(box), window.NineSlice.GetFrameLevel(window.NineSlice),
+                           "under the border, its title bar hides the box")
+        self.assertGreater(box.GetFrameLevel(box), window.TitleContainer.GetFrameLevel(window.TitleContainer))
         controls = [window.spec, window.list, window.phase, window.slot, window.source, window.zone]
-        right = 66 + sum(control.width for control in controls) + 8 * 5 + 10 + box.width
-        self.assertLessEqual(right, WIDTH - 8, "the box stays inside the window")
+        right = 66 + sum(control.width for control in controls) + 8 * 5
+        self.assertLessEqual(right, WIDTH - 8, "the filters stay inside the window")
         chosen = label(window.phase)
         self.assertEqual(self.shown_rows(game), self.reference_rows("PRIEST", 3, "pvp", default_filter(phase=EVERYTHING)))
 
@@ -794,9 +801,10 @@ class WindowTest(unittest.TestCase):
         open_dropdown(game, window.options)
         menu = game.stub.menu
         self.assertEqual(texts(menu), ["Options", "BIS lines in item tooltips", "Tooltips show my class only",
-                                       "Tooltips show alternatives too", "Items with no known source",
+                                       "Tooltips show alternatives too", "Reputation needed in item tooltips",
+                                       "Items with no known source",
                                        "Only items seen in Forever", "PvP rewards", "Alternatives per slot",
-                                       "Compact rows", "Minimap button"])
+                                       "Faction", "Compact rows", "Short reputation lines", "Minimap button"])
         tooltips = find(menu, "BIS lines")
         self.assertTrue(tooltips.selected())
         tooltips.pick()
@@ -855,10 +863,30 @@ class WindowTest(unittest.TestCase):
         five = self.reference_rows("SHAMAN", 2, "pvp", default_filter(unsourced=True, pvp=True), count=5)
         self.assertEqual(self.shown_rows(game), five)
         self.assertGreater(len(five), len(with_them))
+        # the faction the lists are for: the character's, or the other one; the title says when it is not its own
+        sides = find(menu, "Faction")
+        self.assertEqual(sides.kind, "button")
+        self.assertEqual(texts(sides), ["Alliance (my character)", "Horde"])
+        self.assertEqual([bool(item.selected()) for item in sides["items"].values()], [True, False])
+        self.assertEqual(window.titleShown, "Easy BIS")
+        find(sides, "Horde").pick()
+        self.assertEqual(game.ns.char.side, "h")
+        self.assertTrue(find(sides, "Horde").selected())
+        horde = self.reference_rows("SHAMAN", 2, "pvp", default_filter("h", unsourced=True, pvp=True), count=5)
+        self.assertEqual(self.shown_rows(game), horde)
+        self.assertNotEqual(horde, five)
+        self.assertEqual(window.titleShown, "Easy BIS - Horde lists")
+        find(sides, "Alliance (my character)").pick()
+        self.assertIsNone(game.ns.char.side)
+        self.assertEqual(self.shown_rows(game), five)
+        self.assertEqual(window.titleShown, "Easy BIS")
         french = Game(locale="frFR")
         french.ns.Browser.Open()
         open_dropdown(french, french.ns.Browser.window.options)
         self.assertEqual(texts(find(french.stub.menu, "Récompenses JcJ")), ["Liste JcE", "Liste JcJ"])
+        self.assertEqual(texts(find(french.stub.menu, "Faction")), ["Alliance (mon personnage)", "Horde"])
+        find(find(french.stub.menu, "Faction"), "Horde").pick()
+        self.assertEqual(french.ns.Browser.window.titleShown, "Easy BIS - listes Horde")
         self.assertEqual(french.ns.L.OPT_ALT_COUNT, "Alternatives par emplacement")
 
     def test_minimap_button(self):
@@ -1284,7 +1312,7 @@ class WindowTest(unittest.TestCase):
         game.ns.Browser.Open()
         window = game.ns.Browser.window
         self.assertEqual([label(button) for button in window.tabs.buttons.values()],
-                         ["Items", "Enchants", "Character", "Consumables"])
+                         ["Items", "Enchants", "Character", "Consumables", "Reputations"])
         self.assertIsNone(game.ns.Character.view, "the sheet is made when it is first asked for")
         game.stub.run(window.tabs.buttons[3], "OnClick")
         view = game.ns.Character.view
@@ -1577,6 +1605,666 @@ class WindowTest(unittest.TestCase):
 
     # -- a client without the newer frames and menus ---------------------------------------
 
+    # -- reputations ---------------------------------------------------------------------------
+
+    @staticmethod
+    def earn(game, faction, reaction, value=0, low=0, high=3000):
+        game.stub.factions[faction] = game.lua.table_from(
+            {"reaction": reaction, "value": value, "low": low, "high": high, "name": f"Faction {faction}"})
+        game.stub.fire("UPDATE_FACTION")
+        game.stub.runTimers()
+
+    @staticmethod
+    def gated_rows(game) -> list:
+        window = game.ns.Browser.window
+        return [window.rows[index] for index in range(1, len(window.rowData) + 1)
+                if window.rowData[index].reputation]
+
+    def pvp_game(self, **options) -> Game:
+        """A list where reputations stand in front of several pieces."""
+        return self.open(saved="EasyBISCharDB = { class = 'WARRIOR', spec = 2, list = 'pvp' }", cls="WARRIOR", **options)
+
+    def test_rows_say_what_a_reputation_asks(self):
+        game = self.pvp_game()
+        gated = self.gated_rows(game)
+        self.assertTrue(gated)
+        row = gated[0]
+        requirement = row.data.reputation
+        self.assertTrue(row.rep.shown and row.repState.shown)
+        self.assertIn(game.ns.Reputation.StandingName(requirement.standing), row.rep.text)
+        self.assertEqual(row.height, ONE_LINE, "a row on one line keeps its height")
+        self.assertNotIn("|cffffd100", row.repState.text, "gold is for what is earned")
+        # a row with no reputation says nothing of one
+        free = next(frame for frame in self.frames(game) if frame.data.kind == "item" and not frame.data.reputation)
+        self.assertFalse(free.rep.shown or free.repState.shown)
+        # earned: the state turns gold, and the row follows the game without being asked
+        self.earn(game, requirement.factionID, 8, 42000, 42000, 43000)
+        row = next(frame for frame in self.gated_rows(game) if frame.data.id == row.data.id)
+        self.assertEqual(strip_colors(row.repState.text), "Earned")
+        self.assertIn("|cffffd100", row.repState.text)
+        # on two lines the row grows by the reputation's line, and only that row
+        game.ns.SetOption(game.ns, "compact", False)
+        row = next(frame for frame in self.gated_rows(game) if frame.data.id == row.data.id)
+        self.assertEqual(row.height, ROW + 16)
+        free = next(frame for frame in self.frames(game) if frame.data.kind == "item" and not frame.data.reputation)
+        self.assertEqual(free.height, ROW)
+
+    def test_a_faction_nobody_knows_how_to_earn(self):
+        """The Watchers' rings stay in the list, a grey "?" after their name that the tooltip explains."""
+        game = self.open(cls="MAGE")
+        window = game.ns.Browser.window
+        rows = self.frames(game)
+        watchers = [row for row in rows if row.data.kind == "item" and row.data.reputation
+                    and row.data.reputation.factionID == 2819]
+        self.assertTrue(watchers, "the Arcane list keeps The Watchers' rings")
+        for row in watchers:
+            self.assertTrue(row.name.text.endswith(" |cff808080?|r"), row.name.text)
+        others = [row for row in rows if row.data.kind == "item" and not (row.data.reputation
+                  and row.data.reputation.factionID == 2819)]
+        self.assertTrue(others)
+        self.assertFalse(any(row.name.text.endswith("?|r") for row in others))
+        game.stub.run(watchers[0], "OnEnter")
+        tooltip = game.lua.globals().GameTooltip
+        lines = [strip_colors(line[1]) for line in tooltip.lines.values()]
+        self.assertIn("? No source says how to earn this reputation, nor who sells its pieces.", lines)
+        game.stub.run(others[0], "OnEnter")
+        lines = [strip_colors(line[1]) for line in tooltip.lines.values()]
+        self.assertFalse(any(line.startswith("? No source") for line in lines))
+
+        # the character sheet: the same sign by the ring's name
+        game.stub.run(window.tabs.buttons[3], "OnClick")
+        cells = [cell for cell in game.ns.Character.view.cells.values() if cell.data and cell.data.id]
+        marked = [cell for cell in cells if cell.data.reputation and cell.data.reputation.factionID == 2819]
+        self.assertTrue(marked, "a Watchers ring is the Arcane sheet's best ring before the raids")
+        self.assertTrue(all(" |cff808080?|r" in cell.name.text for cell in marked))
+        self.assertFalse(any("|cff808080?|r" in cell.name.text for cell in cells if cell not in marked))
+
+        # the Reputations tab: the "?" by the faction's name, in the list and over its side, and said in words
+        game.stub.run(window.tabs.buttons[5], "OnClick")
+        view = game.ns.ReputationView.view
+        button = next(button for button in view.buttons.values() if button.group.factionID == 2819)
+        self.assertTrue(button.name.text.endswith(" |cff808080?|r"))
+        game.stub.run(button, "OnClick")
+        self.assertEqual(view.chosen.factionID, 2819)
+        self.assertTrue(view.title.text.endswith(" |cff808080?|r"))
+        self.assertIn("? No source says how to earn this reputation", strip_colors(view.you.text))
+        other = next(button for button in view.buttons.values() if button.group.factionID != 2819)
+        self.assertFalse(other.name.text.endswith("?|r"))
+
+    def test_reputation_filter(self):
+        game = self.pvp_game()
+        window = game.ns.Browser.window
+        rows = lambda: [row for row in window.rowData.values() if row.kind == "item"]
+        everything = rows()
+        gated = [row.id for row in everything if row.reputation and row.reputation.kind != "r"]
+        self.assertTrue(gated)
+        self.assertEqual(label(window.reputation), "All")
+        self.assertEqual(look(window.reputation), "idle")
+        open_dropdown(game, window.reputation.button)
+        self.assertEqual(texts(game.stub.menu), ["All", "Within reach", "To earn"])
+        find(game.stub.menu, "To earn").pick()
+        self.assertEqual(look(window.reputation), "active", "a filter that narrows the list is gold")
+        self.assertEqual({row.id for row in rows()}, set(gated))
+        open_dropdown(game, window.reputation.button)
+        find(game.stub.menu, "Within reach").pick()
+        self.assertFalse({row.id for row in rows()} & set(gated))
+        self.assertEqual(len(rows()), len(everything) - len(gated))
+        # once earned, a piece is within reach
+        faction = game.ns.Reputation.Requirement(gated[0]).factionID
+        self.earn(game, faction, 8, 42000, 42000, 43000)
+        self.assertIn(gated[0], {row.id for row in rows()})
+        # the enchants have the filter too, the character sheet does not
+        game.stub.run(window.tabs.buttons[2], "OnClick")
+        self.assertTrue(window.reputation.shown)
+        game.stub.run(window.tabs.buttons[3], "OnClick")
+        self.assertFalse(window.reputation.shown)
+
+    def test_recipes_are_never_to_earn(self):
+        game = self.open()
+        rep = game.ns.Reputation
+        recipe = game.lua.table_from({"factionID": 576, "standing": 7, "kind": "r"})
+        worn = game.lua.table_from({"factionID": 576, "standing": 7, "kind": "w"})
+        self.assertTrue(rep.Reachable(recipe), "the crafter's reputation is not the player's to earn")
+        self.assertFalse(rep.Reachable(worn))
+        self.assertTrue(rep.Reachable(None))
+
+    def test_enchant_rows_say_what_a_reputation_asks(self):
+        game = self.open(saved="EasyBISCharDB = { phase = 9 }")
+        window = game.ns.Browser.window
+        game.stub.run(window.tabs.buttons[2], "OnClick")
+        state, gated = game.ns.Browser.state, []
+        for cls in test_addon.CLASSES:
+            for spec in range(1, int(game.ns.Index.SpecCount(cls)) + 1):
+                if not gated:
+                    state["class"], state.spec = cls, spec
+                    game.ns.SetOption(game.ns, "listAlts", False)
+                    game.ns.SetOption(game.ns, "listAlts", True)   # the window draws them again
+                    gated = self.gated_rows(game)
+        self.assertTrue(gated, "no enchant of any spec needs a reputation")
+        row = gated[0]
+        self.assertEqual(row.height, ROW + 16)
+        game.stub.run(row, "OnEnter")
+        lines = [plain(line[1]) for line in game.lua.globals().GameTooltip.lines.values()]
+        self.assertTrue(any(text.startswith("Requires ") for text in lines), lines)
+        self.assertEqual(sum(1 for text in lines if text.startswith("Requires ")), 1)
+
+    def test_reputations_tab(self):
+        game = self.pvp_game()
+        window = game.ns.Browser.window
+        self.assertIsNone(game.ns.ReputationView.view, "the tab is made when it is first asked for")
+        game.stub.run(window.tabs.buttons[5], "OnClick")
+        view = game.ns.ReputationView.view
+        self.assertTrue(view.shown)
+        self.assertEqual(look(window.tabs.buttons[5]), "lit")
+        for hidden in (window.slot, window.source, window.zone, window.reputation, window.add, window.alts, window.scroll):
+            self.assertFalse(hidden.shown)
+        for kept in (window.spec, window.list, window.phase):
+            self.assertTrue(kept.shown)
+
+        needs = view.factionData
+        self.assertTrue(needs.own[1])
+        first = needs.own[1]
+        count = first.best + first.alts + first.other
+        self.assertEqual(view.chosen.factionID, first.factionID)
+        unsure = " ?" if game.ns.Reputation.Unknown(first.factionID) else ""
+        self.assertEqual(strip_colors(view.title.text), f"Faction {first.factionID}{unsure}")
+        # the faction chosen is lit in blue: gold is for what is earned
+        button = view.buttons[1]
+        self.assertTrue(button.selected.shown)
+        self.assertEqual(list(button.selected.vertexColor.values())[:3], [0.35, 0.6, 1.0])
+        # the text as large as the other tabs': their rows' fonts
+        self.assertEqual(button.name.fontObject, "EasyBISRowName")
+        self.assertEqual(view.title.fontObject, "EasyBISRowHeader")
+        self.assertEqual(view.you.fontObject, "EasyBISRowText")
+        self.assertFalse(view.buttons[2].selected.shown if view.buttons[2] else False)
+        # the list shows the name, the standing and the pieces: no bar, no count
+        self.assertTrue(button.icons[1].shown)
+        self.assertTrue(button.state.shown)
+        self.assertIsNone(button.way)
+        self.assertIsNone(button.bestChip)
+        self.assertEqual(button.height, 52)
+
+        # a piece on the track for each piece the faction opens, and a line for each
+        pieces = [piece for piece in view.pieces.values()]
+        self.assertEqual(len(pieces), count)
+        self.assertTrue(all(piece.shown for piece in pieces))
+        lines = list(view.detailData.values())
+        sections = [plain(line.text) for line in lines if line.kind == "section"]
+        quests = ["Quests"] if game.ns.Reputation.Ways(first.factionID).listed > 0 else []   # none for The Watchers
+        self.assertEqual(sections, ["Pieces for this spec", "Where", *quests, "Not known yet"])
+        self.assertEqual(len([line for line in lines if line.kind == "entry"]), count)
+        self.assertTrue([line for line in lines if line.kind == "seller"])
+        self.assertTrue(all(line.evidence in ("data", "check", "unknown") for line in lines if line.kind in ("quest", "note")))
+        self.assertTrue(any(line.kind == "note" and line.evidence == "unknown" for line in lines),
+                        "what is not known of a reputation is said to be unknown")
+
+        # never met: the whole way from Neutral is left, and nothing is gold
+        cards = list(view.cardData.values())
+        self.assertEqual(len(cards), 3)
+        self.assertTrue(cards[0].label.startswith("Left for "))
+        self.assertEqual(cards[0].note, "from Neutral")
+        self.assertNotIn("|cffffd100", view.you.text)
+        self.assertFalse(any("|cffffd100" in card.value for card in cards))
+        self.assertFalse(any("|cffffd100" in (line.standing or "") for line in lines))
+        self.assertFalse(any(piece.check.shown for piece in pieces))
+        self.assertFalse(view.watch.shown, "a faction never met is not in the game's reputation pane")
+
+        # the player earns it: the standings, the pieces and the card turn gold, and the tab follows by itself
+        self.earn(game, first.factionID, 8, 42000, 42000, 43000)
+        self.assertIn("|cffffd100", view.you.text)
+        self.assertEqual(plain(view.cardData[1].value), "All unlocked")
+        self.assertIn("|cffffd100", view.cardData[1].value)
+        self.assertTrue(all(piece.check.shown for piece in view.pieces.values()))
+        entries = [line for line in view.detailData.values() if line.kind == "entry"]
+        self.assertTrue(all("|cffffd100" in line.standing for line in entries))
+
+        # the game's reputation bar follows it on a click
+        self.assertTrue(view.watch.shown)
+        self.assertEqual(label(view.watch), "Watch")
+        game.stub.run(view.watch, "OnClick")
+        self.assertEqual(game.stub.watched, first.factionID)
+        self.assertEqual(label(view.watch), "Stop watching")
+        game.stub.run(view.watch, "OnClick")
+        self.assertIsNone(game.stub.watched)
+
+        # another faction, by a click
+        if needs.own[2]:
+            second = view.buttons[2]
+            game.stub.run(second, "OnClick")
+            self.assertEqual(view.chosen.factionID, needs.own[2].factionID)
+            self.assertEqual(game.ns.Browser.state.faction, needs.own[2].factionID)
+            self.assertTrue(view.buttons[2].selected.shown)
+            self.assertFalse(view.buttons[1].selected.shown)
+
+        # leaving the tab hides it
+        game.stub.run(window.tabs.buttons[1], "OnClick")
+        self.assertFalse(view.shown)
+        self.assertTrue(window.scroll.shown)
+        self.assertTrue(window.slot.shown)
+
+    def test_reputation_pieces_open_their_slot_or_link(self):
+        game = self.pvp_game()
+        window = game.ns.Browser.window
+        game.stub.run(window.tabs.buttons[5], "OnClick")
+        view = game.ns.ReputationView.view
+        piece = next(piece for piece in view.pieces.values() if piece.entry.id)
+        game.stub.run(piece, "OnEnter")
+        said = [plain(line[1]) for line in game.lua.globals().GameTooltip.lines.values()]
+        self.assertIn("Click: the pieces of this slot. Shift-click: link it.", said)
+        game.stub.itemNames[piece.entry.id] = "Test piece"
+        game.stub.modifier = True
+        game.stub.run(piece, "OnClick")
+        self.assertIn(f"item:{piece.entry.id}", game.stub.linked, "Shift-click links the item")
+        self.assertEqual(game.ns.Browser.state.tab, "reputations")
+        game.stub.modifier = False
+        game.stub.run(piece, "OnClick")
+        self.assertEqual(game.ns.Browser.state.tab, "items")
+        self.assertEqual(game.ns.Browser.state.slot, piece.entry.slot)
+
+    def test_reputation_sections_fold(self):
+        game = self.pvp_game()
+        window = game.ns.Browser.window
+        game.stub.run(window.tabs.buttons[5], "OnClick")
+        view = game.ns.ReputationView.view
+        kinds = lambda: [line.kind for line in view.detailData.values()]
+        self.assertIn("entry", kinds())
+        section = view.lines[1]
+        self.assertEqual(section.data.key, "pieces")
+        # each section has its picture: the pieces' is the first piece's
+        self.assertTrue(section.badge.shown)
+        self.assertEqual(section.badge.texture, view.pieces[1].icon.texture)
+        others = [view.lines[i] for i in range(2, len(view.detailData) + 1) if view.detailData[i].kind == "section"]
+        self.assertTrue(all(line.badge.shown and line.badge.texture for line in others))
+        # under a section, every other line is lighter
+        below = [view.lines[i] for i in range(2, len(view.detailData) + 1)]
+        under = [line.data.kind for line in below]
+        stop = under.index("section") if "section" in under else len(under)
+        self.assertEqual([line.stripe.shown for line in below[:stop]], [i % 2 == 1 for i in range(stop)])
+        self.assertEqual(section.fold.texture, "Interface\\Buttons\\UI-MinusButton-Up")
+        game.stub.run(section, "OnClick")
+        self.assertNotIn("entry", kinds())
+        self.assertEqual(view.lines[1].fold.texture, "Interface\\Buttons\\UI-PlusButton-Up")
+        self.assertEqual(len(list(view.pieces.values())), view.chosen.best + view.chosen.alts + view.chosen.other,
+                         "the track keeps its pieces")
+        # folded for the other factions too, until opened again
+        game.stub.run(view.lines[1], "OnClick")
+        self.assertIn("entry", kinds())
+
+    def test_reputation_vendor_on_the_map(self):
+        game = self.pvp_game()
+        window = game.ns.Browser.window
+        game.stub.run(window.tabs.buttons[5], "OnClick")
+        view = game.ns.ReputationView.view
+        found = None
+        for index in range(1, len(view.buttons) + 1):
+            if found or not view.buttons[index].shown:
+                continue
+            game.stub.run(view.buttons[index], "OnClick")
+            for line_index in range(1, len(view.detailData) + 1):
+                data = view.detailData[line_index]
+                if data.kind == "seller" and data.map:
+                    found = view.lines[line_index]
+                    break
+        self.assertIsNotNone(found, "no faction of the list has a vendor whose place is known")
+        self.assertTrue(found.map.shown)
+        game.stub.run(found.map, "OnClick")
+        self.assertEqual(game.stub.waypoint.uiMapID, found.data.map)
+        self.assertAlmostEqual(game.stub.waypoint.x, found.data.x / 100)
+        self.assertEqual(game.stub.openedMap, found.data.map)
+        # a quest's reward or a recipe has no place: no button
+        others = [view.lines[i] for i in range(1, len(view.detailData) + 1)
+                  if view.detailData[i].kind == "seller" and not view.detailData[i].map]
+        self.assertFalse(any(line.map.shown for line in others))
+
+    def test_reputation_scroll_bars_only_when_needed(self):
+        game = self.pvp_game()
+        window = game.ns.Browser.window
+        game.stub.run(window.tabs.buttons[5], "OnClick")
+        view = game.ns.ReputationView.view
+        view.detail.height = 5000
+        view.list.height = 5000
+        game.ns.ReputationView.Update(game.ns.Browser.state)
+        self.assertFalse(view.detail.ScrollBar.shown)
+        self.assertFalse(view.list.ScrollBar.shown)
+        view.detail.height = 50
+        game.ns.ReputationView.Update(game.ns.Browser.state)
+        self.assertTrue(view.detail.ScrollBar.shown)
+
+    def test_recipes_are_kept_apart_in_the_tab(self):
+        """In every spec, a recipe is counted in the artisans' group and in nobody's own total."""
+        game = self.open()
+        rep = game.ns.Reputation
+        artisans = 0
+        for cls in test_addon.CLASSES:
+            for spec in range(1, int(game.ns.Index.SpecCount(cls)) + 1):
+                for mode in ("pve", "pvp"):
+                    needs = rep.Needs(cls, spec, mode)
+                    for group in needs.own.values():
+                        self.assertFalse(group.artisan)
+                        for entries in group.steps.values():
+                            self.assertFalse([e for e in entries.values() if e.requirement.kind == "r"])
+                    for group in needs.artisan.values():
+                        artisans += 1
+                        self.assertTrue(group.artisan)
+                        for entries in group.steps.values():
+                            self.assertFalse([e for e in entries.values() if e.requirement.kind != "r"])
+        self.assertGreater(artisans, 0)
+
+    def crafter_game(self, *professions) -> Game:
+        """Fury's list, where Timbermaw sells three leatherworking patterns; the player has these professions."""
+        game = self.open(saved="EasyBISCharDB = { class = 'WARRIOR', spec = 1, list = 'pve' }", cls="WARRIOR")
+        lua, stub = game.lua, game.stub
+        stub.learn(lua.table_from({index: lua.table_from({1: name, 2: rank, 3: line})
+                                   for index, (name, rank, line) in enumerate(professions, 1)}))
+        for piece, recipe in ((15065, 20254), (19044, 19326), (19049, 19327)):
+            stub.itemNames[piece], stub.bindings[piece] = f"Piece {piece}", 2
+            stub.itemNames[recipe], stub.itemIcons[recipe] = f"Pattern {recipe}", 134939
+        game.stub.run(game.ns.Browser.window.tabs.buttons[5], "OnClick")
+        return game
+
+    @staticmethod
+    def timbermaw(view):
+        return next(button for button in view.buttons.values() if button.group.artisan and button.group.factionID == 576)
+
+    def test_a_crafters_faction_for_another_profession(self):
+        """A tailor reads Timbermaw's leatherworking patterns: no standing of theirs, how to get the pieces instead."""
+        game = self.crafter_game(("Tailoring", 300, 197))
+        view = game.ns.ReputationView.view
+        button = self.timbermaw(view)
+        self.assertEqual(button.group.craftStatus, "other")
+        self.assertEqual(strip_colors(button.state.text), "Leatherworking")
+        game.stub.run(button, "OnClick")
+        self.assertEqual(strip_colors(view.you.text), "Leatherworking: not one of your professions")
+        # the banner, in place of the cards
+        self.assertTrue(view.banner.shown)
+        self.assertFalse(any(card.shown for card in view.cards.values()))
+        self.assertEqual(view.cardData[1].label, "Not your reputation: the crafter's counts")
+        self.assertEqual(view.cardData[1].value, "These pieces bind when equipped: buy them at the auction house, "
+                                                 "or have them made by a leatherworker who has the recipe.")
+        # the lines name the patterns, with their icon, and what they make in the tooltip
+        lines = list(view.detailData.values())
+        entries = [line for line in lines if line.kind == "entry"]
+        self.assertEqual([plain(line.text) for line in entries], ["Pattern 20254", "Pattern 19326", "Pattern 19327"])
+        self.assertTrue(all(line.recipe and line.icon == 134939 for line in entries))
+        self.assertEqual(view.lines[2].icon.texture, 134939)
+        self.assertTrue(all(piece.craft.shown for piece in view.pieces.values()), "the track says they are recipes")
+        game.stub.run(view.lines[2], "OnEnter")
+        tips = [strip_colors(line[1]) for line in game.lua.globals().GameTooltip.lines.values()]
+        self.assertIn("Makes: Piece 15065", tips)
+        self.assertIn("Leatherworking: not one of your professions", tips)
+        # how to earn it is for whoever would learn them: folded, until opened
+        sections = {line.key: line for line in lines if line.kind == "section"}
+        self.assertEqual(plain(sections["pieces"].text), "Recipes for this spec")
+        self.assertEqual(plain(sections["questsSelf"].text), "Quests")
+        self.assertTrue(sections["questsSelf"].folded and sections["unknownSelf"].folded)
+        self.assertNotIn("quest", [line.kind for line in lines])
+        index = next(i for i in range(1, len(view.detailData) + 1) if view.detailData[i].key == "questsSelf")
+        game.stub.run(view.lines[index], "OnClick")
+        self.assertIn("quest", [line.kind for line in view.detailData.values()])
+        # never gold, even exalted: the tailor's reputation does not make the pieces
+        self.earn(game, 576, 8, 42000, 42000, 43000)
+        self.assertFalse(any("|cffffd100" in (line.standing or "") for line in view.detailData.values()))
+        self.assertNotIn("|cffffd100", view.you.text + button.state.text)
+        self.assertFalse(any(piece.check.shown for piece in view.pieces.values()))
+
+    def test_a_crafters_faction_for_the_crafter(self):
+        game = self.crafter_game(("Leatherworking", 270, 165), ("Skinning", 300, 393))
+        view = game.ns.ReputationView.view
+        button = self.timbermaw(view)
+        self.assertTrue(button.group.crafter)
+        self.assertIs(view.buttons[len(view.factionData.own) + 1].group.crafter, True, "the crafter's come first")
+        game.stub.run(button, "OnClick")
+        self.assertFalse(view.banner.shown)
+        self.assertTrue(all(card.shown for card in view.cards.values()))
+        self.assertTrue(view.cardData[1].label.startswith("Left for "))
+        self.assertTrue(strip_colors(view.you.text).endswith("  ·  Leatherworking 270 / 295"), view.you.text)
+        self.assertNotIn("|cffffd100", view.you.text)
+        sections = [line.key for line in view.detailData.values() if line.kind == "section"]
+        self.assertEqual(sections, ["pieces", "sources", "quests", "unknown"])
+        self.assertIn("quest", [line.kind for line in view.detailData.values()])
+        # the skill reached: gold
+        game.stub.learn(game.lua.table_from({1: game.lua.table_from({1: "Leatherworking", 2: 300, 3: 165})}))
+        game.stub.fire("SKILL_LINES_CHANGED")
+        game.stub.runTimers()
+        self.assertIn("|cffffd100Leatherworking 300 / 295|r", view.you.text)
+
+    def test_a_crafters_faction_when_the_game_gives_no_professions(self):
+        game = self.open(saved="EasyBISCharDB = { class = 'WARRIOR', spec = 1, list = 'pve' }", cls="WARRIOR")
+        game.stub.run(game.ns.Browser.window.tabs.buttons[5], "OnClick")
+        view = game.ns.ReputationView.view
+        button = self.timbermaw(view)
+        self.assertIsNone(button.group.craftStatus)
+        game.stub.run(button, "OnClick")
+        self.assertFalse(view.banner.shown)
+        self.assertIn("Recipes: the crafter's reputation is what counts.", strip_colors(view.you.text))
+        self.assertEqual(strip_colors(button.state.text), "Not met yet", "the player's own standing, as before")
+
+    def test_faction_emblems(self):
+        """An emblem the game has: faint behind the faction in the list, and by its name; none for the others."""
+        game = self.crafter_game(("Leatherworking", 300, 165))
+        view = game.ns.ReputationView.view
+        button = self.timbermaw(view)
+        self.assertFalse(button.emblem.shown, "the game gives the question mark: no emblem")
+        game.stub.itemIcons[21377] = 236000   # the Deadwood Headdress Feather
+        game.ns.ReputationView.Update(game.ns.Browser.state)
+        button = self.timbermaw(view)
+        self.assertTrue(button.emblem.shown)
+        self.assertEqual(button.emblem.texture, 236000)
+        self.assertEqual(button.emblem.alpha, 0.09, "without a gradient, an even fade")
+        others = [b for b in view.buttons.values() if b.shown and b.group.factionID != 576]
+        self.assertTrue(others)
+        self.assertFalse(any(b.emblem.shown for b in others), "the other emblems' items are not known here")
+        # by the name, at full colour; the title moves aside for it
+        game.stub.run(button, "OnClick")
+        self.assertTrue(view.emblem.shown)
+        self.assertEqual(view.emblem.texture, 236000)
+        self.assertEqual(view.title.points[1][4], 292 + 14 + 36 + 8)
+        game.stub.run(others[0], "OnClick")
+        self.assertFalse(view.emblem.shown)
+        self.assertEqual(view.title.points[1][4], 292 + 14)
+
+    def test_reputations_follow_the_faction_picked(self):
+        """An Alliance character who picks the Horde sees the Darkspear Raiders where Theramore was."""
+        game = self.open(cls="MAGE")
+        rep, state = game.ns.Reputation, game.ns.Browser.state
+        factions = lambda: {group.factionID for group in rep.Needs(state["class"], state.spec, state.list).own.values()}
+        spec = next((cls, spec, mode) for cls in test_addon.CLASSES
+                    for spec in range(1, int(game.ns.Index.SpecCount(cls)) + 1) for mode in ("pve", "pvp")
+                    if 2799 in {g.factionID for g in rep.Needs(cls, spec, mode).own.values()})
+        state["class"], state.spec, state.list = spec
+        game.stub.run(game.ns.Browser.window.tabs.buttons[5], "OnClick")
+        view = game.ns.ReputationView.view
+        shown = lambda: {button.group.factionID for button in view.buttons.values() if button.shown}
+        self.assertIn(2799, shown())
+        self.assertNotIn(2798, factions())
+        game.ns.SetSide(game.ns, "h")
+        self.assertIn(2798, factions())
+        self.assertNotIn(2799, factions())
+        self.assertIn(2798, shown(), "the tab follows at once")
+        self.assertNotIn(2799, shown())
+
+    def test_reputation_quests_ten_to_a_page(self):
+        """Every quest the class can take, the repeatable ones that help first, ten to a page, each with the
+        standings it is offered between; the arrows turn the pages."""
+        game = self.open(cls="MAGE")
+        rep, state = game.ns.Reputation, game.ns.Browser.state
+        found = next((cls, spec, mode, group.factionID) for cls in test_addon.CLASSES
+                     for spec in range(1, int(game.ns.Index.SpecCount(cls)) + 1) for mode in ("pve", "pvp")
+                     for group in rep.Needs(cls, spec, mode).own.values()
+                     if len(rep.Ways(group.factionID, cls).quests) > 20)
+        cls, state.spec, state.list, faction = found
+        state["class"] = cls
+        game.stub.run(game.ns.Browser.window.tabs.buttons[5], "OnClick")
+        view = game.ns.ReputationView.view
+        game.stub.run(next(b for b in view.buttons.values() if b.shown and b.group.factionID == faction), "OnClick")
+        quests = [quest for quest in rep.Ways(faction, cls).quests.values()]
+        name = lambda standing: rep.StandingName(standing)
+        titles = [quest.quest + (f" from {name(quest['from'])}" if quest["from"] else "")
+                  + (f" until {name(quest.upto)}" if quest.upto else "") for quest in quests]
+        usable = lambda quest: (quest["from"] or 3) < 7 and (quest.upto is None or quest.upto > 3)
+        ranks = [(not usable(quest), not quest.repeats) for quest in quests]
+        self.assertEqual(ranks, sorted(ranks), "the repeatable ones that help first")
+        last = (len(titles) + 9) // 10
+        self.assertGreaterEqual(last, 3)
+        shown = lambda: [plain(line.text) for line in view.detailData.values() if line.kind == "quest"]
+
+        def pager():
+            index = next(i for i in range(1, len(view.detailData) + 1) if view.detailData[i].kind == "pager")
+            return view.lines[index]
+
+        self.assertEqual(shown(), titles[:10])
+        self.assertEqual(plain(pager().text.text), f"1-10 of {len(titles)}")
+        self.assertTrue(pager().prev.shown and pager().next.shown)
+        self.assertEqual((pager().prev.enabled, pager().next.enabled), (False, True))
+        others = [view.lines[i] for i in range(1, len(view.detailData) + 1) if view.detailData[i].kind != "pager"]
+        self.assertFalse(any(line.prev.shown or line.next.shown for line in others))
+        game.stub.run(pager().next, "OnClick")
+        self.assertEqual(shown(), titles[10:20])
+        self.assertEqual((pager().prev.enabled, pager().next.enabled), (True, True))
+        for _ in range(last - 2):
+            game.stub.run(pager().next, "OnClick")
+        self.assertEqual(shown(), titles[(last - 1) * 10:])
+        self.assertEqual(plain(pager().text.text), f"{(last - 1) * 10 + 1}-{len(titles)} of {len(titles)}")
+        self.assertEqual(pager().next.enabled, False)
+        game.stub.run(pager().prev, "OnClick")
+        self.assertEqual(shown(), titles[(last - 2) * 10:(last - 1) * 10])
+        # the page is kept while the player looks at another faction
+        other = next(b for b in view.buttons.values() if b.shown and b.group.factionID != faction)
+        game.stub.run(other, "OnClick")
+        game.stub.run(next(b for b in view.buttons.values() if b.shown and b.group.factionID == faction), "OnClick")
+        self.assertEqual(shown(), titles[(last - 2) * 10:(last - 1) * 10])
+
+    def test_reputations_sections_have_room_between_them(self):
+        game = self.pvp_game()
+        game.stub.run(game.ns.Browser.window.tabs.buttons[5], "OnClick")
+        view = game.ns.ReputationView.view
+        count = len(view.detailData)
+        tops = [-view.lines[i].points[1][5] for i in range(1, count + 1)]
+        heights = [view.lines[i].height for i in range(1, count + 1)]
+        kinds = [view.detailData[i].kind for i in range(1, count + 1)]
+        self.assertGreater(kinds.count("section"), 2)
+        self.assertEqual(kinds[0], "section")
+        for index in range(1, count):
+            gap = 14 if kinds[index] == "section" else 0
+            self.assertEqual(tops[index], tops[index - 1] + heights[index - 1] + gap, (index, kinds[index]))
+
+    def test_reputations_say_a_battleground(self):
+        """A battleground's faction says so in the list, and its header names the battleground as the game does."""
+        game = self.pvp_game()
+        game.stub.areaNames[3358], game.stub.areaNames[2597] = "Arathi Basin", "Alterac Valley"
+        game.stub.run(game.ns.Browser.window.tabs.buttons[5], "OnClick")
+        view = game.ns.ReputationView.view
+        buttons = [button for button in view.buttons.values() if button.shown]
+        states = {button.group.factionID: button.state.text for button in buttons}
+        battle = [faction for faction in states if faction in reputations.BATTLEGROUNDS]
+        self.assertTrue(battle, "the PvP list asks for a battleground's reputation")
+        self.assertTrue(len(battle) < len(states), "and for another")
+        for faction, text in states.items():
+            self.assertEqual(plain(text).endswith("·  Battleground"), faction in reputations.BATTLEGROUNDS, (faction, text))
+            self.assertNotIn("|cffffd100  ·", text, "gold stays for what is earned")
+        names = {3358: "Arathi Basin", 2597: "Alterac Valley"}
+        for button in buttons:
+            game.stub.run(button, "OnClick")
+            area = reputations.BATTLEGROUNDS.get(button.group.factionID)
+            said = f"Battleground: {names[area]}" if area in names else "Battleground"
+            self.assertEqual(said in plain(view.you.text), area is not None, plain(view.you.text))
+
+    def test_reputations_tab_shows_a_piece_asking_for_neutral(self):
+        game = self.pvp_game()
+        window = game.ns.Browser.window
+        game.lua.eval("""function(rep)
+            local needs = rep.Needs
+            rep.Needs = function(...)
+                local result = needs(...)
+                local group = result.own[1]
+                group.steps[3] = { { id = 21196, slot = "finger", role = "alt",
+                    requirement = { factionID = group.factionID, standing = 3, kind = "w" } } }
+                return result
+            end
+        end""")(game.ns.Reputation)
+        game.stub.run(window.tabs.buttons[5], "OnClick")
+        view = game.ns.ReputationView.view
+        entries = [line for line in view.detailData.values() if line.kind == "entry"]
+        self.assertEqual(entries[0].entry.id, 21196, "Neutral comes first")
+        self.assertEqual(plain(entries[0].standing), "Neutral")
+        self.assertEqual(view.pieces[1].entry.id, 21196)
+
+    def test_reputations_tab_with_nothing_to_earn(self):
+        game = self.pvp_game()
+        window = game.ns.Browser.window
+        needs = game.lua.eval("function(rep) rep.Needs = function() return { own = {}, artisan = {} } end end")
+        needs(game.ns.Reputation)
+        game.stub.run(window.tabs.buttons[5], "OnClick")
+        view = game.ns.ReputationView.view
+        self.assertTrue(view.empty.shown)
+        self.assertEqual(view.empty.text, "This spec needs no reputation for this list and this phase.")
+        self.assertFalse(view.list.shown or view.detail.shown or view.title.shown)
+
+    def test_a_piece_clicked_opens_its_slot_unfiltered(self):
+        """The Reputation filter is set aside with the others: the piece clicked is in the list."""
+        game = self.pvp_game()
+        state = game.ns.Browser.state
+        state.reputation, state.source = "ok", "vendor"
+        game.ns.Browser.ShowSlot("finger")
+        self.assertEqual((state.tab, state.slot, state.reputation, state.source), ("items", "finger", None, None))
+
+    def test_character_sheet_a_crafters_piece_is_not_earned_by_another_profession(self):
+        """A piece made from a recipe of another profession: the crafter's standing, so no gold on the sheet."""
+        for profession, earned in ((("Tailoring", 300, 197), False), (("Leatherworking", 300, 165), True)):
+            game = self.crafter_game(profession)
+            self.earn(game, 576, 8, 42000, 42000, 43000)
+            game.stub.run(game.ns.Browser.window.tabs.buttons[3], "OnClick")
+            view = game.ns.Character.view
+            cells = [view.cells[index] for index in range(1, len(view.cellData) + 1)
+                     if view.cellData[index].reputation and view.cellData[index].reputation.kind == "r"
+                     and view.cellData[index].reputation.profession == "Leatherworking"]
+            self.assertTrue(cells, "Fury's sheet has a Timbermaw pattern's piece")
+            for cell in cells:
+                self.assertEqual("Earned" in plain(cell.where.text), earned, profession[0])
+                self.assertEqual("|cffffd100" in cell.where.text, earned, profession[0])
+
+    def test_character_sheet_sums_up_the_reputations(self):
+        game = self.pvp_game()
+        window = game.ns.Browser.window
+        game.stub.run(window.tabs.buttons[3], "OnClick")
+        view = game.ns.Character.view
+        summary = list(view.reputationData.values())
+        self.assertTrue(summary)
+        self.assertTrue(view.reputationTitle.shown)
+        cells = [cell for cell in view.cellData.values() if cell.reputation and cell.reputation.kind != "r"]
+        self.assertEqual(sum(line.total for line in summary), len(cells), "the recipes are not counted")
+        line = view.reputations[1]
+        self.assertEqual(strip_colors(line.count.text), f"0 / {summary[0].total}")
+        self.assertNotIn("|cffffd100", line.count.text)
+        # a cell says what it asks for, and not where it comes from
+        cell = next(view.cells[index] for index in range(1, len(view.cellData) + 1)
+                    if view.cellData[index].reputation and view.cellData[index].reputation.factionID == summary[0].factionID)
+        self.assertIn(game.ns.Reputation.StandingName(cell.data.reputation.standing), plain(cell.where.text))
+        # earned: the count and the cell turn gold
+        self.earn(game, summary[0].factionID, 8, 42000, 42000, 43000)
+        self.assertEqual(strip_colors(line.count.text), f"{summary[0].total} / {summary[0].total}")
+        self.assertIn("|cffffd100", line.count.text)
+        self.assertIn("Earned", plain(cell.where.text))
+        # a click opens the tab on that faction
+        game.stub.run(line, "OnClick")
+        self.assertEqual(game.ns.Browser.state.tab, "reputations")
+        self.assertEqual(game.ns.ReputationView.view.chosen.factionID, summary[0].factionID)
+
+    def test_reputations_in_french(self):
+        game = self.open(locale="frFR", saved="EasyBISCharDB = { class = 'WARRIOR', spec = 2, list = 'pvp' }", cls="WARRIOR")
+        window = game.ns.Browser.window
+        self.assertEqual(label(window.tabs.buttons[5]), "Réputations")
+        self.assertEqual(label(window.reputation), "Toutes")
+        game.stub.run(window.tabs.buttons[5], "OnClick")
+        view = game.ns.ReputationView.view
+        sections = [plain(line.text) for line in view.detailData.values() if line.kind == "section"]
+        quests = ["Quêtes"] if game.ns.Reputation.Ways(view.chosen.factionID).listed > 0 else []
+        self.assertEqual(sections, ["Pièces pour cette spécialisation", "Où", *quests, "Pas encore connu"])
+        other = next(b for b in view.buttons.values() if b.shown and game.ns.Reputation.Ways(b.group.factionID).listed > 0)
+        game.stub.run(other, "OnClick")
+        self.assertIn("Quêtes", [plain(line.text) for line in view.detailData.values() if line.kind == "section"])
+        self.assertTrue(view.cardData[1].label.startswith("Reste pour "))
+
     def test_older_client(self):
         game = Game(saved=OLD_CLIENT + "; " + ENHANCEMENT)
         game.ns.Browser.Open()
@@ -1737,25 +2425,28 @@ class WindowTest(unittest.TestCase):
             self.assertEqual((bool(frame.zoneBack.shown), bool(frame.zoneMark.shown)), (zoned, zoned), frame.data.id)
         game.stub.run(marked[0], "OnEnter")
 
-    def test_the_four_tabs_leave_the_credit_its_room(self):
+    def test_the_five_tabs_leave_the_credit_its_room(self):
         for locale in ("enUS", "frFR"):
             game = self.open(locale=locale)
             window = game.ns.Browser.window
-            self.assertEqual(len(window.tabs.buttons), 4)
-            self.assertLess(window.tabs.width, 320, locale)
+            self.assertEqual(len(window.tabs.buttons), 5)
+            self.assertLess(window.tabs.width, 400, locale)
 
-    def test_the_consumables_tab_is_marked_new(self):
+    def test_the_new_tabs_are_marked_new(self):
         for locale in ("enUS", "frFR"):
             game = self.open(locale=locale)
             window = game.ns.Browser.window
-            items, consumables = window.tabs.buttons[1], window.tabs.buttons[4]
-            self.assertEqual(consumables.newBadge.text.text, "New", locale)
-            self.assertTrue(consumables.newBadge.shown)
-            self.assertIsNone(items.newBadge)
-            game.stub.run(consumables, "OnClick")
-            self.assertTrue(consumables.highlightLocked)
-            self.assertTrue(consumables.newBadge.shown, "the badge stays on the open tab")
-            self.assertEqual(consumables.newBadge.points[1][3], "TOPRIGHT", "on the corner, so the credit keeps its room")
+            buttons = window.tabs.buttons
+            for index in (1, 2, 3):
+                self.assertIsNone(buttons[index].newBadge, (locale, index))
+            for index in (4, 5):   # Consumables, Reputations
+                tab = buttons[index]
+                self.assertEqual(tab.newBadge.text.text, "New", (locale, index))
+                self.assertTrue(tab.newBadge.shown)
+                game.stub.run(tab, "OnClick")
+                self.assertTrue(tab.highlightLocked)
+                self.assertTrue(tab.newBadge.shown, "the badge stays on the open tab")
+                self.assertEqual(tab.newBadge.points[1][3], "TOPRIGHT", "on the corner, so the credit keeps its room")
 
     def test_the_consumables_tab_in_french(self):
         game = self.open_consumables(locale="frFR")

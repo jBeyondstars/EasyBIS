@@ -2,7 +2,7 @@
 ## Title: Easy BIS
 ## Notes: Best-in-slot gear for every class and spec, in a window and in item tooltips. Type /easybis.
 ## Notes-frFR: Le meilleur équipement (BIS) de chaque classe et spécialisation, dans une fenêtre et dans les infobulles d'objets. Tapez /easybis.
-## Version: 1.3.0
+## Version: 1.4.0
 ## Author: jBeyondstars
 ## X-License: GPL-3.0
 ## X-Credits: Data from ForeverDB.net (https://foreverdb.net)
@@ -21,11 +21,13 @@ Data\Lists.lua
 Data\Items.lua
 Data\Names.lua
 Data\Enchants.lua
+Data\Reputation.lua
 Data\Consumables.lua
 Ladders.lua
 Items.lua
 Sources.lua
 Enchants.lua
+Reputation.lua
 Consumables.lua
 Custom.lua
 Index.lua
@@ -35,5 +37,6 @@ UI\Widgets.lua
 UI\AddItem.lua
 UI\Browser.lua
 UI\Character.lua
+UI\Reputations.lua
 UI\MinimapButton.lua
 Commands.lua

@@ -10,6 +10,7 @@ local L = ns.L
                                          window shows when none is named)
   alternatives [2-6]                     how many alternatives a slot lists
   phase [0, 1 or all]                    the content phase the lists stop at
+  faction [alliance, horde or auto]      the faction the lists are for (auto: the character's)
   item [link or ID]                      say who wants an item
   list [1-3] [pvp]                       print the list of one of the player's specs
   add [link or ID] [off]                 add an item by hand to the list the window shows (Custom.lua)
@@ -34,7 +35,7 @@ end
 local function Help()
     ns:Print(L.HELP_HEADER:format(ns.version))
     for _, key in ipairs({ "HELP_WINDOW", "HELP_TOOLTIP", "HELP_CLASS", "HELP_ALT", "HELP_UNSOURCED", "HELP_SEEN",
-        "HELP_NOW", "HELP_PVP", "HELP_ALT_COUNT", "HELP_MINIMAP", "HELP_PHASE", "HELP_ITEM", "HELP_LIST", "HELP_ADD", "HELP_REMOVE" }) do
+        "HELP_NOW", "HELP_PVP", "HELP_ALT_COUNT", "HELP_MINIMAP", "HELP_PHASE", "HELP_FACTION", "HELP_ITEM", "HELP_LIST", "HELP_ADD", "HELP_REMOVE" }) do
         ns:Print(L[key])
     end
     ns:Print(L.CREDIT)
@@ -45,6 +46,20 @@ local function PhaseCommand(rest)
     local wanted = rest:lower() == "all" and 9 or tonumber(rest)
     if wanted then ns:SetPhase(wanted) end
     ns:Print(L.PHASE_STATE:format(ns.PhaseName(ns.Phase())))
+end
+
+-- "alliance", "horde" (or their first letter) or "auto"; anything else only says which faction the lists are for.
+local function FactionCommand(rest)
+    local word = rest:lower()
+    if word == "auto" then
+        ns:SetSide(nil)
+    elseif word ~= "" and ("alliance"):sub(1, #word) == word then
+        ns:SetSide("a")
+    elseif word ~= "" and ("horde"):sub(1, #word) == word then
+        ns:SetSide("h")
+    end
+    local side = ns.PlayerSide()
+    ns:Print(L.SIDE_STATE:format(L["SIDE_" .. side]) .. (side ~= ns.CharacterSide() and (" " .. L.SIDE_NOT_OWN) or ""))
 end
 
 -- Each list has its own answer: "pvp pve" switches the PvE list's, "pvp" alone the one of the list the
@@ -162,6 +177,8 @@ SlashCmdList.EASYBIS = function(message)
         Toggle(OPTIONS[command])
     elseif command == "phase" then
         PhaseCommand(rest)
+    elseif command == "faction" then
+        FactionCommand(rest)
     elseif command == "alternatives" then
         AlternativesCommand(rest)
     elseif command == "pvp" and ns.Browser then

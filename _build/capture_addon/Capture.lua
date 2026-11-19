@@ -19,7 +19,10 @@ writes Ids.lua.
 The game gets an item's data from the server when it is asked for, and it
 does not always answer: on 2026-11-15 two runs that asked for 8,600 items got
 nothing back for half an hour, and a third, an hour later, got them all at 32
-a second. The cause is not known. So only a few items are waited for at a
+a second. The cause is not known. Nor does it ever answer for an item it
+does not have, though the client's own table lists it: on 2026-11-18 and
+2026-11-19 every capture stopped on such items, so Ids.lua puts the groups
+they are in last (capture.ORDER). So only a few items are waited for at a
 time, and a few asked for per second. When nothing has arrived for STALL
 seconds the capture says so, waits and tries again; after GIVE_UP seconds of
 silence it stops by itself. What was read is kept: /ebiscapture goes on from
@@ -47,6 +50,14 @@ A row is: item id, tab, name, tab, price in copper, tab, what else it costs, by
 semicolons: i<item id>:<amount>, c<currency id>:<amount>, or n<name>:<amount>
 when the game gives nothing but a name. A window may show a class only what it
 can use, so the rows read in one game build add up from one window to the next.
+
+A vendor's window also keeps the reputation each row asks of the buyer, once
+one row asks for one: on Forever the Alterac and Warsong quartermasters ask for
+a standing their pieces do not carry, and only the tooltip of the window's row
+says it.
+  asks = { ["a<npc id>"] = "format|game version|build|locale|date|vendor's name\n<row>\n<row>..." }
+A row is: item id, tab, "<faction> - <standing>" as the tooltip writes it after
+"Requires ", or nothing when it asks for none.
 ]]
 
 local FORMAT = 1
@@ -422,8 +433,10 @@ local function Start(again)
     local db = EasyBISCaptureDB
     local same = type(db) == "table" and type(db.items) == "table" and type(db.meta) == "string"
         and db.meta:match("^%d+|(.*)|[^|]*$") == game
-    if again or not same then   -- another game build: its tooltips may have changed. The vendors' prices stay.
-        db = { items = {}, vendors = type(db) == "table" and db.vendors or nil }
+    if again or not same then   -- another game build: its tooltips may have changed. What the vendors' windows
+        -- showed stays: each row is kept with the build it was read in.
+        db = { items = {}, vendors = type(db) == "table" and db.vendors or nil,
+               asks = type(db) == "table" and db.asks or nil }
     end
     db.meta = table.concat({ FORMAT, game, date("%Y-%m-%d %H:%M") }, "|")
     db.missing = ""
@@ -568,6 +581,74 @@ local function ReadVendor(npc)
     return read
 end
 
+-- The left lines of the tooltip the window shows for a row.
+local function MerchantLines(index)
+    local lines = {}
+    if C_TooltipInfo and C_TooltipInfo.GetMerchantItem then
+        local ok, data = pcall(C_TooltipInfo.GetMerchantItem, index)
+        if ok and type(data) == "table" and type(data.lines) == "table" then
+            for _, entry in ipairs(data.lines) do
+                local line = Text(entry.leftText)
+                if line then lines[#lines + 1] = line end
+            end
+        end
+        return lines
+    end
+    if not scanner then
+        scanner = CreateFrame("GameTooltip", "EasyBISCaptureTooltip", nil, "GameTooltipTemplate")
+    end
+    scanner:SetOwner(WorldFrame, "ANCHOR_NONE")
+    scanner:ClearLines()
+    if pcall(scanner.SetMerchantItem, scanner, index) then
+        for line = 1, scanner:NumLines() do
+            local left = _G["EasyBISCaptureTooltipTextLeft" .. line]
+            local text = Text(left and left:GetText())
+            if text then lines[#lines + 1] = text end
+        end
+    end
+    scanner:Hide()
+    return lines
+end
+
+-- Keeps the reputation each row of the window asks of the buyer, with the rows kept of that vendor in this
+-- game: a vendor whose rows ask for none is kept only once one of them has. { read = rows read, asking = those
+-- that ask for one, missing = rows the game has not said yet, kept = the window kept or not }
+local function ReadAsks(npc)
+    local db = EasyBISCaptureDB
+    local key, game = "a" .. npc, GameLabel()
+    local rows = KeptRows(type(db) == "table" and type(db.asks) == "table" and db.asks[key], game)
+    local before = next(rows) ~= nil
+    local read = { read = 0, asking = 0, missing = 0 }
+    for index = 1, GetMerchantNumItems() do
+        local id = MerchantItem(index)
+        local lines = id and MerchantLines(index) or {}
+        if #lines == 0 then
+            read.missing = read.missing + 1
+        else
+            local asked = ""
+            for _, line in ipairs(lines) do
+                asked = line:match("^Requires (.+ %- %a+)$") or asked
+            end
+            rows[id] = id .. "\t" .. asked
+            read.read = read.read + 1
+            if asked ~= "" then read.asking = read.asking + 1 end
+        end
+    end
+    if read.read == 0 or (read.asking == 0 and not before) then return read end
+    read.kept = true
+    local ids = {}
+    for id in pairs(rows) do ids[#ids + 1] = id end
+    table.sort(ids)
+    read.name = Text(UnitName and UnitName("npc")) or "?"
+    local lines = { ("%d|%s|%s|%s"):format(VENDOR_FORMAT, game, date("%Y-%m-%d %H:%M"), read.name) }
+    for _, id in ipairs(ids) do lines[#lines + 1] = rows[id] end
+    if type(db) ~= "table" then db = {} end
+    if type(db.asks) ~= "table" then db.asks = {} end
+    db.asks[key] = table.concat(lines, "\n")
+    EasyBISCaptureDB = db
+    return read
+end
+
 -- Whether the window leaves out part of what the vendor sells.
 local function Filtered()
     if not GetMerchantFilter or not LE_LOOT_FILTER_ALL then return false end
@@ -590,10 +671,26 @@ local function ReportVendor(read)
     Say("Type /reload to save, then run: python -I _build/build.py --import-prices")
 end
 
+-- said: ReportVendor has already said what of the window did not load.
+local function ReportAsks(asks, said)
+    local now = table.concat({ asks.read, asks.asking, asks.missing }, ":")
+    if window.saidAsks == now then return end
+    window.saidAsks = now
+    Say(("%s: %d items read in the window, %d of them ask for a reputation."):format(asks.name, asks.read, asks.asking))
+    if not said and asks.missing > 0 then
+        Say(("%d items of the window did not load: close it and open it again."):format(asks.missing))
+    end
+    if not said and Filtered() then
+        Say("The window is filtered: choose All in its menu to read all this vendor sells.")
+    end
+    Say("Type /reload to save, then run: python -I _build/build.py --import-reputations")
+end
+
 local function LookAtVendor()
     if not window or window.timer then return end
     local read = ReadVendor(window.npc)
-    if (read.missing > 0 or read.shown == 0) and window.tries < VENDOR_TRIES then
+    local asks = ReadAsks(window.npc)
+    if (read.missing > 0 or read.shown == 0 or asks.missing > 0) and window.tries < VENDOR_TRIES then
         local this = window
         this.tries, this.timer = this.tries + 1, true
         C_Timer.After(VENDOR_WAIT, function()
@@ -602,8 +699,9 @@ local function LookAtVendor()
         end)
         return
     end
-    if read.missing == 0 then window.tries = 0 end
+    if read.missing == 0 and asks.missing == 0 then window.tries = 0 end
     if read.paid then ReportVendor(read) end
+    if asks.kept then ReportAsks(asks, read.paid) end
 end
 
 local watcher = CreateFrame("Frame")

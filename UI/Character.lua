@@ -16,10 +16,14 @@ game's character sheet (UI\Rows.lua, Rows.Character).
            class's icon instead. Under the character, what is left to pay in a currency for the set.
 
 A cell says the item's name in its quality's color, where it comes from in a
-few words and, when one goes on the item, the best enchant of the phase. Its
-tooltip is the list's, with the enchant and the items that tie with it. A
-click opens the Items tab on that slot; Shift-click and Ctrl-click do what
-they do on a row.
+few words and, when one goes on the item, the best enchant of the phase. An
+item behind a reputation says instead which one it asks for, or that the
+player has earned it. Its tooltip is the list's, with the enchant and the
+items that tie with it. A click opens the Items tab on that slot; Shift-click
+and Ctrl-click do what they do on a row.
+
+Under the character, the reputations the set asks of the player, recipes left
+out: how many pieces each one already opens. A click opens the Reputations tab.
 
 The view keeps its width. Extra height goes to the model and to the space
 between cells; under the height it needs, the view is drawn smaller.
@@ -27,7 +31,7 @@ between cells; under the height it needs, the view is drawn smaller.
   Character.Create(parent)        the view, hidden
   Character.Update(state, room)   fills it. state: the window's { class, spec, list }; room: the height it has
   Character.Hide()
-  Character.view                  (the tests read it: cells, title, subtitle, cost, model, crest, worn)
+  Character.view                  (the tests read it: cells, title, subtitle, cost, model, crest, worn, reputations)
 ]]
 
 local Character = {}
@@ -46,6 +50,9 @@ local HEAD = 40                       -- the title and the line under it, over t
 local COST_LINE = 16                  -- what is left to pay, under the model
 local MIN_HEIGHT = CELLS_HIGH * MIN_PITCH + WEAPONS
 local TURN = 0.012                    -- radians the model turns per pixel dragged
+local SUMMARY_LINE = 16               -- a reputation's line under the character
+local SUMMARY_WIDTH = 300
+local SUMMARY_BOTTOM = WEAPONS + 16    -- over the line that says what the set still costs
 local UNKNOWN_ICON = "Interface\\Icons\\INV_Misc_QuestionMark"
 local CLASS_ICONS = "Interface\\GLUES\\CHARACTERCREATE\\UI-CharacterCreate-Classes"
 
@@ -53,6 +60,7 @@ local MUTED = Widgets.MUTED
 local FAINT = { 0.45, 0.45, 0.48 }
 local ENCHANT = { 0.35, 0.85, 0.45 }
 local GREY = "|cff808080"
+local GOLD = "|cffffd100"
 
 -- What shows on a character: a necklace, a ring or a trinket does not.
 local UNSEEN = { neck = true, finger = true, trinket = true }
@@ -182,12 +190,23 @@ local function FillCell(cell, data)
     cell.border:SetColorTexture(r, g, b, 0.9)
     cell.icon:SetTexture(texture or (GetIcon and GetIcon(data.id)) or UNKNOWN_ICON)
     local ties = data.ties[1] and (" " .. GREY .. "+" .. #data.ties .. "|r") or ""
-    cell.name:SetText(hex .. (name or ns.Items.Name(data.id)) .. "|r" .. ties)
+    cell.name:SetText(hex .. (name or ns.Items.Name(data.id)) .. "|r"
+        .. ns.Reputation.UnknownMark(data.reputation) .. ties)
 
     local source = data.source
     local mark = ns.Sources.OriginMark(source.origin)
-    cell.where:SetText(ns.Sources.IconText(source.category) .. " " .. ns.Sources.WithCost(ns.Sources.Short(source), source.cost)
-        .. (mark ~= "" and (" " .. GREY .. mark .. "|r") or ""))
+    local where = ns.Sources.WithCost(ns.Sources.Short(source), source.cost)
+        .. (mark ~= "" and (" " .. GREY .. mark .. "|r") or "")
+    local requirement = data.reputation
+    -- a recipe of a profession that is not the player's: the piece comes from a crafter, whatever the standing
+    local crafter = requirement and ns.Reputation.Crafter(requirement)
+    local earned = requirement and crafter ~= "other" and ns.Reputation.Status(requirement) == "met"
+    if earned then where = GOLD .. L.REP_MET .. "|r " .. where end   -- first: a long source is what gets cut
+    if requirement and not earned and crafter ~= "other" then
+        cell.where:SetText(ns.Reputation.NeedText(requirement))
+    else
+        cell.where:SetText(ns.Sources.IconText(source.category) .. " " .. where)
+    end
     cell.where:SetTextColor(MUTED[1], MUTED[2], MUTED[3])
     if enchant then cell.enchant:SetText("+ " .. ns.Enchants.ShortName(enchant)) end
 end
@@ -268,6 +287,66 @@ local function ShowCrest(class)
 end
 
 ---------------------------------------------------------------------------
+-- The reputations of the set
+---------------------------------------------------------------------------
+
+local function SummaryLine(index)
+    local line = view.reputations[index]
+    if line then return line end
+    line = CreateFrame("Button", nil, view)
+    view.reputations[index] = line
+    line:SetSize(SUMMARY_WIDTH, SUMMARY_LINE)
+    line:SetFrameLevel(view:GetFrameLevel() + 5)   -- over the character
+    Widgets.ListHighlight(line, "HIGHLIGHT", 0.30)
+    line.label = line:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    line.label:SetPoint("LEFT", 6, 0)
+    line.label:SetPoint("RIGHT", -64, 0)
+    line.label:SetJustifyH("LEFT")
+    line.label:SetWordWrap(false)
+    line.count = line:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    line.count:SetPoint("RIGHT", -6, 0)
+    line:SetScript("OnClick", function(self)
+        Widgets.Click()
+        Browser.ShowReputation(self.factionID)
+    end)
+    line:SetScript("OnEnter", function(self)
+        Browser.PlaceTooltip(self)
+        GameTooltip:SetText(ns.Reputation.FactionName(self.factionID), 1, 1, 1)
+        GameTooltip:AddLine(L.REP_YOU:format(ns.Reputation.ProgressText(self.factionID)),
+            MUTED[1], MUTED[2], MUTED[3], true)
+        GameTooltip:AddLine(L.TIP_OPEN_REPUTATION, MUTED[1], MUTED[2], MUTED[3], true)
+        Browser.ShowTooltip()
+    end)
+    line:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    return line
+end
+
+local function ShowSummary(cells)
+    local summary = ns.Reputation.Summary(cells)
+    for index, entry in ipairs(summary) do
+        local line = SummaryLine(index)
+        line.factionID = entry.factionID
+        line:ClearAllPoints()
+        line:SetPoint("BOTTOM", view, "BOTTOM", 0, SUMMARY_BOTTOM + (#summary - index) * SUMMARY_LINE)
+        line.label:SetText(entry.name)
+        local done = entry.met == entry.total
+        if entry.state == "unknown" then
+            line.count:SetText("|cffffffff" .. L.REP_UNKNOWN .. "|r")
+        elseif entry.state == "other" then
+            line.count:SetText(GREY .. L.REP_OTHER_SIDE .. "|r")
+        else
+            line.count:SetText((done and GOLD or "|cffffffff") .. entry.met .. " / " .. entry.total .. "|r")
+        end
+        line:Show()
+    end
+    for index = #summary + 1, #view.reputations do view.reputations[index]:Hide() end
+    view.reputationTitle:SetShown(summary[1] ~= nil)
+    view.reputationTitle:ClearAllPoints()
+    view.reputationTitle:SetPoint("BOTTOM", view, "BOTTOM", 0, SUMMARY_BOTTOM + #summary * SUMMARY_LINE + 2)
+    view.reputationData = summary
+end
+
+---------------------------------------------------------------------------
 -- The view
 ---------------------------------------------------------------------------
 
@@ -318,6 +397,11 @@ function Character.Create(parent)
     end
     -- a model that was hidden may have lost what it wore
     view:SetScript("OnHide", function(self) self.worn = nil end)
+
+    view.reputations = {}
+    view.reputationTitle = view:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    view.reputationTitle:SetText(L.REP_SHEET_TITLE)
+    view.reputationTitle:SetTextColor(MUTED[1], MUTED[2], MUTED[3])
     -- what the player buys or loots while the sheet is open; a client without one of these events does without it
     for _, event in ipairs({ "BAG_UPDATE_DELAYED", "CURRENCY_DISPLAY_UPDATE", "PLAYER_EQUIPMENT_CHANGED" }) do
         pcall(view.RegisterEvent, view, event)
@@ -373,6 +457,7 @@ function Character.Update(state, room)
     end
     for index = #cells + 1, #view.cells do view.cells[index]:Hide() end
     view.cellData = cells
+    ShowSummary(cells)
     ShowCost(cells)
 
     if view.model then Dress(cells, state.class) else ShowCrest(state.class) end

@@ -9,7 +9,8 @@
     python build.py --audit            build, then list the rows the data probably has wrong (audit.py)
     python build.py --capture-tool     install the EasyBIS_Capture addon, which reads item tooltips in the game
     python build.py --check-capture [FILE]
-                                       compare what /ebiscapture read with the data, stat by stat (no build)
+                                       compare what /ebiscapture read with the data, stat by stat and the
+                                       reputations asked for (no build)
     python build.py --import-capture [FILE]
                                        keep what the capture read (corrections.py, consumables.py), then build
     python build.py --import-prices [FILE]
@@ -25,6 +26,12 @@
                                        keep the drops Wowhead Forever counted, as the DungeonJournal and GearQuest
                                        Forever addons hold them (drops.py), then build; FOLDER defaults to the
                                        AddOns folder Easy BIS is in
+    python build.py --import-reputations [FOLDER]
+                                       keep the reputations items and enchants ask for (reputations.py), then build;
+                                       FOLDER holds ForeverDB's Items.lua and Recipes.lua and defaults to the local
+                                       copy; QuestieDB, and the quests the Questie addon hides, are read in the
+                                       addons installed next to Easy BIS; the newest capture gives the requirement
+                                       of a piece ForeverDB gives none (its "Requires <faction> - <standing>")
 
 The local copy is _build/cache/ForeverDB. Data from ForeverDB.net
 (https://foreverdb.net), GPL-3.0 with an attribution term: see NOTICE.txt.
@@ -48,6 +55,7 @@ import ladders  # noqa: E402
 import luaout  # noqa: E402
 import phases  # noqa: E402
 import questie  # noqa: E402
+import reputations  # noqa: E402
 import source  # noqa: E402
 
 CACHE = HERE / "cache" / "ForeverDB"
@@ -138,6 +146,40 @@ def build(cache_dir: Path = CACHE, out_dir: Path = OUT, details: bool = False) -
               f"not name; {len(confirmed.moved)} take the boss counted in place of the data's; "
               f"{len(confirmed.disputed)} are named for another creature on too little to change them.")
 
+    reading = reputations.load()
+    if not reading:
+        print("Reputations: none read yet. The addon says no item asks for one (--import-reputations).")
+    else:
+        shown = luaout.shown_ids(all_ladders)
+        kinds = {kind: sum(1 for item_id in shown for record in reading["items"].get(item_id, ())
+                           if record["kind"] == kind) for kind in (reputations.WEAR, reputations.QUEST, reputations.RECIPE)}
+        seen = {source: len({item_id for item_id in shown for record in reading["items"].get(item_id, ())
+                             if record.get("read") == source}) for source in ("game", "atlasloot")}
+        print(f"Reputations (QuestieDB {reading['questiedb']}, read {reading['date']}): of the listed items, "
+              f"{kinds[reputations.WEAR]} ask the wearer for one ({seen['game']} of them read in the game's tooltips, "
+              f"{seen['atlasloot']} in AtlasLoot's tables), {kinds[reputations.QUEST]} come from a quest that does and "
+              f"{kinds[reputations.RECIPE]} from a recipe sold against one.")
+        for line in reputations.check_lines(reading.get("checks", {})):
+            print("  " + line)
+        enchants = {enchant for specs in (db.enchants or {}).values() for lists in specs.values()
+                    for entries in lists.values() for enchant, _ in entries}
+        outside, unasked = reputations.gaps(reading, db, shown, enchants)
+        if unasked:
+            counts = ", ".join(f"{reputations.FACTIONS[faction][0]} {len(pieces)}"
+                               for faction, pieces in sorted(unasked.items(), key=lambda pair: (-len(pair[1]), pair[0])))
+            print(f"  {sum(map(len, unasked.values()))} listed pieces a faction's quartermaster sells have no requirement "
+                  f"any source gives ({counts}): the addon says they ask for none. On Forever the quartermaster "
+                  "asks for a standing their tooltips do not carry: only his window shows it (AtlasLoot's tables "
+                  f"give it: install AtlasLoot Forever, then --import-reputations).")
+        if outside:
+            print("  Factions reputations.FACTIONS lacks, asked for by a quest or a recipe of what the lists show "
+                  "(left out, the addon says nothing is asked): " + "; ".join(
+                      f"{faction} ({', '.join(map(str, owners[:5]))}{', ...' if len(owners) > 5 else ''})"
+                      for faction, owners in sorted(outside.items())))
+        differ = {item_id: pair for item_id, pair in reading.get("differ", {}).items() if item_id in shown}
+        if differ:
+            print(f"  {len(differ)} listed pieces ask in the game for another reputation than ForeverDB says; its is kept: "
+                  + ", ".join(f"{item_id} {data} / game {game}" for item_id, (data, game) in sorted(differ.items())[:5]))
     priced = db.priced
     if priced and priced.changed:
         print(f"Prices (written down {priced.date}): {len(priced.items)} items carry what their vendor asks in a currency, "
@@ -198,6 +240,28 @@ def check_report(check) -> list[str]:
                      f"{sum(1 for piece in pieces if piece['classes'])} for some classes only and "
                      f"{sum(sets.values())} of {len(sets)} sets"
                      + (" (" + ", ".join(f"{name} {count}" for name, count in biggest) + ")" if biggest else "") + ".")
+    return lines
+
+
+def reputation_report(parsed: dict) -> list[str]:
+    """What reputations.check_capture found, as lines to print."""
+    if parsed["locale"] != "enUS":
+        return [f"Reputations: the capture is in {parsed['locale']}, the tooltips are read in English only."]
+    facts, _ = reputations.read_item_facts((CACHE / "Items.lua").read_text(encoding="utf-8"))
+    found = reputations.check_capture(parsed, facts, reputations.load())
+    name = lambda fact: (f"{reputations.FACTIONS[fact[0]][0]} {fact[1]}" if isinstance(fact, (tuple, list))
+                         else fact or "none")
+    lines = [f"Reputations the game's tooltips ask for, against the data: {len(found['same'])} the same, "
+             f"{len(found['missing'])} the data has not yet (--import-reputations keeps them), {len(found['differs'])} "
+             f"another, {len(found['extra'])} the data asks and the item's tooltip does not (its vendor may), {len(found['outside'])} of a faction "
+             "reputations.FACTIONS lacks."]
+    words = {"missing": "the data has none", "differs": "another", "extra": "the item's tooltip shows none",
+             "outside": "a faction the table lacks"}
+    for kind, word in words.items():
+        if found[kind]:
+            lines.append(f"  {word}: " + "; ".join(f"{item_id}: data {name(data)}, game {name(game)}"
+                                                  for item_id, data, game in found[kind][:6])
+                         + ("; ..." if len(found[kind]) > 6 else ""))
     return lines
 
 
@@ -263,6 +327,9 @@ def main(argv=None) -> int:
     parser.add_argument("--import-drops", nargs="?", const="", metavar="FOLDER",
                         help="keep the drops Wowhead Forever counted, read in the DungeonJournal and GearQuest Forever "
                              "addons; FOLDER defaults to the AddOns folder Easy BIS is in")
+    parser.add_argument("--import-reputations", nargs="?", const="", metavar="FOLDER",
+                        help="keep the reputations items and enchants ask for; FOLDER holds ForeverDB's Items.lua and "
+                             "Recipes.lua and defaults to the local copy")
     args = parser.parse_args(argv)
 
     if args.update_consumables:
@@ -313,6 +380,8 @@ def main(argv=None) -> int:
             print(f"{saved.name}: {error}")
             return 1
         for line in check_report(check):
+            print(line)
+        for line in reputation_report(capture.parse_saved(saved.read_text(encoding="utf-8", errors="replace"))):
             print(line)
         return 0
     if args.import_capture is not None:
@@ -409,6 +478,64 @@ def main(argv=None) -> int:
         corrections.save_drops(reading, corrections.DROPS_FILE)
         print(f"DungeonJournal {reading['journal']} and GearQuest Forever {reading['gearquest']}: drops counted for "
               f"{len(reading['items'])} items of the data. Kept in {corrections.DROPS_FILE.name}.")
+    if args.import_reputations is not None:
+        folder = Path(args.import_reputations) if args.import_reputations else CACHE
+        missing = [name for name in reputations.SOURCE_FILES if not (folder / name).exists()]
+        if missing:
+            print(f"No {' or '.join(missing)} in {folder}: name the folder of ForeverDB's data files that has them.")
+            return 1
+        store = questie.find(ADDONS)
+        if store is None:
+            print(f"No {questie.TOC} in {ADDONS / questie.ADDON}: install the QuestieDB addon.")
+            return 1
+        hider = ADDONS / reputations.QUESTIE
+        if reputations.hidden_quests(hider) is None:
+            print(f"No {reputations.BLACKLIST} in {hider}: install the Questie addon, whose list of the quests the "
+                  f"game does not have is read.")
+            return 1
+        db = fdb.load(CACHE)
+        saved, captured, asks = capture.find_saved(GAME), None, {}
+        if saved:
+            text = saved.read_text(encoding="utf-8", errors="replace")
+            try:
+                captured = capture.parse_saved(text)
+            except ValueError as error:
+                print(f"{saved}: {error}. The tooltips are not read.")
+            try:
+                asks = capture.parse_asks(text)
+            except ValueError as error:
+                print(f"{saved}: {error}. The vendors' windows are not read.")
+        atlas, atlas_version = reputations.atlasloot(ADDONS)
+        try:
+            reading = reputations.collect(db, folder, questie.Store(store), luaout.shown_ids(ladders.build_all(db)),
+                                          questie_folder=hider, captured=captured, atlas=atlas,
+                                          atlas_version=atlas_version, asks=asks)
+        except ValueError as error:
+            print(f"{folder}: {error}")
+            return 1
+        reputations.save(reading)
+        read = sum(1 for records in reading["items"].values() for record in records if record.get("read") == "game")
+        if not captured:
+            print("Capture: none. A piece ForeverDB gives no requirement asks for none (--capture-tool, /ebiscapture).")
+        elif captured["locale"] != "enUS":
+            print(f"Capture ({captured['date']}) in {captured['locale']}: the tooltips are read in English only, none "
+                  "was read.")
+        else:
+            print(f"Capture ({captured['date']}, {len(captured['items'])} items): {read} items take their requirement from "
+                  f"the game's tooltip, {len(reading['differ'])} say otherwise than ForeverDB, whose is kept.")
+        if not atlas:
+            print(f"AtlasLoot: none in {ADDONS} ({', '.join(reputations.ATLASLOOT)}). A piece a vendor sells that "
+                  "ForeverDB gives no requirement asks for none.")
+        else:
+            taken = sum(1 for records in reading["items"].values() for record in records
+                        if record.get("read") == "atlasloot")
+            print(f"AtlasLoot ({atlas_version}): {len(atlas)} items in its tables, {taken} requirements taken for "
+                  "pieces a vendor sells that ForeverDB gives none.")
+            for line in reputations.check_lines(reading["checks"]):
+                print("  " + line)
+        print(f"Reputations: {len(reading['items'])} items and {len(reading['enchants'])} enchants of the data ask for "
+              f"one; {reading['hidden']} quests Questie {reading['questie']} says the game does not have are left "
+              f"out. Kept in {reputations.FILE.name}.")
     suspicious = build(details=args.audit)
     return 1 if args.audit and suspicious else 0
 

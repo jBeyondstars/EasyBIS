@@ -20,13 +20,19 @@ local stub = {
     chatLink = nil,    -- the last link handed to the chat box
     spellNames = {},   -- [id] = spell name the game "knows"
     zoneNames = {},    -- [instance id] = name GetRealZoneText gives
+    areaNames = {},    -- [area id] = name C_Map.GetAreaInfo gives
     modifier = false,  -- a modifier key is held
     linked = nil,      -- the last link given to HandleModifiedItemClick
     menu = nil,        -- the last context menu opened
+    factions = {},     -- [faction id] = { reaction, value, low, high, name }: what the game says of a reputation
+    factionList = {},  -- the reputation pane's lines: { factionID, isHeader, isCollapsed }
     itemCounts = {},   -- [id] = how many the player has, the bank included
     equipped = {},     -- [id] = true for what the player wears
     currencies = {},   -- [currency id] = the quantity the game gives; an id that is not here is no currency
     currencyIcon = nil,  -- the picture the game gives for a currency
+    bindings = {},     -- [id] = the bind type GetItemInfo gives (0 none, 1 when picked up, 2 when equipped)
+    itemIcons = {},    -- [id] = the icon the game gives, in place of the same one for every item
+    professions = nil, -- set with stub.learn: until then the client has no GetProfessions
 }
 
 ---------------------------------------------------------------------------
@@ -43,6 +49,13 @@ local function NewWidget(kind, name, template)
     }, widgetMeta)
     if template == "ScrollFrameTemplate" or template == "UIPanelScrollFrameTemplate" then
         widget.ScrollBar = NewWidget("Slider")
+    elseif template == "PortraitFrameTemplate" then
+        -- As the game's template: the border and the title lie over the frame's own children.
+        widget.NineSlice = NewWidget("Frame")
+        widget.NineSlice.frameLevel = 500
+        widget.TitleContainer = NewWidget("Frame")
+        widget.TitleContainer.frameLevel = 510
+        widget.TitleContainer.TitleText = NewWidget("FontString")
     elseif template == "UICheckButtonArtTemplate" then
         for _, key in ipairs({ "Normal", "Pushed", "Highlight", "Checked", "DisabledChecked" }) do
             widget[key .. "Texture"] = NewWidget("Texture")
@@ -59,19 +72,21 @@ end
 
 local function Noop() end
 for _, method in ipairs({
-    "SetFrameStrata", "SetFrameLevel", "SetToplevel", "SetClampedToScreen", "SetMovable", "EnableMouse",
+    "SetFrameStrata", "SetToplevel", "SetClampedToScreen", "SetMovable", "EnableMouse",
     "RegisterForDrag", "RegisterForClicks", "SetDontSavePosition", "StartMoving", "StopMovingOrSizing",
     "SetPortraitToAsset", "SetPortraitTextureRaw", "SetBackdrop", "SetBackdropColor",
     "SetWordWrap", "SetJustifyH", "SetColorTexture", "SetTexCoord",
     "SetHighlightTexture", "SetScrollChild", "UpdateScrollChildRect", "Raise", "SetAllPoints", "SetDesaturated",
     "SetResizable", "SetResizeBounds", "StartSizing", "SetNormalTexture", "SetPushedTexture", "SetAutoFocus",
-    "SetMaxLetters", "SetBlendMode",
+    "SetMaxLetters", "SetBlendMode", "SetDisabledTexture",
 }) do
     METHODS[method] = Noop
 end
 
 function METHODS:SetScale(scale) self.scale = scale end
 function METHODS:SetBackdropBorderColor(r, g, b, a) self.borderColor = { r, g, b, a } end
+function METHODS:SetVertexColor(r, g, b, a) self.vertexColor = { r, g, b, a } end
+function METHODS:SetFontObject(font) self.fontObject = font end
 
 -- Model methods (a DressUpModel): what it was asked to show.
 function METHODS:SetUnit(unit) self.unit = unit end
@@ -115,7 +130,8 @@ function METHODS:SetFocus() self.focused = true end
 function METHODS:ClearFocus() self.focused = false end
 function METHODS:HasFocus() return self.focused == true end
 function METHODS:GetEffectiveScale() return 1 end
-function METHODS:GetFrameLevel() return 1 end
+function METHODS:SetFrameLevel(level) self.frameLevel = level end
+function METHODS:GetFrameLevel() return self.frameLevel or 1 end
 function METHODS:IsMouseOver() return false end
 function METHODS:IsForbidden() return false end
 function METHODS:SetAlpha(alpha) self.alpha = alpha end
@@ -160,6 +176,7 @@ function METHODS:GetText() return self.text end
 function METHODS:SetTitle(text) self.title = text end
 function METHODS:SetTextColor(r, g, b) self.color = { r, g, b } end
 function METHODS:GetStringWidth() return #(self.text or "") * 6 end
+function METHODS:GetStringHeight() return 14 end
 function METHODS:SetTexture(texture) self.texture = texture end
 function METHODS:SetChecked(checked) self.checked = checked and true or false end
 function METHODS:GetChecked() return self.checked end
@@ -265,7 +282,7 @@ function TooltipDataProcessor.AddTooltipPostCall(_, callback) stub.itemHooks[#st
 function CreateAtlasMarkup(atlas) return "<" .. atlas .. ">" end
 
 -- name, link, quality, item level, required level, type, subtype, stack, equip slot, icon, price, class id,
--- subclass id. By name: only an item the game "knows".
+-- subclass id, bind type. By name: only an item the game "knows".
 function GetItemInfo(id)
     if type(id) == "string" then
         local wanted = id
@@ -277,8 +294,9 @@ function GetItemInfo(id)
     local name = stub.itemNames[id]
     if name then
         local kind = stub.itemTypes[id] or { "Mail", "INVTYPE_HEAD" }
-        return name, "|Hitem:" .. id .. "|h[" .. name .. "]|h", 4, 60, 60, "Armor", kind[1], 1, kind[2], 132767, 0,
-            kind[3] or 4, kind[4] or 3
+        return name, "|Hitem:" .. id .. "|h[" .. name .. "]|h", 4, 60, 60, "Armor", kind[1], 1, kind[2],
+            stub.itemIcons[id] or 132767, 0,
+            kind[3] or 4, kind[4] or 3, stub.bindings[id]
     end
 end
 -- id, type, subtype, equip slot, icon, class id, subclass id: at once, for any item that exists
@@ -288,7 +306,7 @@ function GetItemInfoInstant(id)
     if equipLoc then return id, "Armor", kind[1] or "Mail", equipLoc, 132767, kind[3] or 4, kind[4] or 3 end
 end
 INVTYPE_HEAD, INVTYPE_2HWEAPON, INVTYPE_WEAPON, INVTYPE_HOLDABLE = "Head", "Two-Hand", "One-Hand", "Held In Off-hand"
-function GetItemIcon() return 134400 end
+function GetItemIcon(id) return stub.itemIcons[id] or 134400 end
 function GetItemCount(id) return stub.itemCounts[id] or 0 end
 function IsEquippedItem(id) return stub.equipped[id] == true end
 C_CurrencyInfo = {}
@@ -323,8 +341,31 @@ C_Spell = {}
 function C_Spell.GetSpellName(id) return stub.spellNames[id] end
 function C_Spell.GetSpellTexture() return 136243 end
 
+-- A faction the test did not set reads as the game reads one never met: Neutral 0.
+C_Reputation = {}
+function C_Reputation.GetFactionDataByID(id)
+    if stub.factionsUnknown then return nil end
+    local faction = stub.factions[id] or { reaction = 4, value = 0, low = 0, high = 3000 }
+    return {
+        factionID = id, name = faction.name or ("Faction " .. id), reaction = faction.reaction,
+        currentStanding = faction.value, currentReactionThreshold = faction.low,
+        nextReactionThreshold = faction.high,
+    }
+end
+function C_Reputation.GetNumFactions() return #stub.factionList end
+function C_Reputation.GetFactionDataByIndex(index) return stub.factionList[index] end
+-- stub.watched: the faction the reputation bar follows
+function C_Reputation.GetWatchedFactionData() return stub.watched and { factionID = stub.watched } or nil end
+function C_Reputation.SetWatchedFactionByID(id) stub.watched = id ~= 0 and id or nil end
+
+-- stub.waypoint: the pin last set on the map; stub.openedMap: the map last opened
 C_Map = {}
 function C_Map.GetMapInfo(id) return { name = "Map " .. id } end
+function C_Map.SetUserWaypoint(point) stub.waypoint = point end
+function C_Map.GetAreaInfo(id) return stub.areaNames[id] end
+UiMapPoint = {}
+function UiMapPoint.CreateFromCoordinates(map, x, y) return { uiMapID = map, x = x, y = y } end
+function OpenWorldMap(map) stub.openedMap = map end
 function GetRealZoneText(id) return stub.zoneNames[id] end
 
 -- 2026-11-18 11:00 UTC, the third week of the first PvP season, six days before the next weekly reset
@@ -420,6 +461,19 @@ function stub.runTimers()
 end
 
 -- A tooltip that records what is added to it: lines[i] = { left, right }.
+-- The player's professions, { { name, rank, skill line }, ... } in the game's order: the client then answers
+-- GetProfessions and GetProfessionInfo, as the Forever client does.
+function stub.learn(professions)
+    stub.professions = professions
+    local function At(index) return professions[index] and index or nil end
+    function GetProfessions() return At(1), At(2), At(3), At(4), At(5), At(6) end
+    function GetProfessionInfo(index)
+        local profession = professions[index]
+        if not profession then error("no profession at " .. tostring(index)) end
+        return profession[1], 136240, profession[2], 300, 0, 0, profession[3]
+    end
+end
+
 function stub.newTooltip()
     return NewWidget("GameTooltip")
 end

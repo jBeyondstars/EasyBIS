@@ -123,6 +123,7 @@ def load(data_dir, corrected: bool = True) -> Database:
         corrections.fill(db, corrections.load_sources())
         corrections.confirm(db, corrections.load_drops())
         corrections.price(db, corrections.load_costs())
+        corrections.assign_sides(db)
         db.simulated = simulated.load() if simulated.IN_USE else simulated.Reading()
     return db
 

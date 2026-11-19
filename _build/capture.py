@@ -37,15 +37,20 @@ FORMAT = 1
 VENDOR_FORMAT = 1
 POOLS = ("mh", "2h", "oh")
 UNLISTED_FROM = 50   # required level from which a piece ForeverDB left out of its lists is worth reading
-# The order the groups of capture_ids are read in. The game's server stops answering when too much is
-# asked of it, so what is not known from anywhere else comes first, and the weapons, read already, last.
-ORDER = ("consumables", "unlisted", "twins", "pool", "weapons")
+# The order the groups of capture_ids are read in. The server never answers for an item it does not have,
+# though the client's own table lists it, and the tool takes a long silence for a server that no longer answers
+# and stops: on 2026-11-18 and 2026-11-19 every capture stopped at the first of the "unlisted" pieces numbered
+# from 220794 (665 of the 666 left), which the server does not answer for. So the pieces of the lists come first,
+# then the weapons, and last the groups such items are in: the other faction's versions, read to learn whether
+# the server has them, and the pieces left out of the lists.
+ORDER = ("consumables", "pool", "weapons", "twins", "unlisted")
 GEAR_GROUPS = ORDER[1:]   # the groups that say which pieces of gear the game has (game_reading)
 COMPLETE = 0.85   # the share of its list a capture has to hold for the rest to be what the game does not have
 
 _STRING = r'"((?:[^"\\]|\\.)*)"'
 _META = re.compile(rf'\["?meta"?\]\s*=\s*{_STRING}')
 _VENDOR = re.compile(rf'\["?v(\d+)"?\]\s*=\s*{_STRING}')
+_ASKS = re.compile(rf'\["?a(\d+)"?\]\s*=\s*{_STRING}')
 _ESCAPE = re.compile(r"\\(\d{1,3}|.)", re.S)
 _ESCAPED = {"n": "\n", "r": "\r", "t": "\t", "a": "\a", "b": "\b", "f": "\f", "v": "\v"}
 _MARKUP = re.compile(r"\|c[0-9a-fA-F]{8}|\|r|\|T[^|]*\|t|\|A[^|]*\|a")
@@ -394,6 +399,25 @@ def parse_vendors(text: str) -> dict:
                 what, _, amount = cost[1:].rpartition(":")
                 costs.append((cost[0], what, int(amount)))
             items[int(item_id)] = {"name": name, "copper": int(copper), "costs": costs}
+        vendors[int(match.group(1))] = {"name": fields[5], "game": f"{fields[1]}.{fields[2]}", "locale": fields[3],
+                                        "date": fields[4][:10], "items": items}
+    return vendors
+
+
+def parse_asks(text: str) -> dict:
+    """{npc: {"name", "game": "version.build", "locale", "date", "items": {item id: what the row's tooltip writes
+    after "Requires ", or "" when it asks for none}}}: the reputation the rows of the vendors' windows asked of
+    the buyer (capture_addon/Capture.lua). A file without any gives {}."""
+    vendors = {}
+    for match in _ASKS.finditer(text):
+        head, *rows = _unescape(match.group(2)).split("\n")
+        fields = head.split("|", 5)
+        if len(fields) != 6 or fields[0] != str(VENDOR_FORMAT):
+            raise ValueError(f"unknown vendor format {fields[0]!r}: install the tool again (build.py --capture-tool)")
+        items = {}
+        for row in rows:
+            item_id, _, asked = row.partition("\t")
+            items[int(item_id)] = asked.strip()
         vendors[int(match.group(1))] = {"name": fields[5], "game": f"{fields[1]}.{fields[2]}", "locale": fields[3],
                                         "date": fields[4][:10], "items": items}
     return vendors

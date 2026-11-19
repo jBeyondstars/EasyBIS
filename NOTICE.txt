@@ -33,6 +33,9 @@ https://github.com/jBeyondstars/EasyBIS
    comes from, for the ones its data gives no source, read in QuestieDB
    (section 4). Those sources carry the label t in Data/Items.lua and
    Data/Enchants.lua, and the addon marks them as not confirmed in Forever.
+   The pieces sold against Theramore Expeditionary Force, which ForeverDB's
+   data leaves to both sides, are given to the Alliance: its vendor and every
+   quest of the faction are the Alliance's alone (section 4).
    Those changes are Easy BIS's, not ForeverDB's (_build/corrections.py).
    The Consumables tab (Data/Consumables.lua) is made from ForeverDB's
    catalogue of consumables, recipes, item sources and stat weights. What
@@ -76,6 +79,16 @@ https://github.com/jBeyondstars/EasyBIS
    contributors, GPL-3.0 as its LICENSE.md says, with the reservation it
    makes for contributions older than that licence. Nothing of QuestieDB's
    code is part of Easy BIS, and Easy BIS does not need Questie to run.
+   Data/Reputation.lua says which reputation an item or an enchant asks for,
+   as ForeverDB's Items.lua and Recipes.lua give it, and what QuestieDB holds
+   of the quests that ask for a reputation or earn it, their vendors and
+   where those stand. It is read by _build/reputations.py and kept in
+   _build/corrections/reputations.json. The quests the Questie addon
+   (https://github.com/Questie/Questie) hides because the game does not
+   have them, as its Database/Corrections/QuestieQuestBlacklist.lua lists
+   them, are left out of it: only which quests those are is read, not
+   Questie's code. Copyright (C) the Questie team and its contributors,
+   GPL-3.0 with the same reservation as QuestieDB's.
 
 5. Drops counted in Forever
    The sources labelled w (the boss that drops an item and how often) come
@@ -87,14 +100,28 @@ https://github.com/jBeyondstars/EasyBIS
    need them to run. Neither addon states a licence: their authors can ask
    for this data to be removed, and it will be.
 
-6. World of Warcraft
+6. Reputations in AtlasLoot Forever
+   For a piece a vendor sells and ForeverDB's data gives no requirement (the
+   Alterac Valley and Warsong Gulch quartermasters' pieces: their tooltips
+   do not carry it, only the vendor's window shows it), Data/Reputation.lua
+   says which reputation and standing it asks for, on each side, as the
+   tables of AtlasLoot Forever list them (AtlasLootClassic_PvP and
+   AtlasLootClassic_Factions, by sliccer, CurseForge project 1422985), a
+   version of AtlasLoot Classic (https://github.com/Hoizame/AtlasLootClassic),
+   GPL-2.0 as its LICENSE says. Only those facts are read, by
+   _build/reputations.py, checked against ForeverDB's data and the game's
+   tooltips and windows, and kept in _build/corrections/reputations.json,
+   which names the version read. Nothing of AtlasLoot's code or tables is
+   part of Easy BIS, and Easy BIS does not need AtlasLoot to run.
+
+7. World of Warcraft
    World of Warcraft, WoW Forever and their names, places and icons are
    trademarks or property of Blizzard Entertainment, Inc. Item names and
    numbers come from the game. Easy BIS is not affiliated with or endorsed by
    Blizzard Entertainment, by ForeverDB.net, by the Questie team, by Wowhead
    or by the authors of the addons named above.
 
-7. The logo
+8. The logo
    The logo (Media/*.tga, made from _build/art/*) was made for Easy BIS by its
    author with an image generator, and is part of Easy BIS under the same
    licence.

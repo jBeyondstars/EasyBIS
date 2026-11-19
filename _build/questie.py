@@ -51,8 +51,10 @@ QUEST_NAME, QUEST_REQUIRED_LEVEL, QUEST_RACES, QUEST_ZONE = 1, 4, 6, 17
 NPC_NAME, NPC_RANK, NPC_SPAWNS, NPC_ZONE, NPC_FRIENDLY = 1, 6, 7, 9, 13
 OBJECT_NAME, OBJECT_ZONE = 1, 5
 RANK_RARE_ELITE, RANK_BOSS, RANK_RARE = 2, 3, 4
-ALLIANCE_RACES = 1 | 4 | 8 | 64 | 1024 | 2097152   # human, dwarf, night elf, gnome, draenei, worgen
-HORDE_RACES = 2 | 16 | 32 | 128 | 256 | 512        # orc, undead, tauren, troll, goblin, blood elf
+# human, dwarf, night elf, gnome, draenei, worgen, and Forever's Skyborne of each side (QuestieDB's
+# src/corrections/enum/expansions.lua: races 95 and 96)
+ALLIANCE_RACES = 1 | 4 | 8 | 64 | 1024 | 2097152 | 1 << 32
+HORDE_RACES = 2 | 16 | 32 | 128 | 256 | 512 | 1 << 33   # orc, undead, tauren, troll, goblin, blood elf
 
 _ROW = re.compile(r"^## X-(Item|Quest|Npc|Object)-(\d+)-(S|\d+)(?:-(\d+))?: (.*)$")
 _META = re.compile(r"^## (Version|X-BUILD-COMMIT|X-Flavor): (.*)$")
@@ -132,6 +134,10 @@ class Store:
 
     def has(self, entity: str, number: int) -> bool:
         return (entity, number) in self._rows
+
+    def numbers(self, entity: str) -> list[int]:
+        """Every id QuestieDB has a row for, in order."""
+        return sorted(number for kind, number in self._rows if kind == entity)
 
     def _value(self, entity: str, number: int, name: str):
         text = self._rows.get((entity, number), {}).get(name)
