@@ -21,7 +21,9 @@ The Reputations tab of the window: what the spec, the list and the phase ask of 
            The header has a Watch button: the game's reputation bar follows the faction.
 
 Gold is for what the player has earned: a reached standing, a piece within reach. The faction chosen is lit in
-blue. Nothing here says how long a standing takes: nothing measures it.
+blue. The rest of the colour is the game's own art: the status bar texture on the ways, the tooltip frame on the
+cards, soft bands under the header, the sections and the factions, every other line lighter, an icon per section.
+Nothing here says how long a standing takes: nothing measures it.
 
   ReputationView.Create(parent)   the view, hidden
   ReputationView.Update(state)    fills it. state: the window's { class, spec, list, faction, factionArtisan }
@@ -52,6 +54,12 @@ local CARD_GAP = 8
 local ICON = 24
 local HEIGHTS = { section = 34, entry = 30, seller = 26, quest = 22, note = 22 }
 local UNKNOWN_ICON = "Interface\\Icons\\INV_Misc_QuestionMark"
+local STATUS_BAR = "Interface\\TargetingFrame\\UI-StatusBar"
+local SECTION_ICONS = {
+    sources = "Interface\\Icons\\INV_Misc_Bag_08",
+    quests = "Interface\\Icons\\INV_Misc_Note_01",
+    unknown = UNKNOWN_ICON,
+}
 local SELLER_ICONS = {
     vendor = "Interface\\GossipFrame\\VendorGossipIcon",
     other = "Interface\\GossipFrame\\GossipGossipIcon",
@@ -65,6 +73,8 @@ local GOLD, WHITE, GREY = "|cffffd100", "|cffffffff", "|cffa8a8b0"
 local GOLD_RGB = { 1, 0.82, 0 }
 local GREEN = { 0.12, 0.62, 0.22 }       -- the way travelled, before every piece is earned
 local SELECTED = { 0.35, 0.60, 1.00 }    -- the faction chosen: not gold, which is for what is earned
+local SLATE = { 0.20, 0.23, 0.30 }       -- the way still to go
+local TEAL = { 0.25, 0.70, 0.75 }        -- what the data says
 local DOTS = { data = { 0.56, 0.82, 0.62 }, check = { 0.94, 0.60, 0.33 }, unknown = { 0.66, 0.66, 0.70 } }
 local THRESHOLDS = Reputation.THRESHOLDS
 local WHOLE_WAY = THRESHOLDS[7]
@@ -78,6 +88,25 @@ local folded = {}             -- [section] = true: the sections the player folde
 local function Number(value)
     if BreakUpLargeNumbers then return BreakUpLargeNumbers(value) end
     return tostring(value)
+end
+
+local function HasTemplate(name)
+    return C_XMLUtil ~= nil and C_XMLUtil.GetTemplateInfo ~= nil and C_XMLUtil.GetTemplateInfo(name) ~= nil
+end
+
+-- A soft band of colour fading out to the right (or downwards), on any client: the newer gradient takes colours,
+-- the older one numbers; without either, an even tint.
+local function Band(texture, orientation, r, g, b, from, to)
+    texture:SetTexture("Interface\\Buttons\\WHITE8x8")
+    if texture.SetGradient and CreateColor
+        and pcall(texture.SetGradient, texture, orientation, CreateColor(r, g, b, from), CreateColor(r, g, b, to)) then
+        return
+    end
+    if texture.SetGradientAlpha then
+        texture:SetGradientAlpha(orientation, r, g, b, from, r, g, b, to)
+    else
+        texture:SetColorTexture(r, g, b, (from + to) / 2)
+    end
 end
 
 ---------------------------------------------------------------------------
@@ -185,8 +214,9 @@ local function CreateWay(parent, width, height)
     local way = { width = width, segments = {}, marks = {} }
     for index = 1, 4 do
         local from, to = THRESHOLDS[index + 2], THRESHOLDS[index + 3]
-        local segment = parent:CreateTexture(nil, "BACKGROUND")
-        segment:SetColorTexture(1, 1, 1, 0.10)
+        local segment = parent:CreateTexture(nil, "BORDER")
+        segment:SetTexture(STATUS_BAR)
+        segment:SetVertexColor(SLATE[1], SLATE[2], SLATE[3], 1)
         segment:SetHeight(height)
         local left = At(width, from) + (index > 1 and 1 or 0)
         segment:SetWidth(math.max(1, At(width, to) - left - (index < 4 and 1 or 0)))
@@ -194,6 +224,7 @@ local function CreateWay(parent, width, height)
         segment.left = left
     end
     way.fill = parent:CreateTexture(nil, "ARTWORK")
+    way.fill:SetTexture(STATUS_BAR)
     way.fill:SetHeight(height)
     return way
 end
@@ -214,7 +245,7 @@ local function FillWay(way, group)
     way.fill:SetShown(width > 0)
     way.fill:SetWidth(math.max(1, width))
     local color = Earned(group) and GOLD_RGB or GREEN
-    way.fill:SetColorTexture(color[1], color[2], color[3], 0.90)
+    way.fill:SetVertexColor(color[1], color[2], color[3], 1)
     way.position = position
 end
 
@@ -279,6 +310,14 @@ local function CreateFaction(parent)
     local width = LIST_WIDTH - BAR_ROOM
     local button = CreateFrame("Button", nil, parent)
     button:SetSize(width, FACTION_HEIGHT - 2)
+    button.band = button:CreateTexture(nil, "BACKGROUND", nil, -1)
+    button.band:SetAllPoints()
+    Band(button.band, "HORIZONTAL", 1, 1, 1, 0.07, 0)
+    button.rule = button:CreateTexture(nil, "BACKGROUND")
+    button.rule:SetColorTexture(1, 1, 1, 0.06)
+    button.rule:SetHeight(1)
+    button.rule:SetPoint("BOTTOMLEFT", 0, -1)
+    button.rule:SetPoint("BOTTOMRIGHT", 0, -1)
     Widgets.ListHighlight(button, "HIGHLIGHT", 0.32)
     button.selected = Widgets.ListHighlight(button, "BACKGROUND", 0.55)
     button.selected:SetDesaturated(true)   -- grey first: blue over the highlight's yellow turns green
@@ -452,6 +491,13 @@ local function CreateTrack(parent)
         track.labels[standing] = label
     end
     track.pieces = {}
+    -- where the player stands: a white post, outlined so it shows on the green and on the slate
+    track.youBack = track:CreateTexture(nil, "OVERLAY", nil, 1)
+    track.youBack:SetColorTexture(0, 0, 0, 0.9)
+    track.youBack:SetSize(5, TRACK_HEIGHT + 8)
+    track.you = track:CreateTexture(nil, "OVERLAY", nil, 2)
+    track.you:SetColorTexture(1, 1, 1, 1)
+    track.you:SetSize(3, TRACK_HEIGHT + 6)
     return track
 end
 
@@ -461,6 +507,15 @@ local function FillTrack(group)
     local track = view.track
     local way = track.way
     FillWay(way, group)
+    track.you:SetShown(way.position ~= nil)
+    track.youBack:SetShown(way.position ~= nil)
+    if way.position then
+        local x = TRACK_INSET + At(way.width, way.position)
+        for _, post in ipairs({ track.youBack, track.you }) do
+            post:ClearAllPoints()
+            post:SetPoint("CENTER", track, "TOPLEFT", x, -(PIECE + 8 + TRACK_HEIGHT / 2))
+        end
+    end
     for standing, label in pairs(track.labels) do
         label:SetText(Reputation.StandingName(standing))
         local color = Met(group, standing) and GOLD_RGB or MUTED
@@ -509,13 +564,30 @@ end
 -- The cards: three numbers, each said only when a source gives it
 ---------------------------------------------------------------------------
 
-local function CreateCard(parent)
-    local card = CreateFrame("Frame", nil, parent, "BackdropTemplate")
-    card:SetBackdrop(Widgets.FLAT)
-    card:SetBackdropColor(1, 1, 1, 0.04)
-    card:SetBackdropBorderColor(1, 1, 1, 0.10)
+-- The game's tooltip frame where the client has it; the accent says what the number is: green the way, teal the
+-- data's quests.
+local function CreateCard(parent, accent)
+    local card
+    if HasTemplate("TooltipBackdropTemplate") then
+        card = CreateFrame("Frame", nil, parent, "TooltipBackdropTemplate")
+    else
+        card = CreateFrame("Frame", nil, parent, "BackdropTemplate")
+        card:SetBackdrop(Widgets.FLAT)
+        card:SetBackdropColor(0.05, 0.06, 0.09, 0.85)
+        card:SetBackdropBorderColor(1, 1, 1, 0.14)
+    end
+    card.accent = card:CreateTexture(nil, "ARTWORK")
+    card.accent:SetHeight(2)
+    card.accent:SetPoint("TOPLEFT", 4, -4)
+    card.accent:SetPoint("TOPRIGHT", -4, -4)
+    card.accent:SetColorTexture(accent[1], accent[2], accent[3], 0.9)
+    card.glow = card:CreateTexture(nil, "BACKGROUND", nil, 1)
+    card.glow:SetPoint("TOPLEFT", 4, -6)
+    card.glow:SetPoint("TOPRIGHT", -4, -6)
+    card.glow:SetHeight(CARD_HEIGHT / 2)
+    Band(card.glow, "VERTICAL", accent[1], accent[2], accent[3], 0, 0.10)
     card.label = card:CreateFontString(nil, "OVERLAY", FONTS.text)
-    card.label:SetPoint("TOPLEFT", 10, -8)
+    card.label:SetPoint("TOPLEFT", 10, -10)
     card.label:SetPoint("RIGHT", -10, 0)
     card.label:SetJustifyH("LEFT")
     card.label:SetWordWrap(false)
@@ -584,12 +656,14 @@ end
 local function DetailLines(group, ways)
     local lines = {}
     local function Add(line) lines[#lines + 1] = line end
-    local function Section(key, text)
-        Add({ kind = "section", key = key, text = text, folded = folded[key] == true })
+    local function Section(key, text, icon)
+        Add({ kind = "section", key = key, text = text, folded = folded[key] == true,
+            icon = icon or SECTION_ICONS[key] })
         return not folded[key]
     end
 
-    if Section("pieces", L.REP_SECTION_PIECES) then
+    local first = Entries(group)[1]
+    if Section("pieces", L.REP_SECTION_PIECES, first and EntryIcon(first)) then
         for _, entry in ipairs(Entries(group)) do
             local standing = entry.requirement.standing
             local rank = entry.role == "best" and (WHITE .. L.RANK_BIS) or (GREY .. L.RANK_ALT)
@@ -664,6 +738,17 @@ local function CreateLine(parent)
     local line = CreateFrame("Button", nil, parent)
     line:SetWidth(DETAIL_WIDTH)
     line.back = Widgets.ListHighlight(line, "HIGHLIGHT", 0.28)
+    line.band = line:CreateTexture(nil, "BACKGROUND", nil, -1)
+    line.band:SetPoint("TOPLEFT", 0, -4)
+    line.band:SetPoint("BOTTOMRIGHT", 0, 2)
+    Band(line.band, "HORIZONTAL", 1, 1, 1, 0.10, 0)
+    line.stripe = line:CreateTexture(nil, "BACKGROUND", nil, -1)
+    line.stripe:SetAllPoints()
+    line.stripe:SetColorTexture(1, 1, 1, 0.035)
+    line.badge = line:CreateTexture(nil, "ARTWORK")
+    line.badge:SetSize(18, 18)
+    line.badge:SetPoint("BOTTOMLEFT", 20, 6)
+    line.badge:SetTexCoord(0.07, 0.93, 0.07, 0.93)
     line.rule = line:CreateTexture(nil, "BACKGROUND")
     line.rule:SetColorTexture(1, 1, 1, 0.14)
     line.rule:SetHeight(1)
@@ -717,8 +802,11 @@ local function CreateLine(parent)
     return line
 end
 
-local function FillLine(line, data)
+local function FillLine(line, data, striped)
     line.data = data
+    line.band:SetShown(data.kind == "section")
+    line.badge:SetShown(data.kind == "section" and data.icon ~= nil)
+    line.stripe:SetShown(striped == true)
     local kind = data.kind
     local entry, section, seller = kind == "entry", kind == "section", kind == "seller"
     local dotted = kind == "quest" or kind == "note"
@@ -747,7 +835,8 @@ local function FillLine(line, data)
     local height = HEIGHTS[kind]
     if section then
         line.fold:SetTexture(data.folded and "Interface\\Buttons\\UI-PlusButton-Up" or "Interface\\Buttons\\UI-MinusButton-Up")
-        line.text:SetPoint("BOTTOMLEFT", 22, 8)
+        line.badge:SetTexture(data.icon)
+        line.text:SetPoint("BOTTOMLEFT", data.icon and 44 or 22, 8)
     elseif entry then
         line.icon:SetSize(ICON, ICON)
         line.icon:SetPoint("LEFT", 6, 0)
@@ -819,13 +908,15 @@ local function ShowDetail(group)
     offset = offset + CARD_HEIGHT + 6
 
     local data = DetailLines(group, ways)
+    local count = 0   -- the lines under a section: every other one lighter
     for index, lineData in ipairs(data) do
         local line = view.lines[index]
         if not line then
             line = CreateLine(view.detailChild)
             view.lines[index] = line
         end
-        local height = FillLine(line, lineData)
+        count = lineData.kind == "section" and 0 or count + 1
+        local height = FillLine(line, lineData, count > 0 and count % 2 == 0)
         line:ClearAllPoints()
         line:SetPoint("TOPLEFT", view.detailChild, "TOPLEFT", 0, -offset)
         line:Show()
@@ -848,6 +939,18 @@ function ReputationView.Create(parent)
     view:SetPoint("BOTTOMRIGHT", parent, "BOTTOMRIGHT", -PAD, PAD)
     view:Hide()
     view.buttons, view.lines = {}, {}
+
+    -- the factions on a darker ground than the faction's side, and a band under the faction's name
+    view.listBack = view:CreateTexture(nil, "BACKGROUND")
+    view.listBack:SetColorTexture(0, 0, 0, 0.28)
+    view.listBack:SetPoint("TOPLEFT", -2, 2)
+    view.listBack:SetPoint("BOTTOMLEFT", -2, -2)
+    view.listBack:SetWidth(LIST_WIDTH + 4)
+    view.headerBand = view:CreateTexture(nil, "BACKGROUND")
+    view.headerBand:SetPoint("TOPLEFT", LIST_WIDTH + 3, 2)
+    view.headerBand:SetPoint("TOPRIGHT", 0, 2)
+    view.headerBand:SetHeight(52)
+    Band(view.headerBand, "HORIZONTAL", 1, 1, 1, 0.09, 0)
 
     view.list, view.listChild = Widgets.Scroll(view)
     view.list:SetPoint("TOPLEFT", 0, 0)
@@ -887,7 +990,8 @@ function ReputationView.Create(parent)
     view.detail:SetPoint("TOPLEFT", LIST_WIDTH + 14, -54)
     view.detail:SetPoint("BOTTOMRIGHT", -BAR_ROOM, 0)
     view.track = CreateTrack(view.detailChild)
-    view.cards = { CreateCard(view.detailChild), CreateCard(view.detailChild), CreateCard(view.detailChild) }
+    view.cards = { CreateCard(view.detailChild, GREEN), CreateCard(view.detailChild, TEAL),
+        CreateCard(view.detailChild, TEAL) }
     view.pieces = {}
 
     view.empty = view:CreateFontString(nil, "OVERLAY", "GameFontDisable")
@@ -909,6 +1013,8 @@ function ReputationView.Update(state)
     local chosen = LayoutFactions(needs, state)
     local any = chosen ~= nil
     view.empty:SetShown(not any)
+    view.listBack:SetShown(any)
+    view.headerBand:SetShown(any)
     view.list:SetShown(any)
     view.detail:SetShown(any)
     view.divider:SetShown(any)

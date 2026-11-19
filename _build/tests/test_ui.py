@@ -1798,6 +1798,16 @@ class WindowTest(unittest.TestCase):
         self.assertIn("entry", kinds())
         section = view.lines[1]
         self.assertEqual(section.data.key, "pieces")
+        # each section has its picture: the pieces' is the first piece's
+        self.assertTrue(section.badge.shown)
+        self.assertEqual(section.badge.texture, view.pieces[1].icon.texture)
+        others = [view.lines[i] for i in range(2, len(view.detailData) + 1) if view.detailData[i].kind == "section"]
+        self.assertTrue(all(line.badge.shown and line.badge.texture for line in others))
+        # under a section, every other line is lighter
+        below = [view.lines[i] for i in range(2, len(view.detailData) + 1)]
+        under = [line.data.kind for line in below]
+        stop = under.index("section") if "section" in under else len(under)
+        self.assertEqual([line.stripe.shown for line in below[:stop]], [i % 2 == 1 for i in range(stop)])
         self.assertEqual(section.fold.texture, "Interface\\Buttons\\UI-MinusButton-Up")
         game.stub.run(section, "OnClick")
         self.assertNotIn("entry", kinds())
