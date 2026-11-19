@@ -39,7 +39,7 @@ Type `/easybis` (or `/ebis`), or click the minimap button.
 
 - Each faction's pieces sit on a track from Neutral to Exalted, above the standing that unlocks them.
 - How much reputation is left to earn, where the pieces come from (click a vendor to see it on the map), and the quests your class can take, the repeatable ones first.
-- A battleground's faction says so, and names its battleground.
+- A battleground's faction says so, and names its battleground. The Alterac Valley and Warsong Gulch quartermasters' pieces say which standing they need on your side, though their tooltips don't.
 - What no source says is written as unknown: the reputation creatures give, or how to go the whole way to Exalted.
 - A faction that sells recipes, such as Timbermaw Hold's patterns, counts for the crafter: the tab names the recipes and their vendors, and follows your professions.
 - Click a faction to follow it in the game's reputation bar.

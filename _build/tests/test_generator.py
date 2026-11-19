@@ -2172,6 +2172,14 @@ function stub.wait()
     stub.timers = {}
     for _, callback in ipairs(timers) do callback() end
 end
+-- the tooltip of a row: its name, then "Requires <asks>" when the row has asks
+function C_TooltipInfo.GetMerchantItem(index)
+    local row = stub.window[index]
+    if not row then return nil end
+    local lines = { { leftText = row.name }, { leftText = "Requires Level 60" } }
+    if row.asks then lines[#lines + 1] = { leftText = "Requires " .. row.asks } end
+    return { lines = lines }
+end
 """
 REAL_LINK = "|cffffffff|Hitem:226404::::::::60:::::|h[Tarnished Undermine Real]|h|r"
 
@@ -2203,6 +2211,33 @@ class VendorToolTest(unittest.TestCase):
 
     def chat(self):
         return "\n".join(str(line) for line in self.stub.chat.values())
+
+    def test_the_window_keeps_what_each_row_asks(self):
+        """Only the window's tooltip says what the Alterac and Warsong quartermasters ask: it is kept, and read."""
+        self.show((19325, "Don Rodrigo's Band", 0, [(2, REAL_LINK, "Real")]), (17348, "Major Healing Draught", 900, None))
+        self.stub.window[1].asks = "Stormpike Guard - Exalted"
+        self.stub.event(None, "MERCHANT_SHOW")
+        db = self.lua.globals().EasyBISCaptureDB
+        kept = db.asks.a227853
+        self.assertEqual(kept.split("\n"), ["1|1.0.0|1|enUS|2026-11-15 12:30|Pix Xizzix", "17348\t",
+                                            "19325\tStormpike Guard - Exalted"])
+        self.assertIn("Pix Xizzix: 2 items read in the window, 1 of them ask for a reputation.", self.chat())
+        self.assertIn("--import-reputations", self.chat())
+        saved = ('EasyBISCaptureDB = {\n["asks"] = {\n["a227853"] = "' + kept.replace("\n", "\\n") + '",\n},\n'
+                 '["vendors"] = {\n["v227853"] = "' + self.kept().replace("\n", "\\n") + '",\n},\n}\n')
+        asks = capture.parse_asks(saved)
+        self.assertEqual(asks[227853]["name"], "Pix Xizzix")
+        self.assertEqual(asks[227853]["items"], {19325: "Stormpike Guard - Exalted", 17348: ""})
+        self.assertEqual(set(capture.parse_vendors(saved)), {227853}, "the prices and the reputations do not mix")
+        self.assertEqual(reputations.read_windows(asks), {19325: (730, 7), 17348: None})
+        self.assertEqual(reputations.read_windows({1: {**asks[227853], "locale": "frFR"}}), {}, "English only")
+
+    def test_a_window_that_asks_for_nothing_is_not_kept(self):
+        self.show((17348, "Major Healing Draught", 900, None))
+        self.stub.event(None, "MERCHANT_SHOW")
+        db = self.lua.globals().EasyBISCaptureDB
+        self.assertFalse(db and db.asks)
+        self.assertNotIn("ask for a reputation", self.chat())
 
     def test_the_window_is_kept_as_the_importer_reads_it(self):
         self.show((272411, "Arcanoweave Cloak", 0, [(75, REAL_LINK, "Real")]),
@@ -2484,6 +2519,107 @@ class CapturedReputationTest(unittest.TestCase):
         self.assertEqual([row[0] for row in found["missing"]], [1, 5], "a quest's gate is not the wearer's")
         self.assertEqual(found["extra"], [(2, (889, 4), None)])
         self.assertEqual(found["outside"], [(3, None, "Nightclaw Druids")])
+
+    ATLAS = """
+data["AlteracValley"] = {
+	items = {
+		{ -- Exalted
+			name = ALIL["Exalted"],
+			[ALLIANCE_DIFF] = {
+				{ 1, "f730rep8" },
+				{ 2, 19325 }, -- Don Rodrigo's Band
+			},
+			[HORDE_DIFF] = {
+				{ 1, "f729rep8" },
+				{ 2, 19325 }, -- Don Julio's Band
+			},
+		},
+		{ -- Honored
+			name = ALIL["Honored"],
+			[HORDE_DIFF] = {
+				{ 1, "f729rep6" },
+				{ 2, 19083 }, -- Frostwolf Legionnaire's Cloak
+			},
+		},
+		{
+			name = "No standing",
+			[NORMAL_DIFF] = {
+				{ 1, 12345 },
+			},
+		},
+		{
+			name = ALIL["Revered"],
+			[NORMAL_DIFF] = {
+				{ 1, "f576rep7" },
+				{ 2, 19218 },
+				{ 3, "f576rep2" },
+				{ 4, 999 },
+			},
+		},
+	},
+}
+"""
+
+    def test_atlasloot_tables_say_a_standing_per_side(self):
+        found = reputations.read_atlasloot(self.ATLAS)
+        self.assertEqual(found, {19325: {"a": (730, 7), "h": (729, 7)}, 19083: {"h": (729, 5)},
+                                 19218: {"": (576, 6)}}, "a piece under no standing, or below Neutral, is left out")
+        self.assertEqual(reputations.by_side(found[19325]), {"a": (730, 7), "h": (729, 7)})
+        self.assertEqual(reputations.by_side(found[19083]), {"": (729, 5)}, "one side's piece")
+        self.assertEqual(reputations.by_side({"a": (1234, 5), "h": (729, 5)}), {"": (729, 5)}, "FACTIONS only")
+        with tempfile.TemporaryDirectory() as folder:
+            self.assertEqual(reputations.atlasloot(folder), ({}, ""))
+            addon = Path(folder) / "AtlasLootClassic_PvP"
+            addon.mkdir()
+            (addon / "data.lua").write_text(self.ATLAS, encoding="utf-8")
+            (addon / "AtlasLootClassic_PvP_Forever.toc").write_text("## Version: Forever 1.60.1\n", encoding="utf-8")
+            self.assertEqual(reputations.atlasloot(folder), (found, "AtlasLootClassic_PvP Forever 1.60.1"))
+
+    def test_atlasloot_is_checked_against_the_other_sources(self):
+        atlas = {1: {"a": (730, 7), "h": (729, 7)}, 2: {"": (889, 5)}, 3: {"": (890, 6)}}
+        found = reputations.cross_check(atlas, {"foreverdb": {1: (729, 7), 2: (889, 6), 9: (21, 4)},
+                                                "windows": {3: None}, "tooltips": {}})
+        self.assertEqual(found["foreverdb"], {"agree": 1, "differ": [[2, [889, 6], {"": [889, 5]}]]})
+        self.assertEqual(found["windows"], {"agree": 0, "differ": [[3, None, {"": [890, 6]}]]},
+                         "a window that asks for none disagrees")
+        lines = reputations.check_lines(found)
+        self.assertEqual(len(lines), 2, "a source that speaks of none of AtlasLoot's pieces says nothing")
+        self.assertTrue(lines[0].startswith("AtlasLoot against ForeverDB: 1 items agree, 1 differ (2 [889, 6]"))
+        self.assertIn("3 none", lines[1])
+
+    def test_atlasloot_fills_what_a_quartermaster_asks(self):
+        class Store:
+            zones = types.SimpleNamespace(ui_maps={})
+
+            def ids(self, kind, item_id, field):
+                return [13217, 13218] if item_id == 19325 else []
+
+            def row(self, kind, npc):
+                return {13217: {questie.NPC_NAME: "Thanthaldis Snowgleam"},
+                        13218: {questie.NPC_NAME: "Grunnda Wolfheart"}}.get(npc, {})
+
+            def table(self, kind, npc, field):
+                return {}
+
+        db = types.SimpleNamespace(vendors={13217: ["Thanthaldis Snowgleam", 1459, 50.0, 50.0]}, items={
+            19325: {"sources": [["V", "13217", "0"]]},       # ForeverDB names the Alliance's quartermaster only
+            19083: {"sources": [["V", "13219", "500"]]},
+            30: {"sources": [["q", "7", "A quest"]]},          # not sold: AtlasLoot is not read for it
+            31: {"sources": [["V", "99", "0"]]},
+        })
+        atlas = {19325: {"a": (730, 7), "h": (729, 7)}, 19083: {"h": (729, 5)}, 30: {"": (729, 5)},
+                 31: {"": (1234, 5)}}
+        reader = reputations._Reader(db, Store(), {}, {}, {}, None, atlas)
+        base = {"kind": "w", "read": "atlasloot", "price": 0}
+        self.assertEqual(reader.from_atlas(19325, db.items[19325]), [
+            {**base, "side": "a", "faction": 730, "standing": 7, "vendor": 13217},
+            {**base, "side": "h", "faction": 729, "standing": 7, "vendor": 13218}])
+        self.assertEqual(reader.vendors[13218][0], "Grunnda Wolfheart", "QuestieDB names the Horde's")
+        self.assertEqual(reader.from_atlas(19083, db.items[19083]),
+                         [{**base, "side": "", "faction": 729, "standing": 5, "vendor": 13219, "price": 500}])
+        self.assertEqual(reader.from_atlas(30, db.items[30]), [])
+        self.assertEqual(reader.from_atlas(31, db.items[31]), [])
+        self.assertEqual(reader.outside, {"1234": {31}})
 
     def test_what_the_build_cannot_place_is_reported(self):
         db = types.SimpleNamespace(items={

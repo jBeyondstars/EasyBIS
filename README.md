@@ -31,8 +31,8 @@ python -I _build/build.py            # rebuild Data/*.lua from the cached Foreve
 python -I _build/build.py --check    # is newer ForeverDB data out?
 python -I _build/build.py --update   # download what changed (SHA-256 checked) and rebuild
 python -I _build/build.py --import-questie   # read in the QuestieDB addon the sources ForeverDB's data lacks
-python -I _build/build.py --import-reputations   # read the reputations items ask for (the capture's tooltips too), and the quests that earn them
-python -I _build/build.py --capture-tool     # install the tool that reads item tooltips in the game (/ebiscapture)
+python -I _build/build.py --import-reputations   # read the reputations items ask for (the capture's tooltips and vendors' windows, AtlasLoot Forever's tables too), and the quests that earn them
+python -I _build/build.py --capture-tool     # install the tool that reads item tooltips and vendors' windows in the game (/ebiscapture)
 python -I _build/build.py --import-capture   # keep what it read: weapons, and what each consumable does
 python -I _build/tests/compare_coach.py      # compare the consumable lists with ForeverDB's coach
 ```
@@ -50,6 +50,6 @@ python -P _build/tests/test_consumables.py
 
 ## Licence and credits
 
-**Data from [ForeverDB.net](https://foreverdb.net).** The sources ForeverDB's data lacks come from [QuestieDB](https://github.com/Questie/QuestieDB). Easy BIS is free software under the GNU GPL, version 3 (`LICENSE.txt`). `NOTICE.txt` says where each part comes from and what reusing it requires.
+**Data from [ForeverDB.net](https://foreverdb.net).** The sources ForeverDB's data lacks come from [QuestieDB](https://github.com/Questie/QuestieDB); what the Alterac Valley and Warsong Gulch quartermasters' pieces ask, from AtlasLoot Forever's tables, checked against ForeverDB and the game. Easy BIS is free software under the GNU GPL, version 3 (`LICENSE.txt`). `NOTICE.txt` says where each part comes from and what reusing it requires.
 
-Easy BIS is not affiliated with Blizzard Entertainment, ForeverDB.net or the Questie team.
+Easy BIS is not affiliated with Blizzard Entertainment, ForeverDB.net, the Questie team or the AtlasLoot authors.

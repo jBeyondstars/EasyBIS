@@ -5,7 +5,9 @@ Three kinds of requirement:
      (ForeverDB's Items.lua, "r<faction>~<standing>"; for a piece it gives none, the game's own tooltip,
      "Requires <faction> - <standing>", as the capture tool read it: read_capture). A tooltip without that line
      proves nothing: on Forever the Alterac and Warsong quartermasters ask for a standing their pieces do not
-     carry, and only the vendor's window shows it (seen in the game on 2026-11-19);
+     carry, and only the vendor's window shows it (seen in the game on 2026-11-19). For a piece a vendor sells
+     and ForeverDB gives no requirement, AtlasLoot Forever's (atlasloot), per side, checked against ForeverDB's
+     data, the game's tooltips and the vendors' windows the capture tool read (cross_check);
   q  the only quests that reward the item ask for it (QuestieDB's requiredMinRep);
   r  the recipe is sold against it: the crafter needs it, not the wearer (ForeverDB's Recipes.lua). The
      recipe's own item is kept, and its vendor as QuestieDB places it: that is what the faction sells.
@@ -39,8 +41,9 @@ from pathlib import Path
 import questie
 
 FILE = Path(__file__).resolve().parent / "corrections" / "reputations.json"
-ABOUT = ("The reputations listed items and enchants ask for, read in ForeverDB's Items.lua and Recipes.lua and in "
-         "QuestieDB by _build/reputations.py. Written by `python build.py --import-reputations`: do not edit.")
+ABOUT = ("The reputations listed items and enchants ask for, read in ForeverDB's Items.lua and Recipes.lua, in "
+         "QuestieDB, in the game's tooltips and in AtlasLoot Forever's tables (GPL-2.0, see NOTICE.txt) by "
+         "_build/reputations.py. Written by `python build.py --import-reputations`: do not edit.")
 SOURCE_FILES = ("Items.lua", "Recipes.lua")
 
 WEAR, QUEST, RECIPE = "w", "q", "r"
@@ -76,6 +79,15 @@ BATTLEGROUNDS = {509: 3358, 510: 3358, 729: 2597, 730: 2597, 889: 3277, 890: 327
 # The battlegrounds' quartermasters ForeverDB's data names no requirement for any piece of (QuestieDB's npcs, the
 # "Supply Officers"): with the vendors of the pieces that have one, what gaps watches.
 QUARTERMASTERS = {13216: 730, 13217: 730, 13218: 729, 13219: 729, 14753: 890, 14754: 889}
+
+# AtlasLoot Forever, installed next to Easy BIS (GPL-2.0): its PvP and faction tables list the pieces under the
+# standing that opens them, "f<faction>rep<n>", n the game's reaction (4 Neutral to 8 Exalted), side by side.
+ATLASLOOT = ("AtlasLootClassic_PvP", "AtlasLootClassic_Factions")
+ATLASLOOT_DATA = "data.lua"
+_ATLAS_SIDE = re.compile(r"\[(ALLIANCE|HORDE|NORMAL)_DIFF\]\s*=")
+_ATLAS_FACTION = re.compile(r'\{\s*\d+\s*,\s*"f(\d+)rep(\d)"')
+_ATLAS_ITEM = re.compile(r"\{\s*\d+\s*,\s*(\d+)\s*\}")
+_ATLAS_SIDES = {"ALLIANCE": "a", "HORDE": "h", "NORMAL": ""}
 
 # QuestieDB's quest fields (src/meta), beyond the ones questie.py reads.
 QUEST_CLASSES, QUEST_PRE_GROUP, QUEST_PRE_SINGLE, QUEST_EXCLUSIVE = 7, 12, 13, 16
@@ -149,6 +161,112 @@ def read_capture(parsed: dict) -> tuple[dict[int, tuple[int, int]], dict[int, st
     return facts, others, plain
 
 
+def read_atlasloot(text: str) -> dict[int, dict[str, tuple[int, int]]]:
+    """{item: {side: (faction, standing)}} from an AtlasLoot data file: the items listed after a block's
+    "f<faction>rep<n>", in the table of a side ("a", "h", "" for both). A standing below Neutral is left out."""
+    found, side, current = {}, None, None
+    for line in text.splitlines():
+        line = line.strip()
+        marked = _ATLAS_SIDE.match(line)
+        if marked:
+            side, current = _ATLAS_SIDES[marked.group(1)], None
+            continue
+        if line.startswith("name ="):
+            current = None
+            continue
+        faction = _ATLAS_FACTION.match(line)
+        if faction:
+            standing = int(faction.group(2)) - 1
+            current = (int(faction.group(1)), standing) if NEUTRAL <= standing <= EXALTED else None
+            continue
+        item = _ATLAS_ITEM.match(line)
+        if item and current and side is not None:
+            found.setdefault(int(item.group(1)), {})[side] = current
+    return found
+
+
+def atlasloot(folder) -> tuple[dict[int, dict[str, tuple[int, int]]], str]:
+    """(read_atlasloot of the ATLASLOOT addons in folder, together; their names and versions), or ({}, "")."""
+    found, versions = {}, []
+    for name in ATLASLOOT:
+        path = Path(folder) / name / ATLASLOOT_DATA
+        if not path.exists():
+            continue
+        for item, sides in read_atlasloot(path.read_text(encoding="utf-8", errors="replace")).items():
+            found.setdefault(item, {}).update(sides)
+        toc = next(iter(sorted((Path(folder) / name).glob("*_Forever.toc"))), None)
+        version = re.search(r"^## Version: (.+)$", toc.read_text(encoding="utf-8", errors="replace"), re.M) if toc else None
+        versions.append(f"{name} {version.group(1).strip()}" if version else name)
+    return found, ", ".join(versions)
+
+
+def by_side(sides: dict[str, tuple[int, int]]) -> dict[str, tuple[int, int]]:
+    """AtlasLoot's requirement of a piece for each side, kept to FACTIONS: "" when one serves both, or when it
+    gives one side only (the piece is that side's)."""
+    kept = {side: fact for side, fact in sides.items() if fact[0] in FACTIONS}
+    if "" in kept:
+        return {"": kept[""]}
+    if len(set(kept.values())) == 1:
+        return {"": next(iter(kept.values()))}
+    return kept
+
+
+def read_windows(asks: dict) -> dict[int, tuple[int, int] | None]:
+    """{item: (faction, standing), or None when it asks for none} from the vendors' windows the capture tool
+    read (capture.parse_asks), in English only. A faction FACTIONS lacks is left out."""
+    found = {}
+    for vendor in asks.values():
+        if vendor["locale"] != "enUS":
+            continue
+        for item_id, asked in vendor["items"].items():
+            matched = _REQUIRES.match("Requires " + asked) if asked else None
+            if not asked:
+                found[item_id] = None
+            elif matched and matched.group(1) in _BY_NAME:
+                found[item_id] = (_BY_NAME[matched.group(1)], _STANDING_WORDS[matched.group(2)])
+    return found
+
+
+def cross_check(atlas: dict, sources: dict[str, dict]) -> dict[str, dict]:
+    """AtlasLoot against each other source, on the items both speak of: {source: {"agree": count, "differ":
+    [[item, the source's [faction, standing] or None, AtlasLoot's {side: [faction, standing]}], ...]}}. sources:
+    {name: {item: (faction, standing), or None for "asks for none"}}. A requirement agrees when it is one of
+    AtlasLoot's sides'."""
+    found = {}
+    for name, facts in sources.items():
+        agree, differ = 0, []
+        for item_id, fact in sorted(facts.items()):
+            sides = atlas.get(item_id)
+            if not sides:
+                continue
+            if fact is not None and tuple(fact) in {tuple(value) for value in sides.values()}:
+                agree += 1
+            else:
+                differ.append([item_id, list(fact) if fact else None,
+                               {side: list(value) for side, value in sorted(sides.items())}])
+        found[name] = {"agree": agree, "differ": differ}
+    return found
+
+
+_CHECKED = {"foreverdb": "ForeverDB", "tooltips": "the game's item tooltips", "windows": "the vendors' windows"}
+
+
+def check_lines(checks: dict) -> list[str]:
+    """What the build says of cross_check: one line per source that speaks of AtlasLoot's items, naming the first
+    items they disagree on."""
+    lines = []
+    for name, found in sorted(checks.items()):
+        differ = found.get("differ", [])
+        if not found.get("agree") and not differ:
+            continue
+        line = f"AtlasLoot against {_CHECKED.get(name, name)}: {found.get('agree', 0)} items agree, {len(differ)} differ"
+        if differ:
+            line += " (" + ", ".join(f"{item_id} {fact or 'none'} / AtlasLoot {sides}"
+                                     for item_id, fact, sides in differ[:5]) + (", ..." if len(differ) > 5 else "") + ")"
+        lines.append(line + ".")
+    return lines
+
+
 def read_recipes(text: str) -> tuple[dict[int, dict], dict[int, str]]:
     """({spell: {"profession", "skill", "makes", "learn"}}, {item: name}) from ForeverDB's Recipes.lua."""
     start, end = text.index("ns.recipes = {"), text.index("ns.names")
@@ -164,9 +282,11 @@ def read_recipes(text: str) -> tuple[dict[int, dict], dict[int, str]]:
 
 
 class _Reader:
-    def __init__(self, db, store, facts: dict, spells: dict, names: dict, others: dict | None = None) -> None:
+    def __init__(self, db, store, facts: dict, spells: dict, names: dict, others: dict | None = None,
+                 atlas: dict | None = None) -> None:
         self.db, self.store, self.facts, self.spells, self.names = db, store, facts, spells, names
         self.others = others or {}    # item -> a faction outside FACTIONS it asks for
+        self.atlas = atlas or {}      # item -> AtlasLoot's {side: (faction, standing)}
         self.made = {}                # item -> the spells that make it
         for spell, recipe in spells.items():
             self.made.setdefault(recipe["makes"], []).append(spell)
@@ -269,12 +389,12 @@ class _Reader:
             record["vendor"] = npc
         return record
 
-    def questie_vendor(self, item_id: int) -> int | None:
+    def questie_vendor(self, item_id: int, faction: int | None = None) -> int | None:
         """The first vendor QuestieDB names for an item (a recipe's: ForeverDB's data names the vendor and the
-        zone but not the npc), kept with its place, or None."""
+        zone but not the npc), kept with its place, or None. faction: only that faction's quartermasters."""
         for npc in sorted(set(self.store.ids("Item", item_id, questie.ITEM_VENDORS))):
             row = self.store.row("Npc", npc)
-            if not row.get(questie.NPC_NAME):
+            if not row.get(questie.NPC_NAME) or (faction is not None and QUARTERMASTERS.get(npc) != faction):
                 continue
             zone = row.get(questie.NPC_ZONE) or 0
             spots = (self.store.table("Npc", npc, questie.NPC_SPAWNS) or {}).get(zone) or []
@@ -293,10 +413,38 @@ class _Reader:
                 return [{"side": "", **found}]
         return []
 
+    def faction_vendor(self, item_id: int, item: dict, faction: int):
+        """(npc, price in copper) of the faction's quartermaster that sells the piece: ForeverDB's, else
+        QuestieDB's, whose price is not known; else the piece's first vendor."""
+        for source in item["sources"]:
+            if source[0] in ("V", "v") and source[1].isdigit() and QUARTERMASTERS.get(int(source[1])) == faction:
+                if source[0] == "V":
+                    return self.keep_vendor(int(source[1])), int(source[2] or 0)
+                return self.keep_vendor(int(source[1]), source[2:5]), int(source[6] or 0)
+        npc = self.questie_vendor(item_id, faction)
+        return (npc, 0) if npc else self.vendor(item)
+
+    def from_atlas(self, item_id: int, item: dict) -> list[dict]:
+        """AtlasLoot's requirement of a piece a vendor sells, one record per side (by_side). A faction outside
+        FACTIONS is noted (outside)."""
+        if not first_vendor(item):
+            return []
+        for fact in self.atlas.get(item_id, {}).values():
+            if fact[0] not in FACTIONS:
+                self.outside.setdefault(str(fact[0]), set()).add(item_id)
+        records = []
+        for side, (faction, standing) in sorted(by_side(self.atlas.get(item_id, {})).items()):
+            record = {"side": side, "faction": faction, "standing": standing, "kind": WEAR, "read": "atlasloot"}
+            npc, price = self.faction_vendor(item_id, item, faction)
+            if npc:
+                record.update(vendor=npc, price=price)
+            records.append(record)
+        return records
+
     def item(self, item_id: int, item: dict) -> list[dict]:
         if item_id in self.facts:
             return self.wear(item_id, item)
-        return self.quest(item_id, item) or self.recipe(item_id, item)
+        return self.from_atlas(item_id, item) or self.quest(item_id, item) or self.recipe(item_id, item)
 
     def enchant(self, enchant: str, info: list) -> dict | None:
         number = int(enchant[1:])
@@ -575,14 +723,21 @@ def quartermasters(items: dict) -> dict[int, int]:
     return {**found, **QUARTERMASTERS}
 
 
-def collect(db, folder, store, shown=(), today: str | None = None, questie_folder=None, captured=None) -> dict:
+def collect(db, folder, store, shown=(), today: str | None = None, questie_folder=None, captured=None,
+            atlas=None, atlas_version: str = "", asks=None) -> dict:
     """What corrections/reputations.json holds. folder: where ForeverDB's Items.lua and Recipes.lua are;
     shown: the ids the lists hold; questie_folder: the Questie addon, whose list of the quests the game does not
     have is read (hidden_quests), or None to read none; captured: what /ebiscapture read (capture.parse_saved),
-    whose tooltips give the requirement of a piece ForeverDB gives none (read_capture), or None.
+    whose tooltips give the requirement of a piece ForeverDB gives none (read_capture), or None; atlas:
+    AtlasLoot's requirements (atlasloot), for a piece a vendor sells that neither gives one, and atlas_version
+    what it was read in; asks: the vendors' windows the capture tool read (capture.parse_asks), or None.
+    "checks" is AtlasLoot against ForeverDB, the game's item tooltips and the vendors' windows.
     A capture that says otherwise than ForeverDB changes nothing: "differ" names those pieces."""
     folder = Path(folder)
     facts, others = read_item_facts((folder / "Items.lua").read_text(encoding="utf-8"))
+    atlas = atlas or {}
+    game, windows = {}, read_windows(asks or {})
+    checks = {"foreverdb": dict(facts)}
     seen, differ = {}, {}
     if captured:
         game, strange, _ = read_capture(captured)
@@ -595,7 +750,8 @@ def collect(db, folder, store, shown=(), today: str | None = None, questie_folde
     if listed:
         raise ValueError(f"listed items ask for factions reputations.FACTIONS lacks: {', '.join(listed)}")
     spells, names = read_recipes((folder / "Recipes.lua").read_text(encoding="utf-8"))
-    reader = _Reader(db, store, facts, spells, names, others)
+    checks.update(tooltips=game, windows=windows)
+    reader = _Reader(db, store, facts, spells, names, others, atlas)
     hidden = (hidden_quests(questie_folder) or set()) if questie_folder else set()
     items = {}
     for item_id, item in db.items.items():
@@ -615,6 +771,7 @@ def collect(db, folder, store, shown=(), today: str | None = None, questie_folde
         "date": today or datetime.date.today().isoformat(),
         "questie": questie_version(questie_folder), "hidden": len(hidden),
         "capture": f"{captured['game']} {captured['locale']} {captured['date']}" if captured else "",
+        "atlasloot": atlas_version if atlas else "", "checks": cross_check(atlas, checks),
         "factions": earning(store, hidden), "vendors": reader.vendors, "items": items, "enchants": enchants,
         "outside": {faction: sorted(owners, key=str) for faction, owners in reader.outside.items()},
         "differ": differ,
@@ -630,6 +787,7 @@ def load(path=FILE) -> dict:
     for name in ("factions", "vendors", "items", "differ"):
         data[name] = {int(number): value for number, value in data.get(name, {}).items()}
     data.setdefault("outside", {})
+    data.setdefault("checks", {})
     return data
 
 
@@ -643,9 +801,10 @@ def save(reading: dict, path=FILE) -> None:
                           for name in sorted(records, key=key))
 
     head = {name: reading.get(name, "") for name in ("foreverdb", "questiedb", "commit", "questie", "hidden", "capture",
-                                                     "date")}
+                                                     "atlasloot", "date")}
     text = ("{\n" + f'  "about": {json.dumps(ABOUT)},\n'
             + "".join(f'  "{name}": {json.dumps(value)},\n' for name, value in head.items())
+            + '  "checks": {\n' + rows(reading.get("checks", {}), str) + "\n  },\n"
             + '  "outside": {\n' + rows(reading.get("outside", {}), str) + "\n  },\n"
             + '  "differ": {\n' + rows(reading.get("differ", {})) + "\n  },\n"
             + '  "factions": {\n' + rows(reading.get("factions", {})) + "\n  },\n"

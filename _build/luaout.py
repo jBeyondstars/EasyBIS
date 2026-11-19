@@ -391,6 +391,11 @@ def reputation_file(db, all_ladders, reading: dict) -> str:
     read = sum(1 for item_id in shown for record in reading.get("items", {}).get(item_id, ()) if record.get("read") == "game")
     seen = (f" The requirement of {read} listed pieces ForeverDB gives none is the game's own, read by the capture "
             f"tool ({reading['capture']}).") if read else ""
+    atlas = sum(1 for item_id in shown
+                if any(record.get("read") == "atlasloot" for record in reading.get("items", {}).get(item_id, ())))
+    if atlas:
+        seen += (f" The requirement of {atlas} listed pieces a vendor sells, which ForeverDB gives none, is AtlasLoot "
+                 f"Forever's ({reading.get('atlasloot', '?')}, GPL-2.0, see NOTICE.txt), checked against ForeverDB's.")
     lines = _header(db, "The reputations the listed items and enchants ask for, and the quests that earn them.", (
         f"Read in ForeverDB's Items.lua and Recipes.lua and in QuestieDB {reading.get('questiedb', '?')} "
         f"(https://github.com/Questie/QuestieDB, GPL-3.0) on {reading.get('date', '?')}, without the "

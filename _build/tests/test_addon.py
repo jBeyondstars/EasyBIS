@@ -1083,6 +1083,17 @@ class AddonTest(unittest.TestCase):
         self.assertEqual((rep.Faction(889).side, rep.Faction(890).side), ("h", "a"))
         self.assertGreater(rep.Faction(890).quests, 0)
 
+    def test_reputation_of_the_quartermasters_pieces(self):
+        """What the Alterac and Warsong quartermasters ask, which their pieces' tooltips do not say (AtlasLoot's
+        tables): each side its own faction, at its own vendor."""
+        rep = Game().ns.Reputation
+        for side, faction, vendor in (("a", 730, 13217), ("h", 729, (13218, 13219))):
+            found = rep.Requirement(19325, side)   # Don Rodrigo's Band, Don Julio's for the Horde
+            self.assertEqual((found.factionID, found.standing, found.kind), (faction, 7, "w"), side)
+            self.assertIn(found.vendor, vendor if isinstance(vendor, tuple) else (vendor,), side)
+        found = rep.Requirement(19083, "h")       # Frostwolf Legionnaire's Cloak
+        self.assertEqual((found.factionID, found.standing), (729, 5))
+
     def test_reputation_crafters_come_first(self):
         game = Game(cls="PRIEST")
         rep, stub, lua = game.ns.Reputation, game.stub, game.lua
@@ -1172,7 +1183,10 @@ class AddonTest(unittest.TestCase):
         rep = game.ns.Reputation
         text = (ADDON / "Data" / "Reputation.lua").read_text(encoding="utf-8")
         block = re.search(r"items = \[==\[\n(.*?)\]==\]", text, re.S).group(1)
-        fields = next(line.split("|") for line in block.splitlines() if line.split("|")[4] == "w" and line.split("|")[6])
+        # a piece of a faction the Alliance can earn: one of the Horde's is never earned
+        fields = next(fields for fields in map(lambda line: line.split("|"), block.splitlines())
+                      if fields[4] == "w" and fields[6] and fields[1] != "h"
+                      and reputations.FACTIONS[int(fields[2])][1] != "h")
         item_id, faction = int(fields[0]), int(fields[2])
         lines = list(rep.TooltipLines(item_id).values())
         self.assertTrue(lines[0].text.startswith("Requires "))

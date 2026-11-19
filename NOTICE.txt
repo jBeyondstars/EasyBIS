@@ -100,14 +100,28 @@ https://github.com/jBeyondstars/EasyBIS
    need them to run. Neither addon states a licence: their authors can ask
    for this data to be removed, and it will be.
 
-6. World of Warcraft
+6. Reputations in AtlasLoot Forever
+   For a piece a vendor sells and ForeverDB's data gives no requirement (the
+   Alterac Valley and Warsong Gulch quartermasters' pieces: their tooltips
+   do not carry it, only the vendor's window shows it), Data/Reputation.lua
+   says which reputation and standing it asks for, on each side, as the
+   tables of AtlasLoot Forever list them (AtlasLootClassic_PvP and
+   AtlasLootClassic_Factions, by sliccer, CurseForge project 1422985), a
+   version of AtlasLoot Classic (https://github.com/Hoizame/AtlasLootClassic),
+   GPL-2.0 as its LICENSE says. Only those facts are read, by
+   _build/reputations.py, checked against ForeverDB's data and the game's
+   tooltips and windows, and kept in _build/corrections/reputations.json,
+   which names the version read. Nothing of AtlasLoot's code or tables is
+   part of Easy BIS, and Easy BIS does not need AtlasLoot to run.
+
+7. World of Warcraft
    World of Warcraft, WoW Forever and their names, places and icons are
    trademarks or property of Blizzard Entertainment, Inc. Item names and
    numbers come from the game. Easy BIS is not affiliated with or endorsed by
    Blizzard Entertainment, by ForeverDB.net, by the Questie team, by Wowhead
    or by the authors of the addons named above.
 
-7. The logo
+8. The logo
    The logo (Media/*.tga, made from _build/art/*) was made for Easy BIS by its
    author with an image generator, and is part of Easy BIS under the same
    licence.

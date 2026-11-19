@@ -153,11 +153,14 @@ def build(cache_dir: Path = CACHE, out_dir: Path = OUT, details: bool = False) -
         shown = luaout.shown_ids(all_ladders)
         kinds = {kind: sum(1 for item_id in shown for record in reading["items"].get(item_id, ())
                            if record["kind"] == kind) for kind in (reputations.WEAR, reputations.QUEST, reputations.RECIPE)}
-        seen = sum(1 for item_id in shown for record in reading["items"].get(item_id, ()) if record.get("read") == "game")
+        seen = {source: len({item_id for item_id in shown for record in reading["items"].get(item_id, ())
+                             if record.get("read") == source}) for source in ("game", "atlasloot")}
         print(f"Reputations (QuestieDB {reading['questiedb']}, read {reading['date']}): of the listed items, "
-              f"{kinds[reputations.WEAR]} ask the wearer for one ({seen} of them read in the game's tooltips), "
-              f"{kinds[reputations.QUEST]} come from a quest that does and {kinds[reputations.RECIPE]} from a recipe "
-              "sold against one.")
+              f"{kinds[reputations.WEAR]} ask the wearer for one ({seen['game']} of them read in the game's tooltips, "
+              f"{seen['atlasloot']} in AtlasLoot's tables), {kinds[reputations.QUEST]} come from a quest that does and "
+              f"{kinds[reputations.RECIPE]} from a recipe sold against one.")
+        for line in reputations.check_lines(reading.get("checks", {})):
+            print("  " + line)
         enchants = {enchant for specs in (db.enchants or {}).values() for lists in specs.values()
                     for entries in lists.values() for enchant, _ in entries}
         outside, unasked = reputations.gaps(reading, db, shown, enchants)
@@ -166,7 +169,8 @@ def build(cache_dir: Path = CACHE, out_dir: Path = OUT, details: bool = False) -
                                for faction, pieces in sorted(unasked.items(), key=lambda pair: (-len(pair[1]), pair[0])))
             print(f"  {sum(map(len, unasked.values()))} listed pieces a faction's quartermaster sells have no requirement "
                   f"any source gives ({counts}): the addon says they ask for none. On Forever the quartermaster "
-                  "asks for a standing their tooltips do not carry: only his window shows it.")
+                  "asks for a standing their tooltips do not carry: only his window shows it (AtlasLoot's tables "
+                  f"give it: install AtlasLoot Forever, then --import-reputations).")
         if outside:
             print("  Factions reputations.FACTIONS lacks, asked for by a quest or a recipe of what the lists show "
                   "(left out, the addon says nothing is asked): " + "; ".join(
@@ -490,15 +494,22 @@ def main(argv=None) -> int:
                   f"game does not have is read.")
             return 1
         db = fdb.load(CACHE)
-        saved, captured = capture.find_saved(GAME), None
+        saved, captured, asks = capture.find_saved(GAME), None, {}
         if saved:
+            text = saved.read_text(encoding="utf-8", errors="replace")
             try:
-                captured = capture.parse_saved(saved.read_text(encoding="utf-8", errors="replace"))
+                captured = capture.parse_saved(text)
             except ValueError as error:
                 print(f"{saved}: {error}. The tooltips are not read.")
+            try:
+                asks = capture.parse_asks(text)
+            except ValueError as error:
+                print(f"{saved}: {error}. The vendors' windows are not read.")
+        atlas, atlas_version = reputations.atlasloot(ADDONS)
         try:
             reading = reputations.collect(db, folder, questie.Store(store), luaout.shown_ids(ladders.build_all(db)),
-                                          questie_folder=hider, captured=captured)
+                                          questie_folder=hider, captured=captured, atlas=atlas,
+                                          atlas_version=atlas_version, asks=asks)
         except ValueError as error:
             print(f"{folder}: {error}")
             return 1
@@ -512,6 +523,16 @@ def main(argv=None) -> int:
         else:
             print(f"Capture ({captured['date']}, {len(captured['items'])} items): {read} items take their requirement from "
                   f"the game's tooltip, {len(reading['differ'])} say otherwise than ForeverDB, whose is kept.")
+        if not atlas:
+            print(f"AtlasLoot: none in {ADDONS} ({', '.join(reputations.ATLASLOOT)}). A piece a vendor sells that "
+                  "ForeverDB gives no requirement asks for none.")
+        else:
+            taken = sum(1 for records in reading["items"].values() for record in records
+                        if record.get("read") == "atlasloot")
+            print(f"AtlasLoot ({atlas_version}): {len(atlas)} items in its tables, {taken} requirements taken for "
+                  "pieces a vendor sells that ForeverDB gives none.")
+            for line in reputations.check_lines(reading["checks"]):
+                print("  " + line)
         print(f"Reputations: {len(reading['items'])} items and {len(reading['enchants'])} enchants of the data ask for "
               f"one; {reading['hidden']} quests Questie {reading['questie']} says the game does not have are left "
               f"out. Kept in {reputations.FILE.name}.")
