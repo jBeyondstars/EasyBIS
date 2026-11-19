@@ -630,6 +630,9 @@ class GeneratorTest(unittest.TestCase):
         factions = {int(line.split("|")[0]): line.split("|") for line in block("factions")}
         self.assertEqual(set(factions), set(reputations.FACTIONS) & set(factions))
         self.assertEqual(factions[2819][3:5], ["0", "0"], "nothing is known of how to earn The Watchers")
+        self.assertEqual({number: fields[9] for number, fields in factions.items() if fields[9]},
+                         {number: str(area) for number, area in reputations.BATTLEGROUNDS.items()},
+                         "the battlegrounds' factions name their battleground")
         shown = luaout.shown_ids(self.kept)
         for line in block("items"):
             fields = line.split("|")
@@ -2386,7 +2389,7 @@ EARNING_ROWS = {
     ("Quest", 11, "19"): [910, 3000], ("Quest", 11, "26"): [[910, 100]],
     ("Quest", 20, "S"): {1: "Path B", 4: 60, 17: 440}, ("Quest", 20, "16"): [10], ("Quest", 20, "26"): [[910, 150]],
     # a row with neither level nor zone beside the full quest: an unfinished copy
-    ("Quest", 42, "S"): {1: "Clash", 4: 60, 17: 1, 24: 1}, ("Quest", 42, "26"): [[2799, 100]],
+    ("Quest", 42, "S"): {1: "Clash", 4: 60, 17: 16606, 24: 1}, ("Quest", 42, "26"): [[2799, 100]],
     ("Quest", 43, "S"): {1: "Clash"}, ("Quest", 43, "26"): [[2799, 100]],
     # Forever's Skyborne of the Horde only
     ("Quest", 50, "S"): {1: "Moonglade", 4: 10, 17: 493, 6: 1 << 33}, ("Quest", 50, "26"): [[609, 25]],
@@ -2444,6 +2447,58 @@ class EarningTest(unittest.TestCase):
         self.assertEqual(rows(2799), [["Clash", 100, 1, "", "", ""]])
         # the Skyborne of the Horde are the Horde
         self.assertEqual(found[609]["methods"][0][3], "h")
+
+    def test_a_battleground_faction_earned_elsewhere_stops_the_import(self):
+        rows = dict(EARNING_ROWS)
+        rows[("Quest", 42, "S")] = {**rows[("Quest", 42, "S")], 17: 1}
+        with tempfile.TemporaryDirectory() as folder:
+            store = questie.Store(questie_addon(Path(folder) / "QuestieDB", rows))
+            with self.assertRaisesRegex(ValueError, "BATTLEGROUNDS"):
+                reputations.earning(store)
+
+
+class CapturedReputationTest(unittest.TestCase):
+    PARSED = {"locale": "enUS", "game": "1.60.1.70959", "date": "2026-11-19", "items": {
+        1: (["Sentinel's Chain Leggings", "Requires Level 60", "Requires Silverwing Sentinels - Honored"], {}),
+        2: (["Outrider's Bow", "Requires Level 58"], {}),
+        3: (["Night Claw", "Requires Nightclaw Druids - Friendly"], {}),
+        4: (["Highlander's Pauldrons", "Requires The League of Arathor - Exalted"], {}),
+        5: (["Stormpike Ring", "Requires Stormpike Guard - Revered"], {}),
+    }}
+
+    def test_the_tooltips_say_what_a_piece_asks(self):
+        facts, others, plain = reputations.read_capture(self.PARSED)
+        self.assertEqual(facts, {1: (890, 5), 4: (509, 7), 5: (730, 6)})
+        self.assertEqual(others, {3: "Nightclaw Druids"})
+        self.assertEqual(plain, {2})
+        self.assertEqual(reputations.read_capture({**self.PARSED, "locale": "frFR"}), ({}, {}, set()),
+                         "the phrase is read in English only")
+
+    def test_the_tooltips_against_the_data(self):
+        reading = {"items": {2: [{"kind": "w", "faction": 889, "standing": 4}],
+                             5: [{"kind": "q", "faction": 730, "standing": 5}]}}
+        found = reputations.check_capture(self.PARSED, {4: (509, 6)}, reading)
+        self.assertEqual(found["same"], [])
+        self.assertEqual(found["differs"], [(4, (509, 6), (509, 7))])
+        self.assertEqual([row[0] for row in found["missing"]], [1, 5], "a quest's gate is not the wearer's")
+        self.assertEqual(found["extra"], [(2, (889, 4), None)])
+        self.assertEqual(found["outside"], [(3, None, "Nightclaw Druids")])
+
+    def test_what_the_build_cannot_place_is_reported(self):
+        db = types.SimpleNamespace(items={
+            10: {"sources": [["V", "14753", "0"]]},        # Silverwing's quartermaster, nothing says the requirement
+            11: {"sources": [["V", "14753", "0"]]},        # the same, read in the game: it asks for one
+            12: {"sources": [["V", "14753", "0"]]},        # the same, read in the game: it asks for none
+            13: {"sources": [["v", "15127", "", "", "", "", "0"]]},   # a vendor a requirement was read for
+            14: {"sources": [["V", "99", "0"]]},           # any other vendor
+            15: {"sources": [["q", "7", "A quest"]]},
+        })
+        reading = {"items": {11: [{"kind": "w", "faction": 890, "standing": 5, "vendor": 14753}],
+                             20: [{"kind": "w", "faction": 509, "standing": 7, "vendor": 15127}]},
+                   "plain": [12], "outside": {"Nightclaw Druids": [15, "s9", 16], "1234": [99]}}
+        outside, unasked = reputations.gaps(reading, db, shown={10, 11, 12, 13, 14, 15}, enchants={"s9"})
+        self.assertEqual(outside, {"Nightclaw Druids": [15, "s9"]}, "only what the lists show")
+        self.assertEqual(unasked, {890: [10], 509: [13]})
 
 
 if __name__ == "__main__":

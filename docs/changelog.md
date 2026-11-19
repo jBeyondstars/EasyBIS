@@ -6,6 +6,7 @@
   - Each faction's pieces sit on a track from Neutral to Exalted, above the standing that unlocks them.
   - The tab shows how much reputation is left to earn, where the pieces come from (click a vendor to see it on the map), and the quests your class and faction can take at level 60, the repeatable ones first and ten to a page.
   - A quest offered only between two standings says so: "until Friendly", "from Honored".
+  - A battleground's faction says so, and its header names the battleground: Arathi Basin, Alterac Valley, Warsong Gulch or the Darkspear Islands.
   - What no source says is written as unknown, such as the reputation creatures give.
   - Factions that sell recipes, such as Timbermaw Hold's patterns, count for the crafter: the tab names the recipes and their vendors, and follows your professions.
   - Click a faction to follow it in the game's reputation bar.

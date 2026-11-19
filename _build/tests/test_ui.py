@@ -22,6 +22,7 @@ sys.path.insert(0, str(TESTS))
 import fdb  # noqa: E402
 import ladders  # noqa: E402
 import phases  # noqa: E402
+import reputations  # noqa: E402
 import test_addon  # noqa: E402
 from test_addon import (  # noqa: E402
     ATIESH, EVERYTHING, MAGEBLADE, VAULTED_SECRETS, WITH_PVP, Game, default_filter, for_list, strip_colors)
@@ -2146,6 +2147,27 @@ class WindowTest(unittest.TestCase):
         for index in range(1, count):
             gap = 14 if kinds[index] == "section" else 0
             self.assertEqual(tops[index], tops[index - 1] + heights[index - 1] + gap, (index, kinds[index]))
+
+    def test_reputations_say_a_battleground(self):
+        """A battleground's faction says so in the list, and its header names the battleground as the game does."""
+        game = self.pvp_game()
+        game.stub.areaNames[3358], game.stub.areaNames[2597] = "Arathi Basin", "Alterac Valley"
+        game.stub.run(game.ns.Browser.window.tabs.buttons[5], "OnClick")
+        view = game.ns.ReputationView.view
+        buttons = [button for button in view.buttons.values() if button.shown]
+        states = {button.group.factionID: button.state.text for button in buttons}
+        battle = [faction for faction in states if faction in reputations.BATTLEGROUNDS]
+        self.assertTrue(battle, "the PvP list asks for a battleground's reputation")
+        self.assertTrue(len(battle) < len(states), "and for another")
+        for faction, text in states.items():
+            self.assertEqual(plain(text).endswith("·  Battleground"), faction in reputations.BATTLEGROUNDS, (faction, text))
+            self.assertNotIn("|cffffd100  ·", text, "gold stays for what is earned")
+        names = {3358: "Arathi Basin", 2597: "Alterac Valley"}
+        for button in buttons:
+            game.stub.run(button, "OnClick")
+            area = reputations.BATTLEGROUNDS.get(button.group.factionID)
+            said = f"Battleground: {names[area]}" if area in names else "Battleground"
+            self.assertEqual(said in plain(view.you.text), area is not None, plain(view.you.text))
 
     def test_reputations_tab_shows_a_piece_asking_for_neutral(self):
         game = self.pvp_game()

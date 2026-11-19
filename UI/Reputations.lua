@@ -464,10 +464,13 @@ local function FillFaction(button, group, chosen)
     button.name:SetText(Reputation.FactionName(group.factionID) .. Reputation.UnknownMark(group))
 
     local earned = Earned(group)
+    -- a battleground's faction says so, the battleground named in the faction's header
+    local field = Reputation.Battleground(group.factionID) and (GREY .. "  ·  " .. L.REP_BATTLEGROUND .. "|r") or ""
     if ForOthers(group) then
-        button.state:SetText(GREY .. CraftNames(group) .. "|r")   -- whose reputation counts
+        button.state:SetText(GREY .. CraftNames(group) .. "|r" .. field)   -- whose reputation counts
     else
-        button.state:SetText((earned and GOLD or GREY) .. Reputation.ProgressText(group.factionID, true) .. "|r")
+        button.state:SetText((earned and GOLD or GREY) .. Reputation.ProgressText(group.factionID, true) .. "|r"
+            .. field)
     end
 end
 
@@ -1115,6 +1118,8 @@ local function ShowDetail(group)
     elseif group.artisan then
         you = you .. separator .. GREY .. L.REP_ARTISAN_NOTE .. "|r"   -- the game does not say the professions
     end
+    local field = Reputation.BattlegroundText(group.factionID)
+    if field then you = you .. separator .. GREY .. field .. "|r" end
     local unsure = Reputation.UnknownRemark(group)
     view.you:SetText(you .. (unsure and (separator .. GREY .. unsure .. "|r") or ""))
     FillWatch(group)

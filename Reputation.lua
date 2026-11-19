@@ -44,6 +44,9 @@ Nothing here depends on the window: a tab, a tooltip or a later feature reads th
   Reputation.Factions()                    the catalogue: { { factionID, name, side, quests, repeatable, once,
                                            vendor, rewards, methods }, ... }
   Reputation.Faction(factionID)            one of them, or nil
+  Reputation.Battleground(factionID)       the battleground whose quests earn it: its area and its name in the
+                                           game's language (nil when the game does not say), or nil for a
+                                           faction earned elsewhere
   Reputation.Unknown(factionID)            true when no source says how to earn it nor who sells its pieces
   Reputation.UnknownMark(requirement)      " ?" in grey for what such a faction opens, "" otherwise: it follows a name
   Reputation.UnknownRemark(requirement)    the tooltip's line that explains it, or nil
@@ -74,6 +77,8 @@ Words, for the frames to show:
   Reputation.ProgressText(factionID, short)     "Honored 4,200 / 12,000", "Exalted", "Not met yet", "Unknown"
   Reputation.Ratio(factionID)              how far along the current standing, from 0 to 1
   Reputation.NeedText(requirement)         "Timbermaw Hold, Honored", with what kind of requirement it is
+  Reputation.BattlegroundText(factionID)   "Battleground: Alterac Valley", "Battleground" when the game does not
+                                           name it, or nil
   Reputation.StateText(requirement)        "Earned" in gold, "You: Honored", "Not met", "Unknown"...
   Reputation.TooltipLines(itemId)          { { text, r, g, b }, ... }
 
@@ -126,7 +131,7 @@ local function Catalog()
         local faction = {
             factionID = tonumber(f[1]), name = f[2], side = f[3], quests = tonumber(f[4]) or 0,
             repeatable = tonumber(f[5]) or 0, once = { a = tonumber(f[6]) or 0, h = tonumber(f[7]) or 0 },
-            vendor = tonumber(f[8]), rewards = f[9] == "1", methods = {},
+            vendor = tonumber(f[8]), rewards = f[9] == "1", battleground = tonumber(f[10]), methods = {},
         }
         catalog.factions[faction.factionID] = faction
         catalog.order[#catalog.order + 1] = faction
@@ -190,6 +195,16 @@ function Reputation.Faction(factionID)
     return Catalog().factions[factionID]
 end
 
+function Reputation.Battleground(factionID)
+    local faction = Catalog().factions[factionID]
+    local area = faction and faction.battleground
+    if not area then return nil end
+    local ok, name
+    if C_Map and C_Map.GetAreaInfo then ok, name = pcall(C_Map.GetAreaInfo, area) end
+    if not ok or type(name) ~= "string" or name == "" then name = nil end
+    return area, name
+end
+
 -- A faction no source says how to earn, nor who sells what it opens (The Watchers: read only in the game's
 -- files). What it opens stays in the lists, its name followed by a grey "?" that the tooltips explain.
 function Reputation.Unknown(factionID)
@@ -222,6 +237,8 @@ local EMBLEMS = {
     [729] = 19031,    -- Frostwolf Clan: Frostwolf Battle Tabard
     [730] = 19032,    -- Stormpike Guard: Stormpike Battle Tabard
     [749] = 17333,    -- Hydraxian Waterlords: Aqual Quintessence
+    [889] = 19505,    -- Warsong Outriders: Warsong Battle Tabard
+    [890] = 19506,    -- Silverwing Sentinels: Silverwing Battle Tabard
     [910] = 21196,    -- Brood of Nozdormu: Signet Ring of the Bronze Dragonflight
     [2798] = 18607,   -- Darkspear Raiders: Horde Battle Standard
     [2799] = 18606,   -- Theramore Expeditionary Force: Alliance Battle Standard
@@ -619,6 +636,12 @@ function Reputation.Ratio(factionID)
     if not standing.known or standing.met == false then return 0 end
     if standing.standing >= EXALTED or standing.span <= 0 then return 1 end
     return math.max(0, math.min(1, standing.value / standing.span))
+end
+
+function Reputation.BattlegroundText(factionID)
+    local area, name = Reputation.Battleground(factionID)
+    if not area then return nil end
+    return name and L.REP_BATTLEGROUND_AT:format(name) or L.REP_BATTLEGROUND
 end
 
 local NEED_KEYS = { [WEAR] = "REP_NEED", [QUEST] = "REP_NEED_QUEST" }

@@ -2,7 +2,8 @@
 
 Three kinds of requirement:
   w  the item itself asks for it: the vendor sells it from that standing and the wearer needs it
-     (ForeverDB's Items.lua, "r<faction>~<standing>");
+     (ForeverDB's Items.lua, "r<faction>~<standing>"; for a piece it gives none, the game's own tooltip,
+     "Requires <faction> - <standing>", as the capture tool read it: read_capture);
   q  the only quests that reward the item ask for it (QuestieDB's requiredMinRep);
   r  the recipe is sold against it: the crafter needs it, not the wearer (ForeverDB's Recipes.lua). The
      recipe's own item is kept, and its vendor as QuestieDB places it: that is what the faction sells.
@@ -13,6 +14,10 @@ ForeverDB says rewards it.
 `--import-questie` does for the sources: ForeverDB's Items.lua and Recipes.lua are not among the files the
 build needs, and nothing here is needed to build. ForeverDB's data is GPL-3.0 with an attribution term,
 QuestieDB's and Questie's are GPL-3.0 (NOTICE.txt).
+
+What the build cannot place is reported, not left out in silence (gaps): a faction outside FACTIONS that a quest
+or a recipe of a listed piece asks for, and a listed piece a quartermaster sells that nothing says the
+requirement of.
 
 How a reputation is earned is QuestieDB's quest table and nothing else: the quests that reward it, their
 amounts, whether they repeat, and the standings they are offered between. The quests the Questie addon hides
@@ -54,6 +59,8 @@ FACTIONS = {
     729: ("Frostwolf Clan", "h"),
     730: ("Stormpike Guard", "a"),
     749: ("Hydraxian Waterlords", ""),
+    889: ("Warsong Outriders", "h"),
+    890: ("Silverwing Sentinels", "a"),
     910: ("Brood of Nozdormu", ""),
     2798: ("Darkspear Raiders", "h"),
     2799: ("Theramore Expeditionary Force", "a"),
@@ -61,6 +68,12 @@ FACTIONS = {
     2827: ("Powderfuse", ""),
 }
 _BY_NAME = {name: number for number, (name, _) in FACTIONS.items()}
+# The battleground whose quests earn a faction: the area QuestieDB places most of them in (earning checks it).
+# The addon names it in the game's language.
+BATTLEGROUNDS = {509: 3358, 510: 3358, 729: 2597, 730: 2597, 889: 3277, 890: 3277, 2798: 16606, 2799: 16606}
+# The battlegrounds' quartermasters ForeverDB's data names no requirement for any piece of (QuestieDB's npcs, the
+# "Supply Officers"): with the vendors of the pieces that have one, what gaps watches.
+QUARTERMASTERS = {13216: 730, 13217: 730, 13218: 729, 13219: 729, 14753: 890, 14754: 889}
 
 # QuestieDB's quest fields (src/meta), beyond the ones questie.py reads.
 QUEST_CLASSES, QUEST_PRE_GROUP, QUEST_PRE_SINGLE, QUEST_EXCLUSIVE = 7, 12, 13, 16
@@ -88,6 +101,9 @@ _FACT = re.compile(r"^r([^~]+)~(\d+)$")
 _ITEM_LINE = re.compile(r'\[(\d+)\]="([^"]*)"')
 _PROFESSION = re.compile(r"(\w+)=\{\{")
 _RECIPE = re.compile(r'\{(\d+),"([^"]*)",(\d+),\d+,\d+,\d+,(\d+),[\d.]+,"[^"]*","([^"]*)"')
+# The line of an English tooltip that says the reputation an item asks for.
+_REQUIRES = re.compile(r"^Requires (.+) - (Neutral|Friendly|Honored|Revered|Exalted)$")
+_STANDING_WORDS = {"Neutral": 3, "Friendly": 4, "Honored": 5, "Revered": 6, "Exalted": 7}
 
 
 def standing_of(value: int) -> int:
@@ -112,6 +128,24 @@ def read_item_facts(text: str) -> tuple[dict[int, tuple[int, int]], dict[int, st
     return facts, others
 
 
+def read_capture(parsed: dict) -> tuple[dict[int, tuple[int, int]], dict[int, str], set[int]]:
+    """({item: (faction, standing)}, {item: the name of a faction the table above lacks}, {the items read without
+    one}) from what /ebiscapture read (capture.parse_saved): the line "Requires <faction> - <standing>" of the
+    game's tooltip. The phrase is read in English only: another language gives nothing."""
+    facts, others, plain = {}, {}, set()
+    if parsed.get("locale") != "enUS":
+        return facts, others, plain
+    for item_id, (lines, _) in parsed["items"].items():
+        found = next((match for match in map(_REQUIRES.match, lines) if match), None)
+        if not found:
+            plain.add(item_id)
+        elif found.group(1) in _BY_NAME:
+            facts[item_id] = (_BY_NAME[found.group(1)], _STANDING_WORDS[found.group(2)])
+        else:
+            others[item_id] = found.group(1)
+    return facts, others, plain
+
+
 def read_recipes(text: str) -> tuple[dict[int, dict], dict[int, str]]:
     """({spell: {"profession", "skill", "makes", "learn"}}, {item: name}) from ForeverDB's Recipes.lua."""
     start, end = text.index("ns.recipes = {"), text.index("ns.names")
@@ -127,23 +161,38 @@ def read_recipes(text: str) -> tuple[dict[int, dict], dict[int, str]]:
 
 
 class _Reader:
-    def __init__(self, db, store, facts: dict, spells: dict, names: dict) -> None:
+    def __init__(self, db, store, facts: dict, spells: dict, names: dict, others: dict | None = None) -> None:
         self.db, self.store, self.facts, self.spells, self.names = db, store, facts, spells, names
+        self.others = others or {}    # item -> a faction outside FACTIONS it asks for
         self.made = {}                # item -> the spells that make it
         for spell, recipe in spells.items():
             self.made.setdefault(recipe["makes"], []).append(spell)
         self.vendors = {}             # npc -> [name, uiMap, x, y]
-        self._quests = {}
+        self.outside = {}             # a faction outside FACTIONS -> the items and enchants that need it
+        self._quests, self._beyond = {}, {}
 
     def quest_gate(self, quest: int):
-        """(faction, standing) the quest asks for, or None."""
+        """(faction, standing) the quest asks for, or None. A gate of a faction outside FACTIONS is kept apart
+        (beyond)."""
         if quest not in self._quests:
             needed = self.store.table("Quest", quest, QUEST_MIN_REPUTATION)
             gate = None
-            if needed and needed[0] in FACTIONS and standing_of(needed[1]) > 3:
-                gate = (needed[0], standing_of(needed[1]))
+            if needed and standing_of(needed[1]) > 3:
+                if needed[0] in FACTIONS:
+                    gate = (needed[0], standing_of(needed[1]))
+                else:
+                    self._beyond[quest] = needed[0]
             self._quests[quest] = gate
         return self._quests[quest]
+
+    def beyond(self, quests, owner) -> None:
+        """Notes the factions outside FACTIONS these quests ask for, for owner (an item or an enchant), when every
+        one of them asks for a reputation: a quest that asks for none opens owner to everyone."""
+        if not all(self.quest_gate(quest) or quest in self._beyond for quest in quests):
+            return
+        for quest in quests:
+            if quest in self._beyond:
+                self.outside.setdefault(str(self._beyond[quest]), set()).add(owner)
 
     def vendor(self, item: dict):
         """(npc, price in copper) of the first vendor of an item, or (None, 0)."""
@@ -180,12 +229,13 @@ class _Reader:
             record["via"] = quest[2]
         return [record]
 
-    def quest(self, item: dict) -> list[dict]:
+    def quest(self, item_id: int, item: dict) -> list[dict]:
         """One requirement per side the item's quests agree on. An item that also comes from anywhere else, or
         from a quest of that side that asks for nothing, needs no reputation."""
         quests = [source for source in item["sources"] if source[0] == "q" and source[1].isdigit()]
         if not quests or len(quests) != sum(1 for source in item["sources"] if source[0] != "r"):
             return []
+        self.beyond([int(source[1]) for source in quests], item_id)
         found = {}
         for side in ("a", "h"):
             open_to = [source for source in quests if (source + [""] * 5)[4] in ("", side)]
@@ -197,11 +247,14 @@ class _Reader:
         return [{"side": side, "faction": gate[0], "standing": gate[1], "kind": QUEST, "via": title}
                 for side, (gate, title) in found.items()]
 
-    def recipe_of(self, spell: int) -> dict | None:
+    def recipe_of(self, spell: int, owner) -> dict | None:
         """What a spell learned from a recipe sold against a reputation asks, or None: the faction, the standing,
-        the recipe's item and name, the profession and its skill, and the recipe's vendor when QuestieDB has one."""
+        the recipe's item and name, the profession and its skill, and the recipe's vendor when QuestieDB has one.
+        owner: the item or enchant the spell makes, noted when the recipe's faction is outside FACTIONS."""
         recipe = self.spells.get(spell)
         learn = recipe["learn"] if recipe else ""
+        if learn.startswith("i") and int(learn[1:]) in self.others:
+            self.outside.setdefault(self.others[int(learn[1:])], set()).add(owner)
         if not learn.startswith("i") or int(learn[1:]) not in self.facts:
             return None
         recipe_id = int(learn[1:])
@@ -232,7 +285,7 @@ class _Reader:
     def recipe(self, item_id: int, item: dict) -> list[dict]:
         crafted = [int(source[3]) for source in item["sources"] if source[0] == "c" and source[3].isdigit()]
         for spell in [spell for spell in crafted if spell in self.spells] or self.made.get(item_id, []):
-            found = self.recipe_of(spell)
+            found = self.recipe_of(spell, item_id)
             if found:
                 return [{"side": "", **found}]
         return []
@@ -240,13 +293,13 @@ class _Reader:
     def item(self, item_id: int, item: dict) -> list[dict]:
         if item_id in self.facts:
             return self.wear(item_id, item)
-        return self.quest(item) or self.recipe(item_id, item)
+        return self.quest(item_id, item) or self.recipe(item_id, item)
 
     def enchant(self, enchant: str, info: list) -> dict | None:
         number = int(enchant[1:])
         where = (info + ["", "", ""])[2]
         if enchant[0] == "s":
-            record = self.recipe_of(number)
+            record = self.recipe_of(number, enchant)
             if not record:
                 return None
             if "scroll" in where:
@@ -256,6 +309,7 @@ class _Reader:
             faction, standing = self.facts[number]
             return {"faction": faction, "standing": standing, "kind": WEAR}
         quests = sorted(set(self.store.ids("Item", number, questie.ITEM_QUESTS)))
+        self.beyond(quests, enchant)
         gates = [self.quest_gate(quest) for quest in quests]
         if quests and all(gates):
             title = self.store.row("Quest", quests[0]).get(questie.QUEST_NAME, "")
@@ -443,7 +497,8 @@ def earning(store, hidden=frozenset()) -> dict[int, dict]:
     Every other quest is kept, the addon pages through them: the ones that help from Neutral to Exalted first (usable),
     the repeatable ones first among them, then the ones every class may take (a class's own quest is often a raid's
     token turned in), then the largest rewards. The variants of one quest are named and counted once (_merge).
-    repeatable counts the repeatable quests that help; once is once_total for each side."""
+    repeatable counts the repeatable quests that help; once is once_total for each side.
+    A faction of BATTLEGROUNDS whose quests are mostly elsewhere stops the import: the table is wrong."""
     links = _Links(store)
     found = {number: [] for number in FACTIONS}
     for quest in store.numbers("Quest"):
@@ -464,7 +519,7 @@ def earning(store, hidden=frozenset()) -> dict[int, dict]:
                     "classes": row.get(QUEST_CLASSES) or 0,
                     "from": standing_of(low) if low is not None and standing_of(low) > NEUTRAL else None,
                     "until": standing_of(high + 1) if high is not None else None,   # offered while below that
-                    "capped": capped,
+                    "capped": capped, "zone": row.get(questie.QUEST_ZONE) or 0,
                     "stub": not row.get(questie.QUEST_REQUIRED_LEVEL) and not row.get(questie.QUEST_ZONE),
                 })
     out = {}
@@ -475,6 +530,10 @@ def earning(store, hidden=frozenset()) -> dict[int, dict]:
                   and not (quest["stub"] and (quest["title"], quest["amount"], quest["side"], quest["classes"]) in full)]
         kept = _merge(quests, links)
         _branches(kept, links)
+        zones = Counter(quest["zone"] for quest in kept if quest["zone"])
+        if faction in BATTLEGROUNDS and zones and zones.most_common(1)[0][0] != BATTLEGROUNDS[faction]:
+            raise ValueError(f"faction {faction}: most of its quests are in area {zones.most_common(1)[0][0]}, not "
+                             f"in its battleground {BATTLEGROUNDS[faction]} (reputations.BATTLEGROUNDS)")
         kept.sort(key=lambda quest: (not usable(quest), not quest["repeats"], quest["classes"] != 0,
                                      -quest["amount"], quest["title"]))
         out[faction] = {
@@ -495,23 +554,57 @@ def questie_version(folder) -> str:
     return found.group(1).strip() if found else ""
 
 
-def collect(db, folder, store, shown=(), today: str | None = None, questie_folder=None) -> dict:
+def first_vendor(item: dict) -> int | None:
+    """The npc of an item's first vendor in ForeverDB's sources, or None."""
+    for source in item.get("sources", ()):
+        if source[0] in ("V", "v") and source[1].isdigit():
+            return int(source[1])
+    return None
+
+
+def quartermasters(items: dict) -> dict[int, int]:
+    """{npc: faction}: QUARTERMASTERS and the vendors of the pieces the wearer's reputation opens."""
+    found = {}
+    for records in items.values():
+        for record in records:
+            if record["kind"] == WEAR and record.get("vendor"):
+                found.setdefault(record["vendor"], record["faction"])
+    return {**found, **QUARTERMASTERS}
+
+
+def collect(db, folder, store, shown=(), today: str | None = None, questie_folder=None, captured=None) -> dict:
     """What corrections/reputations.json holds. folder: where ForeverDB's Items.lua and Recipes.lua are;
     shown: the ids the lists hold; questie_folder: the Questie addon, whose list of the quests the game does not
-    have is read (hidden_quests), or None to read none."""
+    have is read (hidden_quests), or None to read none; captured: what /ebiscapture read (capture.parse_saved),
+    whose tooltips give the requirement of a piece ForeverDB gives none (read_capture), or None.
+    A capture that says otherwise than ForeverDB changes nothing: "differ" names those pieces."""
     folder = Path(folder)
     facts, others = read_item_facts((folder / "Items.lua").read_text(encoding="utf-8"))
+    seen, plain, differ = {}, set(), {}
+    if captured:
+        game, strange, plain = read_capture(captured)
+        seen = {item_id: fact for item_id, fact in game.items() if item_id not in facts}
+        differ = {item_id: [list(facts[item_id]), list(fact)] for item_id, fact in game.items()
+                  if item_id in facts and facts[item_id] != fact}
+        others.update({item_id: name for item_id, name in strange.items() if item_id not in facts})
+        facts = {**facts, **seen}
     listed = sorted({name for item_id, name in others.items() if item_id in shown})
     if listed:
         raise ValueError(f"listed items ask for factions reputations.FACTIONS lacks: {', '.join(listed)}")
     spells, names = read_recipes((folder / "Recipes.lua").read_text(encoding="utf-8"))
-    reader = _Reader(db, store, facts, spells, names)
+    reader = _Reader(db, store, facts, spells, names, others)
     hidden = (hidden_quests(questie_folder) or set()) if questie_folder else set()
     items = {}
     for item_id, item in db.items.items():
         found = reader.item(item_id, item)
+        for record in found:
+            if item_id in seen and record["kind"] == WEAR:
+                record["read"] = "game"
         if found:
             items[item_id] = found
+    sellers = quartermasters(items)
+    plain = sorted(item_id for item_id in plain if item_id in db.items and item_id not in items
+                   and first_vendor(db.items[item_id]) in sellers)
     enchants = {}
     for enchant, info in db.enchant_info.items():
         found = reader.enchant(enchant, info)
@@ -521,7 +614,10 @@ def collect(db, folder, store, shown=(), today: str | None = None, questie_folde
         "foreverdb": db.meta["version"], "questiedb": store.version, "commit": store.commit,
         "date": today or datetime.date.today().isoformat(),
         "questie": questie_version(questie_folder), "hidden": len(hidden),
+        "capture": f"{captured['game']} {captured['locale']} {captured['date']}" if captured else "",
         "factions": earning(store, hidden), "vendors": reader.vendors, "items": items, "enchants": enchants,
+        "outside": {faction: sorted(owners, key=str) for faction, owners in reader.outside.items()},
+        "plain": plain, "differ": differ,
     }
 
 
@@ -531,8 +627,10 @@ def load(path=FILE) -> dict:
     if not path.exists():
         return {}
     data = json.loads(path.read_text(encoding="utf-8"))
-    for name in ("factions", "vendors", "items"):
+    for name in ("factions", "vendors", "items", "differ"):
         data[name] = {int(number): value for number, value in data.get(name, {}).items()}
+    data.setdefault("outside", {})
+    data.setdefault("plain", [])
     return data
 
 
@@ -545,14 +643,56 @@ def save(reading: dict, path=FILE) -> None:
         return ",\n".join(f'    "{name}": {json.dumps(records[name], ensure_ascii=False, sort_keys=True)}'
                           for name in sorted(records, key=key))
 
-    head = {name: reading.get(name, "") for name in ("foreverdb", "questiedb", "commit", "questie", "hidden", "date")}
+    head = {name: reading.get(name, "") for name in ("foreverdb", "questiedb", "commit", "questie", "hidden", "capture",
+                                                     "date")}
     text = ("{\n" + f'  "about": {json.dumps(ABOUT)},\n'
             + "".join(f'  "{name}": {json.dumps(value)},\n' for name, value in head.items())
+            + f'  "plain": {json.dumps(reading.get("plain", []))},\n'
+            + '  "outside": {\n' + rows(reading.get("outside", {}), str) + "\n  },\n"
+            + '  "differ": {\n' + rows(reading.get("differ", {})) + "\n  },\n"
             + '  "factions": {\n' + rows(reading.get("factions", {})) + "\n  },\n"
             + '  "vendors": {\n' + rows(reading.get("vendors", {})) + "\n  },\n"
             + '  "enchants": {\n' + rows(reading.get("enchants", {}), lambda enchant: int(enchant[1:])) + "\n  },\n"
             + '  "items": {\n' + rows(reading.get("items", {})) + "\n  }\n}\n")
     path.write_bytes(text.encode("utf-8"))
+
+
+def check_capture(parsed: dict, facts: dict, reading: dict) -> dict[str, list]:
+    """The game's tooltips against what the data says a piece asks of its wearer: ForeverDB's facts
+    (read_item_facts) and what --import-reputations kept. {"same", "missing" (the game asks, the data has nothing
+    yet), "extra" (the data asks, the game's tooltip does not), "differs", "outside" (a faction FACTIONS lacks)}:
+    lists of (item, the data's (faction, standing) or None, the game's or its faction's name)."""
+    known = dict(facts)
+    for item_id, records in reading.get("items", {}).items():
+        wear = next((record for record in records if record["kind"] == WEAR), None)
+        if wear and item_id not in known:
+            known[item_id] = (wear["faction"], wear["standing"])
+    game, others, plain = read_capture(parsed)
+    found = {"same": [], "missing": [], "extra": [], "differs": [], "outside": []}
+    for item_id, fact in sorted(game.items()):
+        data = known.get(item_id)
+        kind = "missing" if data is None else "same" if tuple(data) == fact else "differs"
+        found[kind].append((item_id, data, fact))
+    found["outside"] = [(item_id, known.get(item_id), name) for item_id, name in sorted(others.items())]
+    found["extra"] = [(item_id, known[item_id], None) for item_id in sorted(plain) if item_id in known]
+    return found
+
+
+def gaps(reading: dict, db, shown, enchants=()) -> tuple[dict[str, list], dict[int, list[int]]]:
+    """What the build reports of the listed pieces and enchants: ({a faction outside FACTIONS, its id or the name
+    ForeverDB writes: [what asks for it]}, {faction: [the listed pieces one of its quartermasters sells that
+    nothing says the requirement of]}). A piece the game was read to ask for nothing is not one of them."""
+    listed = set(shown) | set(enchants)
+    outside = {faction: [owner for owner in owners if owner in listed]
+               for faction, owners in reading.get("outside", {}).items()}
+    sellers = quartermasters(reading.get("items", {}))
+    plain = set(reading.get("plain", ()))
+    unasked = {}
+    for item_id in sorted(shown):
+        npc = first_vendor(db.items.get(item_id) or {})
+        if npc in sellers and item_id not in reading.get("items", {}) and item_id not in plain:
+            unasked.setdefault(sellers[npc], []).append(item_id)
+    return {faction: owners for faction, owners in outside.items() if owners}, unasked
 
 
 def faction_vendors(reading: dict, shown) -> dict[int, int]:

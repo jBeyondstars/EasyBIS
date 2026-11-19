@@ -20,6 +20,7 @@ local stub = {
     chatLink = nil,    -- the last link handed to the chat box
     spellNames = {},   -- [id] = spell name the game "knows"
     zoneNames = {},    -- [instance id] = name GetRealZoneText gives
+    areaNames = {},    -- [area id] = name C_Map.GetAreaInfo gives
     modifier = false,  -- a modifier key is held
     linked = nil,      -- the last link given to HandleModifiedItemClick
     menu = nil,        -- the last context menu opened
@@ -361,6 +362,7 @@ function C_Reputation.SetWatchedFactionByID(id) stub.watched = id ~= 0 and id or
 C_Map = {}
 function C_Map.GetMapInfo(id) return { name = "Map " .. id } end
 function C_Map.SetUserWaypoint(point) stub.waypoint = point end
+function C_Map.GetAreaInfo(id) return stub.areaNames[id] end
 UiMapPoint = {}
 function UiMapPoint.CreateFromCoordinates(map, x, y) return { uiMapID = map, x = x, y = y } end
 function OpenWorldMap(map) stub.openedMap = map end

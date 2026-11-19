@@ -1057,8 +1057,31 @@ class AddonTest(unittest.TestCase):
         self.assertEqual(rep.Emblem(576), 236000)
         stub.itemIcons[18606], stub.itemIcons[18607] = 132486, 132485
         self.assertEqual((rep.Emblem(2799), rep.Emblem(2798)), (132486, 132485), "Alliance and Horde battle standards")
+        stub.itemIcons[19505], stub.itemIcons[19506] = 132482, 132483
+        self.assertEqual((rep.Emblem(889), rep.Emblem(890)), (132482, 132483), "Warsong and Silverwing battle tabards")
         for none in (2819, 2827, 21, 999999):
             self.assertIsNone(rep.Emblem(none), none)
+
+    def test_reputation_battlegrounds(self):
+        """A battleground's faction says so: the battleground named as the game names it, or only said to be one."""
+        game = Game()
+        rep, stub = game.ns.Reputation, game.stub
+        for faction, area in reputations.BATTLEGROUNDS.items():
+            self.assertEqual(rep.Battleground(faction), (area, None), faction)
+            self.assertEqual(rep.BattlegroundText(faction), "Battleground", faction)
+        stub.areaNames[2597] = "Alterac Valley"
+        self.assertEqual(rep.Battleground(730), (2597, "Alterac Valley"))
+        self.assertEqual(rep.BattlegroundText(729), "Battleground: Alterac Valley")
+        for elsewhere in (21, 529, 2819, 999999):
+            self.assertIsNone(rep.Battleground(elsewhere), elsewhere)
+            self.assertIsNone(rep.BattlegroundText(elsewhere), elsewhere)
+        game.lua.execute("C_Map.GetAreaInfo = function() error('not on this client') end")
+        self.assertEqual(rep.BattlegroundText(729), "Battleground", "what the game does not say is not made up")
+        game.lua.execute("C_Map.GetAreaInfo = nil")
+        self.assertEqual(rep.BattlegroundText(729), "Battleground")
+        # Warsong Gulch's factions, one to each side
+        self.assertEqual((rep.Faction(889).side, rep.Faction(890).side), ("h", "a"))
+        self.assertGreater(rep.Faction(890).quests, 0)
 
     def test_reputation_crafters_come_first(self):
         game = Game(cls="PRIEST")

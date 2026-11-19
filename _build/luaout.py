@@ -359,7 +359,8 @@ def reputation_file(db, all_ladders, reading: dict) -> str:
         known = reading.get("factions", {}).get(number) or {"quests": 0, "repeatable": 0, "once": {}, "methods": []}
         factions.append("|".join(map(str, (
             number, _field(name), side, known["quests"], known["repeatable"], known["once"].get("a", 0),
-            known["once"].get("h", 0), vendors.get(number, ""), "1" if number in rewards else ""))))
+            known["once"].get("h", 0), vendors.get(number, ""), "1" if number in rewards else "",
+            reputations.BATTLEGROUNDS.get(number, "")))))
         for title, amount, repeats, quest_side, mask, *gates in known["methods"]:
             low, high, choice = (gates + ["", "", ""])[:3]
             methods.append("|".join(map(str, (number, _field(title), amount, repeats, quest_side, mask or "",
@@ -387,13 +388,16 @@ def reputation_file(db, all_ladders, reading: dict) -> str:
     sellers = ["|".join([str(npc)] + [_field(str(text)) for text in reading["vendors"][npc]])
                for npc in sorted(used) if npc in reading.get("vendors", {})]
 
+    read = sum(1 for item_id in shown for record in reading.get("items", {}).get(item_id, ()) if record.get("read") == "game")
+    seen = (f" The requirement of {read} listed pieces ForeverDB gives none is the game's own, read by the capture "
+            f"tool ({reading['capture']}).") if read else ""
     lines = _header(db, "The reputations the listed items and enchants ask for, and the quests that earn them.", (
         f"Read in ForeverDB's Items.lua and Recipes.lua and in QuestieDB {reading.get('questiedb', '?')} "
         f"(https://github.com/Questie/QuestieDB, GPL-3.0) on {reading.get('date', '?')}, without the "
         f"{reading.get('hidden', 0)} quests Questie {reading.get('questie', '?')} (https://github.com/Questie/Questie, "
-        f"GPL-3.0) says the game does not have. See _build/reputations.py.",
+        f"GPL-3.0) says the game does not have.{seen} See _build/reputations.py.",
         "  factions  id|name|side|quests|repeatable|reputation from the quests done once, Alliance|the same, Horde|"
-        "npc that sells the most|1 when a quest rewards its pieces",
+        "npc that sells the most|1 when a quest rewards its pieces|the battleground (area id) whose quests earn it",
         "  methods   faction|quest|amount|1 when it repeats|side|the classes that may take it (the game's mask), empty for all|"
         "the standing it is offered from|the standing it is offered up to|<set>:<quest> for a branch of quests that "
         "exclude one another",
