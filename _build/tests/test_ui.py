@@ -1786,8 +1786,8 @@ class WindowTest(unittest.TestCase):
         self.assertTrue(all(piece.shown for piece in pieces))
         lines = list(view.detailData.values())
         sections = [plain(line.text) for line in lines if line.kind == "section"]
-        self.assertEqual(sections[:2], ["Pieces for this spec", "Where to get them"])
-        self.assertEqual(sections[-1], "Not known yet")
+        quests = ["Quests"] if game.ns.Reputation.Ways(first.factionID).listed > 0 else []   # none for The Watchers
+        self.assertEqual(sections, ["Pieces for this spec", "Where", *quests, "Not known yet"])
         self.assertEqual(len([line for line in lines if line.kind == "entry"]), count)
         self.assertTrue([line for line in lines if line.kind == "seller"])
         self.assertTrue(all(line.evidence in ("data", "check", "unknown") for line in lines if line.kind in ("quest", "note")))
@@ -1991,7 +1991,7 @@ class WindowTest(unittest.TestCase):
         # how to earn it is for whoever would learn them: folded, until opened
         sections = {line.key: line for line in lines if line.kind == "section"}
         self.assertEqual(plain(sections["pieces"].text), "Recipes for this spec")
-        self.assertTrue(plain(sections["questsSelf"].text).startswith("To learn them yourself: "))
+        self.assertEqual(plain(sections["questsSelf"].text), "Quests")
         self.assertTrue(sections["questsSelf"].folded and sections["unknownSelf"].folded)
         self.assertNotIn("quest", [line.kind for line in lines])
         index = next(i for i in range(1, len(view.detailData) + 1) if view.detailData[i].key == "questsSelf")
@@ -2159,8 +2159,11 @@ class WindowTest(unittest.TestCase):
         game.stub.run(window.tabs.buttons[5], "OnClick")
         view = game.ns.ReputationView.view
         sections = [plain(line.text) for line in view.detailData.values() if line.kind == "section"]
-        self.assertEqual(sections[:2], ["Pièces pour cette spécialisation", "Où les obtenir"])
-        self.assertEqual(sections[-1], "Ce qu'on ne sait pas encore")
+        quests = ["Quêtes"] if game.ns.Reputation.Ways(view.chosen.factionID).listed > 0 else []
+        self.assertEqual(sections, ["Pièces pour cette spécialisation", "Où", *quests, "Pas encore connu"])
+        other = next(b for b in view.buttons.values() if b.shown and game.ns.Reputation.Ways(b.group.factionID).listed > 0)
+        game.stub.run(other, "OnClick")
+        self.assertIn("Quêtes", [plain(line.text) for line in view.detailData.values() if line.kind == "section"])
         self.assertTrue(view.cardData[1].label.startswith("Reste pour "))
 
     def test_older_client(self):

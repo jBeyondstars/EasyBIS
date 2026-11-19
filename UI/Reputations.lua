@@ -827,8 +827,7 @@ local function DetailLines(group, ways)
 
     -- the crafter's reputation: the quests are for a player who would learn the recipes, folded until asked for
     local questKey = others and "questsSelf" or "quests"
-    local questTitle = (others and L.REP_SECTION_QUESTS_SELF or L.REP_SECTION_QUESTS):format(ways.listed, ways.repeatable)
-    if ways.listed > 0 and Section(questKey, questTitle, SECTION_ICONS.quests, others) then
+    if ways.listed > 0 and Section(questKey, L.REP_SECTION_QUESTS, SECTION_ICONS.quests, others) then
         for _, quest in ipairs(ways.quests) do
             Add({ kind = "quest", text = quest.quest, evidence = "data", right = "+" .. quest.amount,
                 chip = quest.repeats and L.REP_QUEST_REPEATS or L.REP_QUEST_ONCE })
