@@ -37,25 +37,28 @@ local LIST_WIDTH = 292        -- the factions, their scroll bar included
 local BAR_ROOM = 26           -- what a scroll bar takes
 local DETAIL_WIDTH = 592      -- the faction's side
 local PAD = 8
-local GROUP_HEIGHT = 26       -- a group's name over its factions
-local FACTION_HEIGHT = 62     -- a faction in the list
-local MINI = 16               -- a piece's icon in the list
+local GROUP_HEIGHT = 30       -- a group's name over its factions
+local FACTION_HEIGHT = 72     -- a faction in the list
+local MINI = 18               -- a piece's icon in the list
 local MINI_SHOWN = 4
 local LIST_BAR = 5
 local TRACK_INSET = 16        -- room for a piece at either end of the track
 local TRACK_HEIGHT = 10
 local PIECE = 30              -- a piece on the track
 local PIECE_GAP = 4
-local TRACK_BLOCK = PIECE + 8 + TRACK_HEIGHT + 22
-local CARD_HEIGHT = 50
+local TRACK_BLOCK = PIECE + 8 + TRACK_HEIGHT + 24
+local CARD_HEIGHT = 64
 local CARD_GAP = 8
-local ICON = 20
-local HEIGHTS = { section = 28, entry = 26, seller = 24, quest = 20, note = 20 }
+local ICON = 24
+local HEIGHTS = { section = 34, entry = 30, seller = 26, quest = 22, note = 22 }
 local UNKNOWN_ICON = "Interface\\Icons\\INV_Misc_QuestionMark"
 local SELLER_ICONS = {
     vendor = "Interface\\GossipFrame\\VendorGossipIcon",
     other = "Interface\\GossipFrame\\GossipGossipIcon",
 }
+
+-- The rows' fonts of the other tabs: the game's, two points larger.
+local FONTS = Browser.FONTS
 
 local MUTED = Widgets.MUTED
 local GOLD, WHITE, GREY = "|cffffd100", "|cffffffff", "|cffa8a8b0"
@@ -247,7 +250,7 @@ local function Choose(button)
 end
 
 local function CreateGroupTitle(parent)
-    local title = parent:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    local title = parent:CreateFontString(nil, "OVERLAY", FONTS.text)
     title:SetJustifyH("LEFT")
     title:SetTextColor(MUTED[1], MUTED[2], MUTED[3])
     return title
@@ -256,7 +259,7 @@ end
 local function CreateChip(parent, r, g, b)
     local chip = parent:CreateTexture(nil, "ARTWORK")
     chip:SetColorTexture(r, g, b, 0.18)
-    chip.text = parent:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    chip.text = parent:CreateFontString(nil, "OVERLAY", FONTS.text)
     chip.text:SetPoint("CENTER", chip, "CENTER", 0, 0)
     chip.text:SetTextColor(r, g, b)
     return chip
@@ -268,7 +271,7 @@ local function SetChip(chip, text)
     if not text then return 0 end
     chip.text:SetText(text)
     local width = math.ceil(chip.text:GetStringWidth()) + 10
-    chip:SetSize(width, 14)
+    chip:SetSize(width, 17)
     return width
 end
 
@@ -278,9 +281,10 @@ local function CreateFaction(parent)
     button:SetSize(width, FACTION_HEIGHT - 2)
     Widgets.ListHighlight(button, "HIGHLIGHT", 0.32)
     button.selected = Widgets.ListHighlight(button, "BACKGROUND", 0.55)
+    button.selected:SetDesaturated(true)   -- grey first: blue over the highlight's yellow turns green
     button.selected:SetVertexColor(SELECTED[1], SELECTED[2], SELECTED[3])
 
-    button.name = button:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    button.name = button:CreateFontString(nil, "OVERLAY", FONTS.name)
     button.name:SetJustifyH("LEFT")
     button.name:SetWordWrap(false)
     button.name:SetTextColor(1, 1, 1)
@@ -290,12 +294,12 @@ local function CreateFaction(parent)
         local icon = button:CreateTexture(nil, "ARTWORK")
         icon:SetSize(MINI, MINI)
         icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
-        icon:SetPoint("TOPRIGHT", -8 - (index - 1) * (MINI + 2), -5)
+        icon:SetPoint("TOPRIGHT", -8 - (index - 1) * (MINI + 2), -6)
         button.icons[index] = icon
     end
 
-    button.state = button:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    button.state:SetPoint("TOPLEFT", 8, -26)
+    button.state = button:CreateFontString(nil, "OVERLAY", FONTS.text)
+    button.state:SetPoint("TOPLEFT", 8, -32)
     button.state:SetJustifyH("LEFT")
     button.state:SetWordWrap(false)
 
@@ -303,7 +307,7 @@ local function CreateFaction(parent)
     button.bestChip = CreateChip(button, 1, 1, 1)
 
     button.way = CreateWay(button, width - 16, LIST_BAR)
-    PlaceWay(button.way, button, 8, -(FACTION_HEIGHT - 2 - 10))
+    PlaceWay(button.way, button, 8, -(FACTION_HEIGHT - 2 - 13))
 
     button:SetScript("OnClick", Choose)
     return button
@@ -321,7 +325,7 @@ local function FillFaction(button, group, chosen)
         if index <= shown then icon:SetTexture(EntryIcon(entry)) end
     end
     button.name:ClearAllPoints()
-    button.name:SetPoint("TOPLEFT", 8, -6)
+    button.name:SetPoint("TOPLEFT", 8, -8)
     button.name:SetPoint("RIGHT", button, "RIGHT", -12 - shown * (MINI + 2), 0)
     button.name:SetText(Reputation.FactionName(group.factionID))
 
@@ -333,9 +337,9 @@ local function FillFaction(button, group, chosen)
     local altWidth = SetChip(button.altChip, alternatives > 0 and (alternatives .. " " .. L.RANK_ALT:lower()) or nil)
     SetChip(button.bestChip, group.best > 0 and (group.best .. " " .. L.RANK_BIS) or nil)
     button.altChip:ClearAllPoints()
-    button.altChip:SetPoint("TOPRIGHT", -8, -25)
+    button.altChip:SetPoint("TOPRIGHT", -8, -30)
     button.bestChip:ClearAllPoints()
-    button.bestChip:SetPoint("TOPRIGHT", -8 - (altWidth > 0 and (altWidth + 4) or 0), -25)
+    button.bestChip:SetPoint("TOPRIGHT", -8 - (altWidth > 0 and (altWidth + 4) or 0), -30)
 
     local way = button.way
     FillWay(way, group)
@@ -343,7 +347,7 @@ local function FillFaction(button, group, chosen)
     for _, standing in ipairs(Targets(group)) do
         if standing > Reputation.NEUTRAL then
             used = used + 1
-            local mark = Mark(way, button, used, 8 + At(way.width, THRESHOLDS[standing]), -(FACTION_HEIGHT - 2 - 12),
+            local mark = Mark(way, button, used, 8 + At(way.width, THRESHOLDS[standing]), -(FACTION_HEIGHT - 2 - 15),
                 LIST_BAR + 4)
             MarkColor(mark, Met(group, standing))
         end
@@ -438,7 +442,7 @@ local function CreateTrack(parent)
     PlaceWay(track.way, track, TRACK_INSET, -(PIECE + 8))
     track.labels = {}
     for standing = 4, 7 do
-        local label = track:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        local label = track:CreateFontString(nil, "OVERLAY", FONTS.text)
         local x = TRACK_INSET + At(track.way.width, THRESHOLDS[standing])
         if standing == 7 then
             label:SetPoint("TOPRIGHT", track, "TOPLEFT", x, -(PIECE + 8 + TRACK_HEIGHT + 4))
@@ -510,17 +514,17 @@ local function CreateCard(parent)
     card:SetBackdrop(Widgets.FLAT)
     card:SetBackdropColor(1, 1, 1, 0.04)
     card:SetBackdropBorderColor(1, 1, 1, 0.10)
-    card.label = card:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    card.label:SetPoint("TOPLEFT", 8, -7)
-    card.label:SetPoint("RIGHT", -8, 0)
+    card.label = card:CreateFontString(nil, "OVERLAY", FONTS.text)
+    card.label:SetPoint("TOPLEFT", 10, -8)
+    card.label:SetPoint("RIGHT", -10, 0)
     card.label:SetJustifyH("LEFT")
     card.label:SetWordWrap(false)
     card.label:SetTextColor(MUTED[1], MUTED[2], MUTED[3])
-    card.value = card:CreateFontString(nil, "OVERLAY", "GameFontHighlightLarge")
-    card.value:SetPoint("BOTTOMLEFT", 8, 8)
-    card.note = card:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    card.note:SetPoint("BOTTOMLEFT", card.value, "BOTTOMRIGHT", 6, 1)
-    card.note:SetPoint("RIGHT", -8, 0)
+    card.value = card:CreateFontString(nil, "OVERLAY", FONTS.header)
+    card.value:SetPoint("TOPLEFT", card.label, "BOTTOMLEFT", 0, -4)
+    card.note = card:CreateFontString(nil, "OVERLAY", FONTS.text)
+    card.note:SetPoint("BOTTOMLEFT", 10, 8)
+    card.note:SetPoint("RIGHT", -10, 0)
     card.note:SetJustifyH("LEFT")
     card.note:SetWordWrap(false)
     card.note:SetTextColor(MUTED[1], MUTED[2], MUTED[3])
@@ -666,28 +670,28 @@ local function CreateLine(parent)
     line.rule:SetPoint("BOTTOMLEFT", 0, 2)
     line.rule:SetPoint("BOTTOMRIGHT", 0, 2)
     line.fold = line:CreateTexture(nil, "ARTWORK")
-    line.fold:SetSize(14, 14)
-    line.fold:SetPoint("BOTTOMLEFT", 0, 6)
+    line.fold:SetSize(16, 16)
+    line.fold:SetPoint("BOTTOMLEFT", 0, 7)
     line.icon = line:CreateTexture(nil, "ARTWORK")
     line.dot = line:CreateTexture(nil, "ARTWORK")
-    line.dot:SetSize(6, 6)
-    line.text = line:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    line.dot:SetSize(7, 7)
+    line.text = line:CreateFontString(nil, "OVERLAY", FONTS.text)
     line.text:SetJustifyH("LEFT")
-    line.standing = line:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    line.standing:SetPoint("LEFT", DETAIL_WIDTH - 262, 0)
-    line.standing:SetWidth(90)
+    line.standing = line:CreateFontString(nil, "OVERLAY", FONTS.text)
+    line.standing:SetPoint("LEFT", DETAIL_WIDTH - 300, 0)
+    line.standing:SetWidth(96)
     line.standing:SetJustifyH("LEFT")
-    line.place = line:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    line.place = line:CreateFontString(nil, "OVERLAY", FONTS.text)
     line.place:SetPoint("RIGHT", -52, 0)
-    line.place:SetWidth(118)
+    line.place:SetWidth(148)
     line.place:SetJustifyH("RIGHT")
     line.place:SetWordWrap(false)
     line.place:SetTextColor(MUTED[1], MUTED[2], MUTED[3])
-    line.chip = line:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    line.chip = line:CreateFontString(nil, "OVERLAY", FONTS.text)
     line.chip:SetPoint("RIGHT", -64, 0)
     line.chip:SetJustifyH("RIGHT")
     line.chip:SetTextColor(MUTED[1], MUTED[2], MUTED[3])
-    line.right = line:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    line.right = line:CreateFontString(nil, "OVERLAY", FONTS.text)
     line.right:SetPoint("RIGHT", -6, 0)
     line.right:SetJustifyH("RIGHT")
     line.map = Widgets.Button(line, L.REP_MAP)
@@ -734,6 +738,7 @@ local function FillLine(line, data)
 
     line.text:ClearAllPoints()
     line.text:SetWidth(0)   -- a line is used again for another kind of line
+    line.text:SetFontObject((entry or section) and FONTS.name or FONTS.text)
     line.text:SetText(data.text)
     line.text:SetTextColor(1, 1, 1)
     line.text:SetWordWrap(kind == "note")
@@ -742,8 +747,7 @@ local function FillLine(line, data)
     local height = HEIGHTS[kind]
     if section then
         line.fold:SetTexture(data.folded and "Interface\\Buttons\\UI-PlusButton-Up" or "Interface\\Buttons\\UI-MinusButton-Up")
-        line.text:SetPoint("BOTTOMLEFT", 18, 7)
-        line.text:SetTextColor(MUTED[1], MUTED[2], MUTED[3])
+        line.text:SetPoint("BOTTOMLEFT", 22, 8)
     elseif entry then
         line.icon:SetSize(ICON, ICON)
         line.icon:SetPoint("LEFT", 6, 0)
@@ -754,10 +758,10 @@ local function FillLine(line, data)
         line.text:SetPoint("RIGHT", line.standing, "LEFT", -8, 0)
         line.text:SetWordWrap(false)
     elseif seller then
-        line.icon:SetSize(16, 16)
+        line.icon:SetSize(18, 18)
         line.icon:SetPoint("LEFT", 8, 0)
         line.icon:SetTexture(data.map and SELLER_ICONS.vendor or SELLER_ICONS.other)
-        line.text:SetPoint("LEFT", 30, 0)
+        line.text:SetPoint("LEFT", 34, 0)
         line.text:SetPoint("RIGHT", -72, 0)
         line.text:SetWordWrap(false)
     elseif kind == "quest" then
@@ -765,17 +769,17 @@ local function FillLine(line, data)
         line.dot:SetColorTexture(color[1], color[2], color[3], 1)
         line.dot:SetPoint("LEFT", 10, 0)
         line.chip:SetText(data.chip)
-        line.text:SetPoint("LEFT", 24, 0)
-        line.text:SetPoint("RIGHT", -150, 0)
+        line.text:SetPoint("LEFT", 26, 0)
+        line.text:SetPoint("RIGHT", -160, 0)
         line.text:SetWordWrap(false)
     else
         local color = DOTS[data.evidence]
         line.dot:SetColorTexture(color[1], color[2], color[3], 1)
-        line.dot:SetPoint("TOPLEFT", 10, -7)
-        line.text:SetPoint("TOPLEFT", 24, -3)
-        line.text:SetWidth(DETAIL_WIDTH - 30)
+        line.dot:SetPoint("TOPLEFT", 10, -8)
+        line.text:SetPoint("TOPLEFT", 26, -4)
+        line.text:SetWidth(DETAIL_WIDTH - 32)
         if data.evidence == "unknown" then line.text:SetTextColor(MUTED[1], MUTED[2], MUTED[3]) end
-        height = math.max(height, math.ceil(line.text:GetStringHeight()) + 6)
+        height = math.max(height, math.ceil(line.text:GetStringHeight()) + 8)
     end
     line:SetHeight(height)
     return height
@@ -857,10 +861,10 @@ function ReputationView.Create(parent)
     view.divider:SetPoint("TOPLEFT", LIST_WIDTH + 2, 0)
     view.divider:SetPoint("BOTTOMLEFT", LIST_WIDTH + 2, 0)
 
-    view.title = view:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    view.title = view:CreateFontString(nil, "OVERLAY", FONTS.header)
     view.title:SetPoint("TOPLEFT", LIST_WIDTH + 14, -2)
     view.title:SetTextColor(1, 1, 1)
-    view.you = view:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    view.you = view:CreateFontString(nil, "OVERLAY", FONTS.text)
     view.you:SetPoint("TOPLEFT", view.title, "BOTTOMLEFT", 0, -4)
 
     view.watch = Widgets.Button(view, L.REP_UNWATCH)
@@ -880,7 +884,7 @@ function ReputationView.Create(parent)
     view.watch:SetScript("OnLeave", function() GameTooltip:Hide() end)
 
     view.detail, view.detailChild = Widgets.Scroll(view)
-    view.detail:SetPoint("TOPLEFT", LIST_WIDTH + 14, -50)
+    view.detail:SetPoint("TOPLEFT", LIST_WIDTH + 14, -54)
     view.detail:SetPoint("BOTTOMRIGHT", -BAR_ROOM, 0)
     view.track = CreateTrack(view.detailChild)
     view.cards = { CreateCard(view.detailChild), CreateCard(view.detailChild), CreateCard(view.detailChild) }

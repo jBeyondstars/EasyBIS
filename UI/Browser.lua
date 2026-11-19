@@ -1174,6 +1174,7 @@ function Browser.ShowReputation(factionID, artisan)
 end
 
 Browser.PlaceTooltip = PlaceTooltip
+Browser.FONTS = { name = FONT_NAME, text = FONT_TEXT, header = FONT_HEADER }   -- for the other tabs
 Browser.ItemTooltip = ItemTooltip
 Browser.EnchantTooltip = EnchantTooltip
 Browser.ShowTooltip = ShowTooltip

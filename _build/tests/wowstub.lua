@@ -75,6 +75,7 @@ end
 function METHODS:SetScale(scale) self.scale = scale end
 function METHODS:SetBackdropBorderColor(r, g, b, a) self.borderColor = { r, g, b, a } end
 function METHODS:SetVertexColor(r, g, b, a) self.vertexColor = { r, g, b, a } end
+function METHODS:SetFontObject(font) self.fontObject = font end
 
 -- Model methods (a DressUpModel): what it was asked to show.
 function METHODS:SetUnit(unit) self.unit = unit end

@@ -1702,6 +1702,10 @@ class WindowTest(unittest.TestCase):
         button = view.buttons[1]
         self.assertTrue(button.selected.shown)
         self.assertEqual(list(button.selected.vertexColor.values())[:3], [0.35, 0.6, 1.0])
+        # the text as large as the other tabs': their rows' fonts
+        self.assertEqual(button.name.fontObject, "EasyBISRowName")
+        self.assertEqual(view.title.fontObject, "EasyBISRowHeader")
+        self.assertEqual(view.you.fontObject, "EasyBISRowText")
         self.assertFalse(view.buttons[2].selected.shown if view.buttons[2] else False)
         # the list shows the pieces and how many are best or alternatives
         self.assertTrue(button.icons[1].shown)
