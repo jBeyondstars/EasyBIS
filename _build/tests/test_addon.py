@@ -356,6 +356,64 @@ class AddonTest(unittest.TestCase):
         self.assertTrue(alliance.twoHand)
         self.assertEqual(len(alliance.off.best), 0)
 
+    def test_the_player_picks_the_faction_of_the_lists(self):
+        """The character's faction until the player picks the other one: the lists, the tooltips and the
+        reputations follow; the choice is the character's, and picking its own faction goes back to following it."""
+        game = Game(faction="Alliance", saved=WITH_PVP)
+        ns = game.ns
+        legs = lambda: ns.Ladders.For("SHAMAN", 2, "pve").legs.best[1].id
+        self.assertEqual((ns.CharacterSide(), ns.PlayerSide(), legs()), ("a", "a", SENTINELS_LEGGINGS))
+        self.assertTrue(game.lines(SENTINELS_LEGGINGS))
+        self.assertFalse(game.lines(OUTRIDERS_LEGGINGS), "the Horde's twin is nobody's on the Alliance")
+        seen = []
+        ns.On(ns, "OPTION_CHANGED", lambda key, value: seen.append((key, value)))
+        stormpike = game.lua.table_from({"factionID": 730, "standing": 4})
+        self.assertEqual(ns.Reputation.Status(stormpike), "missing")
+
+        ns.SetSide(ns, "h")
+        self.assertEqual((ns.CharacterSide(), ns.PlayerSide(), ns.char.side), ("a", "h", "h"))
+        self.assertEqual(seen, [("side", "h")])
+        self.assertEqual(legs(), OUTRIDERS_LEGGINGS)
+        self.assertTrue(game.lines(OUTRIDERS_LEGGINGS))
+        self.assertFalse(game.lines(SENTINELS_LEGGINGS))
+        self.assertEqual(ns.Reputation.Status(stormpike), "other")
+        self.assertEqual(ns.Ladders.For("SHAMAN", 2, "pve").head.best[1].id, EYE_OF_REND, "a piece for both")
+        ns.SetSide(ns, "h")
+        self.assertEqual(len(seen), 1, "nothing changed: nothing said")
+
+        ns.SetSide(ns, "a")   # the character's own: back to following it
+        self.assertIsNone(ns.char.side)
+        self.assertEqual(seen[-1], ("side", "a"))
+        self.assertEqual(legs(), SENTINELS_LEGGINGS)
+        ns.SetSide(ns, "x")
+        self.assertEqual((ns.char.side, len(seen)), (None, 2))
+
+        # kept per character
+        saved = Game(faction="Alliance", saved=WITH_PVP + " EasyBISCharDB = { side = 'h' }")
+        self.assertEqual(saved.ns.PlayerSide(), "h")
+        self.assertEqual(saved.ns.Ladders.For("SHAMAN", 2, "pve").legs.best[1].id, OUTRIDERS_LEGGINGS)
+        horde = Game(faction="Horde", saved=WITH_PVP)
+        horde.ns.SetSide(horde.ns, "a")
+        self.assertEqual((horde.ns.CharacterSide(), horde.ns.PlayerSide()), ("h", "a"))
+        self.assertEqual(horde.ns.Ladders.For("SHAMAN", 2, "pve").legs.best[1].id, SENTINELS_LEGGINGS)
+
+    def test_faction_command(self):
+        game = Game(faction="Alliance")
+        self.assertEqual(game.slash("faction"), ["Easy BIS: Lists for: Alliance."])
+        self.assertEqual(game.slash("faction horde"),
+                         ["Easy BIS: Lists for: Horde. Not your character's faction: /easybis faction auto goes back to it."])
+        self.assertEqual(game.ns.PlayerSide(), "h")
+        self.assertEqual(game.slash("faction a"), ["Easy BIS: Lists for: Alliance."])
+        self.assertIsNone(game.ns.char.side)
+        game.slash("faction h")
+        self.assertEqual(game.slash("faction auto"), ["Easy BIS: Lists for: Alliance."])
+        self.assertEqual(game.slash("faction elves"), ["Easy BIS: Lists for: Alliance."], "an unknown word changes nothing")
+        self.assertTrue(any("/easybis faction" in line for line in game.slash("help")))
+        french = Game(locale="frFR", faction="Horde")
+        self.assertEqual(french.slash("faction alliance"),
+                         ["Easy BIS: Listes pour : Alliance. Ce n'est pas la faction de votre personnage : "
+                          "/easybis faction auto y revient."])
+
     def test_options_change_the_lists(self):
         # The best PvP head of an Alliance Enhancement Shaman who counts the PvP rewards has no known source;
         # the next one is crafted.

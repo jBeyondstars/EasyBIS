@@ -24,8 +24,8 @@ end
 
 ---------------------------------------------------------------------------
 -- Internal callbacks
---   OPTION_CHANGED(key, value)   an option was switched, or the phase ("phase") or the number of
---                                alternatives ("altCount") was changed
+--   OPTION_CHANGED(key, value)   an option was switched, or the phase ("phase"), the number of
+--                                alternatives ("altCount") or the faction of the lists ("side") was changed
 --   CUSTOM_CHANGED()             an item was added to a list by hand, or taken out (Custom.lua)
 --   LOGIN()                      the character is in the world
 --   REPUTATION_CHANGED()         the game says the character's reputations changed (Reputation.lua)
@@ -83,7 +83,8 @@ end
 
 -- Until the saved variables are read, the defaults stand in.
 ns.db = Merge({}, DEFAULTS)
--- Per character (EasyBISCharDB): the class, spec and list the window shows, and the phase.
+-- Per character (EasyBISCharDB): the class, spec and list the window shows, the phase, and the faction the
+-- lists are for when it is not the character's.
 ns.char = {}
 
 local function InitDB()
@@ -154,10 +155,27 @@ function ns.PlayerClass()
     return token
 end
 
--- "a" or "h": the lists leave out the other faction's items.
-function ns.PlayerSide()
+-- "a" or "h": the character's faction, as the game says.
+function ns.CharacterSide()
     local faction = UnitFactionGroup and UnitFactionGroup("player")
     return faction == "Horde" and "h" or "a"
+end
+
+-- "a" or "h": the faction the lists are for, the character's until the player picks the other one. The lists
+-- leave out the other faction's items, or show their twin; the tooltips and the reputations follow it too.
+function ns.PlayerSide()
+    local chosen = ns.char.side
+    if chosen == "a" or chosen == "h" then return chosen end
+    return ns.CharacterSide()
+end
+
+-- "a", "h", or nil for the character's own: picking the character's faction goes back to following it.
+function ns:SetSide(side)
+    if side ~= "a" and side ~= "h" or side == ns.CharacterSide() then side = nil end
+    if side == self.char.side then return end
+    local before = ns.PlayerSide()
+    self.char.side = side
+    if ns.PlayerSide() ~= before then self:Fire("OPTION_CHANGED", "side", ns.PlayerSide()) end
 end
 
 -- The content phase the lists stop at: 0 before the raids, 1 and up a phase, 9 everything the data
@@ -223,6 +241,7 @@ end
 
 -- The options (and the phase) that change what the lists hold: OPTION_CHANGED keys.
 ns.FILTER_OPTIONS = { unsourced = true, seenOnly = true, availableNow = true, pvpRewards = true, phase = true,
+    side = true,
     altCount = true }
 
 ---------------------------------------------------------------------------

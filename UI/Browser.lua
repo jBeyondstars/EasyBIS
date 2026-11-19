@@ -305,6 +305,22 @@ local function SavePlace(frame)
     if height and height >= MIN_HEIGHT then ns.db.windowHeight = math.floor(height + 0.5) end
 end
 
+-- The window's title: the addon's name, and the faction of the lists when it is not the character's.
+local function ShowTitle(frame)
+    local text = L.ADDON_TITLE
+    if ns.PlayerSide() ~= ns.CharacterSide() then
+        text = L.TITLE_SIDE:format(L.ADDON_TITLE, L["SIDE_" .. ns.PlayerSide()])
+    end
+    if frame.SetTitle then
+        frame:SetTitle(text)
+    elseif frame.TitleContainer and frame.TitleContainer.TitleText then
+        frame.TitleContainer.TitleText:SetText(text)
+    elseif frame.titleText then
+        frame.titleText:SetText(text)
+    end
+    frame.titleShown = text
+end
+
 local function CreateWindow()
     local modern = HasTemplate("PortraitFrameTemplate")
     local frame = CreateFrame("Frame", WINDOW_NAME, UIParent, modern and "PortraitFrameTemplate" or "BackdropTemplate")
@@ -332,21 +348,16 @@ local function CreateWindow()
         elseif frame.SetPortraitTextureRaw then
             frame:SetPortraitTextureRaw(ns.PORTRAIT)
         end
-        if frame.SetTitle then
-            frame:SetTitle(L.ADDON_TITLE)
-        elseif frame.TitleContainer and frame.TitleContainer.TitleText then
-            frame.TitleContainer.TitleText:SetText(L.ADDON_TITLE)
-        end
     else
         frame:SetBackdrop(Widgets.FLAT)
         frame:SetBackdropColor(0.05, 0.05, 0.06, 0.97)
         frame:SetBackdropBorderColor(0.3, 0.3, 0.32, 1)
         local close = CreateFrame("Button", nil, frame, "UIPanelCloseButton")
         close:SetPoint("TOPRIGHT", 2, 2)
-        local title = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-        title:SetPoint("TOP", 0, -8)
-        title:SetText(L.ADDON_TITLE)
+        frame.titleText = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        frame.titleText:SetPoint("TOP", 0, -8)
     end
+    ShowTitle(frame)
 
     local saved = ns.db.window
     if type(saved) == "table" and type(saved[1]) == "string" and type(saved[3]) == "number" and type(saved[4]) == "number" then
@@ -896,8 +907,8 @@ local function Choose(key)
 end
 
 -- The on/off options, in three groups: tooltips, what the lists count, the window. After what the lists
--- count come two submenus: the PvP rewards, a box per list (each list counts them or not), and the
--- number of alternatives a slot lists.
+-- count come three submenus: the PvP rewards, a box per list (each list counts them or not), the
+-- number of alternatives a slot lists, and the faction the lists are for.
 local OPTION_GROUPS = {
     { "tooltip", "onlyMyClass", "alternatives", "repTooltip" },
     { "unsourced", "seenOnly" },
@@ -933,6 +944,17 @@ local function FillOptionsMenu(_, root)
                     function() return ns.Alternatives() == count end,
                     function()
                         ns:SetAlternatives(count)
+                        return refresh
+                    end)
+            end
+            -- the faction the lists are for: the character's, or the other one to see what it would wear
+            local sides = root:CreateButton(L.OPT_SIDE)
+            for _, side in ipairs({ "a", "h" }) do
+                local name = L["SIDE_" .. side]
+                sides:CreateRadio(side == ns.CharacterSide() and L.OPT_SIDE_OWN:format(name) or name,
+                    function() return ns.PlayerSide() == side end,
+                    function()
+                        ns:SetSide(side)
                         return refresh
                     end)
             end
@@ -1101,6 +1123,7 @@ end
 
 Refresh = function()
     if not window or not window:IsShown() then return end
+    ShowTitle(window)
     local items, character, consumables = state.tab == "items", state.tab == "character", state.tab == "consumables"
     local enchants, reputations = state.tab == "enchants", state.tab == "reputations"
     local rows, facets = {}, { sources = {}, zones = {} }

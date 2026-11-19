@@ -800,7 +800,7 @@ class WindowTest(unittest.TestCase):
                                        "Tooltips show alternatives too", "Reputation needed in item tooltips",
                                        "Items with no known source",
                                        "Only items seen in Forever", "PvP rewards", "Alternatives per slot",
-                                       "Compact rows", "Short reputation lines", "Minimap button"])
+                                       "Faction", "Compact rows", "Short reputation lines", "Minimap button"])
         tooltips = find(menu, "BIS lines")
         self.assertTrue(tooltips.selected())
         tooltips.pick()
@@ -859,10 +859,30 @@ class WindowTest(unittest.TestCase):
         five = self.reference_rows("SHAMAN", 2, "pvp", default_filter(unsourced=True, pvp=True), count=5)
         self.assertEqual(self.shown_rows(game), five)
         self.assertGreater(len(five), len(with_them))
+        # the faction the lists are for: the character's, or the other one; the title says when it is not its own
+        sides = find(menu, "Faction")
+        self.assertEqual(sides.kind, "button")
+        self.assertEqual(texts(sides), ["Alliance (my character)", "Horde"])
+        self.assertEqual([bool(item.selected()) for item in sides["items"].values()], [True, False])
+        self.assertEqual(window.titleShown, "Easy BIS")
+        find(sides, "Horde").pick()
+        self.assertEqual(game.ns.char.side, "h")
+        self.assertTrue(find(sides, "Horde").selected())
+        horde = self.reference_rows("SHAMAN", 2, "pvp", default_filter("h", unsourced=True, pvp=True), count=5)
+        self.assertEqual(self.shown_rows(game), horde)
+        self.assertNotEqual(horde, five)
+        self.assertEqual(window.titleShown, "Easy BIS - Horde lists")
+        find(sides, "Alliance (my character)").pick()
+        self.assertIsNone(game.ns.char.side)
+        self.assertEqual(self.shown_rows(game), five)
+        self.assertEqual(window.titleShown, "Easy BIS")
         french = Game(locale="frFR")
         french.ns.Browser.Open()
         open_dropdown(french, french.ns.Browser.window.options)
         self.assertEqual(texts(find(french.stub.menu, "Récompenses JcJ")), ["Liste JcE", "Liste JcJ"])
+        self.assertEqual(texts(find(french.stub.menu, "Faction")), ["Alliance (mon personnage)", "Horde"])
+        find(find(french.stub.menu, "Faction"), "Horde").pick()
+        self.assertEqual(french.ns.Browser.window.titleShown, "Easy BIS - listes Horde")
         self.assertEqual(french.ns.L.OPT_ALT_COUNT, "Alternatives par emplacement")
 
     def test_minimap_button(self):
@@ -2038,6 +2058,26 @@ class WindowTest(unittest.TestCase):
         game.stub.run(others[0], "OnClick")
         self.assertFalse(view.emblem.shown)
         self.assertEqual(view.title.points[1][4], 292 + 14)
+
+    def test_reputations_follow_the_faction_picked(self):
+        """An Alliance character who picks the Horde sees the Darkspear Raiders where Theramore was."""
+        game = self.open(cls="MAGE")
+        rep, state = game.ns.Reputation, game.ns.Browser.state
+        factions = lambda: {group.factionID for group in rep.Needs(state["class"], state.spec, state.list).own.values()}
+        spec = next((cls, spec, mode) for cls in test_addon.CLASSES
+                    for spec in range(1, int(game.ns.Index.SpecCount(cls)) + 1) for mode in ("pve", "pvp")
+                    if 2799 in {g.factionID for g in rep.Needs(cls, spec, mode).own.values()})
+        state["class"], state.spec, state.list = spec
+        game.stub.run(game.ns.Browser.window.tabs.buttons[5], "OnClick")
+        view = game.ns.ReputationView.view
+        shown = lambda: {button.group.factionID for button in view.buttons.values() if button.shown}
+        self.assertIn(2799, shown())
+        self.assertNotIn(2798, factions())
+        game.ns.SetSide(game.ns, "h")
+        self.assertIn(2798, factions())
+        self.assertNotIn(2799, factions())
+        self.assertIn(2798, shown(), "the tab follows at once")
+        self.assertNotIn(2799, shown())
 
     def test_reputations_tab_shows_a_piece_asking_for_neutral(self):
         game = self.pvp_game()
