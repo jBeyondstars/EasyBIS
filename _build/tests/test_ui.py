@@ -764,6 +764,9 @@ class WindowTest(unittest.TestCase):
         self.assertGreater(box.GetFrameLevel(box), window.NineSlice.GetFrameLevel(window.NineSlice),
                            "under the border, its title bar hides the box")
         self.assertGreater(box.GetFrameLevel(box), window.TitleContainer.GetFrameLevel(window.TitleContainer))
+        controls = [window.spec, window.list, window.phase, window.slot, window.source, window.zone]
+        right = 66 + sum(control.width for control in controls) + 8 * 5
+        self.assertLessEqual(right, WIDTH - 8, "the filters stay inside the window")
         chosen = label(window.phase)
         self.assertEqual(self.shown_rows(game), self.reference_rows("PRIEST", 3, "pvp", default_filter(phase=EVERYTHING)))
 
