@@ -360,8 +360,9 @@ def reputation_file(db, all_ladders, reading: dict) -> str:
         factions.append("|".join(map(str, (
             number, _field(name), side, known["quests"], known["repeatable"], known["once"].get("a", 0),
             known["once"].get("h", 0), vendors.get(number, ""), "1" if number in rewards else ""))))
-        for title, amount, repeats, quest_side in known["methods"]:
-            methods.append("|".join(map(str, (number, _field(title), amount, repeats, quest_side))))
+        for title, amount, repeats, quest_side, *classes in known["methods"]:
+            mask = classes[0] if classes and classes[0] else ""
+            methods.append("|".join(map(str, (number, _field(title), amount, repeats, quest_side, mask))))
 
     items, used = [], set(vendors.values())
     for item_id in sorted(shown):
@@ -384,7 +385,7 @@ def reputation_file(db, all_ladders, reading: dict) -> str:
         f"(https://github.com/Questie/QuestieDB, GPL-3.0) on {reading.get('date', '?')}. See _build/reputations.py.",
         "  factions  id|name|side|quests|repeatable|reputation from the quests done once, Alliance|the same, Horde|"
         "npc that sells the most|1 when a quest rewards its pieces",
-        "  methods   faction|quest|amount|1 when it repeats|side",
+        "  methods   faction|quest|amount|1 when it repeats|side|the classes that may take it (the game's mask), empty for all",
         "  vendors   npc|name|uiMap|x|y",
         "  items     id|side|faction|standing|kind|vendor npc|price in copper|quest or recipe|profession|skill",
         "  enchants  id|faction|standing|kind|1 when a scroll does the same|quest or recipe",

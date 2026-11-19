@@ -74,6 +74,7 @@ end
 
 function METHODS:SetScale(scale) self.scale = scale end
 function METHODS:SetBackdropBorderColor(r, g, b, a) self.borderColor = { r, g, b, a } end
+function METHODS:SetVertexColor(r, g, b, a) self.vertexColor = { r, g, b, a } end
 
 -- Model methods (a DressUpModel): what it was asked to show.
 function METHODS:SetUnit(unit) self.unit = unit end
@@ -339,9 +340,17 @@ function C_Reputation.GetFactionDataByID(id)
 end
 function C_Reputation.GetNumFactions() return #stub.factionList end
 function C_Reputation.GetFactionDataByIndex(index) return stub.factionList[index] end
+-- stub.watched: the faction the reputation bar follows
+function C_Reputation.GetWatchedFactionData() return stub.watched and { factionID = stub.watched } or nil end
+function C_Reputation.SetWatchedFactionByID(id) stub.watched = id ~= 0 and id or nil end
 
+-- stub.waypoint: the pin last set on the map; stub.openedMap: the map last opened
 C_Map = {}
 function C_Map.GetMapInfo(id) return { name = "Map " .. id } end
+function C_Map.SetUserWaypoint(point) stub.waypoint = point end
+UiMapPoint = {}
+function UiMapPoint.CreateFromCoordinates(map, x, y) return { uiMapID = map, x = x, y = y } end
+function OpenWorldMap(map) stub.openedMap = map end
 function GetRealZoneText(id) return stub.zoneNames[id] end
 
 -- 2026-11-18 11:00 UTC, the third week of the first PvP season, six days before the next weekly reset

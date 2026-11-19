@@ -29,7 +29,22 @@ Nothing here depends on the window: a tab, a tooltip or a later feature reads th
   Reputation.Factions()                    the catalogue: { { factionID, name, side, quests, repeatable, once,
                                            vendor, rewards, methods }, ... }
   Reputation.Faction(factionID)            one of them, or nil
-  Reputation.Ways(factionID)               how to earn it: { { text, evidence = "data"|"check"|"unknown" }, ... }
+  Reputation.Ways(factionID, class)        how to earn it: { listed, repeatable, once, quests = { { quest, amount,
+                                           repeats }, ... }, checks = { text, ... }, unknowns = { text, ... } }
+                                           quests: the ones kept for the player's side that class may take; checks:
+                                           what a person wrote down and the game should confirm; unknowns: what no
+                                           source says
+  Reputation.Sellers(group)                where a group's pieces come from: { { text, map, x, y }, ... }; map, x and
+                                           y only for a vendor whose place is known
+
+Where the player stands, counted from the start of Neutral (THRESHOLDS: the standard 3,000 / 6,000 / 12,000 /
+21,000 between standings):
+  Reputation.Position(factionID)           the reputation from Neutral 0 (below 0 under Neutral), or nil when the
+                                           game does not say or the faction was never met
+  Reputation.Remaining(factionID, standing)    what is left to reach it: 0 once reached; for a faction never met,
+                                           the whole way from Neutral and true; nil when unknown
+  Reputation.Watched(factionID), Reputation.CanWatch(factionID), Reputation.Watch(factionID, on)
+                                           the faction the game's reputation bar follows
 
 Words, for the frames to show:
   Reputation.StandingName(standing)        Reputation.FactionName(factionID)
@@ -52,6 +67,7 @@ ns.Reputation = Reputation
 Reputation.WEAR, Reputation.QUEST, Reputation.RECIPE = "w", "q", "r"
 Reputation.NEUTRAL = 3
 Reputation.STANDINGS = { 3, 4, 5, 6, 7 }
+Reputation.THRESHOLDS = { [3] = 0, [4] = 3000, [5] = 9000, [6] = 21000, [7] = 42000 }
 
 local WEAR, QUEST, RECIPE = Reputation.WEAR, Reputation.QUEST, Reputation.RECIPE
 local NEUTRAL_REACTION = 4        -- the game counts from 1 Hated; the data from 0
@@ -59,6 +75,9 @@ local EXALTED = 7
 local GOLD, GREY, WHITE = "|cffffd100", "|cffa8a8b0", "|cffffffff"
 local MUTED = { 0.66, 0.66, 0.70 }
 local QUIET_DELAY = 0.25          -- the game sends UPDATE_FACTION in bursts
+-- The game's class numbers: a quest's classes are a mask of 2 ^ (number - 1).
+local CLASS_NUMBERS = { WARRIOR = 1, PALADIN = 2, HUNTER = 3, ROGUE = 4, PRIEST = 5, SHAMAN = 7, MAGE = 8,
+    WARLOCK = 9, DRUID = 11 }
 
 ---------------------------------------------------------------------------
 -- The data
@@ -96,6 +115,7 @@ local function Catalog()
         if faction then
             faction.methods[#faction.methods + 1] = {
                 quest = f[2], amount = tonumber(f[3]) or 0, repeats = f[4] == "1", side = f[5],
+                classes = tonumber(f[6]) or 0,
             }
         end
     end
@@ -152,12 +172,12 @@ end
 ---------------------------------------------------------------------------
 
 local standings = {}
-local listed, wholeList
+local listed, wholeList, indexes
 
 -- The factions the reputation pane lists. Its collapsed headers are left as the player keeps them: a faction
 -- under one of them is simply not known to be met or not.
 local function ReadList()
-    listed, wholeList = {}, true
+    listed, wholeList, indexes = {}, true, {}
     local api = C_Reputation
     local count = 0
     if api and api.GetNumFactions then
@@ -174,7 +194,7 @@ local function ReadList()
             local info = { GetFactionInfo(index) }
             isHeader, isCollapsed, factionID = info[9], info[10], info[14]
         end
-        if factionID then listed[factionID] = true end
+        if factionID then listed[factionID], indexes[factionID] = true, index end
         if isHeader and isCollapsed then wholeList = false end
     end
 end
@@ -232,6 +252,58 @@ end
 
 function Reputation.Reachable(requirement)
     return not requirement or requirement.kind == RECIPE or Reputation.Status(requirement) == "met"
+end
+
+function Reputation.Position(factionID)
+    local standing = Reputation.Standing(factionID)
+    if not standing.known or standing.met == false then return nil end
+    if standing.standing >= EXALTED then return Reputation.THRESHOLDS[EXALTED] end
+    local start = Reputation.THRESHOLDS[standing.standing]
+    if start then return start + standing.value end
+    return standing.total   -- under Neutral: the game counts down from 0
+end
+
+function Reputation.Remaining(factionID, standing)
+    local goal = Reputation.THRESHOLDS[standing]
+    if not goal then return nil end
+    local record = Reputation.Standing(factionID)
+    if record.known and record.met == false then return goal, true end
+    local position = Reputation.Position(factionID)
+    if not position then return nil end
+    if record.standing >= standing then return 0 end
+    return math.max(0, goal - position)
+end
+
+function Reputation.Watched(factionID)
+    if C_Reputation and C_Reputation.GetWatchedFactionData then
+        local ok, data = pcall(C_Reputation.GetWatchedFactionData)
+        return ok and type(data) == "table" and data.factionID == factionID
+    end
+    if GetWatchedFactionInfo then
+        local id = select(6, GetWatchedFactionInfo())
+        return id == factionID
+    end
+    return false
+end
+
+-- The game's bar follows a faction of its reputation pane: one never met, or under a header the player keeps
+-- collapsed, cannot be chosen.
+function Reputation.CanWatch(factionID)
+    if Reputation.Standing(factionID).met ~= true then return false end
+    if C_Reputation and C_Reputation.SetWatchedFactionByID then return true end
+    if not listed then ReadList() end
+    return SetWatchedFactionIndex ~= nil and indexes[factionID] ~= nil
+end
+
+function Reputation.Watch(factionID, on)
+    if C_Reputation and C_Reputation.SetWatchedFactionByID then
+        pcall(C_Reputation.SetWatchedFactionByID, on and factionID or 0)
+    elseif SetWatchedFactionIndex then
+        if not listed then ReadList() end
+        local index = indexes[factionID]
+        if on and not index then return end
+        pcall(SetWatchedFactionIndex, on and index or 0)
+    end
 end
 
 ---------------------------------------------------------------------------
@@ -394,6 +466,31 @@ function Reputation.VendorText(factionID)
     return faction and faction.rewards and L.REP_VENDOR_QUESTS or L.REP_UNKNOWN
 end
 
+function Reputation.Sellers(group)
+    local sellers, seen = {}, {}
+    local function Add(text, vendor)
+        if seen[text] then return end
+        seen[text] = true
+        sellers[#sellers + 1] = { text = text, map = vendor and vendor.map, x = vendor and vendor.x,
+            y = vendor and vendor.y }
+    end
+    for _, standing in ipairs(Reputation.STANDINGS) do
+        for _, entry in ipairs(group.steps[standing] or {}) do
+            local requirement = entry.requirement
+            if requirement.kind == QUEST then
+                Add(L.REP_SELLER_QUEST:format(requirement.via or L.REP_UNKNOWN))
+            elseif requirement.kind == RECIPE then
+                Add(L.REP_SELLER_RECIPE:format(requirement.via or L.REP_UNKNOWN))
+            else
+                local line = VendorLine(requirement.vendor)
+                if line then Add(line, Catalog().vendors[requirement.vendor]) end
+            end
+        end
+    end
+    if not sellers[1] then Add(L.REP_UNKNOWN) end
+    return sellers
+end
+
 local function Money(copper)
     if GetCoinTextureString then return GetCoinTextureString(copper) end
     local gold, silver, rest = math.floor(copper / 10000), math.floor(copper / 100) % 100, copper % 100
@@ -434,28 +531,32 @@ function Reputation.TooltipLines(itemId)
     return lines
 end
 
--- What is known of how to earn a faction, each line with how far it can be trusted.
-function Reputation.Ways(factionID)
+local function TakesClass(classes, class)
+    local number = CLASS_NUMBERS[class or ""]
+    if classes == 0 or not number then return true end
+    return math.floor(classes / 2 ^ (number - 1)) % 2 == 1
+end
+
+-- What is known of how to earn a faction. The quests are QuestieDB's; what no source says stays unknown.
+function Reputation.Ways(factionID, class)
     local faction = Catalog().factions[factionID]
-    local ways = {}
-    local function Add(text, evidence) ways[#ways + 1] = { text = text, evidence = evidence } end
-    if not faction or faction.quests == 0 then
-        Add(L.REP_WAY_NONE, "unknown")
-    else
-        local side = ns.PlayerSide()
-        Add(L.REP_WAY_QUESTS:format(faction.quests, faction.repeatable), "data")
+    local side = ns.PlayerSide()
+    local ways = { listed = 0, repeatable = 0, once = 0, quests = {}, checks = {}, unknowns = {} }
+    if faction then
+        ways.listed, ways.repeatable, ways.once = faction.quests, faction.repeatable, faction.once[side] or 0
         for _, method in ipairs(faction.methods) do
-            if method.side == "" or method.side == side then
-                Add(L[method.repeats and "REP_WAY_REPEATS" or "REP_WAY_ONCE"]:format(method.quest, method.amount), "data")
+            if (method.side == "" or method.side == side) and TakesClass(method.classes, class) then
+                ways.quests[#ways.quests + 1] = { quest = method.quest, amount = method.amount, repeats = method.repeats }
             end
         end
-        if faction.once[side] > 0 then Add(L.REP_WAY_CEILING:format(Number(faction.once[side])), "data") end
     end
     local note = L["REP_NOTE_" .. factionID]
-    if note ~= "REP_NOTE_" .. factionID then Add(note, "check") end
-    if faction and faction.quests > 0 then
-        if faction.repeatable == 0 then Add(L.REP_WAY_ROUTE, "unknown") end
-        Add(L.REP_WAY_CREATURES, "unknown")
+    if note ~= "REP_NOTE_" .. factionID then ways.checks[1] = note end
+    if ways.listed == 0 then
+        ways.unknowns[1] = L.REP_WAY_NONE
+    else
+        if ways.repeatable == 0 then ways.unknowns[#ways.unknowns + 1] = L.REP_WAY_ROUTE end
+        ways.unknowns[#ways.unknowns + 1] = L.REP_WAY_CREATURES
     end
     return ways
 end

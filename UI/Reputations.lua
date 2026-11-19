@@ -8,16 +8,26 @@ local Reputation = ns.Reputation
 The Reputations tab of the window: what the spec, the list and the phase ask of each faction.
 
   left     the factions, most wanted first: the player's own, then the crafters' recipes, which are kept apart
-           and counted in nobody's total. Each says where the player stands and how many pieces it opens.
-  right    the faction chosen: where the player stands, what each standing unlocks for this spec, who sells
-           it, and how to earn it. Each way of earning says how far it can be trusted: Data, To check, Unknown.
+           and counted in nobody's total. Each shows the pieces it opens, how many are best or alternatives, and
+           a bar of the whole way from Neutral to Exalted with a mark where each piece unlocks.
+  right    the faction chosen, from top to bottom:
+             the track     the way from Neutral to Exalted, each standing as wide as the reputation it asks, the
+                           player's place on it and each piece above the standing that unlocks it. A piece's
+                           tooltip is the item's; a click opens its slot in the Items tab, Shift-click links it
+             the cards     what is left for the next standing a piece needs, what the quests done once give at
+                           most, how many quests repeat
+             the sections  the pieces, where they come from (a vendor whose place is known has a Map button), the
+                           quests kept for the class, and what no source says. A click on a title folds it
+           The header has a Watch button: the game's reputation bar follows the faction.
 
-Gold is for what the player has earned. Nothing here says how long a standing takes: nothing measures it.
+Gold is for what the player has earned: a reached standing, a piece within reach. The faction chosen is lit in
+blue. Nothing here says how long a standing takes: nothing measures it.
 
   ReputationView.Create(parent)   the view, hidden
   ReputationView.Update(state)    fills it. state: the window's { class, spec, list, faction, factionArtisan }
   ReputationView.Hide()
-  ReputationView.view             (the tests read it: factionData, detailData, buttons, lines, title, you, empty)
+  ReputationView.view             (the tests read it: factionData, detailData, cardData, buttons, lines, pieces,
+                                  cards, title, you, watch, empty)
 ]]
 
 local ReputationView = {}
@@ -25,27 +35,50 @@ ns.ReputationView = ReputationView
 
 local LIST_WIDTH = 292        -- the factions, their scroll bar included
 local BAR_ROOM = 26           -- what a scroll bar takes
-local DETAIL_WIDTH = 592      -- the faction's text
+local DETAIL_WIDTH = 592      -- the faction's side
 local PAD = 8
 local GROUP_HEIGHT = 26       -- a group's name over its factions
-local FACTION_HEIGHT = 56     -- a faction in the list
-local BAR_HEIGHT = 4
-local BADGE_WIDTH = 74        -- how far a way of earning can be trusted
+local FACTION_HEIGHT = 62     -- a faction in the list
+local MINI = 16               -- a piece's icon in the list
+local MINI_SHOWN = 4
+local LIST_BAR = 5
+local TRACK_INSET = 16        -- room for a piece at either end of the track
+local TRACK_HEIGHT = 10
+local PIECE = 30              -- a piece on the track
+local PIECE_GAP = 4
+local TRACK_BLOCK = PIECE + 8 + TRACK_HEIGHT + 22
+local CARD_HEIGHT = 50
+local CARD_GAP = 8
 local ICON = 20
-local HEIGHTS = { section = 30, step = 24, entry = 26, text = 20, way = 20 }
+local HEIGHTS = { section = 28, entry = 26, seller = 24, quest = 20, note = 20 }
 local UNKNOWN_ICON = "Interface\\Icons\\INV_Misc_QuestionMark"
+local SELLER_ICONS = {
+    vendor = "Interface\\GossipFrame\\VendorGossipIcon",
+    other = "Interface\\GossipFrame\\GossipGossipIcon",
+}
 
 local MUTED = Widgets.MUTED
 local GOLD, WHITE, GREY = "|cffffd100", "|cffffffff", "|cffa8a8b0"
-local EVIDENCE = { data = "|cff8fd19e", check = "|cffef9a55", unknown = "|cffa8a8b0" }
+local GOLD_RGB = { 1, 0.82, 0 }
+local GREEN = { 0.12, 0.62, 0.22 }       -- the way travelled, before every piece is earned
+local SELECTED = { 0.35, 0.60, 1.00 }    -- the faction chosen: not gold, which is for what is earned
+local DOTS = { data = { 0.56, 0.82, 0.62 }, check = { 0.94, 0.60, 0.33 }, unknown = { 0.66, 0.66, 0.70 } }
+local THRESHOLDS = Reputation.THRESHOLDS
+local WHOLE_WAY = THRESHOLDS[7]
 
 local GetInfo = (C_Item and C_Item.GetItemInfo) or GetItemInfo
 local GetIcon = (C_Item and C_Item.GetItemIconByID) or GetItemIcon
 
 local view
+local folded = {}             -- [section] = true: the sections the player folded, for the session
+
+local function Number(value)
+    if BreakUpLargeNumbers then return BreakUpLargeNumbers(value) end
+    return tostring(value)
+end
 
 ---------------------------------------------------------------------------
--- What the right side says, as plain lines
+-- The pieces
 ---------------------------------------------------------------------------
 
 local function EntryName(entry)
@@ -59,6 +92,13 @@ local function EntryName(entry)
     return hex .. (name or ns.Items.Name(entry.id)) .. "|r"
 end
 
+local function EntryQuality(entry)
+    if entry.enchant or not GetInfo then return 1, 1, 1 end
+    local _, _, quality = GetInfo(entry.id)
+    local r, g, b = ns.QualityColor(quality)
+    return r, g, b
+end
+
 local function EntryIcon(entry)
     if entry.enchant then
         local info = ns.Enchants.Info(entry.enchant)
@@ -69,7 +109,6 @@ local function EntryIcon(entry)
     return texture or (GetIcon and GetIcon(entry.id)) or UNKNOWN_ICON
 end
 
--- The slot, and what sets this piece apart from the others of the standing.
 local function EntryPlace(entry)
     local requirement = entry.requirement
     local place = entry.enchant and ns.Enchants.KeyName(entry.slot) or ns.SlotName(entry.slot)
@@ -78,40 +117,124 @@ local function EntryPlace(entry)
     return place
 end
 
-local function StepState(group, standing)
-    local status = Reputation.Status({ factionID = group.factionID, standing = standing })
-    if status == "met" then return GOLD .. L.REP_MET .. "|r" end
-    if status == "unknown" then return WHITE .. L.REP_UNKNOWN .. "|r" end
-    return ""
+local function Met(group, standing)
+    return Reputation.Status({ factionID = group.factionID, standing = standing }) == "met"
 end
 
--- { kind = "section"|"step"|"entry"|"text"|"way", text, right, entry, evidence }, top to bottom
-local function DetailLines(group)
-    local lines = {}
-    local function Add(line) lines[#lines + 1] = line end
-    if group.artisan then Add({ kind = "text", text = GREY .. L.REP_ARTISAN_NOTE .. "|r" }) end
-
-    Add({ kind = "section", text = L.REP_LADDER })
+-- The standings this spec has a use for, lowest first.
+local function Targets(group)
+    local targets = {}
     for _, standing in ipairs(Reputation.STANDINGS) do
-        local entries = group.steps[standing]
-        if entries or standing > Reputation.NEUTRAL then   -- Neutral has a line only when a piece asks for it
-            Add({ kind = "step", text = Reputation.StandingName(standing), right = StepState(group, standing) })
-            for _, entry in ipairs(entries or {}) do
-                local rank = entry.role == "best" and (WHITE .. L.RANK_BIS) or (GREY .. L.RANK_ALT)
-                Add({ kind = "entry", text = EntryName(entry), place = EntryPlace(entry), right = rank .. "|r", entry = entry })
-            end
-            if not entries then Add({ kind = "text", text = GREY .. L.REP_LADDER_NONE .. "|r" }) end
-        end
+        if group.steps[standing] then targets[#targets + 1] = standing end
     end
+    return targets
+end
 
-    Add({ kind = "section", text = L.REP_VENDOR })
-    Add({ kind = "text", text = Reputation.VendorText(group.factionID) })
-
-    Add({ kind = "section", text = L.REP_WAYS })
-    for _, way in ipairs(Reputation.Ways(group.factionID)) do
-        Add({ kind = "way", text = way.text, evidence = way.evidence })
+-- Every piece in standing order, the best first within a standing.
+local function Entries(group)
+    local entries = {}
+    for _, standing in ipairs(Targets(group)) do
+        local step = {}
+        for _, entry in ipairs(group.steps[standing]) do step[#step + 1] = entry end
+        table.sort(step, function(a, b) return (a.role == "best") and b.role ~= "best" end)
+        for _, entry in ipairs(step) do entries[#entries + 1] = entry end
     end
-    return lines
+    return entries
+end
+
+local function Earned(group)
+    local targets = Targets(group)
+    return targets[1] ~= nil and Met(group, targets[#targets])
+end
+
+local function PieceTooltip(owner, entry)
+    if not entry then return end
+    if entry.enchant then
+        local info = ns.Enchants.Info(entry.enchant)
+        if not info then return end
+        Browser.EnchantTooltip(owner, info, entry.requirement)
+    else
+        Browser.ItemTooltip(owner, { id = entry.id, source = ns.Sources.Describe(entry.id) })
+        GameTooltip:AddLine(L.REP_PIECE_TIP, MUTED[1], MUTED[2], MUTED[3], true)
+    end
+    Browser.ShowTooltip()
+end
+
+-- Shift-click links the item; a click opens its slot among the items.
+local function PieceClick(entry)
+    if not entry or Browser.ModifiedClick(entry.id) then return end
+    if entry.id then
+        Widgets.Click()
+        Browser.ShowSlot(entry.slot)
+    end
+end
+
+---------------------------------------------------------------------------
+-- The way from Neutral to Exalted
+---------------------------------------------------------------------------
+
+local function At(width, value)
+    return math.floor(width * math.max(0, math.min(WHOLE_WAY, value)) / WHOLE_WAY + 0.5)
+end
+
+-- Four segments, one per standing to reach, each as wide as the reputation it asks.
+local function CreateWay(parent, width, height)
+    local way = { width = width, segments = {}, marks = {} }
+    for index = 1, 4 do
+        local from, to = THRESHOLDS[index + 2], THRESHOLDS[index + 3]
+        local segment = parent:CreateTexture(nil, "BACKGROUND")
+        segment:SetColorTexture(1, 1, 1, 0.10)
+        segment:SetHeight(height)
+        local left = At(width, from) + (index > 1 and 1 or 0)
+        segment:SetWidth(math.max(1, At(width, to) - left - (index < 4 and 1 or 0)))
+        way.segments[index] = segment
+        segment.left = left
+    end
+    way.fill = parent:CreateTexture(nil, "ARTWORK")
+    way.fill:SetHeight(height)
+    return way
+end
+
+local function PlaceWay(way, anchor, x, y)
+    for _, segment in ipairs(way.segments) do
+        segment:ClearAllPoints()
+        segment:SetPoint("TOPLEFT", anchor, "TOPLEFT", x + segment.left, y)
+    end
+    way.fill:ClearAllPoints()
+    way.fill:SetPoint("TOPLEFT", anchor, "TOPLEFT", x, y)
+end
+
+-- The player's place on the way: green on the way, gold once every piece is earned.
+local function FillWay(way, group)
+    local position = Reputation.Position(group.factionID)
+    local width = position and At(way.width, position) or 0
+    way.fill:SetShown(width > 0)
+    way.fill:SetWidth(math.max(1, width))
+    local color = Earned(group) and GOLD_RGB or GREEN
+    way.fill:SetColorTexture(color[1], color[2], color[3], 0.90)
+    way.position = position
+end
+
+-- A mark on the way where a standing this spec needs begins: gold once reached.
+local function Mark(way, parent, index, x, y, height)
+    local mark = way.marks[index]
+    if not mark then
+        mark = parent:CreateTexture(nil, "OVERLAY")
+        way.marks[index] = mark
+    end
+    mark:ClearAllPoints()
+    mark:SetSize(2, height)
+    mark:SetPoint("TOPLEFT", parent, "TOPLEFT", x - 1, y)
+    mark:Show()
+    return mark
+end
+
+local function MarkColor(mark, reached)
+    if reached then
+        mark:SetColorTexture(GOLD_RGB[1], GOLD_RGB[2], GOLD_RGB[3], 1)
+    else
+        mark:SetColorTexture(1, 1, 1, 0.75)
+    end
 end
 
 ---------------------------------------------------------------------------
@@ -130,74 +253,113 @@ local function CreateGroupTitle(parent)
     return title
 end
 
+local function CreateChip(parent, r, g, b)
+    local chip = parent:CreateTexture(nil, "ARTWORK")
+    chip:SetColorTexture(r, g, b, 0.18)
+    chip.text = parent:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    chip.text:SetPoint("CENTER", chip, "CENTER", 0, 0)
+    chip.text:SetTextColor(r, g, b)
+    return chip
+end
+
+local function SetChip(chip, text)
+    chip:SetShown(text ~= nil)
+    chip.text:SetShown(text ~= nil)
+    if not text then return 0 end
+    chip.text:SetText(text)
+    local width = math.ceil(chip.text:GetStringWidth()) + 10
+    chip:SetSize(width, 14)
+    return width
+end
+
 local function CreateFaction(parent)
+    local width = LIST_WIDTH - BAR_ROOM
     local button = CreateFrame("Button", nil, parent)
-    button:SetSize(LIST_WIDTH - BAR_ROOM, FACTION_HEIGHT - 2)
+    button:SetSize(width, FACTION_HEIGHT - 2)
     Widgets.ListHighlight(button, "HIGHLIGHT", 0.32)
-    button.selected = Widgets.ListHighlight(button, "BACKGROUND", 0.48)
+    button.selected = Widgets.ListHighlight(button, "BACKGROUND", 0.55)
+    button.selected:SetVertexColor(SELECTED[1], SELECTED[2], SELECTED[3])
 
     button.name = button:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    button.name:SetPoint("TOPLEFT", 8, -6)
-    button.name:SetPoint("RIGHT", -8, 0)
     button.name:SetJustifyH("LEFT")
     button.name:SetWordWrap(false)
     button.name:SetTextColor(1, 1, 1)
 
+    button.icons = {}
+    for index = 1, MINI_SHOWN do
+        local icon = button:CreateTexture(nil, "ARTWORK")
+        icon:SetSize(MINI, MINI)
+        icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+        icon:SetPoint("TOPRIGHT", -8 - (index - 1) * (MINI + 2), -5)
+        button.icons[index] = icon
+    end
+
     button.state = button:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    button.state:SetPoint("TOPLEFT", 8, -24)
+    button.state:SetPoint("TOPLEFT", 8, -26)
     button.state:SetJustifyH("LEFT")
     button.state:SetWordWrap(false)
 
-    button.count = button:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    button.count:SetPoint("TOPRIGHT", -8, -24)
-    button.count:SetJustifyH("RIGHT")
-    button.count:SetWordWrap(false)
-    button.count:SetTextColor(MUTED[1], MUTED[2], MUTED[3])
+    button.altChip = CreateChip(button, MUTED[1], MUTED[2], MUTED[3])
+    button.bestChip = CreateChip(button, 1, 1, 1)
 
-    button.barBack = button:CreateTexture(nil, "ARTWORK")
-    button.barBack:SetColorTexture(1, 1, 1, 0.10)
-    button.barBack:SetHeight(BAR_HEIGHT)
-    button.barBack:SetPoint("BOTTOMLEFT", 8, 7)
-    button.barBack:SetPoint("BOTTOMRIGHT", -8, 7)
-    button.bar = button:CreateTexture(nil, "OVERLAY")
-    button.bar:SetHeight(BAR_HEIGHT)
-    button.bar:SetPoint("LEFT", button.barBack, "LEFT", 0, 0)
+    button.way = CreateWay(button, width - 16, LIST_BAR)
+    PlaceWay(button.way, button, 8, -(FACTION_HEIGHT - 2 - 10))
 
     button:SetScript("OnClick", Choose)
     return button
 end
 
-local function CountText(group)
-    local parts = {}
-    if group.best > 0 then parts[#parts + 1] = L.REP_COUNT_BEST:format(group.best) end
-    local alternatives = group.alts + group.other
-    if alternatives > 0 then
-        parts[#parts + 1] = (alternatives == 1 and L.REP_COUNT_ALT or L.REP_COUNT_ALTS):format(alternatives)
-    end
-    return table.concat(parts, ", ")
-end
-
--- Earned: every standing this spec has a use for.
-local function Earned(group)
-    local top = 0
-    for standing in pairs(group.steps) do top = math.max(top, standing) end
-    return Reputation.Status({ factionID = group.factionID, standing = top }) == "met"
-end
-
 local function FillFaction(button, group, chosen)
     button.group = group
     button.selected:SetShown(chosen)
+
+    local entries = Entries(group)
+    local shown = math.min(MINI_SHOWN, #entries)
+    for index, icon in ipairs(button.icons) do
+        local entry = entries[index]
+        icon:SetShown(index <= shown)
+        if index <= shown then icon:SetTexture(EntryIcon(entry)) end
+    end
+    button.name:ClearAllPoints()
+    button.name:SetPoint("TOPLEFT", 8, -6)
+    button.name:SetPoint("RIGHT", button, "RIGHT", -12 - shown * (MINI + 2), 0)
     button.name:SetText(Reputation.FactionName(group.factionID))
+
     local earned = Earned(group)
-    local progress = Reputation.ProgressText(group.factionID, ns:GetOption("repCompact"))
+    local progress = Reputation.ProgressText(group.factionID, true)
     button.state:SetText((earned and GOLD or GREY) .. progress .. "|r")
-    button.count:SetText(CountText(group))
-    local width = LIST_WIDTH - BAR_ROOM - 16
-    button.bar:SetWidth(math.max(1, math.floor(width * Reputation.Ratio(group.factionID) + 0.5)))
-    if earned then
-        button.bar:SetColorTexture(1, 0.82, 0, 0.90)
-    else
-        button.bar:SetColorTexture(0.78, 0.78, 0.82, 0.85)
+
+    local alternatives = group.alts + group.other
+    local altWidth = SetChip(button.altChip, alternatives > 0 and (alternatives .. " " .. L.RANK_ALT:lower()) or nil)
+    SetChip(button.bestChip, group.best > 0 and (group.best .. " " .. L.RANK_BIS) or nil)
+    button.altChip:ClearAllPoints()
+    button.altChip:SetPoint("TOPRIGHT", -8, -25)
+    button.bestChip:ClearAllPoints()
+    button.bestChip:SetPoint("TOPRIGHT", -8 - (altWidth > 0 and (altWidth + 4) or 0), -25)
+
+    local way = button.way
+    FillWay(way, group)
+    local used = 0
+    for _, standing in ipairs(Targets(group)) do
+        if standing > Reputation.NEUTRAL then
+            used = used + 1
+            local mark = Mark(way, button, used, 8 + At(way.width, THRESHOLDS[standing]), -(FACTION_HEIGHT - 2 - 12),
+                LIST_BAR + 4)
+            MarkColor(mark, Met(group, standing))
+        end
+    end
+    for index = used + 1, #way.marks do way.marks[index]:Hide() end
+end
+
+-- The scroll bar shows only when there is something to scroll, once the frame has its size.
+local function Fit(scroll, child, width, height)
+    child:SetSize(width, math.max(1, height))
+    if scroll.UpdateScrollChildRect then scroll:UpdateScrollChildRect() end
+    local bar, room = scroll.ScrollBar, scroll:GetHeight()
+    if bar and room and room > 0 then
+        local needed = height > room + 1
+        bar:SetShown(needed)
+        if not needed and scroll.SetVerticalScroll then scroll:SetVerticalScroll(0) end
     end
 end
 
@@ -238,115 +400,421 @@ local function LayoutFactions(needs, state)
         end
     end
     for index = used + 1, #buttons do buttons[index]:Hide() end
-    view.listChild:SetSize(LIST_WIDTH - BAR_ROOM, math.max(1, offset))
-    if view.list.UpdateScrollChildRect then view.list:UpdateScrollChildRect() end
+    Fit(view.list, view.listChild, LIST_WIDTH - BAR_ROOM, offset)
     return chosen
 end
 
 ---------------------------------------------------------------------------
--- The faction on the right
+-- The track: the way, the player on it, the pieces above it
 ---------------------------------------------------------------------------
 
-local function EntryTooltip(line)
-    local entry = line.data and line.data.entry
-    if not entry then return end
-    if entry.enchant then
-        local info = ns.Enchants.Info(entry.enchant)
-        if not info then return end
-        Browser.EnchantTooltip(line, info, entry.requirement)
-    else
-        Browser.ItemTooltip(line, { id = entry.id, source = ns.Sources.Describe(entry.id) })
-    end
-    Browser.ShowTooltip()
+local function CreatePiece(parent)
+    local piece = CreateFrame("Button", nil, parent, "BackdropTemplate")
+    piece:SetSize(PIECE, PIECE)
+    piece:SetBackdrop(Widgets.FLAT)
+    piece:SetBackdropColor(0, 0, 0, 0.6)
+    piece.icon = piece:CreateTexture(nil, "ARTWORK")
+    piece.icon:SetPoint("TOPLEFT", 2, -2)
+    piece.icon:SetPoint("BOTTOMRIGHT", -2, 2)
+    piece.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+    local highlight = piece:CreateTexture(nil, "HIGHLIGHT")
+    highlight:SetTexture("Interface\\Buttons\\ButtonHilight-Square")
+    highlight:SetBlendMode("ADD")
+    highlight:SetAllPoints()
+    piece.check = piece:CreateTexture(nil, "OVERLAY")
+    piece.check:SetTexture("Interface\\Buttons\\UI-CheckBox-Check")
+    piece.check:SetSize(18, 18)
+    piece.check:SetPoint("TOPRIGHT", 7, 7)
+    piece:SetScript("OnEnter", function(self) PieceTooltip(self, self.entry) end)
+    piece:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    piece:SetScript("OnClick", function(self) PieceClick(self.entry) end)
+    return piece
 end
 
-local function EntryClick(line)
-    local entry = line.data and line.data.entry
-    if entry and entry.id then Browser.ModifiedClick(entry.id) end
+local function CreateTrack(parent)
+    local track = CreateFrame("Frame", nil, parent)
+    track:SetSize(DETAIL_WIDTH, TRACK_BLOCK)
+    track.way = CreateWay(track, DETAIL_WIDTH - 2 * TRACK_INSET, TRACK_HEIGHT)
+    PlaceWay(track.way, track, TRACK_INSET, -(PIECE + 8))
+    track.labels = {}
+    for standing = 4, 7 do
+        local label = track:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        local x = TRACK_INSET + At(track.way.width, THRESHOLDS[standing])
+        if standing == 7 then
+            label:SetPoint("TOPRIGHT", track, "TOPLEFT", x, -(PIECE + 8 + TRACK_HEIGHT + 4))
+        else
+            label:SetPoint("TOP", track, "TOPLEFT", x, -(PIECE + 8 + TRACK_HEIGHT + 4))
+        end
+        track.labels[standing] = label
+    end
+    track.pieces = {}
+    return track
+end
+
+-- Each standing's pieces side by side above where it begins, pushed right when they would cover the
+-- previous standing's.
+local function FillTrack(group)
+    local track = view.track
+    local way = track.way
+    FillWay(way, group)
+    for standing, label in pairs(track.labels) do
+        label:SetText(Reputation.StandingName(standing))
+        local color = Met(group, standing) and GOLD_RGB or MUTED
+        label:SetTextColor(color[1], color[2], color[3])
+    end
+
+    local used, marks, right = 0, 0, -TRACK_INSET - PIECE_GAP
+    view.pieces = {}
+    for _, standing in ipairs(Targets(group)) do
+        local entries = {}
+        for _, entry in ipairs(Entries(group)) do
+            if entry.requirement.standing == standing then entries[#entries + 1] = entry end
+        end
+        local reached = Met(group, standing)
+        local x = At(way.width, THRESHOLDS[standing])
+        local span = #entries * PIECE + (#entries - 1) * PIECE_GAP
+        local left = math.max(-TRACK_INSET, math.min(way.width + TRACK_INSET - span, x - span / 2))
+        left = math.max(left, right + PIECE_GAP)
+        for index, entry in ipairs(entries) do
+            used = used + 1
+            local piece = track.pieces[used]
+            if not piece then
+                piece = CreatePiece(track)
+                track.pieces[used] = piece
+            end
+            piece.entry = entry
+            piece.icon:SetTexture(EntryIcon(entry))
+            local r, g, b = EntryQuality(entry)
+            piece:SetBackdropBorderColor(r, g, b, 1)
+            piece.check:SetShown(reached)
+            piece:ClearAllPoints()
+            piece:SetPoint("TOPLEFT", track, "TOPLEFT", TRACK_INSET + left + (index - 1) * (PIECE + PIECE_GAP), 0)
+            piece:Show()
+            view.pieces[used] = piece
+        end
+        right = left + span
+        marks = marks + 1
+        local mark = Mark(way, track, marks, TRACK_INSET + x, -(PIECE + 2), TRACK_HEIGHT + 10)
+        MarkColor(mark, reached)
+    end
+    for index = used + 1, #track.pieces do track.pieces[index]:Hide() end
+    for index = marks + 1, #way.marks do way.marks[index]:Hide() end
+end
+
+---------------------------------------------------------------------------
+-- The cards: three numbers, each said only when a source gives it
+---------------------------------------------------------------------------
+
+local function CreateCard(parent)
+    local card = CreateFrame("Frame", nil, parent, "BackdropTemplate")
+    card:SetBackdrop(Widgets.FLAT)
+    card:SetBackdropColor(1, 1, 1, 0.04)
+    card:SetBackdropBorderColor(1, 1, 1, 0.10)
+    card.label = card:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    card.label:SetPoint("TOPLEFT", 8, -7)
+    card.label:SetPoint("RIGHT", -8, 0)
+    card.label:SetJustifyH("LEFT")
+    card.label:SetWordWrap(false)
+    card.label:SetTextColor(MUTED[1], MUTED[2], MUTED[3])
+    card.value = card:CreateFontString(nil, "OVERLAY", "GameFontHighlightLarge")
+    card.value:SetPoint("BOTTOMLEFT", 8, 8)
+    card.note = card:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    card.note:SetPoint("BOTTOMLEFT", card.value, "BOTTOMRIGHT", 6, 1)
+    card.note:SetPoint("RIGHT", -8, 0)
+    card.note:SetJustifyH("LEFT")
+    card.note:SetWordWrap(false)
+    card.note:SetTextColor(MUTED[1], MUTED[2], MUTED[3])
+    return card
+end
+
+-- { { label, value, note }, ... }: what is left, the quests done once, the repeatable ones.
+local function CardData(group, ways)
+    local targets = Targets(group)
+    local top = targets[#targets]
+    local left = { label = L.REP_LEFT:format(Reputation.StandingName(top)), value = WHITE .. L.REP_UNKNOWN .. "|r" }
+    local known = true
+    for _, standing in ipairs(targets) do
+        local amount, fromNeutral = Reputation.Remaining(group.factionID, standing)
+        if amount == nil then
+            known = false
+            break
+        end
+        if amount > 0 then
+            left.label = L.REP_LEFT:format(Reputation.StandingName(standing))
+            left.value = WHITE .. Number(amount) .. "|r"
+            left.note = fromNeutral and L.REP_LEFT_FROM_NEUTRAL or nil
+            break
+        end
+    end
+    if known and Earned(group) then left.value = GOLD .. L.REP_LEFT_DONE .. "|r" end
+
+    local once = { label = L.REP_CARD_ONCE, value = WHITE .. L.REP_UNKNOWN .. "|r" }
+    local repeats = { label = L.REP_CARD_REPEAT, value = WHITE .. L.REP_UNKNOWN .. "|r" }
+    if ways.listed > 0 then
+        once.value = WHITE .. Number(ways.once) .. "|r"
+        once.note = L.REP_CARD_ONCE_NOTE:format(Number(THRESHOLDS[top]), Reputation.StandingName(top))
+        repeats.value = WHITE .. Number(ways.repeatable) .. "|r"
+        repeats.note = L.REP_CARD_REPEAT_NOTE:format(ways.listed)
+    end
+    return { left, once, repeats }
+end
+
+local function FillCards(group, ways)
+    local data = CardData(group, ways)
+    local width = math.floor((DETAIL_WIDTH - 2 * CARD_GAP) / 3)
+    for index, card in ipairs(view.cards) do
+        local info = data[index]
+        card:SetSize(width, CARD_HEIGHT)
+        card.label:SetText(info.label)
+        card.value:SetText(info.value)
+        card.note:SetText(info.note or "")
+    end
+    view.cardData = data
+end
+
+---------------------------------------------------------------------------
+-- The sections
+---------------------------------------------------------------------------
+
+-- { kind = "section"|"entry"|"seller"|"quest"|"note", text, ... }, top to bottom
+local function DetailLines(group, ways)
+    local lines = {}
+    local function Add(line) lines[#lines + 1] = line end
+    local function Section(key, text)
+        Add({ kind = "section", key = key, text = text, folded = folded[key] == true })
+        return not folded[key]
+    end
+
+    if Section("pieces", L.REP_SECTION_PIECES) then
+        for _, entry in ipairs(Entries(group)) do
+            local standing = entry.requirement.standing
+            local rank = entry.role == "best" and (WHITE .. L.RANK_BIS) or (GREY .. L.RANK_ALT)
+            Add({ kind = "entry", text = EntryName(entry), entry = entry, place = EntryPlace(entry),
+                standing = (Met(group, standing) and GOLD or WHITE) .. Reputation.StandingName(standing) .. "|r",
+                right = rank .. "|r" })
+        end
+    end
+
+    if Section("sources", L.REP_SECTION_SOURCES) then
+        for _, seller in ipairs(Reputation.Sellers(group)) do
+            Add({ kind = "seller", text = seller.text, map = seller.map, x = seller.x, y = seller.y })
+        end
+    end
+
+    if ways.listed > 0 and Section("quests", L.REP_SECTION_QUESTS:format(ways.listed, ways.repeatable)) then
+        for _, quest in ipairs(ways.quests) do
+            Add({ kind = "quest", text = quest.quest, evidence = "data", right = "+" .. quest.amount,
+                chip = quest.repeats and L.REP_QUEST_REPEATS or L.REP_QUEST_ONCE })
+        end
+        if not ways.quests[1] then Add({ kind = "note", text = L.REP_QUESTS_NONE, evidence = "unknown" }) end
+    end
+
+    if Section("unknown", L.REP_SECTION_UNKNOWN) then
+        for _, text in ipairs(ways.checks) do Add({ kind = "note", text = text, evidence = "check" }) end
+        for _, text in ipairs(ways.unknowns) do Add({ kind = "note", text = text, evidence = "unknown" }) end
+    end
+    return lines
+end
+
+local CanMap = function()
+    return (C_Map and C_Map.SetUserWaypoint and UiMapPoint and UiMapPoint.CreateFromCoordinates)
+        or OpenWorldMap or (WorldMapFrame and WorldMapFrame.SetMapID)
+end
+
+-- A pin where the vendor stands, when the game has them, and the map opened on its zone.
+local function ShowOnMap(map, x, y)
+    if C_Map and C_Map.SetUserWaypoint and UiMapPoint and UiMapPoint.CreateFromCoordinates
+        and (not C_Map.CanSetUserWaypointOnMap or C_Map.CanSetUserWaypointOnMap(map)) then
+        local made, point = pcall(UiMapPoint.CreateFromCoordinates, map, x / 100, y / 100)
+        if made and point and pcall(C_Map.SetUserWaypoint, point)
+            and C_SuperTrack and C_SuperTrack.SetSuperTrackedUserWaypoint then
+            pcall(C_SuperTrack.SetSuperTrackedUserWaypoint, true)
+        end
+    end
+    if OpenWorldMap then
+        pcall(OpenWorldMap, map)
+    elseif WorldMapFrame and WorldMapFrame.SetMapID then
+        WorldMapFrame:Show()
+        pcall(WorldMapFrame.SetMapID, WorldMapFrame, map)
+    end
+end
+
+local function LineEnter(line)
+    local data = line.data
+    if data and data.kind == "entry" then PieceTooltip(line, data.entry) end
+end
+
+local function LineClick(line)
+    local data = line.data
+    if not data then return end
+    if data.kind == "entry" then
+        PieceClick(data.entry)
+    elseif data.kind == "section" then
+        Widgets.Click()
+        folded[data.key] = not folded[data.key] or nil
+        ReputationView.Update(view.state)
+    end
 end
 
 local function CreateLine(parent)
     local line = CreateFrame("Button", nil, parent)
     line:SetWidth(DETAIL_WIDTH)
-    line.back = Widgets.ListHighlight(line, "HIGHLIGHT", 0.32)
+    line.back = Widgets.ListHighlight(line, "HIGHLIGHT", 0.28)
     line.rule = line:CreateTexture(nil, "BACKGROUND")
     line.rule:SetColorTexture(1, 1, 1, 0.14)
     line.rule:SetHeight(1)
     line.rule:SetPoint("BOTTOMLEFT", 0, 2)
     line.rule:SetPoint("BOTTOMRIGHT", 0, 2)
+    line.fold = line:CreateTexture(nil, "ARTWORK")
+    line.fold:SetSize(14, 14)
+    line.fold:SetPoint("BOTTOMLEFT", 0, 6)
     line.icon = line:CreateTexture(nil, "ARTWORK")
-    line.icon:SetSize(ICON, ICON)
-    line.icon:SetPoint("LEFT", 14, 0)
-    line.badge = line:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    line.badge:SetPoint("TOPLEFT", 4, -3)
-    line.badge:SetWidth(BADGE_WIDTH)
-    line.badge:SetJustifyH("LEFT")
+    line.dot = line:CreateTexture(nil, "ARTWORK")
+    line.dot:SetSize(6, 6)
     line.text = line:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     line.text:SetJustifyH("LEFT")
+    line.standing = line:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    line.standing:SetPoint("LEFT", DETAIL_WIDTH - 262, 0)
+    line.standing:SetWidth(90)
+    line.standing:SetJustifyH("LEFT")
     line.place = line:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    line.place:SetPoint("RIGHT", -64, 0)
+    line.place:SetPoint("RIGHT", -52, 0)
+    line.place:SetWidth(118)
     line.place:SetJustifyH("RIGHT")
     line.place:SetWordWrap(false)
     line.place:SetTextColor(MUTED[1], MUTED[2], MUTED[3])
+    line.chip = line:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    line.chip:SetPoint("RIGHT", -64, 0)
+    line.chip:SetJustifyH("RIGHT")
+    line.chip:SetTextColor(MUTED[1], MUTED[2], MUTED[3])
     line.right = line:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     line.right:SetPoint("RIGHT", -6, 0)
     line.right:SetJustifyH("RIGHT")
-    line:SetScript("OnEnter", EntryTooltip)
+    line.map = Widgets.Button(line, L.REP_MAP)
+    line.map:SetHeight(20)
+    line.map:SetPoint("RIGHT", -4, 0)
+    line.map.line = line
+    line.map:SetScript("OnClick", function(self)
+        local data = self.line.data
+        if data and data.map then
+            Widgets.Click()
+            ShowOnMap(data.map, data.x, data.y)
+        end
+    end)
+    line.map:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:SetText(L.REP_MAP_TIP, 1, 1, 1, 1, true)
+        GameTooltip:Show()
+    end)
+    line.map:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    line:SetScript("OnEnter", LineEnter)
     line:SetScript("OnLeave", function() GameTooltip:Hide() end)
-    line:SetScript("OnClick", EntryClick)
+    line:SetScript("OnClick", LineClick)
     return line
 end
 
 local function FillLine(line, data)
     line.data = data
     local kind = data.kind
-    local entry, way = kind == "entry", kind == "way"
-    line:EnableMouse(entry)
-    line.back:SetShown(entry)
-    line.rule:SetShown(kind == "section")
-    line.icon:SetShown(entry)
-    line.badge:SetShown(way)
+    local entry, section, seller = kind == "entry", kind == "section", kind == "seller"
+    local dotted = kind == "quest" or kind == "note"
+    line:EnableMouse(entry or section)
+    line.back:SetShown(entry or section)
+    line.rule:SetShown(section)
+    line.fold:SetShown(section)
+    line.icon:SetShown(entry or seller)
+    line.dot:SetShown(dotted)
+    line.standing:SetShown(entry)
     line.place:SetShown(entry)
+    line.chip:SetShown(kind == "quest")
     line.right:SetShown(data.right ~= nil)
     line.right:SetText(data.right or "")
+    local mapped = (seller and data.map ~= nil and data.x ~= nil and CanMap()) and true or false
+    line.map:SetShown(mapped)
 
     line.text:ClearAllPoints()
     line.text:SetWidth(0)   -- a line is used again for another kind of line
     line.text:SetText(data.text)
     line.text:SetTextColor(1, 1, 1)
-    line.text:SetWordWrap(way or kind == "text")
+    line.text:SetWordWrap(kind == "note")
+    line.icon:ClearAllPoints()
+    line.dot:ClearAllPoints()
     local height = HEIGHTS[kind]
-    if kind == "section" then
-        line.text:SetPoint("BOTTOMLEFT", 0, 6)
+    if section then
+        line.fold:SetTexture(data.folded and "Interface\\Buttons\\UI-PlusButton-Up" or "Interface\\Buttons\\UI-MinusButton-Up")
+        line.text:SetPoint("BOTTOMLEFT", 18, 7)
         line.text:SetTextColor(MUTED[1], MUTED[2], MUTED[3])
-    elseif kind == "step" then
-        line.text:SetPoint("LEFT", 4, 0)
     elseif entry then
+        line.icon:SetSize(ICON, ICON)
+        line.icon:SetPoint("LEFT", 6, 0)
         line.icon:SetTexture(EntryIcon(data.entry))
+        line.standing:SetText(data.standing)
         line.place:SetText(data.place)
         line.text:SetPoint("LEFT", line.icon, "RIGHT", 6, 0)
-        line.text:SetPoint("RIGHT", line.place, "LEFT", -8, 0)
-    elseif way then
-        line.badge:SetText(EVIDENCE[data.evidence] .. L["REP_EVIDENCE_" .. data.evidence] .. "|r")
-        line.text:SetPoint("TOPLEFT", BADGE_WIDTH + 8, -3)
-        line.text:SetWidth(DETAIL_WIDTH - BADGE_WIDTH - 12)
-        height = math.max(height, math.ceil(line.text:GetStringHeight()) + 6)
+        line.text:SetPoint("RIGHT", line.standing, "LEFT", -8, 0)
+        line.text:SetWordWrap(false)
+    elseif seller then
+        line.icon:SetSize(16, 16)
+        line.icon:SetPoint("LEFT", 8, 0)
+        line.icon:SetTexture(data.map and SELLER_ICONS.vendor or SELLER_ICONS.other)
+        line.text:SetPoint("LEFT", 30, 0)
+        line.text:SetPoint("RIGHT", -72, 0)
+        line.text:SetWordWrap(false)
+    elseif kind == "quest" then
+        local color = DOTS[data.evidence]
+        line.dot:SetColorTexture(color[1], color[2], color[3], 1)
+        line.dot:SetPoint("LEFT", 10, 0)
+        line.chip:SetText(data.chip)
+        line.text:SetPoint("LEFT", 24, 0)
+        line.text:SetPoint("RIGHT", -150, 0)
+        line.text:SetWordWrap(false)
     else
-        line.text:SetPoint("TOPLEFT", 4, -3)
-        line.text:SetWidth(DETAIL_WIDTH - 8)
+        local color = DOTS[data.evidence]
+        line.dot:SetColorTexture(color[1], color[2], color[3], 1)
+        line.dot:SetPoint("TOPLEFT", 10, -7)
+        line.text:SetPoint("TOPLEFT", 24, -3)
+        line.text:SetWidth(DETAIL_WIDTH - 30)
+        if data.evidence == "unknown" then line.text:SetTextColor(MUTED[1], MUTED[2], MUTED[3]) end
         height = math.max(height, math.ceil(line.text:GetStringHeight()) + 6)
     end
     line:SetHeight(height)
     return height
 end
 
+---------------------------------------------------------------------------
+-- The faction on the right
+---------------------------------------------------------------------------
+
+local function FillWatch(group)
+    local watch = view.watch
+    local can = Reputation.CanWatch(group.factionID)
+    watch:SetShown(can)
+    if can then
+        watch:SetText(Reputation.Watched(group.factionID) and L.REP_UNWATCH or L.REP_WATCH)
+    end
+end
+
 local function ShowDetail(group)
     view.title:SetText(Reputation.FactionName(group.factionID))
-    local earned = Earned(group)
-    view.you:SetText((earned and GOLD or GREY) .. L.REP_YOU:format(Reputation.ProgressText(group.factionID)) .. "|r")
+    local you = L.REP_YOU:format(Reputation.ProgressText(group.factionID))
+    view.you:SetText((Earned(group) and GOLD or GREY) .. you .. "|r"
+        .. (group.artisan and (GREY .. "  ·  " .. L.REP_ARTISAN_NOTE .. "|r") or ""))
+    FillWatch(group)
 
-    local data = DetailLines(group)
-    local offset = 0
+    local ways = Reputation.Ways(group.factionID, view.state and view.state.class)
+    FillTrack(group)
+    view.track:ClearAllPoints()
+    view.track:SetPoint("TOPLEFT", view.detailChild, "TOPLEFT", 0, 0)
+    local offset = TRACK_BLOCK + 4
+
+    FillCards(group, ways)
+    for index, card in ipairs(view.cards) do
+        card:ClearAllPoints()
+        card:SetPoint("TOPLEFT", view.detailChild, "TOPLEFT", (index - 1) * (card:GetWidth() + CARD_GAP), -offset)
+    end
+    offset = offset + CARD_HEIGHT + 6
+
+    local data = DetailLines(group, ways)
     for index, lineData in ipairs(data) do
         local line = view.lines[index]
         if not line then
@@ -360,8 +828,7 @@ local function ShowDetail(group)
         offset = offset + height
     end
     for index = #data + 1, #view.lines do view.lines[index]:Hide() end
-    view.detailChild:SetSize(DETAIL_WIDTH, math.max(1, offset))
-    if view.detail.UpdateScrollChildRect then view.detail:UpdateScrollChildRect() end
+    Fit(view.detail, view.detailChild, DETAIL_WIDTH, offset)
     view.detailData = data
 end
 
@@ -396,9 +863,28 @@ function ReputationView.Create(parent)
     view.you = view:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     view.you:SetPoint("TOPLEFT", view.title, "BOTTOMLEFT", 0, -4)
 
+    view.watch = Widgets.Button(view, L.REP_UNWATCH)
+    view.watch:SetPoint("TOPRIGHT", -BAR_ROOM, -2)
+    view.watch:SetScript("OnClick", function()
+        local group = view.chosen
+        if not group then return end
+        Widgets.Click()
+        Reputation.Watch(group.factionID, not Reputation.Watched(group.factionID))
+        FillWatch(group)
+    end)
+    view.watch:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_BOTTOMRIGHT")
+        GameTooltip:SetText(L.REP_WATCH_TIP, 1, 1, 1, 1, true)
+        GameTooltip:Show()
+    end)
+    view.watch:SetScript("OnLeave", function() GameTooltip:Hide() end)
+
     view.detail, view.detailChild = Widgets.Scroll(view)
-    view.detail:SetPoint("TOPLEFT", LIST_WIDTH + 14, -44)
+    view.detail:SetPoint("TOPLEFT", LIST_WIDTH + 14, -50)
     view.detail:SetPoint("BOTTOMRIGHT", -BAR_ROOM, 0)
+    view.track = CreateTrack(view.detailChild)
+    view.cards = { CreateCard(view.detailChild), CreateCard(view.detailChild), CreateCard(view.detailChild) }
+    view.pieces = {}
 
     view.empty = view:CreateFontString(nil, "OVERLAY", "GameFontDisable")
     view.empty:SetPoint("TOP", 0, -40)
@@ -413,6 +899,7 @@ end
 function ReputationView.Update(state)
     if not view then return end
     view:Show()
+    view.state = state
     local needs = Reputation.Needs(state.class, state.spec, state.list)
     view.factionData = needs
     local chosen = LayoutFactions(needs, state)
@@ -427,6 +914,7 @@ function ReputationView.Update(state)
     if chosen then
         ShowDetail(chosen)
     else
-        view.detailData = {}
+        view.watch:Hide()
+        view.detailData, view.cardData = {}, {}
     end
 end

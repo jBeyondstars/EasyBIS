@@ -43,6 +43,9 @@ function Widgets.Scroll(parent)
     local child = CreateFrame("Frame", nil, scroll)
     child:SetSize(1, 1)
     scroll:SetScrollChild(child)
+    -- No bar when there is nothing to scroll: the older template reads the field, the newer its bar's setting.
+    scroll.scrollBarHideable = true
+    if scroll.ScrollBar and scroll.ScrollBar.SetHideIfUnscrollable then scroll.ScrollBar:SetHideIfUnscrollable(true) end
     return scroll, child
 end
 

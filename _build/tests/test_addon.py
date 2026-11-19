@@ -843,6 +843,79 @@ class AddonTest(unittest.TestCase):
         self.assertEqual(rep.ProgressText(576), "Exalted")
         self.assertEqual(rep.Ratio(576), 1)
 
+    def test_reputation_position_and_what_is_left(self):
+        game = Game()
+        rep, stub = game.ns.Reputation, game.stub
+        def be(reaction, value, low, high):
+            stub.factions[576] = game.lua.table_from({"reaction": reaction, "value": value, "low": low, "high": high})
+            stub.fire("UPDATE_FACTION")
+        # never met: nowhere on the way, and the whole way from Neutral is left
+        self.assertIsNone(rep.Position(576))
+        self.assertEqual(rep.Remaining(576, 6), (21000, True))
+        be(5, 3500, 3000, 9000)        # Friendly, 500 into it
+        self.assertEqual(rep.Position(576), 3500)
+        self.assertEqual(rep.Remaining(576, 4), 0)
+        self.assertEqual(rep.Remaining(576, 6), 17500)
+        be(3, -2000, -6000, 0)         # Unfriendly: the game counts down from Neutral 0
+        self.assertEqual(rep.Position(576), -2000)
+        self.assertEqual(rep.Remaining(576, 4), 5000)
+        be(8, 42000, 42000, 43000)     # Exalted
+        self.assertEqual(rep.Position(576), 42000)
+        self.assertEqual(rep.Remaining(576, 7), 0)
+        stub.factionsUnknown = True
+        stub.fire("UPDATE_FACTION")
+        self.assertIsNone(rep.Position(576))
+        self.assertEqual(rep.Remaining(576, 6), None, "what the game does not say stays unknown")
+
+    def test_reputation_watched_by_the_game_bar(self):
+        game = Game()
+        rep, stub = game.ns.Reputation, game.stub
+        self.assertFalse(rep.CanWatch(576), "a faction never met is not in the reputation pane")
+        stub.factions[576] = game.lua.table_from({"reaction": 5, "value": 3500, "low": 3000, "high": 9000})
+        stub.fire("UPDATE_FACTION")
+        self.assertTrue(rep.CanWatch(576))
+        self.assertFalse(rep.Watched(576))
+        rep.Watch(576, True)
+        self.assertEqual(stub.watched, 576)
+        self.assertTrue(rep.Watched(576))
+        rep.Watch(576, False)
+        self.assertIsNone(stub.watched)
+
+    def test_reputation_watched_on_a_client_without_c_reputation(self):
+        game = Game(saved="""C_Reputation = nil
+            function GetFactionInfoByID(id) return "Old " .. id, "", 5, 3000, 9000, 3500 end
+            function GetNumFactions() return 2 end
+            function GetFactionInfo(index)
+                if index == 1 then return "Header", "", 0, 0, 0, 0, false, false, true, false, false, false, false, nil end
+                return "Old 576", "", 5, 3000, 9000, 3500, false, false, false, false, false, false, false, 576
+            end
+            watching = 0
+            function SetWatchedFactionIndex(index) watching = index end
+            function GetWatchedFactionInfo() if watching == 2 then return "Old 576", 5, 3000, 9000, 3500, 576 end end""")
+        rep = game.ns.Reputation
+        self.assertTrue(rep.CanWatch(576))
+        rep.Watch(576, True)
+        self.assertEqual(game.lua.globals().watching, 2, "the bar is set by the faction's line in the pane")
+        self.assertTrue(rep.Watched(576))
+        rep.Watch(576, False)
+        self.assertEqual(game.lua.globals().watching, 0)
+
+    def test_reputation_sellers_say_where_each_piece_comes_from(self):
+        game = Game()
+        rep = game.ns.Reputation
+        group = lambda *entries: game.lua.table_from({"steps": game.lua.table_from({
+            4: game.lua.table_from([game.lua.table_from({"requirement": game.lua.table_from(e)}) for e in entries])})})
+        texts = lambda sellers: [seller.text for seller in sellers.values()]
+        quest = rep.Sellers(group({"kind": "q", "via": "Honored Amongst the Guard"}))
+        self.assertEqual(texts(quest), ["Quest reward: Honored Amongst the Guard"])
+        recipe = rep.Sellers(group({"kind": "r", "via": "Plans: Dark Iron Helm"}))
+        self.assertEqual(texts(recipe), ["Plans: Dark Iron Helm: vendor unknown"])
+        self.assertEqual(texts(rep.Sellers(group({"kind": "w"}))), ["Unknown"])
+        vendor = rep.Sellers(group({"kind": "w", "vendor": 263569}, {"kind": "w", "vendor": 263569}))
+        self.assertEqual(len(texts(vendor)), 1, "a vendor is named once")
+        self.assertTrue(texts(vendor)[0].startswith("Bryanna Embreeze, "))
+        self.assertEqual((vendor[1].map, vendor[1].x, vendor[1].y), (1413, 63.4, 58.7))
+
     def test_reputation_asking_for_neutral(self):
         """The game reads a faction never met as Neutral 0: that is not a Neutral standing earned."""
         game = Game()
@@ -927,14 +1000,33 @@ class AddonTest(unittest.TestCase):
 
     def test_reputation_ways_say_what_is_known(self):
         game = Game()
-        ways = lambda faction: [(way.text, way.evidence) for way in game.ns.Reputation.Ways(faction).values()]
-        self.assertEqual([evidence for _, evidence in ways(2819)], ["unknown"], "The Watchers: nothing is known")
-        powderfuse = ways(2827)
-        self.assertIn("check", [evidence for _, evidence in powderfuse])
-        self.assertEqual(powderfuse[-2:], [("The whole way to Exalted.", "unknown"), ("Reputation from creatures.", "unknown")])
-        argent = ways(529)
-        self.assertEqual(argent[0], ("219 quests listed, 127 of them repeatable.", "data"))
-        self.assertFalse([text for text, _ in argent if text == "The whole way to Exalted."])
+        rep = game.ns.Reputation
+        values = lambda table: list(table.values())
+        watchers = rep.Ways(2819)
+        self.assertEqual(watchers.listed, 0)
+        self.assertFalse(values(watchers.quests))
+        self.assertEqual(values(watchers.unknowns), ["No quest, vendor or creature is known for this faction."],
+                         "The Watchers: nothing is known")
+        powderfuse = rep.Ways(2827)
+        self.assertTrue(values(powderfuse.checks), "what a person wrote down is to be checked")
+        self.assertEqual(values(powderfuse.unknowns), ["The whole way to Exalted.", "Reputation from creatures."])
+        argent = rep.Ways(529, "WARRIOR")
+        self.assertEqual((argent.listed, argent.repeatable), (219, 127))
+        self.assertEqual(values(argent.unknowns), ["Reputation from creatures."])
+        names = [quest.quest for quest in values(argent.quests)]
+        self.assertEqual(len(names), len({name.split(" - ")[0] for name in names}), "one quest of a family")
+        self.assertIn("Corruptor's Scourgestones", names)
+        # a class's own quest is kept for that class only
+        zandalar = lambda cls: {quest.quest for quest in values(rep.Ways(270, cls).quests)}
+        self.assertIn("Death's Embrace", zandalar("ROGUE"))
+        self.assertNotIn("Death's Embrace", zandalar("MAGE"))
+        self.assertIn("Animist's Caress", zandalar("DRUID"))
+        self.assertNotIn("Animist's Caress", zandalar("ROGUE"))
+        # the other side's quests are left out
+        theramore = values(rep.Ways(2799).quests)
+        self.assertTrue(theramore)
+        horde = Game(faction="Horde").ns.Reputation
+        self.assertFalse(values(horde.Ways(2799).quests))
         # no time is ever said: nothing measures the player's gains
         for language, words in game.ns.locales.items():
             for key, value in words.items():
