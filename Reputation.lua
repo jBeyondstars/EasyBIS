@@ -20,6 +20,7 @@ Nothing here depends on the window: a tab, a tooltip or a later feature reads th
   Reputation.Crafts(group)                 a group's professions: { { profession, skill (the most its recipes ask),
                                            rank (the player's, or nil), status (as Crafter) }, ... }, and the
                                            group's status: "crafter" when one of them is the player's
+  Reputation.Emblem(factionID)             the icon that stands for a faction (an item's: its token, its tabard), or nil
   Reputation.Binding(itemId)               "equip", "pickup", "none" (the game binds it to nobody), or nil when the
                                            game does not say
   Reputation.RecipeName(requirement)       the recipe's name in the game's language, or the data's
@@ -201,6 +202,35 @@ end
 function Reputation.UnknownRemark(requirement)
     if requirement and Reputation.Unknown(requirement.factionID) then return "? " .. L.REP_UNKNOWN_WAY end
     return nil
+end
+
+-- A faction's emblem: the icon of an item that stands for it, its token or its tabard, or its side's battle
+-- standard. The game's reputation pane has none and no source names one: the choice is Easy BIS's. A faction
+-- without one (The Watchers, Powderfuse, the Steamwheedle towns) gets nothing rather than a made-up sign.
+local EMBLEMS = {
+    [59] = 18945,     -- Thorium Brotherhood: Dark Iron Residue
+    [270] = 19858,    -- Zandalar Tribe: Zandalar Honor Token
+    [509] = 20132,    -- The League of Arathor: Arathor Battle Tabard
+    [510] = 20131,    -- The Defilers: Battle Tabard of the Defilers
+    [529] = 12844,    -- Argent Dawn: Argent Dawn Valor Token
+    [576] = 21377,    -- Timbermaw Hold: Deadwood Headdress Feather
+    [609] = 20802,    -- Cenarion Circle: Cenarion Combat Badge
+    [729] = 19031,    -- Frostwolf Clan: Frostwolf Battle Tabard
+    [730] = 19032,    -- Stormpike Guard: Stormpike Battle Tabard
+    [749] = 17333,    -- Hydraxian Waterlords: Aqual Quintessence
+    [910] = 21196,    -- Brood of Nozdormu: Signet Ring of the Bronze Dragonflight
+    [2798] = 18607,   -- Darkspear Raiders: Horde Battle Standard
+    [2799] = 18606,   -- Theramore Expeditionary Force: Alliance Battle Standard
+}
+local NO_ICON = 134400   -- the question mark the game gives for an item it does not have
+
+function Reputation.Emblem(factionID)
+    local item = EMBLEMS[factionID]
+    local Icon = (C_Item and C_Item.GetItemIconByID) or GetItemIcon
+    if not item or not Icon then return nil end
+    local ok, icon = pcall(Icon, item)
+    if not ok or not icon or icon == NO_ICON then return nil end
+    return icon
 end
 
 ---------------------------------------------------------------------------

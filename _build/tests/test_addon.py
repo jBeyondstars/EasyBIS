@@ -984,6 +984,17 @@ class AddonTest(unittest.TestCase):
             self.assertEqual(rep.Binding(15065), word)
         self.assertIsNone(rep.Binding(None))
 
+    def test_reputation_emblems(self):
+        game = Game()
+        rep, stub = game.ns.Reputation, game.stub
+        self.assertIsNone(rep.Emblem(576), "the game gives the question mark: an item it does not have")
+        stub.itemIcons[21377] = 236000
+        self.assertEqual(rep.Emblem(576), 236000)
+        stub.itemIcons[18606], stub.itemIcons[18607] = 132486, 132485
+        self.assertEqual((rep.Emblem(2799), rep.Emblem(2798)), (132486, 132485), "Alliance and Horde battle standards")
+        for none in (2819, 2827, 21, 999999):
+            self.assertIsNone(rep.Emblem(none), none)
+
     def test_reputation_crafters_come_first(self):
         game = Game(cls="PRIEST")
         rep, stub, lua = game.ns.Reputation, game.stub, game.lua

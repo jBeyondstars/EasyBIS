@@ -1753,10 +1753,12 @@ class WindowTest(unittest.TestCase):
         self.assertEqual(view.title.fontObject, "EasyBISRowHeader")
         self.assertEqual(view.you.fontObject, "EasyBISRowText")
         self.assertFalse(view.buttons[2].selected.shown if view.buttons[2] else False)
-        # the list shows the pieces and how many are best or alternatives
+        # the list shows the name, the standing and the pieces: no bar, no count
         self.assertTrue(button.icons[1].shown)
-        self.assertEqual(plain(button.bestChip.text.text) if first.best else None,
-                         f"{first.best} BIS" if first.best else None)
+        self.assertTrue(button.state.shown)
+        self.assertIsNone(button.way)
+        self.assertIsNone(button.bestChip)
+        self.assertEqual(button.height, 52)
 
         # a piece on the track for each piece the faction opens, and a line for each
         pieces = [piece for piece in view.pieces.values()]
@@ -2012,6 +2014,30 @@ class WindowTest(unittest.TestCase):
         self.assertFalse(view.banner.shown)
         self.assertIn("Recipes: the crafter's reputation is what counts.", strip_colors(view.you.text))
         self.assertEqual(strip_colors(button.state.text), "Not met", "the player's own standing, as before")
+
+    def test_faction_emblems(self):
+        """An emblem the game has: faint behind the faction in the list, and by its name; none for the others."""
+        game = self.crafter_game(("Leatherworking", 300, 165))
+        view = game.ns.ReputationView.view
+        button = self.timbermaw(view)
+        self.assertFalse(button.emblem.shown, "the game gives the question mark: no emblem")
+        game.stub.itemIcons[21377] = 236000   # the Deadwood Headdress Feather
+        game.ns.ReputationView.Update(game.ns.Browser.state)
+        button = self.timbermaw(view)
+        self.assertTrue(button.emblem.shown)
+        self.assertEqual(button.emblem.texture, 236000)
+        self.assertEqual(button.emblem.alpha, 0.09, "without a gradient, an even fade")
+        others = [b for b in view.buttons.values() if b.shown and b.group.factionID != 576]
+        self.assertTrue(others)
+        self.assertFalse(any(b.emblem.shown for b in others), "the other emblems' items are not known here")
+        # by the name, at full colour; the title moves aside for it
+        game.stub.run(button, "OnClick")
+        self.assertTrue(view.emblem.shown)
+        self.assertEqual(view.emblem.texture, 236000)
+        self.assertEqual(view.title.points[1][4], 292 + 14 + 36 + 8)
+        game.stub.run(others[0], "OnClick")
+        self.assertFalse(view.emblem.shown)
+        self.assertEqual(view.title.points[1][4], 292 + 14)
 
     def test_reputations_tab_shows_a_piece_asking_for_neutral(self):
         game = self.pvp_game()

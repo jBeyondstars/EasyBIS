@@ -8,9 +8,9 @@ local Reputation = ns.Reputation
 The Reputations tab of the window: what the spec, the list and the phase ask of each faction.
 
   left     the factions, most wanted first: the player's own, then the crafters' recipes, which are kept apart
-           and counted in nobody's total. Each shows the pieces it opens, how many are best or alternatives, and
-           a bar of the whole way from Neutral to Exalted with a mark where each piece unlocks.
-  right    the faction chosen, from top to bottom:
+           and counted in nobody's total. Each shows its name, the player's standing and the pieces it opens, its
+           emblem large and faint behind them.
+  right    the faction chosen, its emblem by its name, then from top to bottom:
              the track     the way from Neutral to Exalted, each standing as wide as the reputation it asks, the
                            player's place on it and each piece above the standing that unlocks it. A piece's
                            tooltip is the item's; a click opens its slot in the Items tab, Shift-click links it
@@ -34,7 +34,7 @@ Nothing here says how long a standing takes: nothing measures it.
   ReputationView.Update(state)    fills it. state: the window's { class, spec, list, faction, factionArtisan }
   ReputationView.Hide()
   ReputationView.view             (the tests read it: factionData, detailData, cardData, buttons, lines, pieces,
-                                  cards, banner, title, you, watch, empty)
+                                  cards, banner, emblem, title, you, watch, empty)
 ]]
 
 local ReputationView = {}
@@ -45,10 +45,13 @@ local BAR_ROOM = 26           -- what a scroll bar takes
 local DETAIL_WIDTH = 592      -- the faction's side
 local PAD = 8
 local GROUP_HEIGHT = 30       -- a group's name over its factions
-local FACTION_HEIGHT = 72     -- a faction in the list
+local FACTION_HEIGHT = 54     -- a faction in the list
 local MINI = 18               -- a piece's icon in the list
 local MINI_SHOWN = 4
-local LIST_BAR = 5
+local WATERMARK_WIDTH = 76    -- the emblem behind a faction in the list: the middle of the icon, as high as the faction
+local WATERMARK_ALPHA = 0.18  -- at its right end, fading out to the left
+local WATERMARK_CROP = 0.84 * (FACTION_HEIGHT - 2) / WATERMARK_WIDTH / 2   -- half the icon's height it shows
+local EMBLEM = 36             -- the emblem by the faction's name
 local TRACK_INSET = 16        -- room for a piece at either end of the track
 local TRACK_HEIGHT = 10
 local PIECE = 30              -- a piece on the track
@@ -112,6 +115,18 @@ local function Band(texture, orientation, r, g, b, from, to)
     else
         texture:SetColorTexture(r, g, b, (from + to) / 2)
     end
+end
+
+-- The same fade over a texture's own picture; false on a client with neither gradient.
+local function Fade(texture, orientation, from, to)
+    if texture.SetGradient and CreateColor
+        and pcall(texture.SetGradient, texture, orientation, CreateColor(1, 1, 1, from), CreateColor(1, 1, 1, to)) then
+        return true
+    end
+    if texture.SetGradientAlpha then
+        return (pcall(texture.SetGradientAlpha, texture, orientation, 1, 1, 1, from, 1, 1, 1, to))
+    end
+    return false
 end
 
 ---------------------------------------------------------------------------
@@ -369,25 +384,6 @@ local function CreateGroupTitle(parent)
     return title
 end
 
-local function CreateChip(parent, r, g, b)
-    local chip = parent:CreateTexture(nil, "ARTWORK")
-    chip:SetColorTexture(r, g, b, 0.18)
-    chip.text = parent:CreateFontString(nil, "OVERLAY", FONTS.text)
-    chip.text:SetPoint("CENTER", chip, "CENTER", 0, 0)
-    chip.text:SetTextColor(r, g, b)
-    return chip
-end
-
-local function SetChip(chip, text)
-    chip:SetShown(text ~= nil)
-    chip.text:SetShown(text ~= nil)
-    if not text then return 0 end
-    chip.text:SetText(text)
-    local width = math.ceil(chip.text:GetStringWidth()) + 10
-    chip:SetSize(width, 17)
-    return width
-end
-
 local function CreateFaction(parent)
     local width = LIST_WIDTH - BAR_ROOM
     local button = CreateFrame("Button", nil, parent)
@@ -405,6 +401,12 @@ local function CreateFaction(parent)
     button.selected:SetDesaturated(true)   -- grey first: blue over the highlight's yellow turns green
     button.selected:SetVertexColor(SELECTED[1], SELECTED[2], SELECTED[3])
 
+    -- the emblem, grey and faint, its middle as high as the faction: over the grounds, under the text
+    button.emblem = button:CreateTexture(nil, "BORDER")
+    button.emblem:SetSize(WATERMARK_WIDTH, FACTION_HEIGHT - 2)
+    button.emblem:SetPoint("RIGHT", 0, 0)
+    button.emblem:SetDesaturated(true)
+
     button.name = button:CreateFontString(nil, "OVERLAY", FONTS.name)
     button.name:SetJustifyH("LEFT")
     button.name:SetWordWrap(false)
@@ -420,15 +422,10 @@ local function CreateFaction(parent)
     end
 
     button.state = button:CreateFontString(nil, "OVERLAY", FONTS.text)
-    button.state:SetPoint("TOPLEFT", 8, -32)
+    button.state:SetPoint("TOPLEFT", 8, -30)
+    button.state:SetWidth(width - 16)
     button.state:SetJustifyH("LEFT")
     button.state:SetWordWrap(false)
-
-    button.altChip = CreateChip(button, MUTED[1], MUTED[2], MUTED[3])
-    button.bestChip = CreateChip(button, 1, 1, 1)
-
-    button.way = CreateWay(button, width - 16, LIST_BAR)
-    PlaceWay(button.way, button, 8, -(FACTION_HEIGHT - 2 - 13))
 
     button:SetScript("OnClick", Choose)
     return button
@@ -437,6 +434,14 @@ end
 local function FillFaction(button, group, chosen)
     button.group = group
     button.selected:SetShown(chosen)
+
+    local emblem = Reputation.Emblem(group.factionID)
+    button.emblem:SetShown(emblem ~= nil)
+    if emblem then
+        button.emblem:SetTexture(emblem)
+        button.emblem:SetTexCoord(0.08, 0.92, 0.5 - WATERMARK_CROP, 0.5 + WATERMARK_CROP)
+        if not Fade(button.emblem, "HORIZONTAL", 0, WATERMARK_ALPHA) then button.emblem:SetAlpha(WATERMARK_ALPHA / 2) end
+    end
 
     local entries = Entries(group)
     local shown = math.min(MINI_SHOWN, #entries)
@@ -456,29 +461,6 @@ local function FillFaction(button, group, chosen)
     else
         button.state:SetText((earned and GOLD or GREY) .. Reputation.ProgressText(group.factionID, true) .. "|r")
     end
-
-    local alternatives = group.alts + group.other
-    local altWidth = SetChip(button.altChip, alternatives > 0 and (alternatives .. " " .. L.RANK_ALT:lower()) or nil)
-    local bestWidth = SetChip(button.bestChip, group.best > 0 and (group.best .. " " .. L.RANK_BIS) or nil)
-    local chips = altWidth + bestWidth + ((altWidth > 0 and bestWidth > 0) and 4 or 0)
-    button.state:SetWidth(math.max(40, LIST_WIDTH - BAR_ROOM - 24 - chips))
-    button.altChip:ClearAllPoints()
-    button.altChip:SetPoint("TOPRIGHT", -8, -30)
-    button.bestChip:ClearAllPoints()
-    button.bestChip:SetPoint("TOPRIGHT", -8 - (altWidth > 0 and (altWidth + 4) or 0), -30)
-
-    local way = button.way
-    FillWay(way, group)
-    local used = 0
-    for _, standing in ipairs(Targets(group)) do
-        if standing > Reputation.NEUTRAL then
-            used = used + 1
-            local mark = Mark(way, button, used, 8 + At(way.width, THRESHOLDS[standing]), -(FACTION_HEIGHT - 2 - 15),
-                LIST_BAR + 4)
-            MarkColor(mark, Met(group, standing))
-        end
-    end
-    for index = used + 1, #way.marks do way.marks[index]:Hide() end
 end
 
 -- The scroll bar shows only when there is something to scroll, once the frame has its size.
@@ -1052,6 +1034,14 @@ local function FillWatch(group)
 end
 
 local function ShowDetail(group)
+    local emblem = Reputation.Emblem(group.factionID)
+    view.emblem:SetShown(emblem ~= nil)
+    if emblem then
+        view.emblem:SetTexture(emblem)
+        view.emblem:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+    end
+    view.title:ClearAllPoints()
+    view.title:SetPoint("TOPLEFT", view, "TOPLEFT", LIST_WIDTH + 14 + (emblem and (EMBLEM + 8) or 0), -2)
     view.title:SetText(Reputation.FactionName(group.factionID) .. Reputation.UnknownMark(group))
     local you = (Earned(group) and GOLD or GREY) .. L.REP_YOU:format(Reputation.ProgressText(group.factionID)) .. "|r"
     local separator = GREY .. "  ·  |r"
@@ -1138,6 +1128,10 @@ function ReputationView.Create(parent)
     view.divider:SetPoint("TOPLEFT", LIST_WIDTH + 2, 0)
     view.divider:SetPoint("BOTTOMLEFT", LIST_WIDTH + 2, 0)
 
+    view.emblem = view:CreateTexture(nil, "ARTWORK")
+    view.emblem:SetSize(EMBLEM, EMBLEM)
+    view.emblem:SetPoint("TOPLEFT", LIST_WIDTH + 14, -4)
+    view.emblem:Hide()
     view.title = view:CreateFontString(nil, "OVERLAY", FONTS.header)
     view.title:SetPoint("TOPLEFT", LIST_WIDTH + 14, -2)
     view.title:SetTextColor(1, 1, 1)
@@ -1201,6 +1195,7 @@ function ReputationView.Update(state)
         ShowDetail(chosen)
     else
         view.watch:Hide()
+        view.emblem:Hide()
         view.detailData, view.cardData = {}, {}
     end
 end
