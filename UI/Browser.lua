@@ -479,6 +479,8 @@ local function ItemTooltip(owner, data, side)
     end
     local remark = ns.Sources.OriginRemark(source.origin)
     if remark then GameTooltip:AddLine(remark, MUTED[1], MUTED[2], MUTED[3], true) end
+    local unsure = ns.Reputation.UnknownRemark(data.reputation)
+    if unsure then GameTooltip:AddLine(unsure, MUTED[1], MUTED[2], MUTED[3], true) end
     if data.custom then
         GameTooltip:AddLine(L.TIP_CUSTOM, MUTED[1], MUTED[2], MUTED[3], true)
     elseif data.ratio and not data.bis and not data.tie then
@@ -504,6 +506,8 @@ local function EnchantTooltip(owner, enchant, requirement)
         GameTooltip:AddLine(L.REP_TIP_NEED:format(ns.Reputation.NeedText(requirement)), 1, 1, 1, true)
         GameTooltip:AddLine(ns.Reputation.StateText(requirement), MUTED[1], MUTED[2], MUTED[3], true)
         if requirement.scroll then GameTooltip:AddLine(L.REP_SCROLL, MUTED[1], MUTED[2], MUTED[3], true) end
+        local unsure = ns.Reputation.UnknownRemark(requirement)
+        if unsure then GameTooltip:AddLine(unsure, MUTED[1], MUTED[2], MUTED[3], true) end
     end
 end
 
@@ -814,7 +818,8 @@ local function FillRow(row, data)
             name, _, quality, _, _, _, subType, _, equipLoc, texture, _, classID, subclassID = GetInfo(data.id)
         end
         row.icon:SetTexture(texture or (GetIcon and GetIcon(data.id)) or UNKNOWN_ICON)
-        row.name:SetText(QualityHex(quality) .. (name or ns.Items.Name(data.id)) .. "|r")
+        row.name:SetText(QualityHex(quality) .. (name or ns.Items.Name(data.id)) .. "|r"
+            .. ns.Reputation.UnknownMark(data.reputation))
         row.sub:SetText(TypeLine(data.slot, subType, equipLoc, classID, subclassID, compact))
         local source = data.source
         local category, line, mark = ns.Sources.CategoryName(source.category), ns.Sources.Line(source), Mark(source.origin)
@@ -835,7 +840,7 @@ local function FillRow(row, data)
     else
         local enchant = data.enchant
         row.icon:SetTexture(ns.Enchants.Icon(enchant) or UNKNOWN_ICON)
-        row.name:SetText(ns.Enchants.Name(enchant))
+        row.name:SetText(ns.Enchants.Name(enchant) .. ns.Reputation.UnknownMark(data.reputation))
         row.sub:SetText(enchant.effect ~= "" and enchant.effect or ns.Enchants.KeyName(data.key))
         SetIcon(row.sourceIcon, ns.Sources.Icon(ns.Enchants.Category(enchant), enchant.profession))
         row.kind:SetText(ns.Enchants.Kind(enchant) .. Mark(enchant.origin))

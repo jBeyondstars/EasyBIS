@@ -186,7 +186,8 @@ local function PieceTooltip(owner, entry)
         if not info then return end
         Browser.EnchantTooltip(owner, info, entry.requirement)
     else
-        Browser.ItemTooltip(owner, { id = entry.id, source = ns.Sources.Describe(entry.id) })
+        Browser.ItemTooltip(owner, { id = entry.id, source = ns.Sources.Describe(entry.id),
+            reputation = entry.requirement })
         GameTooltip:AddLine(L.REP_PIECE_TIP, MUTED[1], MUTED[2], MUTED[3], true)
     end
     Browser.ShowTooltip()
@@ -366,7 +367,7 @@ local function FillFaction(button, group, chosen)
     button.name:ClearAllPoints()
     button.name:SetPoint("TOPLEFT", 8, -8)
     button.name:SetPoint("RIGHT", button, "RIGHT", -12 - shown * (MINI + 2), 0)
-    button.name:SetText(Reputation.FactionName(group.factionID))
+    button.name:SetText(Reputation.FactionName(group.factionID) .. Reputation.UnknownMark(group))
 
     local earned = Earned(group)
     local progress = Reputation.ProgressText(group.factionID, true)
@@ -888,10 +889,12 @@ local function FillWatch(group)
 end
 
 local function ShowDetail(group)
-    view.title:SetText(Reputation.FactionName(group.factionID))
+    view.title:SetText(Reputation.FactionName(group.factionID) .. Reputation.UnknownMark(group))
     local you = L.REP_YOU:format(Reputation.ProgressText(group.factionID))
+    local unsure = Reputation.UnknownRemark(group)
     view.you:SetText((Earned(group) and GOLD or GREY) .. you .. "|r"
-        .. (group.artisan and (GREY .. "  ·  " .. L.REP_ARTISAN_NOTE .. "|r") or ""))
+        .. (group.artisan and (GREY .. "  ·  " .. L.REP_ARTISAN_NOTE .. "|r") or "")
+        .. (unsure and (GREY .. "  ·  " .. unsure .. "|r") or ""))
     FillWatch(group)
 
     local ways = Reputation.Ways(group.factionID, view.state and view.state.class)

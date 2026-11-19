@@ -1625,6 +1625,48 @@ class WindowTest(unittest.TestCase):
         free = next(frame for frame in self.frames(game) if frame.data.kind == "item" and not frame.data.reputation)
         self.assertEqual(free.height, ROW)
 
+    def test_a_faction_nobody_knows_how_to_earn(self):
+        """The Watchers' rings stay in the list, a grey "?" after their name that the tooltip explains."""
+        game = self.open(cls="MAGE")
+        window = game.ns.Browser.window
+        rows = self.frames(game)
+        watchers = [row for row in rows if row.data.kind == "item" and row.data.reputation
+                    and row.data.reputation.factionID == 2819]
+        self.assertTrue(watchers, "the Arcane list keeps The Watchers' rings")
+        for row in watchers:
+            self.assertTrue(row.name.text.endswith(" |cff808080?|r"), row.name.text)
+        others = [row for row in rows if row.data.kind == "item" and not (row.data.reputation
+                  and row.data.reputation.factionID == 2819)]
+        self.assertTrue(others)
+        self.assertFalse(any(row.name.text.endswith("?|r") for row in others))
+        game.stub.run(watchers[0], "OnEnter")
+        tooltip = game.lua.globals().GameTooltip
+        lines = [strip_colors(line[1]) for line in tooltip.lines.values()]
+        self.assertIn("? No source says how to earn this reputation, nor who sells its pieces.", lines)
+        game.stub.run(others[0], "OnEnter")
+        lines = [strip_colors(line[1]) for line in tooltip.lines.values()]
+        self.assertFalse(any(line.startswith("? No source") for line in lines))
+
+        # the character sheet: the same sign by the ring's name
+        game.stub.run(window.tabs.buttons[3], "OnClick")
+        cells = [cell for cell in game.ns.Character.view.cells.values() if cell.data and cell.data.id]
+        marked = [cell for cell in cells if cell.data.reputation and cell.data.reputation.factionID == 2819]
+        self.assertTrue(marked, "a Watchers ring is the Arcane sheet's best ring before the raids")
+        self.assertTrue(all(" |cff808080?|r" in cell.name.text for cell in marked))
+        self.assertFalse(any("|cff808080?|r" in cell.name.text for cell in cells if cell not in marked))
+
+        # the Reputations tab: the "?" by the faction's name, in the list and over its side, and said in words
+        game.stub.run(window.tabs.buttons[5], "OnClick")
+        view = game.ns.ReputationView.view
+        button = next(button for button in view.buttons.values() if button.group.factionID == 2819)
+        self.assertTrue(button.name.text.endswith(" |cff808080?|r"))
+        game.stub.run(button, "OnClick")
+        self.assertEqual(view.chosen.factionID, 2819)
+        self.assertTrue(view.title.text.endswith(" |cff808080?|r"))
+        self.assertIn("? No source says how to earn this reputation", strip_colors(view.you.text))
+        other = next(button for button in view.buttons.values() if button.group.factionID != 2819)
+        self.assertFalse(other.name.text.endswith("?|r"))
+
     def test_reputation_filter(self):
         game = self.pvp_game()
         window = game.ns.Browser.window
@@ -1700,7 +1742,8 @@ class WindowTest(unittest.TestCase):
         first = needs.own[1]
         count = first.best + first.alts + first.other
         self.assertEqual(view.chosen.factionID, first.factionID)
-        self.assertEqual(strip_colors(view.title.text), f"Faction {first.factionID}")
+        unsure = " ?" if game.ns.Reputation.Unknown(first.factionID) else ""
+        self.assertEqual(strip_colors(view.title.text), f"Faction {first.factionID}{unsure}")
         # the faction chosen is lit in blue: gold is for what is earned
         button = view.buttons[1]
         self.assertTrue(button.selected.shown)

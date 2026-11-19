@@ -916,6 +916,22 @@ class AddonTest(unittest.TestCase):
         self.assertTrue(texts(vendor)[0].startswith("Bryanna Embreeze, "))
         self.assertEqual((vendor[1].map, vendor[1].x, vendor[1].y), (1413, 63.4, 58.7))
 
+    def test_reputation_unknown_faction(self):
+        """A faction no source says how to earn, nor who sells its pieces: its pieces wear a grey "?"."""
+        game = Game()
+        rep = game.ns.Reputation
+        self.assertTrue(rep.Unknown(2819), "The Watchers: read only in the game's files")
+        for known in (21, 529, 576, 749, 2827):
+            self.assertFalse(rep.Unknown(known), known)
+        self.assertFalse(rep.Unknown(999999), "a faction the data does not have is not said unknown")
+        need = lambda faction: game.lua.table_from({"factionID": faction, "standing": 6, "kind": "w"})
+        self.assertEqual(rep.UnknownMark(need(2819)), " |cff808080?|r")
+        self.assertEqual(rep.UnknownMark(need(576)), "")
+        self.assertEqual(rep.UnknownMark(None), "")
+        self.assertEqual(rep.UnknownRemark(need(2819)),
+                         "? No source says how to earn this reputation, nor who sells its pieces.")
+        self.assertIsNone(rep.UnknownRemark(need(576)))
+
     def test_reputation_asking_for_neutral(self):
         """The game reads a faction never met as Neutral 0: that is not a Neutral standing earned."""
         game = Game()

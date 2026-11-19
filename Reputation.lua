@@ -29,6 +29,9 @@ Nothing here depends on the window: a tab, a tooltip or a later feature reads th
   Reputation.Factions()                    the catalogue: { { factionID, name, side, quests, repeatable, once,
                                            vendor, rewards, methods }, ... }
   Reputation.Faction(factionID)            one of them, or nil
+  Reputation.Unknown(factionID)            true when no source says how to earn it nor who sells its pieces
+  Reputation.UnknownMark(requirement)      " ?" in grey for what such a faction opens, "" otherwise: it follows a name
+  Reputation.UnknownRemark(requirement)    the tooltip's line that explains it, or nil
   Reputation.Ways(factionID, class)        how to earn it: { listed, repeatable, once, quests = { { quest, amount,
                                            repeats }, ... }, checks = { text, ... }, unknowns = { text, ... } }
                                            quests: the ones kept for the player's side that class may take; checks:
@@ -73,6 +76,7 @@ local WEAR, QUEST, RECIPE = Reputation.WEAR, Reputation.QUEST, Reputation.RECIPE
 local NEUTRAL_REACTION = 4        -- the game counts from 1 Hated; the data from 0
 local EXALTED = 7
 local GOLD, GREY, WHITE = "|cffffd100", "|cffa8a8b0", "|cffffffff"
+local UNSURE = "|cff808080"        -- the colour of the signs the data wears when it is less than sure
 local MUTED = { 0.66, 0.66, 0.70 }
 local QUIET_DELAY = 0.25          -- the game sends UPDATE_FACTION in bursts
 -- The game's class numbers: a quest's classes are a mask of 2 ^ (number - 1).
@@ -165,6 +169,24 @@ end
 
 function Reputation.Faction(factionID)
     return Catalog().factions[factionID]
+end
+
+-- A faction no source says how to earn, nor who sells what it opens (The Watchers: read only in the game's
+-- files). What it opens stays in the lists, its name followed by a grey "?" that the tooltips explain.
+function Reputation.Unknown(factionID)
+    local faction = Catalog().factions[factionID]
+    return faction ~= nil and faction.quests == 0 and faction.methods[1] == nil and faction.vendor == nil
+        and not faction.rewards
+end
+
+function Reputation.UnknownMark(requirement)
+    if requirement and Reputation.Unknown(requirement.factionID) then return " " .. UNSURE .. "?|r" end
+    return ""
+end
+
+function Reputation.UnknownRemark(requirement)
+    if requirement and Reputation.Unknown(requirement.factionID) then return "? " .. L.REP_UNKNOWN_WAY end
+    return nil
 end
 
 ---------------------------------------------------------------------------

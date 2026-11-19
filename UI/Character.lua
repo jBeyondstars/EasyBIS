@@ -190,7 +190,8 @@ local function FillCell(cell, data)
     cell.border:SetColorTexture(r, g, b, 0.9)
     cell.icon:SetTexture(texture or (GetIcon and GetIcon(data.id)) or UNKNOWN_ICON)
     local ties = data.ties[1] and (" " .. GREY .. "+" .. #data.ties .. "|r") or ""
-    cell.name:SetText(hex .. (name or ns.Items.Name(data.id)) .. "|r" .. ties)
+    cell.name:SetText(hex .. (name or ns.Items.Name(data.id)) .. "|r"
+        .. ns.Reputation.UnknownMark(data.reputation) .. ties)
 
     local source = data.source
     local mark = ns.Sources.OriginMark(source.origin)
