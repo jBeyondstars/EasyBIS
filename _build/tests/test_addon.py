@@ -1176,10 +1176,11 @@ class AddonTest(unittest.TestCase):
         self.assertTrue(values(powderfuse.checks), "what a person wrote down is to be checked")
         self.assertEqual(values(powderfuse.unknowns), ["The whole way to Exalted.", "Reputation from creatures."])
         argent = rep.Ways(529, "WARRIOR")
-        self.assertEqual((argent.listed, argent.repeatable), (219, 127))
+        self.assertEqual((argent.listed, argent.repeatable), (204, 121), "each quest once, as the data names it")
         self.assertEqual(values(argent.unknowns), ["Reputation from creatures."])
         names = [quest.quest for quest in values(argent.quests)]
-        self.assertEqual(len(names), len({name.split(" - ")[0] for name in names}), "one quest of a family")
+        self.assertGreater(len(names), 100, "every quest a warrior can take, not a handful")
+        self.assertLessEqual(len(names), argent.listed)
         self.assertIn("Corruptor's Scourgestones", names)
         # a class's own quest is kept for that class only
         zandalar = lambda cls: {quest.quest for quest in values(rep.Ways(270, cls).quests)}

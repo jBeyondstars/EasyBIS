@@ -33,7 +33,6 @@ ABOUT = ("The reputations listed items and enchants ask for, read in ForeverDB's
 SOURCE_FILES = ("Items.lua", "Recipes.lua")
 
 WEAR, QUEST, RECIPE = "w", "q", "r"
-METHODS_KEPT = 8           # quests kept per faction to name as a way to earn it: the addon keeps the player's class
 
 # The factions the lists ask for: id -> (the name ForeverDB's data writes, the side that can earn it).
 FACTIONS = {
@@ -242,9 +241,10 @@ def _quest_side(row: dict) -> str:
 def earning(store) -> dict[int, dict]:
     """{faction: {"quests", "repeatable", "once": {"a", "h"}, "methods": [[title, amount, repeats, side, classes],
     ...]}}: the quests QuestieDB says reward each faction. classes: the game's mask of the classes that may take
-    the quest, 0 for all. The repeatable ones come first among the methods, then the ones every class may take
-    (a class's own quest is often a raid's token turned in), then the largest rewards. One quest of a family
-    is kept: the others differ by what they ask for, not by what they give."""
+    the quest, 0 for all. Every quest is kept, the addon pages through them: the repeatable ones first, then the
+    ones every class may take (a class's own quest is often a raid's token turned in), then the largest rewards.
+    A quest the data holds twice, the same in every field (one per level bracket, or per quest giver), is named
+    and counted once: the counts are those of the quests named."""
     found = {number: [] for number in FACTIONS}
     for quest in store.numbers("Quest"):
         rewards = store.table("Quest", quest, QUEST_REPUTATION_REWARD)
@@ -257,15 +257,12 @@ def earning(store) -> dict[int, dict]:
                 found[faction].append((row.get(questie.QUEST_NAME) or "", amount, repeats, _quest_side(row),
                                        row.get(QUEST_CLASSES) or 0))
     out = {}
-    for faction, quests in found.items():
+    for faction, found_quests in found.items():
+        quests = list(dict.fromkeys(found_quests))   # in order, each quest once
         once = [quest for quest in quests if not quest[2]]
-        ranked, named = sorted(quests, key=lambda quest: (not quest[2], quest[4] != 0, -quest[1], quest[0])), set()
-        methods = []
-        for title, amount, repeats, side, classes in ranked:
-            family = title.split(" - ")[0]   # "Craftsman's Writ - Runecloth Bag": one of a family is enough
-            if title and family not in named and len(methods) < METHODS_KEPT:
-                named.add(family)
-                methods.append([title, amount, int(repeats), side, classes])
+        ranked = sorted(quests, key=lambda quest: (not quest[2], quest[4] != 0, -quest[1], quest[0]))
+        methods = [[title, amount, int(repeats), side, classes]
+                   for title, amount, repeats, side, classes in ranked if title]
         out[faction] = {
             "quests": len(quests), "repeatable": len(quests) - len(once),
             "once": {side: sum(quest[1] for quest in once if quest[3] in ("", side)) for side in "ah"},

@@ -17,7 +17,8 @@ The Reputations tab of the window: what the spec, the list and the phase ask of 
              the cards     what is left for the next standing a piece needs, what the quests done once give at
                            most, how many quests repeat
              the sections  the pieces, where they come from (a vendor whose place is known has a Map button), the
-                           quests kept for the class, and what no source says. A click on a title folds it
+                           quests the class can take, the repeatable ones first, ten to a page, and what no
+                           source says. A click on a title folds it
            The header has a Watch button: the game's reputation bar follows the faction.
 
 A crafter's recipes show what the faction sells: the recipe, and the piece it makes. When the profession is not
@@ -61,7 +62,8 @@ local TRACK_BLOCK = PIECE + 8 + TRACK_HEIGHT + 24
 local CARD_HEIGHT = 64
 local CARD_GAP = 8
 local ICON = 24
-local HEIGHTS = { section = 34, entry = 30, seller = 26, quest = 22, note = 22 }
+local HEIGHTS = { section = 34, entry = 30, seller = 26, quest = 22, note = 22, pager = 30 }
+local QUESTS_PAGE = 10        -- quests a page of the Quests section shows
 local SECTION_GAP = 14        -- room above a section, after the one before it
 local UNKNOWN_ICON = "Interface\\Icons\\INV_Misc_QuestionMark"
 local STATUS_BAR = "Interface\\TargetingFrame\\UI-StatusBar"
@@ -97,6 +99,7 @@ local GetIcon = (C_Item and C_Item.GetItemIconByID) or GetItemIcon
 
 local view
 local folded = {}             -- [section] = true: the sections the player folded, for the session
+local pages = {}              -- [faction and section] = the page of quests shown, for the session
 
 local function Number(value)
     if BreakUpLargeNumbers then return BreakUpLargeNumbers(value) end
@@ -828,11 +831,20 @@ local function DetailLines(group, ways)
     -- the crafter's reputation: the quests are for a player who would learn the recipes, folded until asked for
     local questKey = others and "questsSelf" or "quests"
     if ways.listed > 0 and Section(questKey, L.REP_SECTION_QUESTS, SECTION_ICONS.quests, others) then
-        for _, quest in ipairs(ways.quests) do
+        local quests, pageKey = ways.quests, group.factionID .. (group.artisan and ":r:" or ":o:") .. questKey
+        local last = math.max(1, math.ceil(#quests / QUESTS_PAGE))
+        local page = math.max(1, math.min(pages[pageKey] or 1, last))
+        local from, to = (page - 1) * QUESTS_PAGE + 1, math.min(#quests, page * QUESTS_PAGE)
+        for index = from, to do
+            local quest = quests[index]
             Add({ kind = "quest", text = quest.quest, evidence = "data", right = "+" .. quest.amount,
                 chip = quest.repeats and L.REP_QUEST_REPEATS or L.REP_QUEST_ONCE })
         end
-        if not ways.quests[1] then Add({ kind = "note", text = L.REP_QUESTS_NONE, evidence = "unknown" }) end
+        if not quests[1] then Add({ kind = "note", text = L.REP_QUESTS_NONE, evidence = "unknown" }) end
+        if last > 1 then
+            Add({ kind = "pager", key = pageKey, page = page, pages = last,
+                text = L.REP_QUESTS_PAGE:format(from, to, #quests) })
+        end
     end
 
     if Section(others and "unknownSelf" or "unknown", L.REP_SECTION_UNKNOWN, SECTION_ICONS.unknown, others) then
@@ -882,6 +894,34 @@ local function LineClick(line)
         folded[data.key] = not data.folded
         ReputationView.Update(view.state)
     end
+end
+
+-- The arrows under a page of quests: the page before, the page after.
+local function Turn(button)
+    local data = button.line.data
+    if not data or data.kind ~= "pager" then return end
+    Widgets.Click()
+    pages[data.key] = data.page + button.step
+    ReputationView.Update(view.state)
+end
+
+local function CreateArrow(line, step, name, tip)
+    local arrow = CreateFrame("Button", nil, line)
+    arrow:SetSize(24, 24)
+    local art = "Interface\\Buttons\\UI-SpellbookIcon-" .. name .. "Page-"
+    arrow:SetNormalTexture(art .. "Up")
+    arrow:SetPushedTexture(art .. "Down")
+    arrow:SetDisabledTexture(art .. "Disabled")
+    arrow:SetHighlightTexture("Interface\\Buttons\\UI-Common-MouseHilight", "ADD")
+    arrow.line, arrow.step = line, step
+    arrow:SetScript("OnClick", Turn)
+    arrow:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:SetText(tip, 1, 1, 1)
+        GameTooltip:Show()
+    end)
+    arrow:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    return arrow
 end
 
 local function CreateLine(parent)
@@ -946,6 +986,10 @@ local function CreateLine(parent)
         GameTooltip:Show()
     end)
     line.map:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    line.prev = CreateArrow(line, -1, "Prev", L.REP_PAGE_PREV)
+    line.prev:SetPoint("RIGHT", line.text, "LEFT", -8, 0)
+    line.next = CreateArrow(line, 1, "Next", L.REP_PAGE_NEXT)
+    line.next:SetPoint("LEFT", line.text, "RIGHT", 8, 0)
     line:SetScript("OnEnter", LineEnter)
     line:SetScript("OnLeave", function() GameTooltip:Hide() end)
     line:SetScript("OnClick", LineClick)
@@ -956,7 +1000,7 @@ local function FillLine(line, data, striped)
     line.data = data
     line.band:SetShown(data.kind == "section")
     line.badge:SetShown(data.kind == "section" and data.icon ~= nil)
-    line.stripe:SetShown(striped == true)
+    line.stripe:SetShown(striped == true and data.kind ~= "pager")
     local kind = data.kind
     local entry, section, seller = kind == "entry", kind == "section", kind == "seller"
     local dotted = kind == "quest" or kind == "note"
@@ -973,6 +1017,8 @@ local function FillLine(line, data, striped)
     line.right:SetText(data.right or "")
     local mapped = (seller and data.map ~= nil and data.x ~= nil and CanMap()) and true or false
     line.map:SetShown(mapped)
+    line.prev:SetShown(kind == "pager")
+    line.next:SetShown(kind == "pager")
 
     line.text:ClearAllPoints()
     line.text:SetWidth(0)   -- a line is used again for another kind of line
@@ -1011,6 +1057,11 @@ local function FillLine(line, data, striped)
         line.text:SetPoint("LEFT", 26, 0)
         line.text:SetPoint("RIGHT", -160, 0)
         line.text:SetWordWrap(false)
+    elseif kind == "pager" then
+        line.text:SetPoint("CENTER", 0, 0)
+        line.text:SetTextColor(MUTED[1], MUTED[2], MUTED[3])
+        line.prev:SetEnabled(data.page > 1)
+        line.next:SetEnabled(data.page < data.pages)
     else
         local color = DOTS[data.evidence]
         line.dot:SetColorTexture(color[1], color[2], color[3], 1)

@@ -2079,6 +2079,52 @@ class WindowTest(unittest.TestCase):
         self.assertIn(2798, shown(), "the tab follows at once")
         self.assertNotIn(2799, shown())
 
+    def test_reputation_quests_ten_to_a_page(self):
+        """Every quest the class can take, the repeatable ones first, ten to a page; the arrows turn the pages."""
+        game = self.open(cls="MAGE")
+        rep, state = game.ns.Reputation, game.ns.Browser.state
+        found = next((cls, spec, mode, group.factionID) for cls in test_addon.CLASSES
+                     for spec in range(1, int(game.ns.Index.SpecCount(cls)) + 1) for mode in ("pve", "pvp")
+                     for group in rep.Needs(cls, spec, mode).own.values()
+                     if len(rep.Ways(group.factionID, cls).quests) > 25)
+        cls, state.spec, state.list, faction = found
+        state["class"] = cls
+        game.stub.run(game.ns.Browser.window.tabs.buttons[5], "OnClick")
+        view = game.ns.ReputationView.view
+        game.stub.run(next(b for b in view.buttons.values() if b.shown and b.group.factionID == faction), "OnClick")
+        quests = [quest for quest in rep.Ways(faction, cls).quests.values()]
+        titles = [quest.quest for quest in quests]
+        repeats = [bool(quest.repeats) for quest in quests]
+        self.assertEqual(repeats, sorted(repeats, reverse=True), "the repeatable ones first")
+        last = (len(titles) + 9) // 10
+        shown = lambda: [plain(line.text) for line in view.detailData.values() if line.kind == "quest"]
+
+        def pager():
+            index = next(i for i in range(1, len(view.detailData) + 1) if view.detailData[i].kind == "pager")
+            return view.lines[index]
+
+        self.assertEqual(shown(), titles[:10])
+        self.assertEqual(plain(pager().text.text), f"1-10 of {len(titles)}")
+        self.assertTrue(pager().prev.shown and pager().next.shown)
+        self.assertEqual((pager().prev.enabled, pager().next.enabled), (False, True))
+        others = [view.lines[i] for i in range(1, len(view.detailData) + 1) if view.detailData[i].kind != "pager"]
+        self.assertFalse(any(line.prev.shown or line.next.shown for line in others))
+        game.stub.run(pager().next, "OnClick")
+        self.assertEqual(shown(), titles[10:20])
+        self.assertEqual((pager().prev.enabled, pager().next.enabled), (True, True))
+        for _ in range(last - 2):
+            game.stub.run(pager().next, "OnClick")
+        self.assertEqual(shown(), titles[(last - 1) * 10:])
+        self.assertEqual(plain(pager().text.text), f"{(last - 1) * 10 + 1}-{len(titles)} of {len(titles)}")
+        self.assertEqual(pager().next.enabled, False)
+        game.stub.run(pager().prev, "OnClick")
+        self.assertEqual(shown(), titles[(last - 2) * 10:(last - 1) * 10])
+        # the page is kept while the player looks at another faction
+        other = next(b for b in view.buttons.values() if b.shown and b.group.factionID != faction)
+        game.stub.run(other, "OnClick")
+        game.stub.run(next(b for b in view.buttons.values() if b.shown and b.group.factionID == faction), "OnClick")
+        self.assertEqual(shown(), titles[(last - 2) * 10:(last - 1) * 10])
+
     def test_reputations_sections_have_room_between_them(self):
         game = self.pvp_game()
         game.stub.run(game.ns.Browser.window.tabs.buttons[5], "OnClick")

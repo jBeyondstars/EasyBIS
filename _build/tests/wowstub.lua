@@ -77,7 +77,7 @@ for _, method in ipairs({
     "SetWordWrap", "SetJustifyH", "SetColorTexture", "SetTexCoord",
     "SetHighlightTexture", "SetScrollChild", "UpdateScrollChildRect", "Raise", "SetAllPoints", "SetDesaturated",
     "SetResizable", "SetResizeBounds", "StartSizing", "SetNormalTexture", "SetPushedTexture", "SetAutoFocus",
-    "SetMaxLetters", "SetBlendMode",
+    "SetMaxLetters", "SetBlendMode", "SetDisabledTexture",
 }) do
     METHODS[method] = Noop
 end

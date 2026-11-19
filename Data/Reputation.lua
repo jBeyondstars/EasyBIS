@@ -14,25 +14,25 @@ local _, ns = ...
 ns.data = ns.data or {}
 ns.data.reputation = {
 factions = [==[
-21|Booty Bay||106|1|8655|7955|265575|
+21|Booty Bay||101|1|8175|7475|265575|
 59|Thorium Brotherhood||27|9|2350|2350||
-270|Zandalar Tribe||81|15|7800|7800||1
-369|Gadgetzan||76|2|5225|5275|265576|
-470|Ratchet||94|1|5750|6725|265574|
-509|The League of Arathor|a|34|11|3060|0|15127|
-510|The Defilers|h|34|11|0|2960|15126|
-529|Argent Dawn||219|127|10789|11189||1
+270|Zandalar Tribe||63|15|6200|6200||1
+369|Gadgetzan||74|2|5210|5260|265576|
+470|Ratchet||89|1|5585|6560|265574|
+509|The League of Arathor|a|17|4|1260|0|15127|
+510|The Defilers|h|16|3|0|1260|15126|
+529|Argent Dawn||204|121|10419|10819||1
 576|Timbermaw Hold||36|3|3410|3410||
-577|Everlook||61|1|3355|3430||
-609|Cenarion Circle||208|55|11304|11004||
+577|Everlook||59|1|3275|3350||
+609|Cenarion Circle||194|55|11019|10819||
 729|Frostwolf Clan|h|30|10|0|2720||1
 730|Stormpike Guard|a|30|10|2720|500||1
 749|Hydraxian Waterlords||1|0|200|200||
-910|Brood of Nozdormu||103|50|7363|7363||
-2798|Darkspear Raiders|h|10|3|0|1200|263570|
-2799|Theramore Expeditionary Force|a|10|2|1300|0|263569|
+910|Brood of Nozdormu||94|50|6463|6463||
+2798|Darkspear Raiders|h|3|1|0|350|263570|
+2799|Theramore Expeditionary Force|a|4|1|450|0|263569|
 2819|The Watchers||0|0|0|0||
-2827|Powderfuse||44|0|3085|3160|255897|
+2827|Powderfuse||43|0|3075|3150|255897|
 ]==],
 methods = [==[
 21|Traitor to the Bloodsail|499|1||
@@ -43,6 +43,99 @@ methods = [==[
 21|Shady Saltseers|175|0||
 21|The Saltseer Captain|175|0||
 21|Akiris by the Bundle|150|0|a|
+21|Cracking Maury's Foot|150|0||
+21|Death From Below|150|0||
+21|Keep An Eye Out|150|0||
+21|Kim'jael Indeed!|150|0||
+21|Kim'jael's "Missing" Equipment|150|0||
+21|Pearl Diving|150|0||
+21|Power Stones|150|0||
+21|Rescue OOX-09/HL!|150|0||
+21|Rescue OOX-17/TN!|150|0||
+21|Rescue OOX-22/FE!|150|0||
+21|State Secrets|150|0||
+21|Sunken Treasure|150|0||
+21|The Bloodsail Buccaneers|150|0||
+21|The Curse of the Tides|150|0|a|
+21|"Pretty Boy" Duncan|100|0|a|
+21|Akiris by the Bundle|100|0||
+21|Bloodscalp Ears|100|0||
+21|Deep Sea Salvage|100|0||
+21|Drowned Sorrows|100|0||
+21|Excelsior|100|0||
+21|Find OOX-09/HL!|100|0||
+21|Find OOX-17/TN!|100|0||
+21|Find OOX-22/FE!|100|0||
+21|Goblin Sponsorship|100|0||
+21|Hostile Takeover|100|0||
+21|Operative Bijou|100|0|h|
+21|Singing Blue Shards|100|0||
+21|Skullsplitter Tusks|100|0||
+21|Some Assembly Required|100|0||
+21|Sunken Treasure|100|0||
+21|Supply and Demand|100|0||
+21|The Bloodsail Buccaneers|100|0||
+21|The Stone of the Tides|100|0|a|
+21|Up to Snuff|100|0||
+21|Venture Company Mining|100|0||
+21|Voodoo Dues|100|0||
+21|Water Elementals|100|0|a|
+21|Whiskey Slim's Lost Grog|100|0||
+21|Zanzil's Secret|100|0||
+21|Admiral Lamora|75|0||
+21|Barbecued Buzzard Wings|75|0||
+21|Chol'aruk the Ravener|75|0|h|
+21|Chol'aruk the Ravener|75|0|a|
+21|Favor for Krazek|75|0|a|
+21|Return to MacKinley|75|0||
+21|The Bloodsail Buccaneers|75|0||
+21|The Captain's Chest|75|0|a|
+21|The Captain's Chest|75|0||
+21|The Monster Surfaces|75|0||
+21|WANTED: Bruuz|75|0|h|
+21|WANTED: Old Rot-Chum|75|0||
+21|WANTED: Trapclaw|75|0||
+21|A Blast Ye Scurvy Dogs!|50|0||
+21|A Taste of the Sea|50|0||
+21|Active Ingredient|50|0||
+21|All's Well That Ends Well|50|0||
+21|Ansirem's Key|50|0|a|
+21|Consolation Prize|50|0||
+21|Dragon Scales, Post Burnt Tails|50|0||
+21|Dunemaul Dues|50|0||
+21|Gnomish Garbage|50|0|a|
+21|Gritty Business|50|0|h|
+21|Investigate the Camp|50|0||
+21|It Takes Guts|50|0||
+21|Krazek's Cookery|50|0|a|
+21|Lost for Words|50|0|h|
+21|Not My Circus|50|0||
+21|Partial Mystical Notes|50|0||
+21|Parts and Pieces|50|0||
+21|Saltwater Savages|50|0||
+21|See Ya, Scallywags!|50|0||
+21|Smuggler's Paradise|50|0||
+21|Smuggler's Special|50|0||
+21|Sunken Treasure|50|0||
+21|Tazzik's Dues|50|0||
+21|The Big Payback|50|0||
+21|The Monogrammed Sash|50|0||
+21|Torn Mystical Scroll|50|0||
+21|Unchecked Expansion|50|0||
+21|Unfriendly Competition|50|0||
+21|WANTED: Ohk'zi|50|0|a|
+21|Whelps are the Worst!|50|0||
+21|Goblin Sponsorship|25|0||
+21|Land Ho!|25|0||
+21|Passage to Booty Bay|25|0|a|
+21|Scaring Shaky|25|0||
+21|The Bloodsail Buccaneers|25|0||
+21|I Know a Guy|5|0||
+21|Lost Shipping Crate|5|0|a|
+21|Lost Shipping Crate|5|0|h|
+21|Shipping and Handling|5|0||
+21|Smuggler's Bargain|5|0||
+21|Terrors From the Deep|5|0||
 59|Favor Amongst the Brotherhood, Blood of the Mountain|200|1||
 59|Favor Amongst the Brotherhood, Fiery Core|200|1||
 59|Favor Amongst the Brotherhood, Lava Core|200|1||
@@ -51,7 +144,28 @@ methods = [==[
 59|Gaining Acceptance|25|1||
 59|Restoring Fiery Flux Supplies via Heavy Leather|25|1||
 59|Restoring Fiery Flux Supplies via Iron|25|1||
+59|Restoring Fiery Flux Supplies via Kingsblood|25|1||
+59|A Binding Contract|200|0||
+59|Imperial Plate Chest|200|0||
+59|Imperial Plate Helm|200|0||
+59|Imperial Plate Leggings|200|0||
+59|Secrets of the Colossus - Regal|200|0||
+59|Imperial Plate Boots|150|0||
+59|A Blue Light Bargain|100|0||
+59|Curse These Fat Fingers|100|0||
+59|Fiery Menace!|100|0||
+59|Imperial Plate Belt|100|0||
+59|Imperial Plate Bracer|100|0||
+59|Imperial Plate Shoulders|100|0||
+59|Incendosaurs? Whateverosaur is More Like It|100|0||
+59|JOB OPPORTUNITY: Culling the Competition|100|0||
+59|Look at the Size of It!|100|0||
+59|STOLEN: Smithing Tuyere and Lookout's Spyglass|100|0||
+59|WANTED: Overseer Maltorius|100|0||
+59|What the Flux?|100|0||
 270|The Savage Guard - Arcanum of Focus|200|1||
+270|The Savage Guard - Arcanum of Protection|200|1||
+270|The Savage Guard - Arcanum of Rapidity|200|1||
 270|Gurubashi, Vilebranch, and Witherbark Coins|25|1||
 270|Sandfury, Skullsplitter, and Bloodscalp Coins|25|1||
 270|Zulian, Razzashi, and Hakkari Coins|25|1||
@@ -59,6 +173,59 @@ methods = [==[
 270|Death's Embrace|100|1||8
 270|Falcon's Call|100|1||4
 270|Hoodoo Hex|100|1||256
+270|Presence of Might|100|1||1
+270|Presence of Sight|100|1||128
+270|Prophetic Aura|100|1||16
+270|Syncretist's Sigil|100|1|a|2
+270|Vodouisant's Vigilant Embrace|100|1|h|64
+270|A Collection of Heads|200|0||
+270|The Heart of Hakkar|200|0||
+270|A Bijou for Zanza|150|0||
+270|Paragons of Power: The Augur's Belt|150|0||64
+270|Paragons of Power: The Augur's Bracers|150|0||64
+270|Paragons of Power: The Augur's Hauberk|150|0||64
+270|Paragons of Power: The Confessor's Bindings|150|0||16
+270|Paragons of Power: The Confessor's Mantle|150|0||16
+270|Paragons of Power: The Confessor's Wraps|150|0||16
+270|Paragons of Power: The Demoniac's Mantle|150|0||256
+270|Paragons of Power: The Demoniac's Robes|150|0||256
+270|Paragons of Power: The Demoniac's Wraps|150|0||256
+270|Paragons of Power: The Freethinker's Armguards|150|0||2
+270|Paragons of Power: The Freethinker's Belt|150|0||2
+270|Paragons of Power: The Freethinker's Breastplate|150|0||2
+270|Paragons of Power: The Haruspex's Belt|150|0||1024
+270|Paragons of Power: The Haruspex's Bracers|150|0||1024
+270|Paragons of Power: The Haruspex's Tunic|150|0||1024
+270|Paragons of Power: The Illusionist's Mantle|150|0||128
+270|Paragons of Power: The Illusionist's Robes|150|0||128
+270|Paragons of Power: The Illusionist's Wraps|150|0||128
+270|Paragons of Power: The Madcap's Bracers|150|0||8
+270|Paragons of Power: The Madcap's Mantle|150|0||8
+270|Paragons of Power: The Madcap's Tunic|150|0||8
+270|Paragons of Power: The Predator's Belt|150|0||4
+270|Paragons of Power: The Predator's Bracers|150|0||4
+270|Paragons of Power: The Predator's Mantle|150|0||4
+270|Paragons of Power: The Vindicator's Armguards|150|0||1
+270|Paragons of Power: The Vindicator's Belt|150|0||1
+270|Paragons of Power: The Vindicator's Breastplate|150|0||1
+270|Enchanted South Seas Kelp|100|0||1024
+270|Kezan's Taint|100|0||256
+270|Kezan's Unstoppable Taint|100|0||256
+270|Maelstrom's Wrath|100|0||4
+270|Pristine Enchanted South Seas Kelp|100|0||1024
+270|Strength of Mount Mugamba|100|0||1
+270|The All-Seeing Eye of Zuldazar|100|0||16
+270|The Eye of Zuldazar|100|0||16
+270|The Heathen's Brand|100|0|a|2
+270|The Hero's Brand|100|0|a|2
+270|The Jewel of Kajaro|100|0||128
+270|The Maelstrom's Tendril|100|0||4
+270|The Pebble of Kajaro|100|0||128
+270|The Rage of Mugamba|100|0||1
+270|The Unmarred Vision of Voodress|100|0|h|64
+270|Vision of Voodress|100|0|h|64
+270|Zandalarian Shadow Mastery Talisman|100|0||8
+270|Zandalarian Shadow Talisman|100|0||8
 369|War at Sea|499|1||
 369|Water Pouch Bounty|10|1||
 369|Dirge's Kickin' Chimaerok Chops|200|0||
@@ -66,23 +233,179 @@ methods = [==[
 369|The Isle of Dread!|200|0||
 369|Ledger from Tanaris|150|0||
 369|Rise of the Silithid|150|0|h|
+369|Rise of the Silithid|150|0|a|
 369|Shady Saltseers|150|0||
+369|Ship Schedules|150|0||
+369|State Secrets|150|0||
+369|The Saltseer Captain|150|0||
+369|WANTED: Caliph Scorpidsting|150|0||
+369|Active Ingredient|100|0||
+369|Bungle in the Jungle|100|0||
+369|Dragon Scales, Post Burnt Tails|100|0||
+369|Dunemaul Dues|100|0||
+369|Gahz'ridian|100|0||
+369|Gnomish Garbage|100|0|a|
+369|Gritty Business|100|0|h|
+369|Important Heirlooms|100|0|a|
+369|More Wastewander Justice|100|0||
+369|Pirate Hats Ahoy!|100|0||
+369|Scarab Shells|100|0||
+369|Southsea Shakedown|100|0||
+369|Sprinkle's Secret Ingredient|100|0||
+369|Super Sticky|100|0||
+369|The Dunemaul Compound|100|0||
+369|The Scrimshank Redemption|100|0||
+369|The Thirsty Goblin|100|0||
+369|Thistleshrub Valley|100|0||
+369|WANTED: Andre Firebeard|100|0||
+369|Wastewander Justice|100|0||
+369|Whelps are the Worst!|100|0||
+369|Admiral Lamora|75|0||
+369|Chol'aruk the Ravener|75|0|h|
+369|Chol'aruk the Ravener|75|0|a|
+369|Gadgetzan Water Survey|75|0||
+369|Noxious Lair Investigation|75|0||
+369|Slake That Thirst|75|0|h|
+369|The Monster Surfaces|75|0||
+369|WANTED: Bruuz|75|0|h|
+369|WANTED: Old Rot-Chum|75|0||
+369|WANTED: Trapclaw|75|0||
+369|Water Pouch Bounty|75|0||
+369|A Blast Ye Scurvy Dogs!|50|0||
+369|A Taste of the Sea|50|0||
+369|All's Well That Ends Well|50|0||
+369|Consolation Prize|50|0||
+369|It Takes Guts|50|0||
+369|Lost for Words|50|0|h|
+369|Not My Circus|50|0||
+369|Parts and Pieces|50|0||
+369|Saltwater Savages|50|0||
+369|See Ya, Scallywags!|50|0||
+369|Smuggler's Paradise|50|0||
+369|Smuggler's Special|50|0||
+369|Tazzik's Dues|50|0||
+369|The Big Payback|50|0||
+369|Unchecked Expansion|50|0||
+369|Unfriendly Competition|50|0||
+369|WANTED: Ohk'zi|50|0|a|
+369|Delivery for Marin|25|0||
+369|Partial Mystical Notes|25|0||
+369|Safety First|25|0||
+369|Torn Mystical Scroll|25|0||
+369|Tran'rek|25|0||
+369|Insect Part Analysis|10|0||
+369|I Know a Guy|5|0||
+369|Lost Shipping Crate|5|0|a|
+369|Lost Shipping Crate|5|0|h|
+369|Shipping and Handling|5|0||
+369|Smuggler's Bargain|5|0||
+369|Terrors From the Deep|5|0||
 470|Mending Old Wounds|499|1||
 470|Blueleaf Tubers|150|0||
 470|Chol'aruk the Ravener|150|0|h|
+470|Chol'aruk the Ravener|150|0|a|
 470|Deepmoss Spider Eggs|150|0||
 470|Free From the Hold|150|0|h|
 470|Gerenzo's Orders|150|0||
 470|Miner's Fortune|150|0||
 470|Samophlange Manual|150|0|h|
+470|Shady Saltseers|150|0||
+470|State Secrets|150|0||
+470|The Escape|150|0||
+470|The Saltseer Captain|150|0||
+470|WANTED: Bruuz|150|0|h|
+470|Willix the Importer|150|0||
+470|A Simmering Storm|100|0||
+470|Bodyguard for Hire|100|0||
+470|Gerenzo Wrenchwhistle|100|0||
+470|Gizelton Caravan|100|0||
+470|Ignition|100|0||
+470|Load Lightening|100|0||
+470|Lost for Words|100|0|h|
+470|Nugget Slugs|100|0|h|
+470|Parts and Pieces|100|0||
+470|Raptor Horns|100|0||
+470|Razzeric's Tweaking|100|0||
+470|Root Samples|100|0||
+470|Samophlange|100|0||
+470|Satyr Horns|100|0|h|
+470|Securing the Lines|100|0||
+470|Smart Drinks|100|0||
+470|Stinky's Escape|100|0|h|
+470|Stolen Booty|100|0||
+470|Stormy Potential|100|0||
+470|Super Reaper 6000|100|0||
+470|The Guns of Northwatch|100|0|h|
+470|Trouble at the Docks|100|0||
+470|Volcanic Activity|100|0||
+470|WANTED: Baron Longshore|100|0||
+470|WANTED: Ohk'zi|100|0|a|
+470|Winds in the Desert|100|0||
+470|Admiral Lamora|75|0||
+470|Bone Collector|75|0||
+470|Gerenzo's Orders|75|0||
+470|Kodo Roundup|75|0||
+470|Samophlange|75|0||
+470|Southsea Freebooters|75|0||
+470|The Monster Surfaces|75|0||
+470|WANTED: Old Rot-Chum|75|0||
+470|WANTED: Trapclaw|75|0||
+470|A Blast Ye Scurvy Dogs!|50|0||
+470|A Taste of the Sea|50|0||
+470|Active Ingredient|50|0||
+470|All's Well That Ends Well|50|0||
+470|Consolation Prize|50|0||
+470|Dragon Scales, Post Burnt Tails|50|0||
+470|Dunemaul Dues|50|0||
+470|Further Instructions|50|0||
+470|Gnomish Garbage|50|0|a|
+470|Gritty Business|50|0|h|
+470|It Takes Guts|50|0||
+470|Keeping Pace|50|0||
+470|Not My Circus|50|0||
+470|Rizzle's Schematics|50|0||
+470|Saltwater Savages|50|0||
+470|Samophlange|50|0||
+470|See Ya, Scallywags!|50|0||
+470|Smuggler's Paradise|50|0||
+470|Smuggler's Special|50|0||
+470|Tazzik's Dues|50|0||
+470|The Big Payback|50|0||
+470|Unchecked Expansion|50|0||
+470|Unfriendly Competition|50|0||
+470|Wenikee Boltbucket|50|0|h|
+470|Wharfmaster Dizzywig|50|0|h|
+470|Whelps are the Worst!|50|0||
+470|Goblin Sponsorship|25|0||
+470|Partial Mystical Notes|25|0||
+470|Rilli Greasygob|25|0|h|
+470|Safety First|25|0||
+470|Torn Mystical Scroll|25|0||
+470|Ziz Fizziks|25|0||
+470|The Missing Shipment|10|0||
+470|I Know a Guy|5|0||
+470|Lost Shipping Crate|5|0|a|
+470|Lost Shipping Crate|5|0|h|
+470|Shipping and Handling|5|0||
+470|Smuggler's Bargain|5|0||
+470|Terrors From the Deep|5|0||
 509|Claiming Arathi Basin|100|1|a|
 509|Concerted Efforts|100|1|a|
 509|More Resource Crates|75|1|a|
+509|Claiming Arathi Basin|50|1|a|
 509|Arathi Basin Resources!|200|0|a|
 509|Control Five Bases|200|0|a|
 509|Control Four Bases|200|0|a|
 509|The Battle for Arathi Basin!|200|0|a|
+509|Claiming Arathi Basin|150|0|a|
+509|Concerted Efforts|150|0|a|
+509|Claiming Arathi Basin|100|0|a|
 509|Arathor Advanced Care Package|10|0|a|
+509|Arathor Basic Care Package|10|0|a|
+509|Arathor Standard Care Package|10|0|a|
+509|Darkspear's Advanced Care Package|10|0|a|
+509|Darkspear's Standard Care Package|10|0|a|
+509|Theramore Basic Care Package|10|0|a|
 510|For Great Honor|100|1|h|
 510|More Resource Crates|75|1|h|
 510|Conquering Arathi Basin|50|1|h|
@@ -90,15 +413,219 @@ methods = [==[
 510|Take Five Bases|200|0|h|
 510|Take Four Bases|200|0|h|
 510|The Battle for Arathi Basin!|200|0|h|
+510|Conquering Arathi Basin|150|0|h|
+510|For Great Honor|150|0|h|
+510|Conquering Arathi Basin|100|0|h|
 510|Darkspear's Advanced Care Package|10|0|h|
+510|Darkspear's Basic Care Package|10|0|h|
+510|Darkspear's Standard Care Package|10|0|h|
+510|Defiler's Advanced Care Package|10|0|h|
+510|Defiler's Basic Care Package|10|0|h|
+510|Defiler's Standard Care Package|10|0|h|
 529|Epic Armaments of Battle - Exalted Amongst the Dawn|100|1||
+529|Epic Armaments of Battle - Friend of the Dawn|100|1||
+529|Epic Armaments of Battle - Honored Amongst the Dawn|100|1||
+529|Epic Armaments of Battle - Revered Amongst the Dawn|100|1||
 529|Superior Armaments of Battle - Exalted Amongst the Dawn|100|1||
+529|Superior Armaments of Battle - Friend of the Dawn|100|1||
+529|Superior Armaments of Battle - Honored Amongst the Dawn|100|1||
+529|Superior Armaments of Battle - Revered Amongst the Dawn|100|1||
 529|The Ice Guard|100|1||
 529|The Shadow Guard|100|1||
 529|Craftsman's Writ - Brightcloth Pants|50|1||
+529|Craftsman's Writ - Dense Weightstone|50|1||
+529|Craftsman's Writ - Flask of Petrification|50|1||
+529|Craftsman's Writ - Gnomish Battle Chicken|50|1||
+529|Craftsman's Writ - Goblin Sapper Charge|50|1||
+529|Craftsman's Writ - Greater Arcane Protection Potion|50|1||
+529|Craftsman's Writ - Huge Thorium Battleaxe|50|1||
+529|Craftsman's Writ - Imperial Plate Chest|50|1||
+529|Craftsman's Writ - Lightning Eel|50|1||
+529|Craftsman's Writ - Major Healing Potion|50|1||
+529|Craftsman's Writ - Major Mana Potion|50|1||
+529|Craftsman's Writ - Plated Armorfish|50|1||
+529|Craftsman's Writ - Radiant Circlet|50|1||
+529|Craftsman's Writ - Rugged Armor Kit|50|1||
+529|Craftsman's Writ - Runecloth Bag|50|1||
+529|Craftsman's Writ - Runecloth Boots|50|1||
+529|Craftsman's Writ - Runecloth Robe|50|1||
+529|Craftsman's Writ - Runic Leather Pants|50|1||
+529|Craftsman's Writ - Stonescale Eel|50|1||
+529|Craftsman's Writ - Thorium Grenade|50|1||
+529|Craftsman's Writ - Thorium Tube|50|1||
+529|Craftsman's Writ - Volcanic Hammer|50|1||
+529|Craftsman's Writ - Wicked Leather Belt|50|1||
+529|Craftsman's Writ - Wicked Leather Headband|50|1||
 529|Healthy Dragon Scale|50|1||
 529|Corruptor's Scourgestones|25|1||
 529|Dalson's Tears Cauldron|25|1||
+529|Felstone Field Cauldron|25|1||
+529|Gahrron's Withering Cauldron|25|1||
+529|Invader's Scourgestones|25|1||
+529|Minion's Scourgestones|25|1||
+529|Writhing Haunt Cauldron|25|1||
+529|Bone Fragments|10|1||
+529|Core of Elements|10|1||
+529|Craftsman's Writ|10|1||
+529|Crypt Fiend Parts|10|1||
+529|Dark Iron Scraps|10|1||
+529|Savage Fronds|10|1||
+529|Writ of Safe Passage|10|1||
+529|Belt of Faith|200|1||16
+529|Bindings of Faith|200|1||16
+529|Bonescythe Bracers|200|1||8
+529|Bonescythe Breastplate|200|1||8
+529|Bonescythe Gauntlets|200|1||8
+529|Bonescythe Helmet|200|1||8
+529|Bonescythe Legplates|200|1||8
+529|Bonescythe Pauldrons|200|1||8
+529|Bonescythe Sabatons|200|1||8
+529|Bonescythe Waistguard|200|1||8
+529|Circlet of Faith|200|1||16
+529|Cryptstalker Boots|200|1||4
+529|Cryptstalker Girdle|200|1||4
+529|Cryptstalker Handguards|200|1||4
+529|Cryptstalker Headpiece|200|1||4
+529|Cryptstalker Legguards|200|1||4
+529|Cryptstalker Spaulders|200|1||4
+529|Cryptstalker Tunic|200|1||4
+529|Cryptstalker Wristguards|200|1||4
+529|Dreadnaught Bracers|200|1||1
+529|Dreadnaught Breastplate|200|1||1
+529|Dreadnaught Gauntlets|200|1||1
+529|Dreadnaught Helmet|200|1||1
+529|Dreadnaught Legplates|200|1||1
+529|Dreadnaught Pauldrons|200|1||1
+529|Dreadnaught Sabatons|200|1||1
+529|Dreadnaught Waistguard|200|1||1
+529|Dreamwalker Boots|200|1||1024
+529|Dreamwalker Girdle|200|1||1024
+529|Dreamwalker Handguards|200|1||1024
+529|Dreamwalker Headpiece|200|1||1024
+529|Dreamwalker Legguards|200|1||1024
+529|Dreamwalker Spaulders|200|1||1024
+529|Dreamwalker Tunic|200|1||1024
+529|Dreamwalker Wristguards|200|1||1024
+529|Earthshatter Boots|200|1||64
+529|Earthshatter Girdle|200|1||64
+529|Earthshatter Handguards|200|1||64
+529|Earthshatter Headpiece|200|1||64
+529|Earthshatter Legguards|200|1||64
+529|Earthshatter Spaulders|200|1||64
+529|Earthshatter Tunic|200|1||64
+529|Earthshatter Wristguards|200|1||64
+529|Frostfire Belt|200|1||128
+529|Frostfire Bindings|200|1||128
+529|Frostfire Circlet|200|1||128
+529|Frostfire Gloves|200|1||128
+529|Frostfire Leggings|200|1||128
+529|Frostfire Robe|200|1||128
+529|Frostfire Sandals|200|1||128
+529|Frostfire Shoulderpads|200|1||128
+529|Gloves of Faith|200|1||16
+529|Leggings of Faith|200|1||16
+529|Plagueheart Belt|200|1||256
+529|Plagueheart Bindings|200|1||256
+529|Plagueheart Circlet|200|1||256
+529|Plagueheart Gloves|200|1||256
+529|Plagueheart Leggings|200|1||256
+529|Plagueheart Robe|200|1||256
+529|Plagueheart Sandals|200|1||256
+529|Plagueheart Shoulderpads|200|1||256
+529|Redemption Boots|200|1||2
+529|Redemption Girdle|200|1||2
+529|Redemption Handguards|200|1||2
+529|Redemption Headpiece|200|1||2
+529|Redemption Legguards|200|1||2
+529|Redemption Spaulders|200|1||2
+529|Redemption Tunic|200|1||2
+529|Redemption Wristguards|200|1||2
+529|Robe of Faith|200|1||16
+529|Sandals of Faith|200|1||16
+529|Shoulderpads of Faith|200|1||16
+529|The Dread Citadel - Naxxramas|1000|0||
+529|DND FLAG The Dread Citadel - Naxxramas|500|0||
+529|Dead Man's Plea|399|0||
+529|Binding the Dreadnaught|200|0||
+529|Blackfathom Villainy|200|0|a|
+529|Blackfathom Villainy|200|0|h|
+529|Bonescythe Digs|200|0||
+529|Cryptstalker Armor Doesn't Make Itself...|200|0||
+529|Dawn's Gambit|200|0||
+529|Echoes of War|200|0||
+529|Hidden Treasures|200|0||
+529|Mission Accomplished!|200|0|a|
+529|Mission Accomplished!|200|0|h|
+529|Ramaladni's Icy Grasp|200|0||
+529|Savage Flora|200|0||
+529|Secrets of the Colossus - Zora|200|0||
+529|The Argent Hold|200|0||
+529|The Dread Citadel - Naxxramas|200|0||
+529|The Elemental Equation|200|0||
+529|The Fall of Kel'Thuzad|200|0||
+529|The Fate of Ramaladni|200|0||
+529|The Only Song I Know...|200|0||
+529|They Call Me "The Rooster"|200|0||
+529|A Righteous Cause|150|0|h|
+529|Above and Beyond|150|0||
+529|Alas, Andorhal|150|0|h|
+529|Alas, Andorhal|150|0|a|
+529|Bandarion Keep|150|0|h|
+529|Book of the Ancients|150|0||
+529|Chromatic Mantle of the Dawn|150|0||
+529|Chromatic Mantle of the Dawn|150|0|a|
+529|Chromatic Mantle of the Dawn|150|0|h|
+529|In Search of Thaelrid|150|0||
+529|Menethil's Gift|150|0||
+529|Remnants of War|150|0|h|
+529|The Archivist|150|0||
+529|The Argent Emissary|150|0|h|
+529|The Cult of the Damned|150|0|h|
+529|The Truth Comes Crashing Down|150|0||
+529|Twilight Falls|150|0|a|
+529|Houses of the Holy|100|0||
+529|Leonid's Letter|100|0|h|
+529|Lord Maxwell Tyrosus|100|0||
+529|Mantles of the Dawn|100|0|h|
+529|Mantles of the Dawn|100|0|a|
+529|Mantles of the Dawn|100|0||
+529|Marauders of Darrowshire|100|0||
+529|Plagued Hatchlings|100|0||
+529|Sceptre of Light|100|0||
+529|Target: Dalson's Tears|100|0|a|
+529|Target: Dalson's Tears|100|0|h|
+529|Target: Felstone Field|100|0|a|
+529|Target: Felstone Field|100|0|h|
+529|Target: Gahrron's Withering|100|0|a|
+529|Target: Gahrron's Withering|100|0|h|
+529|Target: Writhing Haunt|100|0|a|
+529|Target: Writhing Haunt|100|0|h|
+529|The Active Agent|100|0||
+529|The Flesh Does Not Lie|100|0||
+529|Villains of Darrowshire|100|0||
+529|Leonid Barthalomew|75|0||
+529|Zaeldarr the Outcast|75|0||
+529|Brother Carlin|50|0||
+529|Duke Nicholas Zverenhoff|50|0||
+529|Return to Chillwind Camp|50|0|a|
+529|Return to the Bulwark|50|0|h|
+529|Shadows of Doom|50|0||
+529|The Everlook Report|50|0|a|
+529|The Everlook Report|50|0|h|
+529|Under the Shadow|50|0||
+529|Betina Bigglezink|25|0||
+529|Light's Hope Chapel|25|0||
+529|Argent Dawn Commission|10|0||
+529|The Keeper's Call|10|0||
+529|Atiesh, Greatstaff of the Guardian|200|0||16
+529|Atiesh, Greatstaff of the Guardian|200|0||1024
+529|Atiesh, Greatstaff of the Guardian|200|0||128
+529|Atiesh, Greatstaff of the Guardian|200|0||256
+529|Atiesh, the Befouled Greatstaff|200|0||1424
+529|Frame of Atiesh|200|0||1424
+529|Forging the Mightstone|150|0|a|2
+529|Dispelling Evil|100|0|a|2
+529|Inert Scourgestones|50|0|a|2
 576|Beads for Salfa|50|1||
 576|Feathers for Grazle|50|1||
 576|Feathers for Nafien|50|1||
@@ -107,6 +634,34 @@ methods = [==[
 576|Blackmaw Pouches|150|0||
 576|Blackmaw Reclamation|150|0||
 576|Claws That Rend, Tusks that Gore|150|0||
+576|Deadwood Ritual Totem|150|0||
+576|Deadwood of the North|150|0||
+576|The Twin Bears|150|0||
+576|Timbermaw Ally|150|0||
+576|Winterfall Activity|150|0||
+576|Winterfall Ritual Totem|150|0||
+576|A Lost Memento|100|0||
+576|An Unlikely Source|100|0||
+576|Chieftain Bloodmaw|100|0||
+576|Felfire Burn, Cauldron Bubble|100|0||
+576|Later, Satyr|100|0||
+576|Legashi Horns|100|0||
+576|Master Feardred|100|0||
+576|Report to Rageroar|100|0||
+576|Runecloth|100|0||
+576|Running Firewater|100|0||
+576|Sacred Cloth|100|0||
+576|The Legashi Threat|100|0||
+576|Thinning Their Forces|100|0||
+576|Toil and Trouble|100|0||
+576|Transmuted Tincture|100|0||
+576|Potential Panacea|50|0||
+576|Timbermaw Reinforcements|50|0||
+576|Missing Blackmaw Scouts|25|0||
+576|Return to Rageroar|25|0||
+576|Speak to Nafien|25|0||
+576|Speak to Salfa|25|0||
+576|Encroaching Corruption|10|0||
 577|Making Amends|499|1||
 577|Are We There, Yeti?|150|0||
 577|Shady Saltseers|150|0||
@@ -115,6 +670,57 @@ methods = [==[
 577|Chillwind Horns|100|0||
 577|High Chief Winterfall|100|0||
 577|Strange Sources|100|0||
+577|Threat of the Winterfall|100|0||
+577|Toxic Horrors|100|0||
+577|Winterfall Runners|100|0||
+577|Words of the High Chief|100|0||
+577|Admiral Lamora|75|0||
+577|Are We There, Yeti?|75|0||
+577|Chol'aruk the Ravener|75|0|h|
+577|Chol'aruk the Ravener|75|0|a|
+577|Falling to Corruption|75|0||
+577|Mystery Goo|75|0||
+577|The Monster Surfaces|75|0||
+577|WANTED: Bruuz|75|0|h|
+577|WANTED: Old Rot-Chum|75|0||
+577|WANTED: Trapclaw|75|0||
+577|A Blast Ye Scurvy Dogs!|50|0||
+577|A Taste of the Sea|50|0||
+577|Active Ingredient|50|0||
+577|All's Well That Ends Well|50|0||
+577|Consolation Prize|50|0||
+577|Dragon Scales, Post Burnt Tails|50|0||
+577|Duke Nicholas Zverenhoff|50|0||
+577|Dunemaul Dues|50|0||
+577|Felnok Steelspring|50|0||
+577|Gnomish Garbage|50|0|a|
+577|Gritty Business|50|0|h|
+577|It Takes Guts|50|0||
+577|Lost for Words|50|0|h|
+577|Not My Circus|50|0||
+577|Parts and Pieces|50|0||
+577|Saltwater Savages|50|0||
+577|See Ya, Scallywags!|50|0||
+577|Smuggler's Paradise|50|0||
+577|Smuggler's Special|50|0||
+577|Tazzik's Dues|50|0||
+577|The Big Payback|50|0||
+577|The Everlook Report|50|0|a|
+577|The Everlook Report|50|0|h|
+577|The Final Piece|50|0||
+577|Unchecked Expansion|50|0||
+577|Unfriendly Competition|50|0||
+577|WANTED: Ohk'zi|50|0|a|
+577|Whelps are the Worst!|50|0||
+577|Winterfall Firewater|50|0||
+577|Partial Mystical Notes|25|0||
+577|Torn Mystical Scroll|25|0||
+577|I Know a Guy|5|0||
+577|Lost Shipping Crate|5|0|a|
+577|Lost Shipping Crate|5|0|h|
+577|Shipping and Handling|5|0||
+577|Smuggler's Bargain|5|0||
+577|Terrors From the Deep|5|0||
 609|Allegiance to Cenarion Circle|200|1||
 609|Abyssal Scepters|150|1||
 609|Abyssal Signets|100|1||
@@ -123,6 +729,192 @@ methods = [==[
 609|The Ultimate Deception|100|1||
 609|Mortal Champions|99|1||
 609|Abyssal Crests|50|1||
+609|Armor Kits for the Field|50|1|a|
+609|Armor Kits for the Field|50|1|h|
+609|Arms for the Field|50|1|a|
+609|Arms for the Field|50|1|h|
+609|Azure Templar|50|1||
+609|Bandages for the Field|50|1|a|
+609|Bandages for the Field|50|1|h|
+609|Boots for the Guard|50|1|a|
+609|Boots for the Guard|50|1|h|
+609|Champion's Battlegear|50|1||
+609|Crimson Templar|50|1||
+609|Desert Survival Kits|50|1|a|
+609|Desert Survival Kits|50|1|h|
+609|Earthen Templar|50|1||
+609|Extraordinary Materials|50|1|a|
+609|Extraordinary Materials|50|1|h|
+609|Grinding Stones for the Guard|50|1|a|
+609|Grinding Stones for the Guard|50|1|h|
+609|Hive'Ashi Scout Report|50|1||
+609|Hive'Regal Scout Report|50|1||
+609|Hive'Zora Scout Report|50|1||
+609|Hoary Templar|50|1||
+609|Scrying Materials|50|1|a|
+609|Scrying Materials|50|1|h|
+609|Stalwart's Battlegear|50|1||
+609|Target: Hive'Ashi Defenders|50|1||
+609|Target: Hive'Ashi Sandstalkers|50|1||
+609|Target: Hive'Ashi Stingers|50|1||
+609|Target: Hive'Ashi Workers|50|1||
+609|Target: Hive'Regal Ambushers|50|1||
+609|Target: Hive'Regal Burrowers|50|1||
+609|Target: Hive'Regal Slavemakers|50|1||
+609|Target: Hive'Regal Spitfires|50|1||
+609|Target: Hive'Zora Hive Sisters|50|1||
+609|Target: Hive'Zora Reavers|50|1||
+609|Target: Hive'Zora Tunnelers|50|1||
+609|Target: Hive'Zora Waywatchers|50|1||
+609|The Ironforge Brigade Needs Explosives!|50|1|a|
+609|The Orgrimmar Legion Needs Mojo!|50|1|h|
+609|Twilight Battle Orders|50|1||
+609|Twilight Marauders|50|1||
+609|Uniform Supplies|50|1|a|
+609|Uniform Supplies|50|1|h|
+609|Veteran's Battlegear|50|1||
+609|Volunteer's Battlegear|50|1||
+609|Field Duty|25|1|a|
+609|Field Duty|25|1|h|
+609|A Humble Offering|200|0||
+609|Bang a Gong!|200|0||
+609|C'Thun's Legacy|200|0||
+609|Into The Maw of Madness|200|0||
+609|Scepter of the Council|200|0||
+609|Shrouded in Nightmare|200|0||
+609|The Calling|200|0||
+609|The Fall of Ossirian|200|0||
+609|The Might of Kalimdor|200|0||
+609|The Nightmare Manifests|200|0||
+609|The Savior of Kalimdor|200|0||
+609|Waking Legends|200|0||
+609|Corruption of Earth and Seed|150|0|h|
+609|Corruption of Earth and Seed|150|0|a|
+609|Seed of Life|150|0||
+609|Shards of the Felvine|150|0||
+609|Signet of the Dukes|150|0||
+609|Uncovering Past Secrets|150|0||
+609|Ve'han's Fall|150|0||
+609|Vyral the Vile|150|0||
+609|A Reliquary of Purity|100|0||
+609|A Terrible Purpose|100|0||
+609|Abyssal Contacts|100|0||
+609|Brann Bronzebeard's Lost Letter|100|0||
+609|Breaking the Code|100|0||
+609|Dearest Natalia|100|0||
+609|Elune's Blessing|100|0||
+609|Glyph Chasing|100|0||
+609|Hive in the Tower|100|0||
+609|Lords of the Council|100|0||
+609|Noggle's Last Hope|100|0||
+609|Noggle's Lost Satchel|100|0||
+609|Scouring the Desert|100|0|a|
+609|Scouring the Desert|100|0|h|
+609|Secret Communication|100|0||
+609|Stepping Up Security|100|0||
+609|The Nightmare's Corruption|100|0||
+609|The Perfect Poison|100|0||
+609|The Spirits of Southwind|100|0||
+609|The Twilight Lexicon|100|0||
+609|The Twilight Mystery|100|0||
+609|Twilight Geolords|100|0||
+609|Tyrande and Remulos|100|0||
+609|Wanted - Deathclasp, Terror of the Sands|100|0||
+609|Mortal Champions|99|0||
+609|Deadly Desert Venom|75|0||
+609|Dukes of the Council|75|0||
+609|Securing the Supply Lines|75|0||
+609|The Wildlife Suffers Too|75|0||
+609|Unraveling the Mystery|75|0||
+609|Blessings of the Great Windborne Cat Spirit|50|0|a|
+609|Desert Survival Kits|50|0||
+609|Kitchen Assistance|50|0||
+609|Lunar Fireworks|50|0||
+609|Sharing the Knowledge|50|0||
+609|The Deserter|50|0||
+609|The Great Windborne Cat Spirit|50|0|a|
+609|Umber, Archivist|50|0||
+609|Under the Chitin Was...|50|0||
+609|Wasteland|50|0||
+609|Aurel Goldleaf|25|0||
+609|Bor Wildmane|25|0||
+609|Bor Wishes to Speak|25|0||
+609|Eranikus, Tyrant of the Dream|25|0||
+609|Goldleaf's Discovery|25|0||
+609|Rabine Saturna|25|0|h|
+609|Rabine Saturna|25|0|a|
+609|Cenarion Battlegear|10|0||
+609|Desert Recipe|10|0||
+609|Taking Back Silithus|10|0|a|
+609|Taking Back Silithus|10|0|h|
+609|The Lunar Festival|5|0|a|
+609|The Lunar Festival|5|0|h|
+609|Aquatic Form|100|0|h|1024
+609|Aquatic Form|100|0|a|1024
+609|Armaments of War|100|0||1
+609|Armaments of War|100|0|a|2
+609|Armaments of War|100|0||4
+609|Armaments of War|100|0||8
+609|Armaments of War|100|0||16
+609|Armaments of War|100|0|h|64
+609|Armaments of War|100|0||384
+609|Armaments of War|100|0||1024
+609|Band of Unending Life|100|0||1024
+609|Band of Vaulted Secrets|100|0||128
+609|Band of Veiled Shadows|100|0||8
+609|Blade of Eternal Justice|100|0|a|2
+609|Blade of Vaulted Secrets|100|0||128
+609|Body and Heart|100|0|a|1024
+609|Body and Heart|100|0|h|1024
+609|Cape of Eternal Justice|100|0|a|2
+609|Cloak of Unending Life|100|0||1024
+609|Cloak of Veiled Shadows|100|0||8
+609|Cloak of the Gathering Storm|100|0|h|64
+609|Cloak of the Unseen Path|100|0||4
+609|Dagger of Veiled Shadows|100|0||8
+609|Drape of Unyielding Strength|100|0||1
+609|Drape of Vaulted Secrets|100|0||128
+609|Gavel of Infinite Wisdom|100|0||16
+609|Hammer of the Gathering Storm|100|0|h|64
+609|Kris of Unspoken Names|100|0||256
+609|Mace of Unending Life|100|0||1024
+609|Power over Poison|100|0|a|1024
+609|Power over Poison|100|0|h|1024
+609|Ring of Eternal Justice|100|0|a|2
+609|Ring of Infinite Wisdom|100|0||16
+609|Ring of Unspoken Names|100|0||256
+609|Ring of the Gathering Storm|100|0|h|64
+609|Scythe of the Unseen Path|100|0||4
+609|Shroud of Infinite Wisdom|100|0||16
+609|Shroud of Unspoken Names|100|0||256
+609|Sickle of Unyielding Strength|100|0||1
+609|Signet of Unyielding Strength|100|0||1
+609|Signet of the Unseen Path|100|0||4
+609|The Great Ursera Spirit|100|0|a|1024
+609|Curing the Sick|75|0|a|1024
+609|Curing the Sick|75|0|h|1024
+609|Gathering the Cure|75|0|a|1024
+609|Gathering the Cure|75|0|h|1024
+609|The Principal Source|75|0|a|1024
+609|The Principal Source|75|0|h|1024
+609|Trial of the Lake|75|0|h|1024
+609|Trial of the Lake|75|0|a|1024
+609|Trial of the Sea Lion|75|0|h|1024
+609|Trial of the Sea Lion|75|0|a|1024
+609|Blessings of the Great Cat Spirit|50|0|a|1024
+609|Blessings of the Great Cat Spirit|50|0|h|1024
+609|Great Bear Spirit|50|0|a|1024
+609|Great Bear Spirit|50|0|h|1024
+609|The Great Cat Spirit|50|0|h|1024
+609|The Great Cat Spirit|50|0|a|1024
+609|Heeding the Call|25|0|a|1024
+609|Heeding the Call|25|0|h|1024
+609|Moonglade|25|0|a|1024
+609|Moonglade|25|0|h|1024
+609|The Great Cat Spirit|25|0|h|1024
+609|The Great Cat Spirit|25|0|a|1024
+609|Lessons Anew|10|0|a|1024
+609|Lessons Anew|10|0|h|1024
 729|Ally of the Tauren|500|1|h|
 729|Favor Amongst the Darkspear|500|1|h|
 729|The Human Condition|500|1|h|
@@ -131,6 +923,28 @@ methods = [==[
 729|Invaders of Alterac Valley|100|1|h|
 729|Master Ryson's All Seeing Eye|75|1|h|
 729|The Return of Korrak|25|1|h|
+729|Zinfizzlex's Portable Shredder Unit|25|1|h|
+729|Launch the Attack!|10|1|h|
+729|Wanted: DWARVES!|500|0|h|
+729|For Great Honor|200|0|h|
+729|Legendary Heroes|200|0|h|
+729|The Battle for Alterac|200|0|h|
+729|The Eye of Command|200|0|h|
+729|Earned Reverence|150|0|h|
+729|Invaders of Alterac Valley|150|0|h|
+729|Brotherly Love|100|0|h|
+729|Capture a Mine|100|0|h|
+729|Defusing the Threat|100|0|h|
+729|Enemy Booty|100|0|h|
+729|Fallen Sky Lords|100|0|h|
+729|Honored Amongst the Clan|100|0|h|
+729|In Defense of Frostwolf|100|0|h|
+729|Proving Grounds|100|0|h|
+729|Rise and Be Recognized|100|0|h|
+729|The Graveyards of Alterac|100|0|h|
+729|Towers and Bunkers|100|0|h|
+729|Hero of the Frostwolf|10|0|h|
+729|Speak with our Quartermaster|10|0|h|
 730|Gnomeregan Bounty|500|1|a|
 730|Staghelm's Requiem|500|1|a|
 730|The Archbishop's Mercy|500|1|a|
@@ -139,6 +953,28 @@ methods = [==[
 730|Remember Alterac Valley!|100|1|a|
 730|Master Ryson's All Seeing Eye|75|1|a|
 730|Korrak the Everliving|25|1|a|
+730|Zinfizzlex's Portable Shredder Unit|25|1|a|
+730|Begin the Attack!|10|1|a|
+730|Wanted: ORCS!|500|0||
+730|Concerted Efforts|200|0|a|
+730|Legendary Heroes|200|0|a|
+730|The Battle of Alterac|200|0|a|
+730|The Eye of Command|200|0|a|
+730|Earned Reverence|150|0|a|
+730|Remember Alterac Valley!|150|0|a|
+730|Alterac Valley Graveyards|100|0|a|
+730|Armor Scraps|100|0|a|
+730|Brotherly Love|100|0|a|
+730|Capture a Mine|100|0|a|
+730|Defusing the Threat|100|0|a|
+730|Fallen Sky Lords|100|0|a|
+730|Honored Amongst the Guard|100|0|a|
+730|Proving Grounds|100|0|a|
+730|Rise and Be Recognized|100|0|a|
+730|The Sovereign Imperative|100|0|a|
+730|Towers and Bunkers|100|0|a|
+730|Hero of the Stormpike|10|0|a|
+730|The Quartermaster|10|0|a|
 749|A Hero's Reward|200|0||
 910|Secrets of the Qiraji|999|1||
 910|Mortal Champions|499|1||
@@ -148,10 +984,99 @@ methods = [==[
 910|Avenger's Breastplate|200|1|a|2
 910|Avenger's Crown|200|1|a|2
 910|Avenger's Greaves|200|1|a|2
+910|Avenger's Legguards|200|1|a|2
+910|Avenger's Pauldrons|200|1|a|2
+910|Conqueror's Breastplate|200|1||1
+910|Conqueror's Crown|200|1||1
+910|Conqueror's Greaves|200|1||1
+910|Conqueror's Legguards|200|1||1
+910|Conqueror's Spaulders|200|1||1
+910|Deathdealer's Boots|200|1||8
+910|Deathdealer's Helm|200|1||8
+910|Deathdealer's Leggings|200|1||8
+910|Deathdealer's Spaulders|200|1||8
+910|Deathdealer's Vest|200|1||8
+910|Doomcaller's Circlet|200|1||256
+910|Doomcaller's Footwraps|200|1||256
+910|Doomcaller's Mantle|200|1||256
+910|Doomcaller's Robes|200|1||256
+910|Doomcaller's Trousers|200|1||256
+910|Enigma Boots|200|1||128
+910|Enigma Circlet|200|1||128
+910|Enigma Leggings|200|1||128
+910|Enigma Robes|200|1||128
+910|Enigma Shoulderpads|200|1||128
+910|Footwraps of the Oracle|200|1||16
+910|Genesis Boots|200|1||1024
+910|Genesis Helm|200|1||1024
+910|Genesis Shoulderpads|200|1||1024
+910|Genesis Trousers|200|1||1024
+910|Genesis Vest|200|1||1024
+910|Mantle of the Oracle|200|1||16
+910|Stormcaller's Diadem|200|1|h|64
+910|Stormcaller's Footguards|200|1|h|64
+910|Stormcaller's Hauberk|200|1|h|64
+910|Stormcaller's Leggings|200|1|h|64
+910|Stormcaller's Pauldrons|200|1|h|64
+910|Striker's Diadem|200|1||4
+910|Striker's Footguards|200|1||4
+910|Striker's Hauberk|200|1||4
+910|Striker's Leggings|200|1||4
+910|Striker's Pauldrons|200|1||4
+910|Tiara of the Oracle|200|1||16
+910|Trousers of the Oracle|200|1||16
+910|Vestments of the Oracle|200|1||16
+910|The Savior of Kalimdor|999|0||
+910|Mortal Champions|499|0||
+910|Anachronos|200|0||
+910|Bang a Gong!|200|0||
+910|C'Thun's Legacy|200|0||
+910|Nefarius's Corruption|200|0||
+910|Only One May Rise|200|0||
+910|Return to Narain|200|0||
+910|The Fall of Ossirian|200|0||
+910|The Might of Kalimdor|200|0||
+910|The Nightmare Manifests|200|0||
+910|The Path of the Righteous|200|0||
+910|The Wrath of Neptulon|200|0||
+910|Treasure of the Timeless One|200|0||
+910|A Pawn on the Eternal Board|100|0||
+910|The Champion Returns|100|0||
+910|The Good News and The Bad News|100|0||
+910|The Grand Invoker|100|0||
+910|The Nightmare's Corruption|100|0||
+910|The Path of the Conqueror|100|0||
+910|The Path of the Invoker|100|0||
+910|The Path of the Protector|100|0||
+910|The Protector of Kalimdor|100|0||
+910|The Qiraji Conqueror|100|0||
+910|What Tomorrow Brings|100|0||
+910|The Only Prescription|75|0||
+910|Long Forgotten Memories|50|0||
+910|Decoy!|25|0||
+910|Eranikus, Tyrant of the Dream|25|0||
+910|Azuregos's Magical Ledger|10|0||
+910|Draconic for Dummies|10|0||
+910|Love Song for Narain|10|0||
+910|Scrying Goggles? No Problem!|10|0||
+910|Stewvul, Ex-B.F.F.|10|0||
+910|The Charge of the Dragonflights|10|0||
+910|Translating the Ledger|10|0||
+910|Tyrande and Remulos|10|0||
+910|rAnS0m|10|0||
+910|Atiesh, Greatstaff of the Guardian|200|0||16
+910|Atiesh, Greatstaff of the Guardian|200|0||1024
+910|Atiesh, Greatstaff of the Guardian|200|0||128
+910|Atiesh, Greatstaff of the Guardian|200|0||256
+910|Atiesh, the Befouled Greatstaff|200|0||1424
+910|Frame of Atiesh|200|0||1424
 2798|Conflict at Darkspear Islands|100|1|h|
 2798|The Battle for Darkspear Islands!|200|0|h|
+2798|Conflict at Darkspear Islands|150|0|h|
 2799|Darkspear Islands Clash|100|1|a|
 2799|The Battle for Darkspear Islands!|200|0|a|
+2799|Darkspear Islands Clash|150|0|a|
+2799|Darkspear Islands Clash|100|0|a|
 2827|Admiral Lamora|150|0||
 2827|State Secrets|150|0||
 2827|The Monster Surfaces|150|0||
@@ -160,6 +1085,41 @@ methods = [==[
 2827|Shady Saltseers|125|0||
 2827|The Saltseer Captain|125|0||
 2827|A Blast Ye Scurvy Dogs!|100|0||
+2827|A Taste of the Sea|100|0||
+2827|All's Well That Ends Well|100|0||
+2827|Consolation Prize|100|0||
+2827|It Takes Guts|100|0||
+2827|Not My Circus|100|0||
+2827|Saltwater Savages|100|0||
+2827|See Ya, Scallywags!|100|0||
+2827|Smuggler's Paradise|100|0||
+2827|Smuggler's Special|100|0||
+2827|Tazzik's Dues|100|0||
+2827|The Big Payback|100|0||
+2827|Unchecked Expansion|100|0||
+2827|Unfriendly Competition|100|0||
+2827|Chol'aruk the Ravener|75|0|h|
+2827|Chol'aruk the Ravener|75|0|a|
+2827|Get the Goods|75|0||
+2827|WANTED: Bruuz|75|0|h|
+2827|We've Been Robbed!|75|0||
+2827|Active Ingredient|50|0||
+2827|Dragon Scales, Post Burnt Tails|50|0||
+2827|Dunemaul Dues|50|0||
+2827|Gnomish Garbage|50|0|a|
+2827|Gritty Business|50|0|h|
+2827|Lost for Words|50|0|h|
+2827|Parts and Pieces|50|0||
+2827|WANTED: Ohk'zi|50|0|a|
+2827|Whelps are the Worst!|50|0||
+2827|Partial Mystical Notes|25|0||
+2827|Torn Mystical Scroll|25|0||
+2827|I Know a Guy|10|0||
+2827|Lost Shipping Crate|10|0|a|
+2827|Lost Shipping Crate|10|0|h|
+2827|Shipping and Handling|10|0||
+2827|Smuggler's Bargain|10|0||
+2827|Terrors From the Deep|10|0||
 ]==],
 vendors = [==[
 10856|Argent Quartermaster Hasana|1420|83.3|68.1
