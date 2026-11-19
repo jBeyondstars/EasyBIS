@@ -1924,6 +1924,95 @@ class WindowTest(unittest.TestCase):
                             self.assertFalse([e for e in entries.values() if e.requirement.kind != "r"])
         self.assertGreater(artisans, 0)
 
+    def crafter_game(self, *professions) -> Game:
+        """Fury's list, where Timbermaw sells three leatherworking patterns; the player has these professions."""
+        game = self.open(saved="EasyBISCharDB = { class = 'WARRIOR', spec = 1, list = 'pve' }", cls="WARRIOR")
+        lua, stub = game.lua, game.stub
+        stub.learn(lua.table_from({index: lua.table_from({1: name, 2: rank, 3: line})
+                                   for index, (name, rank, line) in enumerate(professions, 1)}))
+        for piece, recipe in ((15065, 20254), (19044, 19326), (19049, 19327)):
+            stub.itemNames[piece], stub.bindings[piece] = f"Piece {piece}", 2
+            stub.itemNames[recipe], stub.itemIcons[recipe] = f"Pattern {recipe}", 134939
+        game.stub.run(game.ns.Browser.window.tabs.buttons[5], "OnClick")
+        return game
+
+    @staticmethod
+    def timbermaw(view):
+        return next(button for button in view.buttons.values() if button.group.artisan and button.group.factionID == 576)
+
+    def test_a_crafters_faction_for_another_profession(self):
+        """A tailor reads Timbermaw's leatherworking patterns: no standing of theirs, how to get the pieces instead."""
+        game = self.crafter_game(("Tailoring", 300, 197))
+        view = game.ns.ReputationView.view
+        button = self.timbermaw(view)
+        self.assertEqual(button.group.craftStatus, "other")
+        self.assertEqual(strip_colors(button.state.text), "Leatherworking")
+        game.stub.run(button, "OnClick")
+        self.assertEqual(strip_colors(view.you.text), "Leatherworking: not one of your professions")
+        # the banner, in place of the cards
+        self.assertTrue(view.banner.shown)
+        self.assertFalse(any(card.shown for card in view.cards.values()))
+        self.assertEqual(view.cardData[1].label, "Not your reputation: the crafter's counts")
+        self.assertEqual(view.cardData[1].value, "These pieces bind when equipped: buy them at the auction house, "
+                                                 "or have them made by a leatherworker who has the recipe.")
+        # the lines name the patterns, with their icon, and what they make in the tooltip
+        lines = list(view.detailData.values())
+        entries = [line for line in lines if line.kind == "entry"]
+        self.assertEqual([plain(line.text) for line in entries], ["Pattern 20254", "Pattern 19326", "Pattern 19327"])
+        self.assertTrue(all(line.recipe and line.icon == 134939 for line in entries))
+        self.assertEqual(view.lines[2].icon.texture, 134939)
+        self.assertTrue(all(piece.craft.shown for piece in view.pieces.values()), "the track says they are recipes")
+        game.stub.run(view.lines[2], "OnEnter")
+        tips = [strip_colors(line[1]) for line in game.lua.globals().GameTooltip.lines.values()]
+        self.assertIn("Makes: Piece 15065", tips)
+        self.assertIn("Leatherworking: not one of your professions", tips)
+        # how to earn it is for whoever would learn them: folded, until opened
+        sections = {line.key: line for line in lines if line.kind == "section"}
+        self.assertEqual(plain(sections["pieces"].text), "Recipes for this spec")
+        self.assertTrue(plain(sections["questsSelf"].text).startswith("To learn them yourself: "))
+        self.assertTrue(sections["questsSelf"].folded and sections["unknownSelf"].folded)
+        self.assertNotIn("quest", [line.kind for line in lines])
+        index = next(i for i in range(1, len(view.detailData) + 1) if view.detailData[i].key == "questsSelf")
+        game.stub.run(view.lines[index], "OnClick")
+        self.assertIn("quest", [line.kind for line in view.detailData.values()])
+        # never gold, even exalted: the tailor's reputation does not make the pieces
+        self.earn(game, 576, 8, 42000, 42000, 43000)
+        self.assertFalse(any("|cffffd100" in (line.standing or "") for line in view.detailData.values()))
+        self.assertNotIn("|cffffd100", view.you.text + button.state.text)
+        self.assertFalse(any(piece.check.shown for piece in view.pieces.values()))
+
+    def test_a_crafters_faction_for_the_crafter(self):
+        game = self.crafter_game(("Leatherworking", 270, 165), ("Skinning", 300, 393))
+        view = game.ns.ReputationView.view
+        button = self.timbermaw(view)
+        self.assertTrue(button.group.crafter)
+        self.assertIs(view.buttons[len(view.factionData.own) + 1].group.crafter, True, "the crafter's come first")
+        game.stub.run(button, "OnClick")
+        self.assertFalse(view.banner.shown)
+        self.assertTrue(all(card.shown for card in view.cards.values()))
+        self.assertTrue(view.cardData[1].label.startswith("Left for "))
+        self.assertTrue(strip_colors(view.you.text).endswith("  ·  Leatherworking 270 / 295"), view.you.text)
+        self.assertNotIn("|cffffd100", view.you.text)
+        sections = [line.key for line in view.detailData.values() if line.kind == "section"]
+        self.assertEqual(sections, ["pieces", "sources", "quests", "unknown"])
+        self.assertIn("quest", [line.kind for line in view.detailData.values()])
+        # the skill reached: gold
+        game.stub.learn(game.lua.table_from({1: game.lua.table_from({1: "Leatherworking", 2: 300, 3: 165})}))
+        game.stub.fire("SKILL_LINES_CHANGED")
+        game.stub.runTimers()
+        self.assertIn("|cffffd100Leatherworking 300 / 295|r", view.you.text)
+
+    def test_a_crafters_faction_when_the_game_gives_no_professions(self):
+        game = self.open(saved="EasyBISCharDB = { class = 'WARRIOR', spec = 1, list = 'pve' }", cls="WARRIOR")
+        game.stub.run(game.ns.Browser.window.tabs.buttons[5], "OnClick")
+        view = game.ns.ReputationView.view
+        button = self.timbermaw(view)
+        self.assertIsNone(button.group.craftStatus)
+        game.stub.run(button, "OnClick")
+        self.assertFalse(view.banner.shown)
+        self.assertIn("Recipes: the crafter's reputation is what counts.", strip_colors(view.you.text))
+        self.assertEqual(strip_colors(button.state.text), "Not met", "the player's own standing, as before")
+
     def test_reputations_tab_shows_a_piece_asking_for_neutral(self):
         game = self.pvp_game()
         window = game.ns.Browser.window

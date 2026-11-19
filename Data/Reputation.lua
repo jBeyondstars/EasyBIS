@@ -5,8 +5,9 @@
 --   factions  id|name|side|quests|repeatable|reputation from the quests done once, Alliance|the same, Horde|npc that sells the most|1 when a quest rewards its pieces
 --   methods   faction|quest|amount|1 when it repeats|side|the classes that may take it (the game's mask), empty for all
 --   vendors   npc|name|uiMap|x|y
---   items     id|side|faction|standing|kind|vendor npc|price in copper|quest or recipe|profession|skill
---   enchants  id|faction|standing|kind|1 when a scroll does the same|quest or recipe
+--   items     id|side|faction|standing|kind|vendor npc|price in copper|quest or recipe|profession|skill|the recipe's item
+--   enchants  id|faction|standing|kind|1 when a scroll does the same|quest or recipe|vendor npc|the recipe's item|profession|skill
+--   a recipe's vendor npc sells the recipe, not the piece it makes
 --   kind: w the wearer's reputation, q a quest asks for it, r the crafter's: the recipe is sold against it
 --   standing: 3 Neutral, 4 Friendly, 5 Honored, 6 Revered, 7 Exalted
 local _, ns = ...
@@ -161,8 +162,13 @@ methods = [==[
 2827|A Blast Ye Scurvy Dogs!|100|0||
 ]==],
 vendors = [==[
+10856|Argent Quartermaster Hasana|1420|83.3|68.1
+11557|Meilosh|1448|65.7|2.8
+12944|Lokhtos Darkbargainer|243||
+14921|Rin'wosho the Trader|1434|15.1|16
 15126|Rutherford Twing|1417|73.4|29.7
 15127|Samuel Hawke|1417|46|45.4
+15179|Mishta|1451|49.9|36.3
 255897|Friz Frazzlespark|2548|77.1|52.9
 263569|Bryanna Embreeze|1413|63.4|58.7
 263570|Creeg Bothunk|1413|65|34.6
@@ -171,390 +177,390 @@ vendors = [==[
 265576|Rettrick|1446|51.7|28.8
 ]==],
 items = [==[
-12625||529|6|r|||Plans: Dawnbringer Shoulders|Blacksmithing|265
-15065||576|4|r|||Pattern: Warbear Woolies|Leatherworking|260
-17014||59|4|r|||Plans: Dark Iron Bracers|Blacksmithing|270
-17901|a|730|5|q|||Honored Amongst the Guard||
-17902|a|730|6|q|||Earned Reverence||
-17903|a|730|7|q|||Legendary Heroes||
-17904|a|730|7|q|||The Eye of Command||
-17906|h|729|5|q|||Honored Amongst the Clan||
-17907|h|729|6|q|||Earned Reverence||
-17908|h|729|7|q|||Legendary Heroes||
-17909|h|729|7|q|||The Eye of Command||
-19044||576|5|r|||Pattern: Might of the Timbermaw|Leatherworking|265
-19047||576|5|r|||Pattern: Wisdom of the Timbermaw|Tailoring|255
-19048||576|6|r|||Pattern: Heavy Timbermaw Boots|Leatherworking|295
-19049||576|6|r|||Pattern: Timbermaw Brawlers|Leatherworking|295
-19050||576|6|r|||Pattern: Mantle of the Timbermaw|Tailoring|290
-19052||529|5|r|||Pattern: Dawn Treaders|Leatherworking|265
-19058||529|6|r|||Pattern: Golden Mantle of the Dawn|Leatherworking|295
-19059||529|6|r|||Pattern: Argent Shoulders|Tailoring|290
-19148||59|5|r|||Plans: Dark Iron Helm|Blacksmithing|300
-19149||59|5|r|||Pattern: Lava Belt|Leatherworking|300
-19156||59|5|r|||Pattern: Flarecore Robe|Tailoring|300
-19157||59|6|r|||Pattern: Chromatic Gauntlets|Leatherworking|300
-19162||59|6|r|||Pattern: Corehound Belt|Leatherworking|300
-19163||59|6|r|||Pattern: Molten Belt|Leatherworking|300
-19165||59|6|r|||Pattern: Flarecore Leggings|Tailoring|300
-19167||59|6|r|||Plans: Blackfury|Blacksmithing|300
-19168||59|7|r|||Plans: Blackguard|Blacksmithing|300
-19169||59|7|r|||Plans: Nightfall|Blacksmithing|300
-19170||59|7|r|||Plans: Ebon Hand|Blacksmithing|300
-19576||270|6|q|||Strength of Mount Mugamba||
-19577||270|7|q|||The Rage of Mount Mugamba||
-19600||270|6|q|||The Pebble of Kajaro||
-19604||270|6|q|||Kezan's Taint||
-19605||270|7|q|||Kezan's Unstoppable Taint||
-19616||270|6|q|||Zandalarian Shadow Talisman||
-19620||270|6|q|||The Maelstrom's Tendril||
-19621||270|7|q|||The Maelstrom's Wrath||
-19682||270|6|r|||Pattern: Bloodvine Vest|Tailoring|300
-19683||270|5|r|||Pattern: Bloodvine Leggings|Tailoring|300
-19684||270|4|r|||Pattern: Bloodvine Boots|Tailoring|300
-19685||270|6|r|||Pattern: Primal Batskin Jerkin|Leatherworking|300
-19686||270|5|r|||Pattern: Primal Batskin Gloves|Leatherworking|300
-19687||270|4|r|||Pattern: Primal Batskin Bracers|Leatherworking|300
-19689||270|5|r|||Pattern: Blood Tiger Shoulders|Leatherworking|300
-19690||270|6|r|||Plans: Bloodsoul Breastplate|Blacksmithing|300
-19691||270|5|r|||Plans: Bloodsoul Shoulders|Blacksmithing|300
-19692||270|4|r|||Plans: Bloodsoul Gauntlets|Blacksmithing|300
-19693||270|6|r|||Plans: Darksoul Breastplate|Blacksmithing|300
-19694||270|5|r|||Plans: Darksoul Leggings|Blacksmithing|300
-19695||270|4|r|||Plans: Darksoul Shoulders|Blacksmithing|300
-19999||270|5|r|||Schematic: Bloodvine Goggles|Engineering|300
-20041||509|5|w|15127|56764|||
-20042||509|5|w|15127|56972|||
-20043||509|5|w|15127|88066|||
-20044||509|5|w|||||
-20045||509|5|w|15127|73921|||
-20046||509|5|w|15127|74180|||
-20047||509|5|w|15127|59557|||
-20048||509|6|w|15127|89656|||
-20049||509|6|w|15127|89975|||
-20050||509|6|w|15127|136031|||
-20051||509|6|w|||||
-20052||509|6|w|15127|102849|||
-20053||509|6|w|15127|103238|||
-20054||509|6|w|15127|82910|||
-20055||509|7|w|15127|184337|||
-20057||509|7|w|15127|123274|||
-20058||509|7|w|15127|123744|||
-20059||509|7|w|15127|159473|||
-20060||509|7|w|15127|160061|||
-20061||509|7|w|15127|128505|||
-20068||510|7|w|15126|131769|||
-20069||509|7|w|15127|550995|||
-20070||509|7|w|15127|442362|||
-20071||509|4|w|15127|41230|||
-20072||510|4|w|15126|41230|||
-20073||509|7|w|15127|121395|||
-20088||509|5|w|15127|52478|||
-20089||509|5|w|15127|26040|||
-20090||509|5|w|15127|9373|||
-20091||509|6|w|15127|74297|||
-20092||509|6|w|15127|36875|||
-20094||509|6|w|15127|49873|||
-20095||509|6|w|15127|24749|||
-20096||509|6|w|15127|10692|||
-20097||509|5|w|15127|33619|||
-20098||509|5|w|15127|16684|||
-20099||509|5|w|15127|7207|||
-20100||509|6|w|15127|63732|||
-20101||509|6|w|15127|31628|||
-20103||509|5|w|15127|42952|||
-20106||509|5|w|15127|34732|||
-20107||509|5|w|15127|16008|||
-20109||509|6|w|15127|48938|||
-20110||509|6|w|15127|24287|||
-20112||509|6|w|15127|61868|||
-20113||509|6|w|15127|30705|||
-20115||509|5|w|15127|41708|||
-20116||509|5|w|15127|20699|||
-20117||509|5|w|15127|8941|||
-20124||509|5|w|15127|35376|||
-20125||509|5|w|15127|15883|||
-20127||509|6|w|15127|48558|||
-20128||509|6|w|15127|24102|||
-20150||510|5|w|15126|83877|||
-20151||510|5|w|15126|49292|||
-20152||510|5|w|15126|8774|||
-20153||510|5|w|15126|24557|||
-20154||510|6|w|15126|128288|||
-20155||510|6|w|15126|75386|||
-20156||510|6|w|15126|38412|||
-20158||510|7|w|15126|196466|||
-20159||510|6|w|15126|89016|||
-20160||510|6|w|15126|52306|||
-20161||510|6|w|15126|25955|||
-20162||510|6|w|15126|11211|||
-20163||510|5|w|15126|60191|||
-20164||510|5|w|15126|7526|||
-20165||510|5|w|15126|32116|||
-20166||510|5|w|15126|15939|||
-20167||510|6|w|15126|103637|||
-20168||510|6|w|15126|30118|||
-20170||510|6|w|15126|61374|||
-20171||510|5|w|15126|70149|||
-20174||510|5|w|15126|42652|||
-20175||510|7|w|15126|161219|||
-20176||510|7|w|15126|129445|||
-20177||510|5|w|||||
-20179||510|5|w|||||
-20180||510|5|w|||||
-20181||510|6|w|||||
-20183||510|6|w|||||
-20184||510|7|w|||||
-20185||510|6|w|||||
-20186||510|6|w|15126|103227|||
-20187||510|6|w|15126|29999|||
-20189||510|6|w|15126|62809|||
-20190||510|5|w|15126|71783|||
-20191||510|5|w|15126|8977|||
-20192||510|5|w|15126|20935|||
-20193||510|5|w|15126|42492|||
-20194||510|7|w|15126|160616|||
-20195||510|5|w|15126|87729|||
-20199||510|6|w|15126|134092|||
-20204||510|5|w|15126|56148|||
-20205||510|5|w|15126|32999|||
-20206||510|5|w|15126|16378|||
-20208||510|6|w|15126|85492|||
-20209||510|6|w|15126|24842|||
-20211||510|6|w|15126|50612|||
-20212||510|7|w|15126|127540|||
-20214||510|7|w|15126|428268|||
-20220||510|7|w|15126|504598|||
-21115||510|4|w|15126|28230|||
-21116||510|4|w|15126|15230|||
-21117||509|4|w|15127|28230|||
-21118||509|4|w|15127|15230|||
-21196||910|3|w|||||
-21197||910|4|w|||||
-21198||910|5|w|||||
-21199||910|6|w|||||
-21200||910|7|w|||||
-21201||910|3|w|||||
-21202||910|4|w|||||
-21203||910|5|w|||||
-21204||910|6|w|||||
-21205||910|7|w|||||
-21208||910|5|w|||||
-21209||910|6|w|||||
-21210||910|7|w|||||
-22191||609|7|r|||Plans: Obsidian Mail Tunic|Blacksmithing|300
-22198||609|6|r|||Plans: Jagged Obsidian Shield|Blacksmithing|300
-22416||529|5|q|||Dreadnaught Breastplate||
-22417||529|5|q|||Dreadnaught Legplates||
-22418||529|5|q|||Dreadnaught Helmet||
-22419||529|5|q|||Dreadnaught Pauldrons||
-22420||529|5|q|||Dreadnaught Sabatons||
-22421||529|5|q|||Dreadnaught Gauntlets||
-22422||529|5|q|||Dreadnaught Waistguard||
-22423||529|5|q|||Dreadnaught Bracers||
-22424||529|5|q|||Redemption Wristguards||
-22425||529|5|q|||Redemption Tunic||
-22426||529|5|q|||Redemption Handguards||
-22427||529|5|q|||Redemption Legguards||
-22428||529|5|q|||Redemption Headpiece||
-22429||529|5|q|||Redemption Spaulders||
-22430||529|5|q|||Redemption Boots||
-22431||529|5|q|||Redemption Girdle||
-22436||529|5|q|||Cryptstalker Tunic||
-22437||529|5|q|||Cryptstalker Legguards||
-22438||529|5|q|||Cryptstalker Headpiece||
-22439||529|5|q|||Cryptstalker Spaulders||
-22440||529|5|q|||Cryptstalker Boots||
-22441||529|5|q|||Cryptstalker Handguards||
-22442||529|5|q|||Cryptstalker Girdle||
-22443||529|5|q|||Cryptstalker Wristguards||
-22464||529|5|q|||Earthshatter Tunic||
-22465||529|5|q|||Earthshatter Legguards||
-22466||529|5|q|||Earthshatter Headpiece||
-22467||529|5|q|||Earthshatter Spaulders||
-22468||529|5|q|||Earthshatter Boots||
-22469||529|5|q|||Earthshatter Handguards||
-22470||529|5|q|||Earthshatter Girdle||
-22471||529|5|q|||Earthshatter Wristguards||
-22476||529|5|q|||Bonescythe Breastplate||
-22477||529|5|q|||Bonescythe Legplates||
-22478||529|5|q|||Bonescythe Helmet||
-22479||529|5|q|||Bonescythe Pauldrons||
-22480||529|5|q|||Bonescythe Sabatons||
-22481||529|5|q|||Bonescythe Gauntlets||
-22482||529|5|q|||Bonescythe Waistguard||
-22483||529|5|q|||Bonescythe Bracers||
-22488||529|5|q|||Dreamwalker Tunic||
-22489||529|5|q|||Dreamwalker Legguards||
-22490||529|5|q|||Dreamwalker Headpiece||
-22491||529|5|q|||Dreamwalker Spaulders||
-22492||529|5|q|||Dreamwalker Boots||
-22493||529|5|q|||Dreamwalker Handguards||
-22494||529|5|q|||Dreamwalker Girdle||
-22495||529|5|q|||Dreamwalker Wristguards||
-22496||529|5|q|||Frostfire Robe||
-22497||529|5|q|||Frostfire Leggings||
-22498||529|5|q|||Frostfire Circlet||
-22499||529|5|q|||Frostfire Shoulderpads||
-22500||529|5|q|||Frostfire Sandals||
-22501||529|5|q|||Frostfire Gloves||
-22502||529|5|q|||Frostfire Belt||
-22503||529|5|q|||Frostfire Bindings||
-22504||529|5|q|||Plagueheart Robe||
-22505||529|5|q|||Plagueheart Leggings||
-22506||529|5|q|||Plagueheart Circlet||
-22507||529|5|q|||Plagueheart Shoulderpads||
-22508||529|5|q|||Plagueheart Sandals||
-22509||529|5|q|||Plagueheart Gloves||
-22510||529|5|q|||Plagueheart Belt||
-22511||529|5|q|||Plagueheart Bindings||
-22512||529|5|q|||Robe of Faith||
-22513||529|5|q|||Leggings of Faith||
-22514||529|5|q|||Circlet of Faith||
-22515||529|5|q|||Shoulderpads of Faith||
-22516||529|5|q|||Sandals of Faith||
-22517||529|5|q|||Gloves of Faith||
-22518||529|5|q|||Belt of Faith||
-22519||529|5|q|||Bindings of Faith||
-22669||529|7|r|||Plans: Icebane Breastplate|Blacksmithing|300
-22670||529|6|r|||Plans: Icebane Gauntlets|Blacksmithing|300
-22671||749|6|r|||Plans: Icebane Bracers|Blacksmithing|300
-250617||576|6|r|||Plans: Stormcarver|Blacksmithing|300
-250618||576|6|r|||Plans: Bagh Nakh|Blacksmithing|300
-271903||2799|4|w|263569|69357|||
-271904||2799|4|w|263569|23423|||
-271905||2799|4|w|263569|23507|||
-271906||2799|4|w|263569|70106|||
-271907||2799|5|w|263569|90114|||
-271908||2799|5|w|263569|120578|||
-271909||2799|5|w|263569|64098|||
-271910||2799|5|w|263569|31813|||
-271913||2799|5|w|263569|111169|||
-271914||2799|5|w|263569|65332|||
-271917||2799|5|w|263569|112862|||
-271918||2799|5|w|263569|66323|||
-271919||2799|5|w|263569|33800|||
-271921||2799|5|w|263569|51644|||
-271922||2799|5|w|263569|25625|||
-271924||2799|6|w|263569|371479|||
-271925||2799|6|w|263569|218257|||
-271926||2799|6|w|263569|108301|||
-271928||2799|6|w|263569|301416|||
-271929||2799|6|w|263569|160210|||
-271930||2799|6|w|263569|79523|||
-271932||2799|6|w|263569|110731|||
-271933||2799|6|w|263569|65076|||
-271934||2799|6|w|263569|32300|||
-271936||2799|6|w|263569|288690|||
-271937||2799|6|w|263569|169633|||
-271938||2799|6|w|263569|84182|||
-271940||2799|7|w|263569|151569|||
-271941||2799|7|w|263569|90762|||
-271945||2799|7|w|263569|87667|||
-271946||2799|7|w|263569|52499|||
-271948||2799|7|w|263569|111634|||
-271949||2799|7|w|263569|60478|||
-271950||2799|7|w|263569|121128|||
-271951||2799|7|w|263569|74566|||
-271953||2799|7|w|263569|125889|||
-271954||2799|7|w|263569|158370|||
-271955||2799|7|w|263569|158959|||
-271956||2799|7|w|263569|191778|||
-271957||2799|7|w|263569|223147|||
-271959||2799|7|w|263569|224766|||
-272059||2798|4|w|263570|23584|||
-272060||2798|4|w|263570|70335|||
-272061||2798|4|w|263570|70578|||
-272062||2798|4|w|263570|21562|||
-272063||2798|5|w|263570|84689|||
-272064||2798|5|w|263570|113345|||
-272065||2798|5|w|263570|66606|||
-272066||2798|5|w|263570|33057|||
-272068||2798|5|w|263570|115038|||
-272069||2798|5|w|263570|67598|||
-272072||2798|5|w|263570|116720|||
-272073||2798|5|w|263570|68589|||
-272074||2798|5|w|263570|34037|||
-272076||2798|5|w|263570|51998|||
-272077||2798|5|w|263570|25803|||
-272079||2798|6|w|263570|347547|||
-272080||2798|6|w|263570|204245|||
-272081||2798|6|w|263570|101373|||
-272083||2798|6|w|263570|282269|||
-272084||2798|6|w|263570|165874|||
-272085||2798|6|w|263570|82323|||
-272087||2798|6|w|263570|114589|||
-272088||2798|6|w|263570|67341|||
-272089||2798|6|w|263570|33420|||
-272091||2798|6|w|263570|290705|||
-272092||2798|6|w|263570|170830|||
-272093||2798|6|w|263570|84774|||
-272095||2798|7|w|263570|141647|||
-272096||2798|7|w|263570|84851|||
-272097||2798|7|w|263570|81107|||
-272098||2798|7|w|263570|48584|||
-272099||2798|7|w|263570|102974|||
-272100||2798|7|w|263570|61681|||
-272101||2798|7|w|263570|123528|||
-272102||2798|7|w|263570|73983|||
-272103||2798|7|w|263570|124455|||
-272104||2798|7|w|263570|156572|||
-272105||2798|7|w|263570|157161|||
-272106||2798|7|w|263570|189616|||
-272107||2798|7|w|263570|220641|||
-272108||2798|7|w|263570|221462|||
-272957||2799|7|w|263569|194609|||
-272958||2798|7|w|263570|195317|||
-274741||470|4|w|265574|5445|||
-274746||21|4|w|265575|14775|||
-274748||21|5|w|265575|31088|||
-274749||21|5|w|265575|16643|||
-274750||369|4|w|265576|27439|||
-274751||369|4|w|265576|29423|||
-274753||369|5|w|265576|94614|||
-274754||369|5|w|265576|37989|||
-274757||577|4|w|||||
-275606||609|5|r|||Pattern: Venomspew Footpads|Tailoring|295
-275608||609|5|r|||Pattern: Swarmtender's Cord|Tailoring|290
-275609||609|5|r|||Pattern: Swarmtender's Footpads|Tailoring|295
-275617||609|5|r|||Pattern: Scalegut Belt|Leatherworking|290
-275618||609|5|r|||Pattern: Scalegut Treaders|Leatherworking|295
-275621||609|5|r|||Pattern: Broodwatcher's Treaders|Leatherworking|295
-275968||2819|4|w|||||
-275969||2819|4|w|||||
-275971||2819|4|w|||||
-275972||2819|5|w|||||
-275973||2819|5|w|||||
-275974||2819|5|w|||||
-275975||2819|5|w|||||
-275976||2819|6|w|||||
-275977||2819|6|w|||||
-275979||2819|6|w|||||
-275980||2819|6|w|||||
-275981||2819|7|w|||||
-275982||2819|7|w|||||
-275983||2819|7|w|||||
-275984||2819|7|w|||||
-276200||2827|4|w|255897|27439|||
-276202||2827|4|w|255897|31544|||
-276203||2827|5|w|255897|118729|||
-276204||2827|5|w|255897|61019|||
+12625||529|6|r|||Plans: Dawnbringer Shoulders|Blacksmithing|265|12698
+15065||576|4|r|11557||Pattern: Warbear Woolies|Leatherworking|260|20254
+17014||59|4|r|12944||Plans: Dark Iron Bracers|Blacksmithing|270|17051
+17901|a|730|5|q|||Honored Amongst the Guard|||
+17902|a|730|6|q|||Earned Reverence|||
+17903|a|730|7|q|||Legendary Heroes|||
+17904|a|730|7|q|||The Eye of Command|||
+17906|h|729|5|q|||Honored Amongst the Clan|||
+17907|h|729|6|q|||Earned Reverence|||
+17908|h|729|7|q|||Legendary Heroes|||
+17909|h|729|7|q|||The Eye of Command|||
+19044||576|5|r|11557||Pattern: Might of the Timbermaw|Leatherworking|265|19326
+19047||576|5|r|11557||Pattern: Wisdom of the Timbermaw|Tailoring|255|19215
+19048||576|6|r|11557||Pattern: Heavy Timbermaw Boots|Leatherworking|295|19204
+19049||576|6|r|11557||Pattern: Timbermaw Brawlers|Leatherworking|295|19327
+19050||576|6|r|11557||Pattern: Mantle of the Timbermaw|Tailoring|290|19218
+19052||529|5|r|10856||Pattern: Dawn Treaders|Leatherworking|265|19328
+19058||529|6|r|10856||Pattern: Golden Mantle of the Dawn|Leatherworking|295|19329
+19059||529|6|r|10856||Pattern: Argent Shoulders|Tailoring|290|19217
+19148||59|5|r|12944||Plans: Dark Iron Helm|Blacksmithing|300|19206
+19149||59|5|r|12944||Pattern: Lava Belt|Leatherworking|300|19330
+19156||59|5|r|12944||Pattern: Flarecore Robe|Tailoring|300|19219
+19157||59|6|r|12944||Pattern: Chromatic Gauntlets|Leatherworking|300|19331
+19162||59|6|r|12944||Pattern: Corehound Belt|Leatherworking|300|19332
+19163||59|6|r|12944||Pattern: Molten Belt|Leatherworking|300|19333
+19165||59|6|r|12944||Pattern: Flarecore Leggings|Tailoring|300|19220
+19167||59|6|r|12944||Plans: Blackfury|Blacksmithing|300|19209
+19168||59|7|r|12944||Plans: Blackguard|Blacksmithing|300|19211
+19169||59|7|r|12944||Plans: Nightfall|Blacksmithing|300|19212
+19170||59|7|r|12944||Plans: Ebon Hand|Blacksmithing|300|19210
+19576||270|6|q|||Strength of Mount Mugamba|||
+19577||270|7|q|||The Rage of Mount Mugamba|||
+19600||270|6|q|||The Pebble of Kajaro|||
+19604||270|6|q|||Kezan's Taint|||
+19605||270|7|q|||Kezan's Unstoppable Taint|||
+19616||270|6|q|||Zandalarian Shadow Talisman|||
+19620||270|6|q|||The Maelstrom's Tendril|||
+19621||270|7|q|||The Maelstrom's Wrath|||
+19682||270|6|r|14921||Pattern: Bloodvine Vest|Tailoring|300|19764
+19683||270|5|r|14921||Pattern: Bloodvine Leggings|Tailoring|300|19765
+19684||270|4|r|14921||Pattern: Bloodvine Boots|Tailoring|300|19766
+19685||270|6|r|14921||Pattern: Primal Batskin Jerkin|Leatherworking|300|19769
+19686||270|5|r|14921||Pattern: Primal Batskin Gloves|Leatherworking|300|19770
+19687||270|4|r|14921||Pattern: Primal Batskin Bracers|Leatherworking|300|19771
+19689||270|5|r|14921||Pattern: Blood Tiger Shoulders|Leatherworking|300|19773
+19690||270|6|r|14921||Plans: Bloodsoul Breastplate|Blacksmithing|300|19776
+19691||270|5|r|14921||Plans: Bloodsoul Shoulders|Blacksmithing|300|19777
+19692||270|4|r|14921||Plans: Bloodsoul Gauntlets|Blacksmithing|300|19778
+19693||270|6|r|14921||Plans: Darksoul Breastplate|Blacksmithing|300|19779
+19694||270|5|r|14921||Plans: Darksoul Leggings|Blacksmithing|300|19780
+19695||270|4|r|14921||Plans: Darksoul Shoulders|Blacksmithing|300|19781
+19999||270|5|r|14921||Schematic: Bloodvine Goggles|Engineering|300|20000
+20041||509|5|w|15127|56764||||
+20042||509|5|w|15127|56972||||
+20043||509|5|w|15127|88066||||
+20044||509|5|w||||||
+20045||509|5|w|15127|73921||||
+20046||509|5|w|15127|74180||||
+20047||509|5|w|15127|59557||||
+20048||509|6|w|15127|89656||||
+20049||509|6|w|15127|89975||||
+20050||509|6|w|15127|136031||||
+20051||509|6|w||||||
+20052||509|6|w|15127|102849||||
+20053||509|6|w|15127|103238||||
+20054||509|6|w|15127|82910||||
+20055||509|7|w|15127|184337||||
+20057||509|7|w|15127|123274||||
+20058||509|7|w|15127|123744||||
+20059||509|7|w|15127|159473||||
+20060||509|7|w|15127|160061||||
+20061||509|7|w|15127|128505||||
+20068||510|7|w|15126|131769||||
+20069||509|7|w|15127|550995||||
+20070||509|7|w|15127|442362||||
+20071||509|4|w|15127|41230||||
+20072||510|4|w|15126|41230||||
+20073||509|7|w|15127|121395||||
+20088||509|5|w|15127|52478||||
+20089||509|5|w|15127|26040||||
+20090||509|5|w|15127|9373||||
+20091||509|6|w|15127|74297||||
+20092||509|6|w|15127|36875||||
+20094||509|6|w|15127|49873||||
+20095||509|6|w|15127|24749||||
+20096||509|6|w|15127|10692||||
+20097||509|5|w|15127|33619||||
+20098||509|5|w|15127|16684||||
+20099||509|5|w|15127|7207||||
+20100||509|6|w|15127|63732||||
+20101||509|6|w|15127|31628||||
+20103||509|5|w|15127|42952||||
+20106||509|5|w|15127|34732||||
+20107||509|5|w|15127|16008||||
+20109||509|6|w|15127|48938||||
+20110||509|6|w|15127|24287||||
+20112||509|6|w|15127|61868||||
+20113||509|6|w|15127|30705||||
+20115||509|5|w|15127|41708||||
+20116||509|5|w|15127|20699||||
+20117||509|5|w|15127|8941||||
+20124||509|5|w|15127|35376||||
+20125||509|5|w|15127|15883||||
+20127||509|6|w|15127|48558||||
+20128||509|6|w|15127|24102||||
+20150||510|5|w|15126|83877||||
+20151||510|5|w|15126|49292||||
+20152||510|5|w|15126|8774||||
+20153||510|5|w|15126|24557||||
+20154||510|6|w|15126|128288||||
+20155||510|6|w|15126|75386||||
+20156||510|6|w|15126|38412||||
+20158||510|7|w|15126|196466||||
+20159||510|6|w|15126|89016||||
+20160||510|6|w|15126|52306||||
+20161||510|6|w|15126|25955||||
+20162||510|6|w|15126|11211||||
+20163||510|5|w|15126|60191||||
+20164||510|5|w|15126|7526||||
+20165||510|5|w|15126|32116||||
+20166||510|5|w|15126|15939||||
+20167||510|6|w|15126|103637||||
+20168||510|6|w|15126|30118||||
+20170||510|6|w|15126|61374||||
+20171||510|5|w|15126|70149||||
+20174||510|5|w|15126|42652||||
+20175||510|7|w|15126|161219||||
+20176||510|7|w|15126|129445||||
+20177||510|5|w||||||
+20179||510|5|w||||||
+20180||510|5|w||||||
+20181||510|6|w||||||
+20183||510|6|w||||||
+20184||510|7|w||||||
+20185||510|6|w||||||
+20186||510|6|w|15126|103227||||
+20187||510|6|w|15126|29999||||
+20189||510|6|w|15126|62809||||
+20190||510|5|w|15126|71783||||
+20191||510|5|w|15126|8977||||
+20192||510|5|w|15126|20935||||
+20193||510|5|w|15126|42492||||
+20194||510|7|w|15126|160616||||
+20195||510|5|w|15126|87729||||
+20199||510|6|w|15126|134092||||
+20204||510|5|w|15126|56148||||
+20205||510|5|w|15126|32999||||
+20206||510|5|w|15126|16378||||
+20208||510|6|w|15126|85492||||
+20209||510|6|w|15126|24842||||
+20211||510|6|w|15126|50612||||
+20212||510|7|w|15126|127540||||
+20214||510|7|w|15126|428268||||
+20220||510|7|w|15126|504598||||
+21115||510|4|w|15126|28230||||
+21116||510|4|w|15126|15230||||
+21117||509|4|w|15127|28230||||
+21118||509|4|w|15127|15230||||
+21196||910|3|w||||||
+21197||910|4|w||||||
+21198||910|5|w||||||
+21199||910|6|w||||||
+21200||910|7|w||||||
+21201||910|3|w||||||
+21202||910|4|w||||||
+21203||910|5|w||||||
+21204||910|6|w||||||
+21205||910|7|w||||||
+21208||910|5|w||||||
+21209||910|6|w||||||
+21210||910|7|w||||||
+22191||609|7|r|||Plans: Obsidian Mail Tunic|Blacksmithing|300|22221
+22198||609|6|r|||Plans: Jagged Obsidian Shield|Blacksmithing|300|22219
+22416||529|5|q|||Dreadnaught Breastplate|||
+22417||529|5|q|||Dreadnaught Legplates|||
+22418||529|5|q|||Dreadnaught Helmet|||
+22419||529|5|q|||Dreadnaught Pauldrons|||
+22420||529|5|q|||Dreadnaught Sabatons|||
+22421||529|5|q|||Dreadnaught Gauntlets|||
+22422||529|5|q|||Dreadnaught Waistguard|||
+22423||529|5|q|||Dreadnaught Bracers|||
+22424||529|5|q|||Redemption Wristguards|||
+22425||529|5|q|||Redemption Tunic|||
+22426||529|5|q|||Redemption Handguards|||
+22427||529|5|q|||Redemption Legguards|||
+22428||529|5|q|||Redemption Headpiece|||
+22429||529|5|q|||Redemption Spaulders|||
+22430||529|5|q|||Redemption Boots|||
+22431||529|5|q|||Redemption Girdle|||
+22436||529|5|q|||Cryptstalker Tunic|||
+22437||529|5|q|||Cryptstalker Legguards|||
+22438||529|5|q|||Cryptstalker Headpiece|||
+22439||529|5|q|||Cryptstalker Spaulders|||
+22440||529|5|q|||Cryptstalker Boots|||
+22441||529|5|q|||Cryptstalker Handguards|||
+22442||529|5|q|||Cryptstalker Girdle|||
+22443||529|5|q|||Cryptstalker Wristguards|||
+22464||529|5|q|||Earthshatter Tunic|||
+22465||529|5|q|||Earthshatter Legguards|||
+22466||529|5|q|||Earthshatter Headpiece|||
+22467||529|5|q|||Earthshatter Spaulders|||
+22468||529|5|q|||Earthshatter Boots|||
+22469||529|5|q|||Earthshatter Handguards|||
+22470||529|5|q|||Earthshatter Girdle|||
+22471||529|5|q|||Earthshatter Wristguards|||
+22476||529|5|q|||Bonescythe Breastplate|||
+22477||529|5|q|||Bonescythe Legplates|||
+22478||529|5|q|||Bonescythe Helmet|||
+22479||529|5|q|||Bonescythe Pauldrons|||
+22480||529|5|q|||Bonescythe Sabatons|||
+22481||529|5|q|||Bonescythe Gauntlets|||
+22482||529|5|q|||Bonescythe Waistguard|||
+22483||529|5|q|||Bonescythe Bracers|||
+22488||529|5|q|||Dreamwalker Tunic|||
+22489||529|5|q|||Dreamwalker Legguards|||
+22490||529|5|q|||Dreamwalker Headpiece|||
+22491||529|5|q|||Dreamwalker Spaulders|||
+22492||529|5|q|||Dreamwalker Boots|||
+22493||529|5|q|||Dreamwalker Handguards|||
+22494||529|5|q|||Dreamwalker Girdle|||
+22495||529|5|q|||Dreamwalker Wristguards|||
+22496||529|5|q|||Frostfire Robe|||
+22497||529|5|q|||Frostfire Leggings|||
+22498||529|5|q|||Frostfire Circlet|||
+22499||529|5|q|||Frostfire Shoulderpads|||
+22500||529|5|q|||Frostfire Sandals|||
+22501||529|5|q|||Frostfire Gloves|||
+22502||529|5|q|||Frostfire Belt|||
+22503||529|5|q|||Frostfire Bindings|||
+22504||529|5|q|||Plagueheart Robe|||
+22505||529|5|q|||Plagueheart Leggings|||
+22506||529|5|q|||Plagueheart Circlet|||
+22507||529|5|q|||Plagueheart Shoulderpads|||
+22508||529|5|q|||Plagueheart Sandals|||
+22509||529|5|q|||Plagueheart Gloves|||
+22510||529|5|q|||Plagueheart Belt|||
+22511||529|5|q|||Plagueheart Bindings|||
+22512||529|5|q|||Robe of Faith|||
+22513||529|5|q|||Leggings of Faith|||
+22514||529|5|q|||Circlet of Faith|||
+22515||529|5|q|||Shoulderpads of Faith|||
+22516||529|5|q|||Sandals of Faith|||
+22517||529|5|q|||Gloves of Faith|||
+22518||529|5|q|||Belt of Faith|||
+22519||529|5|q|||Bindings of Faith|||
+22669||529|7|r|||Plans: Icebane Breastplate|Blacksmithing|300|22703
+22670||529|6|r|||Plans: Icebane Gauntlets|Blacksmithing|300|22704
+22671||749|6|r|||Plans: Icebane Bracers|Blacksmithing|300|22705
+250617||576|6|r|||Plans: Stormcarver|Blacksmithing|300|251469
+250618||576|6|r|||Plans: Bagh Nakh|Blacksmithing|300|251470
+271903||2799|4|w|263569|69357||||
+271904||2799|4|w|263569|23423||||
+271905||2799|4|w|263569|23507||||
+271906||2799|4|w|263569|70106||||
+271907||2799|5|w|263569|90114||||
+271908||2799|5|w|263569|120578||||
+271909||2799|5|w|263569|64098||||
+271910||2799|5|w|263569|31813||||
+271913||2799|5|w|263569|111169||||
+271914||2799|5|w|263569|65332||||
+271917||2799|5|w|263569|112862||||
+271918||2799|5|w|263569|66323||||
+271919||2799|5|w|263569|33800||||
+271921||2799|5|w|263569|51644||||
+271922||2799|5|w|263569|25625||||
+271924||2799|6|w|263569|371479||||
+271925||2799|6|w|263569|218257||||
+271926||2799|6|w|263569|108301||||
+271928||2799|6|w|263569|301416||||
+271929||2799|6|w|263569|160210||||
+271930||2799|6|w|263569|79523||||
+271932||2799|6|w|263569|110731||||
+271933||2799|6|w|263569|65076||||
+271934||2799|6|w|263569|32300||||
+271936||2799|6|w|263569|288690||||
+271937||2799|6|w|263569|169633||||
+271938||2799|6|w|263569|84182||||
+271940||2799|7|w|263569|151569||||
+271941||2799|7|w|263569|90762||||
+271945||2799|7|w|263569|87667||||
+271946||2799|7|w|263569|52499||||
+271948||2799|7|w|263569|111634||||
+271949||2799|7|w|263569|60478||||
+271950||2799|7|w|263569|121128||||
+271951||2799|7|w|263569|74566||||
+271953||2799|7|w|263569|125889||||
+271954||2799|7|w|263569|158370||||
+271955||2799|7|w|263569|158959||||
+271956||2799|7|w|263569|191778||||
+271957||2799|7|w|263569|223147||||
+271959||2799|7|w|263569|224766||||
+272059||2798|4|w|263570|23584||||
+272060||2798|4|w|263570|70335||||
+272061||2798|4|w|263570|70578||||
+272062||2798|4|w|263570|21562||||
+272063||2798|5|w|263570|84689||||
+272064||2798|5|w|263570|113345||||
+272065||2798|5|w|263570|66606||||
+272066||2798|5|w|263570|33057||||
+272068||2798|5|w|263570|115038||||
+272069||2798|5|w|263570|67598||||
+272072||2798|5|w|263570|116720||||
+272073||2798|5|w|263570|68589||||
+272074||2798|5|w|263570|34037||||
+272076||2798|5|w|263570|51998||||
+272077||2798|5|w|263570|25803||||
+272079||2798|6|w|263570|347547||||
+272080||2798|6|w|263570|204245||||
+272081||2798|6|w|263570|101373||||
+272083||2798|6|w|263570|282269||||
+272084||2798|6|w|263570|165874||||
+272085||2798|6|w|263570|82323||||
+272087||2798|6|w|263570|114589||||
+272088||2798|6|w|263570|67341||||
+272089||2798|6|w|263570|33420||||
+272091||2798|6|w|263570|290705||||
+272092||2798|6|w|263570|170830||||
+272093||2798|6|w|263570|84774||||
+272095||2798|7|w|263570|141647||||
+272096||2798|7|w|263570|84851||||
+272097||2798|7|w|263570|81107||||
+272098||2798|7|w|263570|48584||||
+272099||2798|7|w|263570|102974||||
+272100||2798|7|w|263570|61681||||
+272101||2798|7|w|263570|123528||||
+272102||2798|7|w|263570|73983||||
+272103||2798|7|w|263570|124455||||
+272104||2798|7|w|263570|156572||||
+272105||2798|7|w|263570|157161||||
+272106||2798|7|w|263570|189616||||
+272107||2798|7|w|263570|220641||||
+272108||2798|7|w|263570|221462||||
+272957||2799|7|w|263569|194609||||
+272958||2798|7|w|263570|195317||||
+274741||470|4|w|265574|5445||||
+274746||21|4|w|265575|14775||||
+274748||21|5|w|265575|31088||||
+274749||21|5|w|265575|16643||||
+274750||369|4|w|265576|27439||||
+274751||369|4|w|265576|29423||||
+274753||369|5|w|265576|94614||||
+274754||369|5|w|265576|37989||||
+274757||577|4|w||||||
+275606||609|5|r|15179||Pattern: Venomspew Footpads|Tailoring|295|275582
+275608||609|5|r|15179||Pattern: Swarmtender's Cord|Tailoring|290|275584
+275609||609|5|r|15179||Pattern: Swarmtender's Footpads|Tailoring|295|275585
+275617||609|5|r|||Pattern: Scalegut Belt|Leatherworking|290|275593
+275618||609|5|r|||Pattern: Scalegut Treaders|Leatherworking|295|275594
+275621||609|5|r|||Pattern: Broodwatcher's Treaders|Leatherworking|295|275597
+275968||2819|4|w||||||
+275969||2819|4|w||||||
+275971||2819|4|w||||||
+275972||2819|5|w||||||
+275973||2819|5|w||||||
+275974||2819|5|w||||||
+275975||2819|5|w||||||
+275976||2819|6|w||||||
+275977||2819|6|w||||||
+275979||2819|6|w||||||
+275980||2819|6|w||||||
+275981||2819|7|w||||||
+275982||2819|7|w||||||
+275983||2819|7|w||||||
+275984||2819|7|w||||||
+276200||2827|4|w|255897|27439||||
+276202||2827|4|w|255897|31544||||
+276203||2827|5|w|255897|118729||||
+276204||2827|5|w|255897|61019||||
 ]==],
 enchants = [==[
-i19782|270|4|q||Presence of Might
-i19784|270|4|q||Death's Embrace
-i19785|270|4|q||Falcon's Call
-i19787|270|4|q||Presence of Sight
-i19788|270|4|q||Hoodoo Hex
-i19789|270|4|q||Prophetic Aura
-i20076|270|7|q||Signets of the Zandalar
-i20077|270|7|q||Signets of the Zandalar
-i20078|270|7|q||Signets of the Zandalar
-s23799|59|4|r|1|Formula: Enchant Weapon - Strength
-s23800|576|5|r|1|Formula: Enchant Weapon - Agility
-s23802|529|6|r|1|Formula: Enchant Bracer - Healing
-s23803|59|5|r|1|Formula: Enchant Weapon - Mighty Spirit
-s23804|59|6|r|1|Formula: Enchant Weapon - Mighty Intellect
-s27837|576|4|r|1|Formula: Enchant 2H Weapon - Agility
+i19782|270|4|q||Presence of Might||||
+i19784|270|4|q||Death's Embrace||||
+i19785|270|4|q||Falcon's Call||||
+i19787|270|4|q||Presence of Sight||||
+i19788|270|4|q||Hoodoo Hex||||
+i19789|270|4|q||Prophetic Aura||||
+i20076|270|7|q||Signets of the Zandalar||||
+i20077|270|7|q||Signets of the Zandalar||||
+i20078|270|7|q||Signets of the Zandalar||||
+s23799|59|4|r|1|Formula: Enchant Weapon - Strength|12944|19444|Enchanting|290
+s23800|576|5|r|1|Formula: Enchant Weapon - Agility|11557|19445|Enchanting|290
+s23802|529|6|r|1|Formula: Enchant Bracer - Healing|10856|19447|Enchanting|300
+s23803|59|5|r|1|Formula: Enchant Weapon - Mighty Spirit|12944|19448|Enchanting|300
+s23804|59|6|r|1|Formula: Enchant Weapon - Mighty Intellect|12944|19449|Enchanting|300
+s27837|576|4|r|1|Formula: Enchant 2H Weapon - Agility|11557|22392|Enchanting|290
 ]==],
 }

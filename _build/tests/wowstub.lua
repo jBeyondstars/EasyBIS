@@ -29,6 +29,9 @@ local stub = {
     equipped = {},     -- [id] = true for what the player wears
     currencies = {},   -- [currency id] = the quantity the game gives; an id that is not here is no currency
     currencyIcon = nil,  -- the picture the game gives for a currency
+    bindings = {},     -- [id] = the bind type GetItemInfo gives (0 none, 1 when picked up, 2 when equipped)
+    itemIcons = {},    -- [id] = the icon the game gives, in place of the same one for every item
+    professions = nil, -- set with stub.learn: until then the client has no GetProfessions
 }
 
 ---------------------------------------------------------------------------
@@ -278,7 +281,7 @@ function TooltipDataProcessor.AddTooltipPostCall(_, callback) stub.itemHooks[#st
 function CreateAtlasMarkup(atlas) return "<" .. atlas .. ">" end
 
 -- name, link, quality, item level, required level, type, subtype, stack, equip slot, icon, price, class id,
--- subclass id. By name: only an item the game "knows".
+-- subclass id, bind type. By name: only an item the game "knows".
 function GetItemInfo(id)
     if type(id) == "string" then
         local wanted = id
@@ -290,8 +293,9 @@ function GetItemInfo(id)
     local name = stub.itemNames[id]
     if name then
         local kind = stub.itemTypes[id] or { "Mail", "INVTYPE_HEAD" }
-        return name, "|Hitem:" .. id .. "|h[" .. name .. "]|h", 4, 60, 60, "Armor", kind[1], 1, kind[2], 132767, 0,
-            kind[3] or 4, kind[4] or 3
+        return name, "|Hitem:" .. id .. "|h[" .. name .. "]|h", 4, 60, 60, "Armor", kind[1], 1, kind[2],
+            stub.itemIcons[id] or 132767, 0,
+            kind[3] or 4, kind[4] or 3, stub.bindings[id]
     end
 end
 -- id, type, subtype, equip slot, icon, class id, subclass id: at once, for any item that exists
@@ -301,7 +305,7 @@ function GetItemInfoInstant(id)
     if equipLoc then return id, "Armor", kind[1] or "Mail", equipLoc, 132767, kind[3] or 4, kind[4] or 3 end
 end
 INVTYPE_HEAD, INVTYPE_2HWEAPON, INVTYPE_WEAPON, INVTYPE_HOLDABLE = "Head", "Two-Hand", "One-Hand", "Held In Off-hand"
-function GetItemIcon() return 134400 end
+function GetItemIcon(id) return stub.itemIcons[id] or 134400 end
 function GetItemCount(id) return stub.itemCounts[id] or 0 end
 function IsEquippedItem(id) return stub.equipped[id] == true end
 C_CurrencyInfo = {}
@@ -455,6 +459,19 @@ function stub.runTimers()
 end
 
 -- A tooltip that records what is added to it: lines[i] = { left, right }.
+-- The player's professions, { { name, rank, skill line }, ... } in the game's order: the client then answers
+-- GetProfessions and GetProfessionInfo, as the Forever client does.
+function stub.learn(professions)
+    stub.professions = professions
+    local function At(index) return professions[index] and index or nil end
+    function GetProfessions() return At(1), At(2), At(3), At(4), At(5), At(6) end
+    function GetProfessionInfo(index)
+        local profession = professions[index]
+        if not profession then error("no profession at " .. tostring(index)) end
+        return profession[1], 136240, profession[2], 300, 0, 0, profession[3]
+    end
+end
+
 function stub.newTooltip()
     return NewWidget("GameTooltip")
 end

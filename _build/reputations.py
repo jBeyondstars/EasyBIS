@@ -4,7 +4,8 @@ Three kinds of requirement:
   w  the item itself asks for it: the vendor sells it from that standing and the wearer needs it
      (ForeverDB's Items.lua, "r<faction>~<standing>");
   q  the only quests that reward the item ask for it (QuestieDB's requiredMinRep);
-  r  the recipe is sold against it: the crafter needs it, not the wearer (ForeverDB's Recipes.lua).
+  r  the recipe is sold against it: the crafter needs it, not the wearer (ForeverDB's Recipes.lua). The
+     recipe's own item is kept, and its vendor as QuestieDB places it: that is what the faction sells.
 
 `build.py --import-reputations` reads them and keeps the result in corrections/reputations.json, as
 `--import-questie` does for the sources: ForeverDB's Items.lua and Recipes.lua are not among the files the
@@ -165,22 +166,44 @@ class _Reader:
         return [{"side": side, "faction": gate[0], "standing": gate[1], "kind": QUEST, "via": title}
                 for side, (gate, title) in found.items()]
 
-    def recipe_of(self, spell: int):
-        """(requirement, recipe name) of a spell learned from a recipe sold against a reputation, or None."""
+    def recipe_of(self, spell: int) -> dict | None:
+        """What a spell learned from a recipe sold against a reputation asks, or None: the faction, the standing,
+        the recipe's item and name, the profession and its skill, and the recipe's vendor when QuestieDB has one."""
         recipe = self.spells.get(spell)
         learn = recipe["learn"] if recipe else ""
         if not learn.startswith("i") or int(learn[1:]) not in self.facts:
             return None
-        return self.facts[int(learn[1:])], self.names.get(int(learn[1:]), "")
+        recipe_id = int(learn[1:])
+        faction, standing = self.facts[recipe_id]
+        record = {"faction": faction, "standing": standing, "kind": RECIPE, "via": self.names.get(recipe_id, ""),
+                  "recipe": recipe_id, "profession": recipe["profession"], "skill": recipe["skill"]}
+        npc = self.recipe_vendor(recipe_id)
+        if npc:
+            record["vendor"] = npc
+        return record
+
+    def recipe_vendor(self, recipe_id: int) -> int | None:
+        """The first vendor QuestieDB names for a recipe's item, kept with its place, or None. ForeverDB's data
+        names the vendor and the zone but not the npc."""
+        for npc in sorted(set(self.store.ids("Item", recipe_id, questie.ITEM_VENDORS))):
+            row = self.store.row("Npc", npc)
+            if not row.get(questie.NPC_NAME):
+                continue
+            zone = row.get(questie.NPC_ZONE) or 0
+            spots = (self.store.table("Npc", npc, questie.NPC_SPAWNS) or {}).get(zone) or []
+            x, y = (spots[0] + [0, 0])[:2] if spots and isinstance(spots[0], list) else (0, 0)
+            ui_map = self.store.zones.ui_maps.get(zone, 0)
+            place = [ui_map, round(x, 1), round(y, 1)] if ui_map and x > 0 and y > 0 else [ui_map or "", "", ""]
+            # ForeverDB's own place of a vendor goes first, as for the pieces sold against a reputation
+            return self.keep_vendor(npc, None if self.db.vendors.get(npc) else [row[questie.NPC_NAME], *place])
+        return None
 
     def recipe(self, item_id: int, item: dict) -> list[dict]:
         crafted = [int(source[3]) for source in item["sources"] if source[0] == "c" and source[3].isdigit()]
         for spell in [spell for spell in crafted if spell in self.spells] or self.made.get(item_id, []):
             found = self.recipe_of(spell)
             if found:
-                (faction, standing), name = found
-                return [{"side": "", "faction": faction, "standing": standing, "kind": RECIPE, "via": name,
-                         "profession": self.spells[spell]["profession"], "skill": self.spells[spell]["skill"]}]
+                return [{"side": "", **found}]
         return []
 
     def item(self, item_id: int, item: dict) -> list[dict]:
@@ -192,11 +215,9 @@ class _Reader:
         number = int(enchant[1:])
         where = (info + ["", "", ""])[2]
         if enchant[0] == "s":
-            found = self.recipe_of(number)
-            if not found:
+            record = self.recipe_of(number)
+            if not record:
                 return None
-            (faction, standing), name = found
-            record = {"faction": faction, "standing": standing, "kind": RECIPE, "via": name}
             if "scroll" in where:
                 record["scroll"] = True
             return record

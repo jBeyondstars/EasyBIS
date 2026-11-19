@@ -916,6 +916,86 @@ class AddonTest(unittest.TestCase):
         self.assertTrue(texts(vendor)[0].startswith("Bryanna Embreeze, "))
         self.assertEqual((vendor[1].map, vendor[1].x, vendor[1].y), (1413, 63.4, 58.7))
 
+    def test_reputation_recipes_follow_the_players_professions(self):
+        """A recipe's reputation is the crafter's: the player is told theirs only when the profession is theirs."""
+        game = Game(cls="WARRIOR")
+        rep, stub, lua = game.ns.Reputation, game.stub, game.lua
+        learn = lambda *professions: stub.learn(lua.table_from(
+            {index: lua.table_from({1: name, 2: rank, 3: line}) for index, (name, rank, line) in enumerate(professions, 1)}))
+        woolies = rep.Requirement(15065)
+        self.assertEqual((woolies.kind, woolies.recipe, woolies.vendor, woolies.profession, woolies.skill),
+                         ("r", 20254, 11557, "Leatherworking", 260))
+        stub.factions[576] = lua.table_from({"reaction": 5, "value": 3500, "low": 3000, "high": 9000, "name": "Timbermaw Hold"})
+        stub.fire("UPDATE_FACTION")
+        self.assertEqual(rep.NeedText(woolies), "Pattern: Timbermaw Hold, Friendly")
+        self.assertEqual(rep.RecipeWord(rep.EnchantRequirement("s23800")), "Formula")
+        self.assertEqual(rep.RecipeName(woolies), "Pattern: Warbear Woolies")
+        # sold by Meilosh, in Felwood: the recipe's vendor, with its place
+        group = lua.table_from({"steps": lua.table_from({4: lua.table_from({1: lua.table_from({"requirement": woolies})})})})
+        seller = rep.Sellers(group)[1]
+        self.assertEqual(seller.text, "Pattern: Warbear Woolies, sold by Meilosh, Map 1448 65.7, 2.8")
+        self.assertEqual((seller.map, seller.x, seller.y), (1448, 65.7, 2.8))
+
+        # a client without the professions' API: nothing is said of the player
+        self.assertIsNone(rep.Professions())
+        self.assertIsNone(rep.Crafter(woolies))
+        self.assertEqual(strip_colors(rep.StateText(woolies)), "For the crafter")
+        crafts, status = rep.Crafts(group)
+        self.assertEqual((crafts[1].profession, crafts[1].rank, crafts[1].status, status), ("Leatherworking", None, None, None))
+        # a leatherworker: their reputation and their skill
+        learn(("Leatherworking", 270, 165), ("Skinning", 300, 393))
+        self.assertEqual(dict(rep.Professions()), {"Leatherworking": 270, "Skinning": 300})
+        self.assertEqual(rep.Crafter(woolies), ("crafter", 270))
+        self.assertEqual(rep.StateText(woolies), "|cffffd100Earned|r", "Friendly is what the pattern asks")
+        crafts, status = rep.Crafts(group)
+        self.assertEqual((crafts[1].profession, crafts[1].skill, crafts[1].rank, crafts[1].status, status),
+                         ("Leatherworking", 260, 270, "crafter", "crafter"))
+        self.assertIsNone(rep.Crafter(rep.Requirement(EYE_OF_REND)), "a piece that is not a recipe")
+        # a profession known by its name alone, in the game's language
+        learn(("Leatherworking", 120, None))
+        self.assertEqual(rep.Crafter(woolies), ("crafter", 120))
+        # a tailor: the reputation is not theirs, and never gold
+        learn(("Tailoring", 300, 197))
+        self.assertEqual(rep.Crafter(woolies), "other")
+        self.assertEqual(strip_colors(rep.StateText(woolies)), "Leatherworking")
+        stub.factions[576] = lua.table_from({"reaction": 8, "value": 42000, "low": 42000, "high": 43000, "name": "Timbermaw Hold"})
+        stub.fire("UPDATE_FACTION")
+        self.assertNotIn("|cffffd100", rep.StateText(woolies))
+        lines = list(rep.TooltipLines(15065).values())
+        self.assertEqual((lines[0].r, lines[0].g, lines[0].b), (1, 1, 1), "the tailor's own standing is not the piece's")
+        self.assertEqual(lines[1].text, "Leatherworking: not one of your professions")
+        self.assertIn("Recipe sold by: Meilosh, Map 1448 65.7, 2.8", [line.text for line in lines])
+        learn(("Leatherworking", 300, 165))
+        first = rep.TooltipLines(15065)[1]
+        self.assertEqual((first.r, first.g, first.b), (1, 0.82, 0), "the leatherworker has earned it: gold")
+        # no profession at all
+        learn()
+        self.assertEqual(dict(rep.Professions()), {})
+        self.assertEqual(rep.Crafter(woolies), "other")
+
+    def test_reputation_binding_as_the_game_says(self):
+        game = Game()
+        rep, stub = game.ns.Reputation, game.stub
+        self.assertIsNone(rep.Binding(15065), "an item the game has not shown yet")
+        stub.itemNames[15065] = "Warbear Woolies"
+        self.assertIsNone(rep.Binding(15065), "a bind type the game does not give")
+        for bind, word in ((0, "none"), (1, "pickup"), (2, "equip")):
+            stub.bindings[15065] = bind
+            self.assertEqual(rep.Binding(15065), word)
+        self.assertIsNone(rep.Binding(None))
+
+    def test_reputation_crafters_come_first(self):
+        game = Game(cls="PRIEST")
+        rep, stub, lua = game.ns.Reputation, game.stub, game.lua
+        before = [group.factionID for group in rep.Needs("PRIEST", 1, "pve").artisan.values()]
+        self.assertTrue({576, 609} < set(before))
+        stub.learn(lua.table_from({1: lua.table_from({1: "Tailoring", 2: 300, 3: 197})}))
+        groups = list(rep.Needs("PRIEST", 1, "pve").artisan.values())
+        crafters = [group.factionID for group in groups if group.crafter]
+        self.assertEqual(set(crafters), {576, 609}, "Timbermaw and Cenarion Circle sell tailoring patterns")
+        self.assertEqual([group.factionID for group in groups[:len(crafters)]], crafters, "the tailor's come first")
+        self.assertTrue(all(group.craftStatus == "other" for group in groups[len(crafters):]))
+
     def test_reputation_unknown_faction(self):
         """A faction no source says how to earn, nor who sells its pieces: its pieces wear a grey "?"."""
         game = Game()

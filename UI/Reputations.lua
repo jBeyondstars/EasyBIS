@@ -20,6 +20,11 @@ The Reputations tab of the window: what the spec, the list and the phase ask of 
                            quests kept for the class, and what no source says. A click on a title folds it
            The header has a Watch button: the game's reputation bar follows the faction.
 
+A crafter's recipes show what the faction sells: the recipe, and the piece it makes. When the profession is not
+the player's, the reputation is the crafter's: a banner says how to get the pieces instead (the auction house when
+they bind when equipped), the player's place and the gold are left out, and the quests are folded. When it is
+theirs, the header says their skill against the most the recipes ask.
+
 Gold is for what the player has earned: a reached standing, a piece within reach. The faction chosen is lit in
 blue. The rest of the colour is the game's own art: the status bar texture on the ways, the tooltip frame on the
 cards, soft bands under the header, the sections and the factions, every other line lighter, an icon per section.
@@ -29,7 +34,7 @@ Nothing here says how long a standing takes: nothing measures it.
   ReputationView.Update(state)    fills it. state: the window's { class, spec, list, faction, factionArtisan }
   ReputationView.Hide()
   ReputationView.view             (the tests read it: factionData, detailData, cardData, buttons, lines, pieces,
-                                  cards, title, you, watch, empty)
+                                  cards, banner, title, you, watch, empty)
 ]]
 
 local ReputationView = {}
@@ -145,11 +150,71 @@ local function EntryPlace(entry)
     local requirement = entry.requirement
     local place = entry.enchant and ns.Enchants.KeyName(entry.slot) or ns.SlotName(entry.slot)
     if requirement.kind == Reputation.QUEST then return place .. ", " .. L.REP_KIND_QUEST end
-    if requirement.profession then return place .. ", " .. ns.ProfessionName(requirement.profession) end
+    if requirement.profession then
+        return place .. ", " .. ns.ProfessionName(requirement.profession)
+            .. (requirement.skill and (" " .. requirement.skill) or "")
+    end
     return place
 end
 
+-- What a crafter's faction sells: the recipe, in its quality's colour.
+local function RecipeName(entry)
+    local requirement = entry.requirement
+    local name, quality, _
+    if requirement.recipe and GetInfo then name, _, quality = GetInfo(requirement.recipe) end
+    local _, _, _, hex = ns.QualityColor(quality)
+    return hex .. (name or Reputation.RecipeName(requirement) or L.REP_UNKNOWN) .. "|r"
+end
+
+local function RecipeIcon(entry)
+    local recipe = entry.requirement.recipe
+    local texture
+    if recipe and GetInfo then texture = select(10, GetInfo(recipe)) end
+    return texture or (recipe and GetIcon and GetIcon(recipe)) or EntryIcon(entry)
+end
+
+-- The professions a group's recipes ask, in the game's language.
+local function CraftNames(group)
+    local names = {}
+    for _, craft in ipairs((Reputation.Crafts(group))) do names[#names + 1] = ns.ProfessionName(craft.profession) end
+    return table.concat(names, ", ")
+end
+
+-- The player's skill in each of the group's professions that is theirs, against the most its recipes ask: gold
+-- once reached.
+local function CraftSkills(group)
+    local parts = {}
+    for _, craft in ipairs((Reputation.Crafts(group))) do
+        if craft.status == "crafter" then
+            parts[#parts + 1] = ((craft.rank or 0) >= craft.skill and GOLD or WHITE)
+                .. L.REP_CRAFT_SKILL:format(ns.ProfessionName(craft.profession), craft.rank or 0, craft.skill) .. "|r"
+        end
+    end
+    return table.concat(parts, GREY .. ", " .. "|r")
+end
+
+-- What makes the pieces when the reputation is the crafter's: one word for a single profession.
+local function CrafterNoun(group)
+    local single
+    for _, craft in ipairs((Reputation.Crafts(group))) do
+        if craft.profession ~= "Enchanting" then
+            if single then return L.REP_CRAFTER end
+            single = craft.profession
+        end
+    end
+    local key = single and ("REP_CRAFTER_" .. single)
+    local noun = key and L[key]
+    return (noun and noun ~= key) and noun or L.REP_CRAFTER
+end
+
+-- A crafter's recipes of a profession the player does not have: the reputation is the crafter's, not theirs.
+local function ForOthers(group)
+    return group.artisan == true and group.craftStatus == "other"
+end
+
+-- Reached, for the player: never for a reputation that is the crafter's.
 local function Met(group, standing)
+    if ForOthers(group) then return false end
     return Reputation.Status({ factionID = group.factionID, standing = standing }) == "met"
 end
 
@@ -190,6 +255,22 @@ local function PieceTooltip(owner, entry)
             reputation = entry.requirement })
         GameTooltip:AddLine(L.REP_PIECE_TIP, MUTED[1], MUTED[2], MUTED[3], true)
     end
+    Browser.ShowTooltip()
+end
+
+-- A recipe's own tooltip, then what it makes and what it asks.
+local function RecipeTooltip(owner, entry)
+    local requirement = entry.requirement
+    if not requirement.recipe then return PieceTooltip(owner, entry) end
+    Browser.PlaceTooltip(owner)
+    pcall(GameTooltip.SetItemByID, GameTooltip, requirement.recipe)
+    if GameTooltip:NumLines() == 0 then GameTooltip:SetText(Reputation.RecipeName(requirement) or "", 1, 1, 1) end
+    GameTooltip:AddLine(L.REP_TIP_MAKES:format(EntryName(entry)), 1, 1, 1, true)
+    GameTooltip:AddLine(L.REP_TIP_NEED:format(Reputation.NeedText(requirement)), 1, 1, 1, true)
+    local state = Reputation.Crafter(requirement) == "other"
+        and L.REP_CRAFT_NOT_YOURS:format(ns.ProfessionName(requirement.profession)) or Reputation.StateText(requirement)
+    GameTooltip:AddLine(state, MUTED[1], MUTED[2], MUTED[3], true)
+    if entry.id then GameTooltip:AddLine(L.REP_PIECE_TIP, MUTED[1], MUTED[2], MUTED[3], true) end
     Browser.ShowTooltip()
 end
 
@@ -241,7 +322,7 @@ end
 
 -- The player's place on the way: green on the way, gold once every piece is earned.
 local function FillWay(way, group)
-    local position = Reputation.Position(group.factionID)
+    local position = not ForOthers(group) and Reputation.Position(group.factionID) or nil
     local width = position and At(way.width, position) or 0
     way.fill:SetShown(width > 0)
     way.fill:SetWidth(math.max(1, width))
@@ -370,12 +451,17 @@ local function FillFaction(button, group, chosen)
     button.name:SetText(Reputation.FactionName(group.factionID) .. Reputation.UnknownMark(group))
 
     local earned = Earned(group)
-    local progress = Reputation.ProgressText(group.factionID, true)
-    button.state:SetText((earned and GOLD or GREY) .. progress .. "|r")
+    if ForOthers(group) then
+        button.state:SetText(GREY .. CraftNames(group) .. "|r")   -- whose reputation counts
+    else
+        button.state:SetText((earned and GOLD or GREY) .. Reputation.ProgressText(group.factionID, true) .. "|r")
+    end
 
     local alternatives = group.alts + group.other
     local altWidth = SetChip(button.altChip, alternatives > 0 and (alternatives .. " " .. L.RANK_ALT:lower()) or nil)
-    SetChip(button.bestChip, group.best > 0 and (group.best .. " " .. L.RANK_BIS) or nil)
+    local bestWidth = SetChip(button.bestChip, group.best > 0 and (group.best .. " " .. L.RANK_BIS) or nil)
+    local chips = altWidth + bestWidth + ((altWidth > 0 and bestWidth > 0) and 4 or 0)
+    button.state:SetWidth(math.max(40, LIST_WIDTH - BAR_ROOM - 24 - chips))
     button.altChip:ClearAllPoints()
     button.altChip:SetPoint("TOPRIGHT", -8, -30)
     button.bestChip:ClearAllPoints()
@@ -465,6 +551,11 @@ local function CreatePiece(parent)
     highlight:SetTexture("Interface\\Buttons\\ButtonHilight-Square")
     highlight:SetBlendMode("ADD")
     highlight:SetAllPoints()
+    -- a recipe's piece wears its profession in a corner
+    piece.craft = piece:CreateTexture(nil, "OVERLAY", nil, 1)
+    piece.craft:SetSize(14, 14)
+    piece.craft:SetPoint("BOTTOMRIGHT", 3, -3)
+    piece.craft:SetTexCoord(0.07, 0.93, 0.07, 0.93)
     piece.check = piece:CreateTexture(nil, "OVERLAY")
     piece.check:SetTexture("Interface\\Buttons\\UI-CheckBox-Check")
     piece.check:SetSize(18, 18)
@@ -547,6 +638,9 @@ local function FillTrack(group)
             local r, g, b = EntryQuality(entry)
             piece:SetBackdropBorderColor(r, g, b, 1)
             piece.check:SetShown(reached)
+            local profession = entry.requirement.kind == Reputation.RECIPE and entry.requirement.profession
+            piece.craft:SetShown(profession and true or false)
+            if profession then piece.craft:SetTexture((ns.Sources.Icon("crafted", profession))) end
             piece:ClearAllPoints()
             piece:SetPoint("TOPLEFT", track, "TOPLEFT", TRACK_INSET + left + (index - 1) * (PIECE + PIECE_GAP), 0)
             piece:Show()
@@ -636,7 +730,64 @@ local function CardData(group, ways)
     return { left, once, repeats }
 end
 
+-- In place of the cards when the reputation is the crafter's: how to get the pieces.
+local function CreateBanner(parent)
+    local banner = CreateCard(parent, MUTED)
+    banner.value:Hide()
+    banner.note:Hide()
+    banner.text = banner:CreateFontString(nil, "OVERLAY", FONTS.text)
+    banner.text:SetPoint("TOPLEFT", banner.label, "BOTTOMLEFT", 0, -6)
+    banner.text:SetWidth(DETAIL_WIDTH - 20)
+    banner.text:SetJustifyH("LEFT")
+    banner.text:SetWordWrap(true)
+    banner.text:SetTextColor(1, 1, 1)
+    return banner
+end
+
+local BANNERS = { equip = "REP_BANNER_EQUIP", none = "REP_BANNER_EQUIP", pickup = "REP_BANNER_PICKUP",
+    mixed = "REP_BANNER_MIXED" }
+
+-- What the banner says: how the pieces bind, as the game tells it, and the enchants an enchanter puts on.
+local function BannerText(group)
+    local bindings, enchants, scroll = {}, false, false
+    for _, entry in ipairs(Entries(group)) do
+        if entry.enchant then
+            enchants, scroll = true, scroll or entry.requirement.scroll == true
+        else
+            local binding = Reputation.Binding(entry.id) or "unknown"
+            if binding == "none" then binding = "equip" end
+            bindings[#bindings + 1] = binding
+        end
+    end
+    local sentences = {}
+    if bindings[1] then
+        local kind = bindings[1]
+        for _, binding in ipairs(bindings) do
+            if binding ~= kind then
+                kind = (kind == "unknown" or binding == "unknown") and "unknown" or "mixed"
+                if kind == "unknown" then break end
+            end
+        end
+        sentences[#sentences + 1] = L[BANNERS[kind] or "REP_BANNER_UNKNOWN"]:format(CrafterNoun(group))
+    end
+    if enchants then sentences[#sentences + 1] = scroll and L.REP_BANNER_ENCHANT_SCROLL or L.REP_BANNER_ENCHANT end
+    return table.concat(sentences, " ")
+end
+
+-- The cards, or the banner; returns the height they take.
 local function FillCards(group, ways)
+    local others = ForOthers(group)
+    view.banner:SetShown(others)
+    for _, card in ipairs(view.cards) do card:SetShown(not others) end
+    if others then
+        local banner, text = view.banner, BannerText(group)
+        banner.label:SetText(L.REP_BANNER_TITLE)
+        banner.text:SetText(text)
+        local height = math.max(CARD_HEIGHT, 10 + 14 + 6 + math.ceil(banner.text:GetStringHeight()) + 12)
+        banner:SetSize(DETAIL_WIDTH, height)
+        view.cardData = { { label = L.REP_BANNER_TITLE, value = text } }
+        return height
+    end
     local data = CardData(group, ways)
     local width = math.floor((DETAIL_WIDTH - 2 * CARD_GAP) / 3)
     for index, card in ipairs(view.cards) do
@@ -647,6 +798,7 @@ local function FillCards(group, ways)
         card.note:SetText(info.note or "")
     end
     view.cardData = data
+    return CARD_HEIGHT
 end
 
 ---------------------------------------------------------------------------
@@ -657,18 +809,24 @@ end
 local function DetailLines(group, ways)
     local lines = {}
     local function Add(line) lines[#lines + 1] = line end
-    local function Section(key, text, icon)
-        Add({ kind = "section", key = key, text = text, folded = folded[key] == true,
-            icon = icon or SECTION_ICONS[key] })
-        return not folded[key]
+    -- foldedFirst: folded until the player opens it
+    local function Section(key, text, icon, foldedFirst)
+        local isFolded = folded[key]
+        if isFolded == nil then isFolded = foldedFirst == true end
+        Add({ kind = "section", key = key, text = text, folded = isFolded, icon = icon or SECTION_ICONS[key] })
+        return not isFolded
     end
 
+    -- a crafter's faction sells recipes: they are what the lines name
+    local recipes, others = group.artisan == true, ForOthers(group)
     local first = Entries(group)[1]
-    if Section("pieces", L.REP_SECTION_PIECES, first and EntryIcon(first)) then
+    local title = recipes and L.REP_SECTION_RECIPES or L.REP_SECTION_PIECES
+    if Section("pieces", title, first and (recipes and RecipeIcon(first) or EntryIcon(first))) then
         for _, entry in ipairs(Entries(group)) do
             local standing = entry.requirement.standing
             local rank = entry.role == "best" and (WHITE .. L.RANK_BIS) or (GREY .. L.RANK_ALT)
-            Add({ kind = "entry", text = EntryName(entry), entry = entry, place = EntryPlace(entry),
+            Add({ kind = "entry", text = recipes and RecipeName(entry) or EntryName(entry), entry = entry,
+                recipe = recipes, icon = recipes and RecipeIcon(entry) or nil, place = EntryPlace(entry),
                 standing = (Met(group, standing) and GOLD or WHITE) .. Reputation.StandingName(standing) .. "|r",
                 right = rank .. "|r" })
         end
@@ -680,7 +838,10 @@ local function DetailLines(group, ways)
         end
     end
 
-    if ways.listed > 0 and Section("quests", L.REP_SECTION_QUESTS:format(ways.listed, ways.repeatable)) then
+    -- the crafter's reputation: the quests are for a player who would learn the recipes, folded until asked for
+    local questKey = others and "questsSelf" or "quests"
+    local questTitle = (others and L.REP_SECTION_QUESTS_SELF or L.REP_SECTION_QUESTS):format(ways.listed, ways.repeatable)
+    if ways.listed > 0 and Section(questKey, questTitle, SECTION_ICONS.quests, others) then
         for _, quest in ipairs(ways.quests) do
             Add({ kind = "quest", text = quest.quest, evidence = "data", right = "+" .. quest.amount,
                 chip = quest.repeats and L.REP_QUEST_REPEATS or L.REP_QUEST_ONCE })
@@ -688,7 +849,7 @@ local function DetailLines(group, ways)
         if not ways.quests[1] then Add({ kind = "note", text = L.REP_QUESTS_NONE, evidence = "unknown" }) end
     end
 
-    if Section("unknown", L.REP_SECTION_UNKNOWN) then
+    if Section(others and "unknownSelf" or "unknown", L.REP_SECTION_UNKNOWN, SECTION_ICONS.unknown, others) then
         for _, text in ipairs(ways.checks) do Add({ kind = "note", text = text, evidence = "check" }) end
         for _, text in ipairs(ways.unknowns) do Add({ kind = "note", text = text, evidence = "unknown" }) end
     end
@@ -720,7 +881,9 @@ end
 
 local function LineEnter(line)
     local data = line.data
-    if data and data.kind == "entry" then PieceTooltip(line, data.entry) end
+    if data and data.kind == "entry" then
+        if data.recipe then RecipeTooltip(line, data.entry) else PieceTooltip(line, data.entry) end
+    end
 end
 
 local function LineClick(line)
@@ -730,7 +893,7 @@ local function LineClick(line)
         PieceClick(data.entry)
     elseif data.kind == "section" then
         Widgets.Click()
-        folded[data.key] = not folded[data.key] or nil
+        folded[data.key] = not data.folded
         ReputationView.Update(view.state)
     end
 end
@@ -841,7 +1004,7 @@ local function FillLine(line, data, striped)
     elseif entry then
         line.icon:SetSize(ICON, ICON)
         line.icon:SetPoint("LEFT", 6, 0)
-        line.icon:SetTexture(EntryIcon(data.entry))
+        line.icon:SetTexture(data.icon or EntryIcon(data.entry))
         line.standing:SetText(data.standing)
         line.place:SetText(data.place)
         line.text:SetPoint("LEFT", line.icon, "RIGHT", 6, 0)
@@ -890,11 +1053,17 @@ end
 
 local function ShowDetail(group)
     view.title:SetText(Reputation.FactionName(group.factionID) .. Reputation.UnknownMark(group))
-    local you = L.REP_YOU:format(Reputation.ProgressText(group.factionID))
+    local you = (Earned(group) and GOLD or GREY) .. L.REP_YOU:format(Reputation.ProgressText(group.factionID)) .. "|r"
+    local separator = GREY .. "  ·  |r"
+    if ForOthers(group) then
+        you = GREY .. L.REP_CRAFT_NOT_YOURS:format(CraftNames(group)) .. "|r"
+    elseif group.artisan and group.craftStatus == "crafter" then
+        you = you .. separator .. CraftSkills(group)
+    elseif group.artisan then
+        you = you .. separator .. GREY .. L.REP_ARTISAN_NOTE .. "|r"   -- the game does not say the professions
+    end
     local unsure = Reputation.UnknownRemark(group)
-    view.you:SetText((Earned(group) and GOLD or GREY) .. you .. "|r"
-        .. (group.artisan and (GREY .. "  ·  " .. L.REP_ARTISAN_NOTE .. "|r") or "")
-        .. (unsure and (GREY .. "  ·  " .. unsure .. "|r") or ""))
+    view.you:SetText(you .. (unsure and (separator .. GREY .. unsure .. "|r") or ""))
     FillWatch(group)
 
     local ways = Reputation.Ways(group.factionID, view.state and view.state.class)
@@ -903,12 +1072,14 @@ local function ShowDetail(group)
     view.track:SetPoint("TOPLEFT", view.detailChild, "TOPLEFT", 0, 0)
     local offset = TRACK_BLOCK + 4
 
-    FillCards(group, ways)
+    local cardsHeight = FillCards(group, ways)
     for index, card in ipairs(view.cards) do
         card:ClearAllPoints()
         card:SetPoint("TOPLEFT", view.detailChild, "TOPLEFT", (index - 1) * (card:GetWidth() + CARD_GAP), -offset)
     end
-    offset = offset + CARD_HEIGHT + 6
+    view.banner:ClearAllPoints()
+    view.banner:SetPoint("TOPLEFT", view.detailChild, "TOPLEFT", 0, -offset)
+    offset = offset + cardsHeight + 6
 
     local data = DetailLines(group, ways)
     local count = 0   -- the lines under a section: every other one lighter
@@ -995,6 +1166,8 @@ function ReputationView.Create(parent)
     view.track = CreateTrack(view.detailChild)
     view.cards = { CreateCard(view.detailChild, GREEN), CreateCard(view.detailChild, TEAL),
         CreateCard(view.detailChild, TEAL) }
+    view.banner = CreateBanner(view.detailChild)
+    view.banner:Hide()
     view.pieces = {}
 
     view.empty = view:CreateFontString(nil, "OVERLAY", "GameFontDisable")

@@ -637,6 +637,23 @@ class GeneratorTest(unittest.TestCase):
             self.assertIn(int(fields[2]), factions)
             self.assertIn(fields[3], {"3", "4", "5", "6", "7"})
             self.assertIn(fields[4], {reputations.WEAR, reputations.QUEST, reputations.RECIPE})
+            if fields[4] == reputations.RECIPE:
+                self.assertTrue(fields[8] and fields[9].isdigit(), f"{fields[0]}: a recipe says its profession and skill")
+                self.assertTrue(fields[10].isdigit(), f"{fields[0]}: a recipe names its recipe item")
+        # a recipe's vendor is the one that sells the recipe: Timbermaw's patterns are Meilosh's, in Felwood
+        rows = {line.split("|")[0]: line.split("|") for line in block("items") + block("enchants")}
+        vendors = {line.split("|")[0]: line.split("|") for line in block("vendors")}
+        if "15065" in rows:
+            self.assertEqual(rows["15065"][4:], ["r", "11557", "", "Pattern: Warbear Woolies", "Leatherworking", "260",
+                                                 "20254"])
+            self.assertEqual(vendors["11557"], ["11557", "Meilosh", "1448", "65.7", "2.8"])
+        if "s23800" in rows:
+            self.assertEqual(rows["s23800"][1:], ["576", "5", "r", "1", "Formula: Enchant Weapon - Agility", "11557",
+                                                  "19445", "Enchanting", "290"])
+        for fields in rows.values():
+            vendor = fields[5] if fields[0][0] != "s" else fields[6]
+            if fields[3 if fields[0][0] == "s" else 4] == reputations.RECIPE and vendor:
+                self.assertIn(vendor, vendors, f"{fields[0]}: the recipe's vendor is in the vendors block")
 
     def test_sources_read_in_questiedb_fill_the_data(self):
         """corrections.fill on the real data: an item of ForeverDB's lists gets a source and its phase, a piece

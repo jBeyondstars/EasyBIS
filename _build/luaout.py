@@ -372,13 +372,19 @@ def reputation_file(db, all_ladders, reading: dict) -> str:
             items.append("|".join(map(str, (
                 item_id, record["side"], record["faction"], record["standing"], record["kind"],
                 record.get("vendor", ""), record.get("price", ""), _field(record.get("via", "")),
-                record.get("profession", ""), record.get("skill", "")))))
+                record.get("profession", ""), record.get("skill", ""), record.get("recipe", "")))))
+    formulas = []
+    for enchant, record in sorted(reading.get("enchants", {}).items()):
+        if enchant not in enchants:
+            continue
+        if record.get("vendor"):
+            used.add(record["vendor"])
+        formulas.append("|".join(map(str, (
+            enchant, record["faction"], record["standing"], record["kind"], "1" if record.get("scroll") else "",
+            _field(record.get("via", "")), record.get("vendor", ""), record.get("recipe", ""),
+            record.get("profession", ""), record.get("skill", "")))))
     sellers = ["|".join([str(npc)] + [_field(str(text)) for text in reading["vendors"][npc]])
                for npc in sorted(used) if npc in reading.get("vendors", {})]
-    formulas = ["|".join(map(str, (
-        enchant, record["faction"], record["standing"], record["kind"], "1" if record.get("scroll") else "",
-        _field(record.get("via", "")))))
-        for enchant, record in sorted(reading.get("enchants", {}).items()) if enchant in enchants]
 
     lines = _header(db, "The reputations the listed items and enchants ask for, and the quests that earn them.", (
         f"Read in ForeverDB's Items.lua and Recipes.lua and in QuestieDB {reading.get('questiedb', '?')} "
@@ -387,8 +393,11 @@ def reputation_file(db, all_ladders, reading: dict) -> str:
         "npc that sells the most|1 when a quest rewards its pieces",
         "  methods   faction|quest|amount|1 when it repeats|side|the classes that may take it (the game's mask), empty for all",
         "  vendors   npc|name|uiMap|x|y",
-        "  items     id|side|faction|standing|kind|vendor npc|price in copper|quest or recipe|profession|skill",
-        "  enchants  id|faction|standing|kind|1 when a scroll does the same|quest or recipe",
+        "  items     id|side|faction|standing|kind|vendor npc|price in copper|quest or recipe|profession|skill|"
+        "the recipe's item",
+        "  enchants  id|faction|standing|kind|1 when a scroll does the same|quest or recipe|vendor npc|"
+        "the recipe's item|profession|skill",
+        "  a recipe's vendor npc sells the recipe, not the piece it makes",
         "  kind: w the wearer's reputation, q a quest asks for it, r the crafter's: the recipe is sold against it",
         "  standing: 3 Neutral, 4 Friendly, 5 Honored, 6 Revered, 7 Exalted",
     ))

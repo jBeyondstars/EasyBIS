@@ -7,11 +7,22 @@ Nothing here depends on the window: a tab, a tooltip or a later feature reads th
 
   Reputation.Requirement(itemId, side)     what the item asks for on that side (the player's when not given),
                                            or nil: { factionID, standing, kind, side, vendor, price, via,
-                                           profession, skill }
+                                           profession, skill, recipe }
+                                           for a recipe, vendor sells the recipe and recipe is its item
       standing   3 Neutral, 4 Friendly, 5 Honored, 6 Revered, 7 Exalted
       kind      Reputation.WEAR the wearer's; QUEST a quest that rewards the item asks for it; RECIPE the recipe
                  is sold against it: the crafter's reputation counts, so it stays out of what the player needs
   Reputation.EnchantRequirement(id)        the same for an enchant ("s20025"), with scroll: a scroll does the same
+  Reputation.Professions()                 the player's professions, { [English name] = skill }, or nil when the
+                                           game does not say
+  Reputation.Crafter(requirement)          for a recipe: "crafter" and the player's skill when the profession is
+                                           theirs, "other" when it is not, nil when unknown or not a recipe
+  Reputation.Crafts(group)                 a group's professions: { { profession, skill (the most its recipes ask),
+                                           rank (the player's, or nil), status (as Crafter) }, ... }, and the
+                                           group's status: "crafter" when one of them is the player's
+  Reputation.Binding(itemId)               "equip", "pickup", "none" (the game binds it to nobody), or nil when the
+                                           game does not say
+  Reputation.RecipeName(requirement)       the recipe's name in the game's language, or the data's
   Reputation.Standing(factionID)           what the game says: { factionID, known, met, name, standing, value, span,
                                            total }. known is false when the game has no such faction; met is false
                                            for a faction never met, nil when the reputation pane hides the answer
@@ -20,9 +31,11 @@ Nothing here depends on the window: a tab, a tooltip or a later feature reads th
                                            game reads it as Neutral 0 without the player having been there
   Reputation.Reachable(requirement)        nothing stands in the player's way: no requirement, a recipe, or it is met
   Reputation.Needs(class, spec, list, phase, side)
-                                           { own = { group, ... }, artisan = { group, ... } }, most wanted first
+                                           { own = { group, ... }, artisan = { group, ... } }, most wanted first;
+                                           the recipes of a profession the player has come first
       group      { factionID, artisan, best, alts, other, met, steps = { [standing] = { entry, ... } } }
-                 best, alts, other count the pieces; met the best ones the player can already have
+                 best, alts, other count the pieces; met the best ones the player can already have; a crafter's
+                 group also has craftStatus (as Crafts) and crafter (true when it is the player's profession)
       entry      { id, enchant, slot, role = "best"|"alt"|"other", requirement }
   Reputation.Summary(cells)                the sheet's cells (Rows.Character) per faction, recipes left out:
                                            { { factionID, name, met, total }, ... }
@@ -58,7 +71,7 @@ Words, for the frames to show:
   Reputation.VendorText(factionID)         who sells its pieces, or "Unknown"
   Reputation.TooltipLines(itemId)          { { text, r, g, b }, ... }
 
-Fires REPUTATION_CHANGED (ns:On) once after a burst of the game's UPDATE_FACTION.
+Fires REPUTATION_CHANGED (ns:On) once after a burst of the game's UPDATE_FACTION or SKILL_LINES_CHANGED.
 
 Gold is kept for what is earned. What the data or the game does not say is written as unknown, and no time to
 reach a standing is ever said: nothing here measures the player's gains.
@@ -134,14 +147,15 @@ local function Catalog()
         table.insert(catalog.items[id], {
             itemId = id, side = f[2], factionID = tonumber(f[3]), standing = tonumber(f[4]), kind = f[5],
             vendor = tonumber(f[6]), price = tonumber(f[7]), via = Text(f[8]), profession = Text(f[9]),
-            skill = tonumber(f[10]),
+            skill = tonumber(f[10]), recipe = tonumber(f[11]),
         })
     end
     for line in (data.enchants or ""):gmatch("[^\n]+") do
         local f = Fields(line)
         catalog.enchants[f[1]] = {
             enchant = f[1], side = "", factionID = tonumber(f[2]), standing = tonumber(f[3]), kind = f[4],
-            scroll = f[5] == "1", via = Text(f[6]),
+            scroll = f[5] == "1", via = Text(f[6]), vendor = tonumber(f[7]), recipe = tonumber(f[8]),
+            profession = Text(f[9]), skill = tonumber(f[10]),
         }
     end
     return catalog
@@ -329,6 +343,110 @@ function Reputation.Watch(factionID, on)
 end
 
 ---------------------------------------------------------------------------
+-- The crafter
+---------------------------------------------------------------------------
+
+-- The game's skill line of each profession the data names.
+local SKILL_LINES = { Alchemy = 171, Blacksmithing = 164, Enchanting = 333, Engineering = 202, Leatherworking = 165,
+    Tailoring = 197, Cooking = 185, ["First Aid"] = 129, Fishing = 356, Mining = 186, Herbalism = 182, Skinning = 393 }
+
+local function Profession(name, skillLine)
+    for english, line in pairs(SKILL_LINES) do
+        if line == skillLine or (name and name == ns.ProfessionName(english)) then return english end
+    end
+    return nil
+end
+
+-- GetProfessions gives the indexes of the player's professions, a hole where one is not learned.
+local function ReadProfessions(...)
+    local found = {}
+    for position = 1, select("#", ...) do
+        local index = select(position, ...)
+        if index then
+            local ok, name, _, rank, _, _, _, skillLine = pcall(GetProfessionInfo, index)
+            local english = ok and Profession(name, skillLine)
+            if english then found[english] = rank or 0 end
+        end
+    end
+    return found
+end
+
+function Reputation.Professions()
+    if GetProfessions and GetProfessionInfo then
+        local ok, found = pcall(function() return ReadProfessions(GetProfessions()) end)
+        return ok and found or nil
+    end
+    if GetNumSkillLines and GetSkillLineInfo then
+        local found = {}
+        for index = 1, GetNumSkillLines() or 0 do
+            local name, isHeader, _, rank = GetSkillLineInfo(index)
+            local english = not isHeader and Profession(name)
+            if english then found[english] = rank or 0 end
+        end
+        return found
+    end
+    return nil
+end
+
+function Reputation.Crafter(requirement)
+    if not requirement or requirement.kind ~= RECIPE or not requirement.profession then return nil end
+    local professions = Reputation.Professions()
+    if not professions then return nil end
+    local rank = professions[requirement.profession]
+    if rank then return "crafter", rank end
+    return "other"
+end
+
+function Reputation.Crafts(group)
+    local crafts, byName, status = {}, {}, nil
+    local professions = Reputation.Professions()
+    for _, standing in ipairs(Reputation.STANDINGS) do
+        for _, entry in ipairs(group.steps[standing] or {}) do
+            local requirement = entry.requirement
+            local name = requirement.kind == RECIPE and requirement.profession
+            if name then
+                local craft = byName[name]
+                if not craft then
+                    local rank = professions and professions[name]
+                    craft = { profession = name, skill = 0, rank = rank,
+                        status = professions and (rank and "crafter" or "other") or nil }
+                    byName[name] = craft
+                    crafts[#crafts + 1] = craft
+                    if craft.status == "crafter" or (craft.status == "other" and status == nil) then
+                        status = craft.status
+                    end
+                end
+                craft.skill = math.max(craft.skill, requirement.skill or 0)
+            end
+        end
+    end
+    table.sort(crafts, function(a, b) return a.profession < b.profession end)
+    return crafts, status
+end
+
+local BINDINGS = { [0] = "none", [1] = "pickup", [2] = "equip" }
+
+function Reputation.Binding(itemId)
+    local info = (C_Item and C_Item.GetItemInfo) or GetItemInfo
+    if not info or not itemId then return nil end
+    local ok, name, bind = pcall(function()
+        local values = { info(itemId) }
+        return values[1], values[14]
+    end)
+    if not ok or not name then return nil end
+    return BINDINGS[bind]
+end
+
+function Reputation.RecipeName(requirement)
+    local info = (C_Item and C_Item.GetItemInfo) or GetItemInfo
+    if requirement.recipe and info then
+        local ok, name = pcall(info, requirement.recipe)
+        if ok and name then return name end
+    end
+    return requirement.via
+end
+
+---------------------------------------------------------------------------
 -- What a spec needs
 ---------------------------------------------------------------------------
 
@@ -389,7 +507,14 @@ function Reputation.Needs(class, spec, list, phase, side)
         return a.factionID < b.factionID
     end
     table.sort(own, Order)
-    table.sort(artisan, Order)
+    for _, group in ipairs(artisan) do
+        local _, status = Reputation.Crafts(group)
+        group.craftStatus, group.crafter = status, status == "crafter"
+    end
+    table.sort(artisan, function(a, b)
+        if a.crafter ~= b.crafter then return a.crafter end
+        return Order(a, b)
+    end)
     return { own = own, artisan = artisan }
 end
 
@@ -449,20 +574,34 @@ function Reputation.Ratio(factionID)
     return math.max(0, math.min(1, standing.value / standing.span))
 end
 
-local NEED_KEYS = { [WEAR] = "REP_NEED", [QUEST] = "REP_NEED_QUEST", [RECIPE] = "REP_NEED_RECIPE" }
+local NEED_KEYS = { [WEAR] = "REP_NEED", [QUEST] = "REP_NEED_QUEST" }
+
+-- What a profession calls its recipes: a pattern, plans, a formula...
+function Reputation.RecipeWord(requirement)
+    local profession = requirement.profession or (requirement.enchant and "Enchanting")
+    local key = profession and ("REP_RECIPE_" .. profession:gsub(" ", "_"))
+    local word = key and L[key]
+    if not word or word == key then return L.REP_RECIPE end
+    return word
+end
 
 function Reputation.NeedText(requirement)
-    local key = NEED_KEYS[requirement.kind] or "REP_NEED"
-    if requirement.enchant and requirement.kind == RECIPE then key = "REP_NEED_FORMULA" end
-    return L[key]:format(Reputation.FactionName(requirement.factionID), Reputation.StandingName(requirement.standing))
+    local faction, standing = Reputation.FactionName(requirement.factionID), Reputation.StandingName(requirement.standing)
+    if requirement.kind == RECIPE then return L.REP_NEED_RECIPE:format(Reputation.RecipeWord(requirement), faction, standing) end
+    return L[NEED_KEYS[requirement.kind] or "REP_NEED"]:format(faction, standing)
 end
 
 function Reputation.StateText(requirement)
+    -- a recipe: the crafter's reputation counts. Only a player of that profession is told theirs.
+    if requirement.kind == RECIPE then
+        local crafter = Reputation.Crafter(requirement)
+        if crafter == "other" then return GREY .. ns.ProfessionName(requirement.profession) .. "|r" end
+        if crafter ~= "crafter" then return GREY .. L.REP_FOR_CRAFTER .. "|r" end
+    end
     local status = Reputation.Status(requirement)
     if status == "met" then return GOLD .. L.REP_MET .. "|r" end
     if status == "unknown" then return WHITE .. L.REP_UNKNOWN .. "|r" end
     if status == "other" then return GREY .. L.REP_OTHER_SIDE .. "|r" end
-    if requirement.kind == RECIPE then return GREY .. L.REP_FOR_CRAFTER .. "|r" end
     local standing = Reputation.Standing(requirement.factionID)
     if standing.met == false then return GREY .. L.REP_NOT_MET .. "|r" end
     return GREY .. L.REP_YOU:format(Reputation.ProgressText(requirement.factionID, ns:GetOption("repCompact"))) .. "|r"
@@ -502,7 +641,12 @@ function Reputation.Sellers(group)
             if requirement.kind == QUEST then
                 Add(L.REP_SELLER_QUEST:format(requirement.via or L.REP_UNKNOWN))
             elseif requirement.kind == RECIPE then
-                Add(L.REP_SELLER_RECIPE:format(requirement.via or L.REP_UNKNOWN))
+                local name, line = Reputation.RecipeName(requirement) or L.REP_UNKNOWN, VendorLine(requirement.vendor)
+                if line then
+                    Add(L.REP_SELLER_RECIPE_AT:format(name, line), Catalog().vendors[requirement.vendor])
+                else
+                    Add(L.REP_SELLER_RECIPE:format(name))
+                end
             else
                 local line = VendorLine(requirement.vendor)
                 if line then Add(line, Catalog().vendors[requirement.vendor]) end
@@ -528,7 +672,7 @@ local function SourceLine(requirement)
     if requirement.kind == QUEST then return L.REP_TIP_QUEST:format(requirement.via or L.REP_UNKNOWN) end
     if requirement.kind == RECIPE then
         local profession = requirement.profession and ns.ProfessionName(requirement.profession)
-        local name = requirement.via or L.REP_UNKNOWN
+        local name = Reputation.RecipeName(requirement) or L.REP_UNKNOWN
         return L.REP_TIP_RECIPE:format(profession and (name .. " (" .. profession .. ")") or name)
     end
     return L.REP_TIP_VENDOR:format(VendorLine(requirement.vendor) or L.REP_UNKNOWN)
@@ -537,16 +681,24 @@ end
 function Reputation.TooltipLines(itemId)
     local requirement = Reputation.Requirement(itemId)
     if not requirement then return {} end
-    local earned = Reputation.Status(requirement) == "met"
+    -- a recipe of another profession: the player's own standing says nothing of the piece
+    local crafter = Reputation.Crafter(requirement)
+    local earned = Reputation.Status(requirement) == "met" and crafter ~= "other"
     local lines = { {
         text = L.REP_TIP_NEED:format(Reputation.NeedText(requirement)),
         r = 1, g = earned and 0.82 or 1, b = earned and 0 or 1,
     } }
     local function Quiet(text) lines[#lines + 1] = { text = text, r = MUTED[1], g = MUTED[2], b = MUTED[3] } end
-    Quiet(L.REP_YOU:format(Reputation.ProgressText(requirement.factionID)))
+    if crafter == "other" then
+        Quiet(L.REP_CRAFT_NOT_YOURS:format(ns.ProfessionName(requirement.profession)))
+    else
+        Quiet(L.REP_YOU:format(Reputation.ProgressText(requirement.factionID)))
+    end
     Quiet(SourceLine(requirement))
     if requirement.kind == WEAR then
         Quiet(L.REP_TIP_PRICE:format(requirement.price and Money(requirement.price) or L.REP_UNKNOWN))
+    elseif requirement.kind == RECIPE then
+        Quiet(L.REP_TIP_RECIPE_VENDOR:format(VendorLine(requirement.vendor) or L.REP_UNKNOWN))
     end
     local faction = Catalog().factions[requirement.factionID]
     Quiet(faction and faction.quests > 0 and L.REP_TIP_FARM or L.REP_TIP_FARM_UNKNOWN)
@@ -596,6 +748,7 @@ end
 
 local events = CreateFrame("Frame")
 events:RegisterEvent("UPDATE_FACTION")
+pcall(events.RegisterEvent, events, "SKILL_LINES_CHANGED")   -- a profession learned or a skill gained: the recipes follow
 events:SetScript("OnEvent", function()
     standings, listed, wholeList = {}, nil, nil
     if queued then return end
