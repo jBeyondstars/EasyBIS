@@ -2079,6 +2079,20 @@ class WindowTest(unittest.TestCase):
         self.assertIn(2798, shown(), "the tab follows at once")
         self.assertNotIn(2799, shown())
 
+    def test_reputations_sections_have_room_between_them(self):
+        game = self.pvp_game()
+        game.stub.run(game.ns.Browser.window.tabs.buttons[5], "OnClick")
+        view = game.ns.ReputationView.view
+        count = len(view.detailData)
+        tops = [-view.lines[i].points[1][5] for i in range(1, count + 1)]
+        heights = [view.lines[i].height for i in range(1, count + 1)]
+        kinds = [view.detailData[i].kind for i in range(1, count + 1)]
+        self.assertGreater(kinds.count("section"), 2)
+        self.assertEqual(kinds[0], "section")
+        for index in range(1, count):
+            gap = 14 if kinds[index] == "section" else 0
+            self.assertEqual(tops[index], tops[index - 1] + heights[index - 1] + gap, (index, kinds[index]))
+
     def test_reputations_tab_shows_a_piece_asking_for_neutral(self):
         game = self.pvp_game()
         window = game.ns.Browser.window

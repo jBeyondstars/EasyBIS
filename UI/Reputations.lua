@@ -27,7 +27,8 @@ theirs, the header says their skill against the most the recipes ask.
 
 Gold is for what the player has earned: a reached standing, a piece within reach. The faction chosen is lit in
 blue. The rest of the colour is the game's own art: the status bar texture on the ways, the tooltip frame on the
-cards, soft bands under the header, the sections and the factions, every other line lighter, an icon per section.
+cards, soft golden brown bands under the header, the sections and the factions, every other line lighter, an icon
+per section, and room between the sections.
 Nothing here says how long a standing takes: nothing measures it.
 
   ReputationView.Create(parent)   the view, hidden
@@ -61,6 +62,7 @@ local CARD_HEIGHT = 64
 local CARD_GAP = 8
 local ICON = 24
 local HEIGHTS = { section = 34, entry = 30, seller = 26, quest = 22, note = 22 }
+local SECTION_GAP = 14        -- room above a section, after the one before it
 local UNKNOWN_ICON = "Interface\\Icons\\INV_Misc_QuestionMark"
 local STATUS_BAR = "Interface\\TargetingFrame\\UI-StatusBar"
 local SECTION_ICONS = {
@@ -83,6 +85,9 @@ local GREEN = { 0.12, 0.62, 0.22 }       -- the way travelled, before every piec
 local SELECTED = { 0.35, 0.60, 1.00 }    -- the faction chosen: not gold, which is for what is earned
 local SLATE = { 0.20, 0.23, 0.30 }       -- the way still to go
 local TEAL = { 0.25, 0.70, 0.75 }        -- what the data says
+-- The grounds under the factions, the sections and the header: a dark golden brown, fading out to the right.
+-- Far darker than the gold of what is earned, and never under a single line that could pass for it.
+local BRONZE = { 0.55, 0.38, 0.16 }
 local DOTS = { data = { 0.56, 0.82, 0.62 }, check = { 0.94, 0.60, 0.33 }, unknown = { 0.66, 0.66, 0.70 } }
 local THRESHOLDS = Reputation.THRESHOLDS
 local WHOLE_WAY = THRESHOLDS[7]
@@ -390,7 +395,7 @@ local function CreateFaction(parent)
     button:SetSize(width, FACTION_HEIGHT - 2)
     button.band = button:CreateTexture(nil, "BACKGROUND", nil, -1)
     button.band:SetAllPoints()
-    Band(button.band, "HORIZONTAL", 1, 1, 1, 0.07, 0)
+    Band(button.band, "HORIZONTAL", BRONZE[1], BRONZE[2], BRONZE[3], 0.26, 0.03)
     button.rule = button:CreateTexture(nil, "BACKGROUND")
     button.rule:SetColorTexture(1, 1, 1, 0.06)
     button.rule:SetHeight(1)
@@ -887,7 +892,7 @@ local function CreateLine(parent)
     line.band = line:CreateTexture(nil, "BACKGROUND", nil, -1)
     line.band:SetPoint("TOPLEFT", 0, -4)
     line.band:SetPoint("BOTTOMRIGHT", 0, 2)
-    Band(line.band, "HORIZONTAL", 1, 1, 1, 0.10, 0)
+    Band(line.band, "HORIZONTAL", BRONZE[1], BRONZE[2], BRONZE[3], 0.34, 0)
     line.stripe = line:CreateTexture(nil, "BACKGROUND", nil, -1)
     line.stripe:SetAllPoints()
     line.stripe:SetColorTexture(1, 1, 1, 0.035)
@@ -1080,6 +1085,7 @@ local function ShowDetail(group)
             view.lines[index] = line
         end
         count = lineData.kind == "section" and 0 or count + 1
+        if lineData.kind == "section" and index > 1 then offset = offset + SECTION_GAP end
         local height = FillLine(line, lineData, count > 0 and count % 2 == 0)
         line:ClearAllPoints()
         line:SetPoint("TOPLEFT", view.detailChild, "TOPLEFT", 0, -offset)
@@ -1114,7 +1120,7 @@ function ReputationView.Create(parent)
     view.headerBand:SetPoint("TOPLEFT", LIST_WIDTH + 3, 2)
     view.headerBand:SetPoint("TOPRIGHT", 0, 2)
     view.headerBand:SetHeight(52)
-    Band(view.headerBand, "HORIZONTAL", 1, 1, 1, 0.09, 0)
+    Band(view.headerBand, "HORIZONTAL", BRONZE[1], BRONZE[2], BRONZE[3], 0.34, 0)
 
     view.list, view.listChild = Widgets.Scroll(view)
     view.list:SetPoint("TOPLEFT", 0, 0)
