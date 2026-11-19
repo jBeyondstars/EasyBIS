@@ -165,8 +165,8 @@ def build(cache_dir: Path = CACHE, out_dir: Path = OUT, details: bool = False) -
             counts = ", ".join(f"{reputations.FACTIONS[faction][0]} {len(pieces)}"
                                for faction, pieces in sorted(unasked.items(), key=lambda pair: (-len(pair[1]), pair[0])))
             print(f"  {sum(map(len, unasked.values()))} listed pieces a faction's quartermaster sells have no requirement "
-                  f"any source gives ({counts}): the addon says they ask for none. Read them in the game "
-                  "(--capture-tool, /ebiscapture), then --import-reputations.")
+                  f"any source gives ({counts}): the addon says they ask for none. On Forever the quartermaster "
+                  "asks for a standing their tooltips do not carry: only his window shows it.")
         if outside:
             print("  Factions reputations.FACTIONS lacks, asked for by a quest or a recipe of what the lists show "
                   "(left out, the addon says nothing is asked): " + "; ".join(
@@ -249,9 +249,9 @@ def reputation_report(parsed: dict) -> list[str]:
                          else fact or "none")
     lines = [f"Reputations the game's tooltips ask for, against the data: {len(found['same'])} the same, "
              f"{len(found['missing'])} the data has not yet (--import-reputations keeps them), {len(found['differs'])} "
-             f"another, {len(found['extra'])} the data asks and the game does not, {len(found['outside'])} of a faction "
+             f"another, {len(found['extra'])} the data asks and the item's tooltip does not (its vendor may), {len(found['outside'])} of a faction "
              "reputations.FACTIONS lacks."]
-    words = {"missing": "the data has none", "differs": "another", "extra": "the game asks none",
+    words = {"missing": "the data has none", "differs": "another", "extra": "the item's tooltip shows none",
              "outside": "a faction the table lacks"}
     for kind, word in words.items():
         if found[kind]:

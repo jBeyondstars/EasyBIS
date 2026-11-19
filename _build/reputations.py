@@ -3,7 +3,9 @@
 Three kinds of requirement:
   w  the item itself asks for it: the vendor sells it from that standing and the wearer needs it
      (ForeverDB's Items.lua, "r<faction>~<standing>"; for a piece it gives none, the game's own tooltip,
-     "Requires <faction> - <standing>", as the capture tool read it: read_capture);
+     "Requires <faction> - <standing>", as the capture tool read it: read_capture). A tooltip without that line
+     proves nothing: on Forever the Alterac and Warsong quartermasters ask for a standing their pieces do not
+     carry, and only the vendor's window shows it (seen in the game on 2026-11-19);
   q  the only quests that reward the item ask for it (QuestieDB's requiredMinRep);
   r  the recipe is sold against it: the crafter needs it, not the wearer (ForeverDB's Recipes.lua). The
      recipe's own item is kept, and its vendor as QuestieDB places it: that is what the faction sells.
@@ -129,9 +131,10 @@ def read_item_facts(text: str) -> tuple[dict[int, tuple[int, int]], dict[int, st
 
 
 def read_capture(parsed: dict) -> tuple[dict[int, tuple[int, int]], dict[int, str], set[int]]:
-    """({item: (faction, standing)}, {item: the name of a faction the table above lacks}, {the items read without
-    one}) from what /ebiscapture read (capture.parse_saved): the line "Requires <faction> - <standing>" of the
-    game's tooltip. The phrase is read in English only: another language gives nothing."""
+    """({item: (faction, standing)}, {item: the name of a faction the table above lacks}, {the items whose tooltip
+    has no such line}) from what /ebiscapture read (capture.parse_saved): the line "Requires <faction> -
+    <standing>" of the item's tooltip. The phrase is read in English only: another language gives nothing.
+    The last set says nothing of what a vendor asks: see the top of this file."""
     facts, others, plain = {}, {}, set()
     if parsed.get("locale") != "enUS":
         return facts, others, plain
@@ -580,9 +583,9 @@ def collect(db, folder, store, shown=(), today: str | None = None, questie_folde
     A capture that says otherwise than ForeverDB changes nothing: "differ" names those pieces."""
     folder = Path(folder)
     facts, others = read_item_facts((folder / "Items.lua").read_text(encoding="utf-8"))
-    seen, plain, differ = {}, set(), {}
+    seen, differ = {}, {}
     if captured:
-        game, strange, plain = read_capture(captured)
+        game, strange, _ = read_capture(captured)
         seen = {item_id: fact for item_id, fact in game.items() if item_id not in facts}
         differ = {item_id: [list(facts[item_id]), list(fact)] for item_id, fact in game.items()
                   if item_id in facts and facts[item_id] != fact}
@@ -602,9 +605,6 @@ def collect(db, folder, store, shown=(), today: str | None = None, questie_folde
                 record["read"] = "game"
         if found:
             items[item_id] = found
-    sellers = quartermasters(items)
-    plain = sorted(item_id for item_id in plain if item_id in db.items and item_id not in items
-                   and first_vendor(db.items[item_id]) in sellers)
     enchants = {}
     for enchant, info in db.enchant_info.items():
         found = reader.enchant(enchant, info)
@@ -617,7 +617,7 @@ def collect(db, folder, store, shown=(), today: str | None = None, questie_folde
         "capture": f"{captured['game']} {captured['locale']} {captured['date']}" if captured else "",
         "factions": earning(store, hidden), "vendors": reader.vendors, "items": items, "enchants": enchants,
         "outside": {faction: sorted(owners, key=str) for faction, owners in reader.outside.items()},
-        "plain": plain, "differ": differ,
+        "differ": differ,
     }
 
 
@@ -630,7 +630,6 @@ def load(path=FILE) -> dict:
     for name in ("factions", "vendors", "items", "differ"):
         data[name] = {int(number): value for number, value in data.get(name, {}).items()}
     data.setdefault("outside", {})
-    data.setdefault("plain", [])
     return data
 
 
@@ -647,7 +646,6 @@ def save(reading: dict, path=FILE) -> None:
                                                      "date")}
     text = ("{\n" + f'  "about": {json.dumps(ABOUT)},\n'
             + "".join(f'  "{name}": {json.dumps(value)},\n' for name, value in head.items())
-            + f'  "plain": {json.dumps(reading.get("plain", []))},\n'
             + '  "outside": {\n' + rows(reading.get("outside", {}), str) + "\n  },\n"
             + '  "differ": {\n' + rows(reading.get("differ", {})) + "\n  },\n"
             + '  "factions": {\n' + rows(reading.get("factions", {})) + "\n  },\n"
@@ -660,8 +658,8 @@ def save(reading: dict, path=FILE) -> None:
 def check_capture(parsed: dict, facts: dict, reading: dict) -> dict[str, list]:
     """The game's tooltips against what the data says a piece asks of its wearer: ForeverDB's facts
     (read_item_facts) and what --import-reputations kept. {"same", "missing" (the game asks, the data has nothing
-    yet), "extra" (the data asks, the game's tooltip does not), "differs", "outside" (a faction FACTIONS lacks)}:
-    lists of (item, the data's (faction, standing) or None, the game's or its faction's name)."""
+    yet), "extra" (the data asks, the item's tooltip does not: its vendor may), "differs", "outside" (a faction
+    FACTIONS lacks)}: lists of (item, the data's (faction, standing) or None, the game's or its faction's name)."""
     known = dict(facts)
     for item_id, records in reading.get("items", {}).items():
         wear = next((record for record in records if record["kind"] == WEAR), None)
@@ -681,16 +679,15 @@ def check_capture(parsed: dict, facts: dict, reading: dict) -> dict[str, list]:
 def gaps(reading: dict, db, shown, enchants=()) -> tuple[dict[str, list], dict[int, list[int]]]:
     """What the build reports of the listed pieces and enchants: ({a faction outside FACTIONS, its id or the name
     ForeverDB writes: [what asks for it]}, {faction: [the listed pieces one of its quartermasters sells that
-    nothing says the requirement of]}). A piece the game was read to ask for nothing is not one of them."""
+    nothing says the requirement of]})."""
     listed = set(shown) | set(enchants)
     outside = {faction: [owner for owner in owners if owner in listed]
                for faction, owners in reading.get("outside", {}).items()}
     sellers = quartermasters(reading.get("items", {}))
-    plain = set(reading.get("plain", ()))
     unasked = {}
     for item_id in sorted(shown):
         npc = first_vendor(db.items.get(item_id) or {})
-        if npc in sellers and item_id not in reading.get("items", {}) and item_id not in plain:
+        if npc in sellers and item_id not in reading.get("items", {}):
             unasked.setdefault(sellers[npc], []).append(item_id)
     return {faction: owners for faction, owners in outside.items() if owners}, unasked
 

@@ -2489,17 +2489,17 @@ class CapturedReputationTest(unittest.TestCase):
         db = types.SimpleNamespace(items={
             10: {"sources": [["V", "14753", "0"]]},        # Silverwing's quartermaster, nothing says the requirement
             11: {"sources": [["V", "14753", "0"]]},        # the same, read in the game: it asks for one
-            12: {"sources": [["V", "14753", "0"]]},        # the same, read in the game: it asks for none
+            12: {"sources": [["V", "14753", "0"]]},        # the same, its tooltip says nothing: his window may
             13: {"sources": [["v", "15127", "", "", "", "", "0"]]},   # a vendor a requirement was read for
             14: {"sources": [["V", "99", "0"]]},           # any other vendor
             15: {"sources": [["q", "7", "A quest"]]},
         })
         reading = {"items": {11: [{"kind": "w", "faction": 890, "standing": 5, "vendor": 14753}],
                              20: [{"kind": "w", "faction": 509, "standing": 7, "vendor": 15127}]},
-                   "plain": [12], "outside": {"Nightclaw Druids": [15, "s9", 16], "1234": [99]}}
+                   "outside": {"Nightclaw Druids": [15, "s9", 16], "1234": [99]}}
         outside, unasked = reputations.gaps(reading, db, shown={10, 11, 12, 13, 14, 15}, enchants={"s9"})
         self.assertEqual(outside, {"Nightclaw Druids": [15, "s9"]}, "only what the lists show")
-        self.assertEqual(unasked, {890: [10], 509: [13]})
+        self.assertEqual(unasked, {890: [10, 12], 509: [13]})
 
 
 if __name__ == "__main__":
