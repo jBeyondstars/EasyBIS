@@ -14,6 +14,8 @@ What the window lists, as plain tables: the frames only draw them.
                    tie      true for an alternative that scores exactly as a best pick
                    other    true for a weapon of the style that is not the best one (see below)
                    custom   true for an item the player added by hand (Custom.lua): no score
+                   placed   true for an item the data placed from a close spec's simulation (flag e): no
+                            score of its own, so no gap and no ratio either
                { kind = "note", slot, text }   a line of plain text between rows
       facets   { sources = { [category] = true }, zones = { [name] = true } }: what the Source and
                Zone filters can offer for this spec, list and slot
@@ -67,7 +69,7 @@ end
 local function OtherScores(slots, slot, pick)
     local main, off = slots.main, slots.off
     if slots.twoHand then
-        local partner = slot == "main" and off.other[1] or main.other[1]
+        local partner = ns.Ladders.Lead(slot == "main" and off.other or main.other)
         return pick.score + (partner and partner.score or 0), main.best[1].score,
             pick.entry.score10 + (partner and partner.entry.score10 or 0), main.best[1].entry.score10
     end
@@ -114,21 +116,29 @@ function Rows.Items(state)
             if withAlts then
                 for _, pick in ipairs(picks.alts) do
                     listed[pick.id] = true
-                    Add(slot, pick.id, {
-                        bis = false, tie = ns.Ladders.IsTie(picks, pick) or nil,
-                        gap = Gap(pick.score, top.score), ratio = Ratio(pick.score, top.score),
-                    })
+                    if ns.Ladders.HasFlag(pick.entry, "e") then
+                        Add(slot, pick.id, { bis = false, placed = true })
+                    else
+                        Add(slot, pick.id, {
+                            bis = false, tie = ns.Ladders.IsTie(picks, pick) or nil,
+                            gap = Gap(pick.score, top.score), ratio = Ratio(pick.score, top.score),
+                        })
+                    end
                 end
             end
             if withAlts and picks.other[1] then
                 all[#all + 1] = { kind = "note", slot = slot, text = OtherNote(slots, slot) }
                 for _, pick in ipairs(picks.other) do
                     listed[pick.id] = true
-                    local score, reference, score10, reference10 = OtherScores(slots, slot, pick)
-                    Add(slot, pick.id, {
-                        bis = false, other = true, tie = score10 == reference10 or nil,
-                        gap = Gap(score, reference), ratio = Ratio(score, reference),
-                    })
+                    if ns.Ladders.HasFlag(pick.entry, "e") then
+                        Add(slot, pick.id, { bis = false, other = true, placed = true })
+                    else
+                        local score, reference, score10, reference10 = OtherScores(slots, slot, pick)
+                        Add(slot, pick.id, {
+                            bis = false, other = true, tie = score10 == reference10 or nil,
+                            gap = Gap(score, reference), ratio = Ratio(score, reference),
+                        })
+                    end
                 end
             elseif slot == "off" and slots.twoHand then
                 all[#all + 1] = { kind = "note", slot = slot, text = L.LIST_TWO_HAND }
@@ -193,7 +203,7 @@ local function Ties(picks, rank)
     local second = picks.best[2]
     if rank == 1 and second and second.entry.score10 == pick.entry.score10 then return ties end
     for _, alt in ipairs(picks.alts) do
-        if alt.entry.score10 == pick.entry.score10 then ties[#ties + 1] = alt.id end
+        if ns.Ladders.IsTie({ best = { pick } }, alt) then ties[#ties + 1] = alt.id end
     end
     return ties
 end

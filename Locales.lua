@@ -10,11 +10,13 @@ ns.L.KEY gives the text; a key missing in French falls back to English.
 local enUS = {
     ADDON_TITLE = "Easy BIS",
     CREDIT = "Data from ForeverDB.net (https://foreverdb.net)",
+    CREDIT_SIM = "PvE lists of the damage specs ranked with WoWSims Forever (https://github.com/wowsims/forever)",
 
     RANK_BIS = "BIS",
     RANK_ALT = "Alt",
     RANK_TIE = "Tied",
     RANK_CUSTOM = "Added",
+    RANK_PLACED = "Estimated",
     LIST_PVE = "PvE",
     LIST_PVP = "PvP",
     LIST_PVE_LONG = "Level %d PvE",
@@ -108,6 +110,7 @@ local enUS = {
     TIP_SCORE = "Score for this slot: %d%% of the best pick's.",
     TIP_SCORE_SET = "Score of both hands together: %d%% of the best choice's.",
     TIP_CUSTOM = "Added by hand to this list.",
+    TIP_PLACED = "Placed here from the simulation of a close spec, until this spec's own: no score yet.",
     TIP_REMOVE = "Remove from the list",
     DATA_VERSION = "Data from ForeverDB.net, game build %s",
     MINIMAP_HINT = "Click to open or close the window.",
@@ -337,9 +340,11 @@ local enUS = {
 
 local frFR = {
     CREDIT = "Données de ForeverDB.net (https://foreverdb.net)",
+    CREDIT_SIM = "Listes PvE des spécialisations de dégâts classées avec WoWSims Forever (https://github.com/wowsims/forever)",
 
     RANK_TIE = "Ex æquo",
     RANK_CUSTOM = "Ajouté",
+    RANK_PLACED = "Estimé",
     LIST_PVE = "JcE",
     LIST_PVP = "JcJ",
     LIST_PVE_LONG = "Niveau %d JcE",
@@ -432,6 +437,7 @@ local frFR = {
     TIP_SCORE = "Score pour cet emplacement : %d %% de celui du meilleur objet.",
     TIP_SCORE_SET = "Score des deux mains réunies : %d %% de celui du meilleur choix.",
     TIP_CUSTOM = "Ajouté à la main dans cette liste.",
+    TIP_PLACED = "Placé ici d'après la simulation d'une spécialisation proche, en attendant celle-ci : pas encore de score.",
     TIP_REMOVE = "Retirer de la liste",
     DATA_VERSION = "Données de ForeverDB.net, version du jeu %s",
     MINIMAP_HINT = "Cliquez pour ouvrir ou fermer la fenêtre.",

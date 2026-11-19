@@ -4,7 +4,7 @@
 
 Best-in-slot gear for every class and spec of **WoW Forever**, in a window and in item tooltips.
 
-- **Items**: the best items of each slot at level 60, PvE and PvP, with their alternatives and sources. You can filter by phase, slot, source and zone, and add items to a list yourself.
+- **Items**: the best items of each slot at level 60, PvE and PvP, with their alternatives and sources. You can filter by phase, slot, source and zone, and add items to a list yourself. The PvE lists of the damage specs are ranked by simulation, which counts the items with an effect (Hand of Justice...). Until a spec has its own, those items are placed where a close spec's simulation ranks them, marked Estimated, with no score.
 - **Character**: the BIS #1 of each slot laid out as a character sheet, with its best enchant, worn by your own character.
 - **Enchants**: the best enchant of each slot and how to get it.
 - **Consumables**: flasks, elixirs, food, scrolls, weapon stones and oils and potions, ranked category by category for each spec, in PvE and PvP.
@@ -50,6 +50,6 @@ python -P _build/tests/test_consumables.py
 
 ## Licence and credits
 
-**Data from [ForeverDB.net](https://foreverdb.net).** The sources ForeverDB's data lacks come from [QuestieDB](https://github.com/Questie/QuestieDB); what the Alterac Valley and Warsong Gulch quartermasters' pieces ask, from AtlasLoot Forever's tables, checked against ForeverDB and the game. Easy BIS is free software under the GNU GPL, version 3 (`LICENSE.txt`). `NOTICE.txt` says where each part comes from and what reusing it requires.
+**Data from [ForeverDB.net](https://foreverdb.net).** The sources ForeverDB's data lacks come from [QuestieDB](https://github.com/Questie/QuestieDB); what the Alterac Valley and Warsong Gulch quartermasters' pieces ask, from AtlasLoot Forever's tables, checked against ForeverDB and the game. The PvE lists of the damage specs are ranked with [WoWSims Forever](https://github.com/wowsims/forever). Easy BIS is free software under the GNU GPL, version 3 (`LICENSE.txt`). `NOTICE.txt` says where each part comes from and what reusing it requires.
 
-Easy BIS is not affiliated with Blizzard Entertainment, ForeverDB.net, the Questie team or the AtlasLoot authors.
+Easy BIS is not affiliated with Blizzard Entertainment, ForeverDB.net, the Questie team, the WoWSims team or the AtlasLoot authors.

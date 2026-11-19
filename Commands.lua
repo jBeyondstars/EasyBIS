@@ -39,6 +39,7 @@ local function Help()
         ns:Print(L[key])
     end
     ns:Print(L.CREDIT)
+    ns:Print(L.CREDIT_SIM)
 end
 
 -- "0", "1"... or "all"; anything else only says where the lists stop now.

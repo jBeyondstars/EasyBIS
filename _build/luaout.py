@@ -56,6 +56,7 @@ def encode_entry(entry: ladders.Entry) -> str:
     flags += "r" if entry.random else ""
     flags += "p" if entry.pvp else ""
     flags += "v" if entry.honor else ""
+    flags += "e" if entry.placed else ""
     flags += str(entry.phase) if entry.phase else ""
     limit = entry.limit or ""
     if not limit.isalnum() and limit:
@@ -92,11 +93,20 @@ def _simulated_note(db) -> list:
     reading = getattr(db, "simulated", None)
     if not reading or not reading.specs:
         return []
-    names = ", ".join(f"{db.classes[cls]['specs'][spec]['name']} {cls.title()}" for cls, spec in sorted(reading.specs))
-    return [f"Ranked by simulation: in the PvE lists of {names}, a score is the damage per second the item adds to a "
-            f"reference set,",
-            f"measured with WoWSims Forever {reading.commit} (https://github.com/wowsims/forever, MIT License), not "
-            "ForeverDB's weights. See _build/simulated.py."]
+    name = lambda cls, spec: f"{db.classes[cls]['specs'][spec]['name']} {cls.title()}"
+    names = ", ".join(name(cls, spec) for cls, spec in sorted(reading.specs))
+    lines = [f"Ranked by simulation: in the PvE lists of {names}, a score is the damage per second the item adds to a "
+             f"reference set,",
+             f"measured with WoWSims Forever {reading.commit} (https://github.com/wowsims/forever, MIT License), not "
+             "ForeverDB's weights. See _build/simulated.py."]
+    waiting = {key: slots for key, slots in reading.placed.items() if key not in reading.specs and key[0] in db.classes}
+    if waiting:
+        count = sum(len(entries) for slots in waiting.values() for entries in slots.values())
+        lines.append(f"Until the simulator measures them, the PvE lists of {', '.join(name(*key) for key in sorted(waiting))} "
+                     f"take up to {count} items")
+        lines.append("placed where a close spec's measure ranks them (flag e), with no score of their own: "
+                     "see _build/corrections/placed.json.")
+    return lines
 
 
 def _sources_note(db) -> list:
@@ -144,6 +154,8 @@ def lists_file(db, all_ladders) -> str:
         "         p a PvP reward (a PvP rank, the honor quartermasters, a battleground, a Premier set): the addon",
         "           leaves those out of the PvE list, and counts them in the PvP list, until its option says otherwise,",
         "         v a Premier piece, sold for honor even when the data gives it no source,",
+        "         e placed from a close spec's simulation (_build/simulated.py): its score is the one above it, not",
+        "           its own; the addon shows none and never makes it a best pick,",
         "         a digit: the content phase the item needs (none: before the raids, 1: Forever's first raids,",
         "         9: a raid known from Classic data only); see _build/phases.py",
         "  limit: only one item of that category can be worn (rings and trinkets)",

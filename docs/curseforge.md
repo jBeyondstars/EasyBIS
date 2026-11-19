@@ -13,6 +13,7 @@ Type `/easybis` (or `/ebis`), or click the minimap button.
 **Items** lists the best items slot by slot, with the alternatives under each one.
 
 - The bar shows how close each alternative comes to the BIS.
+- The PvE lists of the damage specs are ranked by simulation, which counts the items with an effect (Hand of Justice...). Until a spec has its own, those items are placed where a close spec's simulation ranks them, marked Estimated, with no score.
 - The source is shown for every item: dungeon boss and drop chance, quest, crafting profession and skill, vendor, reputation or world drop.
 - You can filter by spec, PvE or PvP list, content phase, slot, source, zone and reputation.
 - Hover an item to see its tooltip and its full source. Shift-click an item to link it in chat.
@@ -95,6 +96,8 @@ Quests, and where some items come from, are read in [QuestieDB](https://github.c
 
 The standing the Alterac Valley and Warsong Gulch quartermasters ask for is read in the tables of AtlasLoot Forever (GPL-2.0), and checked against ForeverDB's data.
 
+The PvE lists of the damage specs are ranked with [WoWSims Forever](https://github.com/wowsims/forever), the WoWSims team's simulator.
+
 Easy BIS is free software under the GPL-3.0. Source code, bug reports and suggestions: [github.com/jBeyondstars/EasyBIS](https://github.com/jBeyondstars/EasyBIS).
 
-Easy BIS is not affiliated with Blizzard Entertainment, ForeverDB.net, the Questie team or the AtlasLoot authors.
+Easy BIS is not affiliated with Blizzard Entertainment, ForeverDB.net, the Questie team, the WoWSims team or the AtlasLoot authors.

@@ -95,6 +95,7 @@ class Entry:
     pvp: bool = False  # a PvP reward (pvp_reward): what the addon's option leaves out of a list
     rank: int = ranks.NO_RANK  # the PvP rank it needs (ranks.required)
     honor: bool = False  # a Premier piece: sold for honor, even when the data gives it no source
+    placed: bool = False  # put at its rank from a close spec's measure (simulated.place): no score of its own
 
     @property
     def stored(self) -> int:
@@ -234,7 +235,14 @@ def full_ladder(db, cls: str, spec: int, mode: str, slot: str, level: int | None
     ids = {entry.item_id for entry in entries}
     entries = [entry for entry in entries if not (entry.side == "h" and entry.twin in ids)]
     entries.sort(key=lambda entry: (-entry.score, -weighed[entry.item_id], entry.item_id))
+    if rank_rewards and level == db.meta["cap"]:
+        entries = simulated.place(entries, simulated.placements(db, cls, spec, mode, slot))
     return entries
+
+
+def lead(entries: list[Entry]) -> Entry | None:
+    """The first entry that can be a best pick: a placed one never is, unless the list has nothing else."""
+    return next((entry for entry in entries if not entry.placed), entries[0] if entries else None)
 
 
 def picks(slot: str, visible: list[Entry], alternatives: int = ALTERNATIVES) -> tuple[list[Entry], list[Entry]]:
@@ -247,10 +255,11 @@ def picks(slot: str, visible: list[Entry], alternatives: int = ALTERNATIVES) -> 
     """
     if not visible:
         return [], []
-    best = [visible[0]]
+    first = lead(visible)
+    best = [first]
     if slot in PAIRED:
-        first = visible[0]
-        second = next((e for e in visible[1:] if not (first.limit and e.limit == first.limit)), None)
+        second = next((e for e in visible if e is not first and not e.placed
+                       and not (first.limit and e.limit == first.limit)), None)
         if second:
             best.append(second)
     others = [entry for entry in visible if entry not in best]
@@ -268,11 +277,11 @@ def weapon_lists(main: list[Entry], off: list[Entry]) -> tuple[list[Entry], list
     """
     two = [entry for entry in main if entry.two_hand]
     one = [entry for entry in main if not entry.two_hand]
-    if two and (not one or two[0].stored >= one[0].stored + (off[0].stored if off else 0)):
+    if two and (not one or lead(two).stored >= lead(one).stored + (lead(off).stored if off else 0)):
         return two, []
     if not one:
         return main, off
-    return one, [entry for entry in off if entry.item_id != one[0].item_id]
+    return one, [entry for entry in off if entry.item_id != lead(one).item_id]
 
 
 def other_weapons(main: list[Entry], off: list[Entry]) -> tuple[list[Entry], list[Entry]]:
@@ -287,8 +296,8 @@ def other_weapons(main: list[Entry], off: list[Entry]) -> tuple[list[Entry], lis
     one = [entry for entry in main if not entry.two_hand]
     if not two or not one:
         return [], []
-    if two[0].stored >= one[0].stored + (off[0].stored if off else 0):
-        return one, [entry for entry in off if entry.item_id != one[0].item_id]
+    if lead(two).stored >= lead(one).stored + (lead(off).stored if off else 0):
+        return one, [entry for entry in off if entry.item_id != lead(one).item_id]
     return two, []
 
 
@@ -297,11 +306,12 @@ def _needed(slot: str, visible: list[Entry]) -> list[Entry]:
     alternatives as a player can ask for: what he sees with fewer is the start of it."""
     best, alternatives = picks(slot, visible, MAX_ALTERNATIVES)
     needed = best + alternatives
+    placed = sum(1 for e in visible if e.placed)   # a placed item may stand before a weapon list's best pick
     if slot == "main":
-        needed += [e for e in visible if e.two_hand][:1 + MAX_ALTERNATIVES]
-        needed += [e for e in visible if not e.two_hand][:1 + MAX_ALTERNATIVES]
+        needed += [e for e in visible if e.two_hand][:1 + MAX_ALTERNATIVES + placed]
+        needed += [e for e in visible if not e.two_hand][:1 + MAX_ALTERNATIVES + placed]
     elif slot == "off":
-        needed = visible[:2 + MAX_ALTERNATIVES]  # one more: the main hand's pick is left out
+        needed = visible[:2 + MAX_ALTERNATIVES + placed]  # one more: the main hand's pick is left out
     return needed
 
 
