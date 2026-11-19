@@ -1010,6 +1010,10 @@ local function Build()
         function(value) ns:SetOption("availableNow", value) end,
         function() return L.TIP_AVAILABLE_NOW:format(ns.RankCap()) end)
     window.available:SetPoint("TOPRIGHT", window, "TOPRIGHT", -34, -1)
+    -- The window's border is drawn at frame level 500 and its title at 510, over the window's own children:
+    -- below them, the border's title bar hides the box.
+    local over = window.TitleContainer or window.NineSlice
+    if over then window.available:SetFrameLevel(over:GetFrameLevel() + 1) end
 
     -- Rows
     local inset = CreateInset(window)

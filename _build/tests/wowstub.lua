@@ -45,6 +45,13 @@ local function NewWidget(kind, name, template)
     }, widgetMeta)
     if template == "ScrollFrameTemplate" or template == "UIPanelScrollFrameTemplate" then
         widget.ScrollBar = NewWidget("Slider")
+    elseif template == "PortraitFrameTemplate" then
+        -- As the game's template: the border and the title lie over the frame's own children.
+        widget.NineSlice = NewWidget("Frame")
+        widget.NineSlice.frameLevel = 500
+        widget.TitleContainer = NewWidget("Frame")
+        widget.TitleContainer.frameLevel = 510
+        widget.TitleContainer.TitleText = NewWidget("FontString")
     elseif template == "UICheckButtonArtTemplate" then
         for _, key in ipairs({ "Normal", "Pushed", "Highlight", "Checked", "DisabledChecked" }) do
             widget[key .. "Texture"] = NewWidget("Texture")
@@ -61,7 +68,7 @@ end
 
 local function Noop() end
 for _, method in ipairs({
-    "SetFrameStrata", "SetFrameLevel", "SetToplevel", "SetClampedToScreen", "SetMovable", "EnableMouse",
+    "SetFrameStrata", "SetToplevel", "SetClampedToScreen", "SetMovable", "EnableMouse",
     "RegisterForDrag", "RegisterForClicks", "SetDontSavePosition", "StartMoving", "StopMovingOrSizing",
     "SetPortraitToAsset", "SetPortraitTextureRaw", "SetBackdrop", "SetBackdropColor",
     "SetWordWrap", "SetJustifyH", "SetColorTexture", "SetTexCoord",
@@ -119,7 +126,8 @@ function METHODS:SetFocus() self.focused = true end
 function METHODS:ClearFocus() self.focused = false end
 function METHODS:HasFocus() return self.focused == true end
 function METHODS:GetEffectiveScale() return 1 end
-function METHODS:GetFrameLevel() return 1 end
+function METHODS:SetFrameLevel(level) self.frameLevel = level end
+function METHODS:GetFrameLevel() return self.frameLevel or 1 end
 function METHODS:IsMouseOver() return false end
 function METHODS:IsForbidden() return false end
 function METHODS:SetAlpha(alpha) self.alpha = alpha end

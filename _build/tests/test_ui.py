@@ -758,9 +758,12 @@ class WindowTest(unittest.TestCase):
         self.assertEqual(box.text.text, "Available now")
         self.assertFalse(box.GetChecked(box))
         self.assertTrue(window.phase.button.IsEnabled(window.phase.button))
-        controls = [window.spec, window.list, window.phase, window.slot, window.source, window.zone]
-        right = 66 + sum(control.width for control in controls) + 8 * 5 + 10 + box.width
-        self.assertLessEqual(right, WIDTH - 8, "the box stays inside the window")
+        # the filters fill their row: the box sits in the title bar, over the window's border and title
+        self.assertEqual((box.points[1][1], box.points[1][2].name, box.points[1][3]),
+                         ("TOPRIGHT", window.name, "TOPRIGHT"))
+        self.assertGreater(box.GetFrameLevel(box), window.NineSlice.GetFrameLevel(window.NineSlice),
+                           "under the border, its title bar hides the box")
+        self.assertGreater(box.GetFrameLevel(box), window.TitleContainer.GetFrameLevel(window.TitleContainer))
         chosen = label(window.phase)
         self.assertEqual(self.shown_rows(game), self.reference_rows("PRIEST", 3, "pvp", default_filter(phase=EVERYTHING)))
 
