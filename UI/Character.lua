@@ -198,9 +198,11 @@ local function FillCell(cell, data)
     local where = ns.Sources.WithCost(ns.Sources.Short(source), source.cost)
         .. (mark ~= "" and (" " .. GREY .. mark .. "|r") or "")
     local requirement = data.reputation
-    local earned = requirement and ns.Reputation.Status(requirement) == "met"
+    -- a recipe of a profession that is not the player's: the piece comes from a crafter, whatever the standing
+    local crafter = requirement and ns.Reputation.Crafter(requirement)
+    local earned = requirement and crafter ~= "other" and ns.Reputation.Status(requirement) == "met"
     if earned then where = GOLD .. L.REP_MET .. "|r " .. where end   -- first: a long source is what gets cut
-    if requirement and not earned then
+    if requirement and not earned and crafter ~= "other" then
         cell.where:SetText(ns.Reputation.NeedText(requirement))
     else
         cell.where:SetText(ns.Sources.IconText(source.category) .. " " .. where)
@@ -328,7 +330,13 @@ local function ShowSummary(cells)
         line:SetPoint("BOTTOM", view, "BOTTOM", 0, SUMMARY_BOTTOM + (#summary - index) * SUMMARY_LINE)
         line.label:SetText(entry.name)
         local done = entry.met == entry.total
-        line.count:SetText((done and GOLD or "|cffffffff") .. entry.met .. " / " .. entry.total .. "|r")
+        if entry.state == "unknown" then
+            line.count:SetText("|cffffffff" .. L.REP_UNKNOWN .. "|r")
+        elseif entry.state == "other" then
+            line.count:SetText(GREY .. L.REP_OTHER_SIDE .. "|r")
+        else
+            line.count:SetText((done and GOLD or "|cffffffff") .. entry.met .. " / " .. entry.total .. "|r")
+        end
         line:Show()
     end
     for index = #summary + 1, #view.reputations do view.reputations[index]:Hide() end

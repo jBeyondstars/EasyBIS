@@ -693,8 +693,10 @@ local function CardData(group, ways)
     local targets = Targets(group)
     local top = targets[#targets]
     local left = { label = L.REP_LEFT:format(Reputation.StandingName(top)), value = WHITE .. L.REP_UNKNOWN .. "|r" }
-    local known = true
-    for _, standing in ipairs(targets) do
+    -- the other side's faction (the lists of the other faction, picked in the options): the character earns none
+    local other = Reputation.Status({ factionID = group.factionID, standing = top }) == "other"
+    local known = not other
+    for _, standing in ipairs(other and {} or targets) do
         local amount, fromNeutral = Reputation.Remaining(group.factionID, standing)
         if amount == nil then
             known = false
@@ -708,10 +710,11 @@ local function CardData(group, ways)
         end
     end
     if known and Earned(group) then left.value = GOLD .. L.REP_LEFT_DONE .. "|r" end
+    if other then left.value = GREY .. L.REP_OTHER_SIDE .. "|r" end
 
     local once = { label = L.REP_CARD_ONCE, value = WHITE .. L.REP_UNKNOWN .. "|r" }
     local repeats = { label = L.REP_CARD_REPEAT, value = WHITE .. L.REP_UNKNOWN .. "|r" }
-    if ways.listed > 0 then
+    if ways.total > 0 then
         once.value = WHITE .. Number(ways.once) .. "|r"
         once.note = L.REP_CARD_ONCE_NOTE:format(Number(THRESHOLDS[top]), Reputation.StandingName(top))
         repeats.value = WHITE .. Number(ways.repeatable) .. "|r"
@@ -830,14 +833,19 @@ local function DetailLines(group, ways)
 
     -- the crafter's reputation: the quests are for a player who would learn the recipes, folded until asked for
     local questKey = others and "questsSelf" or "quests"
-    if ways.listed > 0 and Section(questKey, L.REP_SECTION_QUESTS, SECTION_ICONS.quests, others) then
+    if ways.total > 0 and Section(questKey, L.REP_SECTION_QUESTS, SECTION_ICONS.quests, others) then
         local quests, pageKey = ways.quests, group.factionID .. (group.artisan and ":r:" or ":o:") .. questKey
         local last = math.max(1, math.ceil(#quests / QUESTS_PAGE))
         local page = math.max(1, math.min(pages[pageKey] or 1, last))
         local from, to = (page - 1) * QUESTS_PAGE + 1, math.min(#quests, page * QUESTS_PAGE)
         for index = from, to do
             local quest = quests[index]
-            Add({ kind = "quest", text = quest.quest, evidence = "data", right = "+" .. quest.amount,
+            -- the standings the quest is offered between, when the data says: "from Honored", "until Friendly"
+            local gates = {}
+            if quest.from then gates[#gates + 1] = L.REP_QUEST_FROM:format(Reputation.StandingName(quest.from)) end
+            if quest.upto then gates[#gates + 1] = L.REP_QUEST_UPTO:format(Reputation.StandingName(quest.upto)) end
+            local gate = gates[1] and (" " .. GREY .. table.concat(gates, " ") .. "|r") or ""
+            Add({ kind = "quest", text = quest.quest .. gate, evidence = "data", right = "+" .. quest.amount,
                 chip = quest.repeats and L.REP_QUEST_REPEATS or L.REP_QUEST_ONCE })
         end
         if not quests[1] then Add({ kind = "note", text = L.REP_QUESTS_NONE, evidence = "unknown" }) end

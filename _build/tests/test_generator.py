@@ -1389,8 +1389,8 @@ def cbor(value) -> bytes:
     def head(major, number):
         if number < 24:
             return bytes([major << 5 | number])
-        size = 1 if number < 256 else 2 if number < 65536 else 4
-        return bytes([major << 5 | {1: 24, 2: 25, 4: 26}[size]]) + number.to_bytes(size, "big")
+        size = 1 if number < 256 else 2 if number < 65536 else 4 if number < 1 << 32 else 8
+        return bytes([major << 5 | {1: 24, 2: 25, 4: 26, 8: 27}[size]]) + number.to_bytes(size, "big")
     if value is None:
         return b"\xf6"
     if isinstance(value, float):
@@ -2360,6 +2360,90 @@ class PriceImportTest(unittest.TestCase):
     def test_an_unknown_format_asks_for_the_tool_again(self):
         with self.assertRaises(ValueError):
             capture.parse_vendors(self.saved().replace('"1|1.60.1', '"2|1.60.1'))
+
+
+# -- how a reputation is earned, read in QuestieDB --------------------------------------------------------------
+
+EARNING_ROWS = {
+    # a chain whose two steps share a title: two quests
+    ("Quest", 1, "S"): {1: "The Bloodsail Buccaneers", 4: 37, 17: 33, 22: 2}, ("Quest", 1, "26"): [[21, 75]],
+    ("Quest", 2, "S"): {1: "The Bloodsail Buccaneers", 4: 37, 17: 33}, ("Quest", 2, "13"): [1],
+    ("Quest", 2, "26"): [[21, 75]],
+    # offered only below Neutral, and only at Exalted: listed last, counted nowhere
+    ("Quest", 30, "S"): {1: "Traitor", 4: 40, 17: 33, 24: 1}, ("Quest", 30, "20"): [21, 0],
+    ("Quest", 30, "26"): [[21, 499]],
+    ("Quest", 31, "S"): {1: "Late", 4: 60, 17: 33}, ("Quest", 31, "19"): [21, 42000], ("Quest", 31, "26"): [[21, 200]],
+    # the same repeatable quest at three givers: one
+    **{key: value for number in (3, 4, 5) for key, value in (
+        (("Quest", number, "S"), {1: "Scourgestones", 4: 50, 17: 28, 24: 1}), (("Quest", number, "13"), [9]),
+        (("Quest", number, "26"), [[529, 25]]))},
+    # a quest the game does not have, and one offered only below level 60
+    ("Quest", 40, "S"): {1: "DND FLAG", 4: 60, 17: 1}, ("Quest", 40, "26"): [[529, 500]],
+    ("Quest", 41, "S"): {1: "Bracket", 4: 30, 17: 1, 32: 39}, ("Quest", 41, "26"): [[529, 100]],
+    # two paths that exclude one another, the first with a step after it: the path that gives the most counts
+    ("Quest", 10, "S"): {1: "Path A", 4: 60, 17: 440}, ("Quest", 10, "16"): [20], ("Quest", 10, "26"): [[910, 100]],
+    ("Quest", 11, "S"): {1: "Path A", 4: 60, 17: 440}, ("Quest", 11, "13"): [10], ("Quest", 11, "16"): [20],
+    ("Quest", 11, "19"): [910, 3000], ("Quest", 11, "26"): [[910, 100]],
+    ("Quest", 20, "S"): {1: "Path B", 4: 60, 17: 440}, ("Quest", 20, "16"): [10], ("Quest", 20, "26"): [[910, 150]],
+    # a row with neither level nor zone beside the full quest: an unfinished copy
+    ("Quest", 42, "S"): {1: "Clash", 4: 60, 17: 1, 24: 1}, ("Quest", 42, "26"): [[2799, 100]],
+    ("Quest", 43, "S"): {1: "Clash"}, ("Quest", 43, "26"): [[2799, 100]],
+    # Forever's Skyborne of the Horde only
+    ("Quest", 50, "S"): {1: "Moonglade", 4: 10, 17: 493, 6: 1 << 33}, ("Quest", 50, "26"): [[609, 25]],
+}
+
+BLACKLIST_LUA = """local QuestieQuestBlacklist = QuestieLoader:CreateModule("QuestieQuestBlacklist")
+function QuestieQuestBlacklist:Load()
+    local questsToBlacklist = {
+        [40] = true, -- not in the game
+        [7704] = Expansions.Current ~= Expansions.Wotlk, -- Only implemented in Wrath
+        [8614] = Expansions.Current >= Expansions.Tbc,
+        [78124] = HIDE_ON_MAP, -- Nar'thalas Almanac
+        [1374] = Expansions.Current >= Expansions.Cata or Questie.IsForever, -- replaced on Forever
+        [2358] = Expansions.Current == Expansions.Era or Expansions.Current >= Expansions.Wotlk,
+        --[302] = true,
+        [78132] = not Questie.IsSoD,
+        [17] = false,
+    }
+
+    return questsToBlacklist
+end
+"""
+
+
+class EarningTest(unittest.TestCase):
+    def test_questies_list_is_read_as_on_forever(self):
+        with tempfile.TemporaryDirectory() as folder:
+            self.assertIsNone(reputations.hidden_quests(folder))
+            path = Path(folder) / reputations.BLACKLIST
+            path.parent.mkdir(parents=True)
+            path.write_text(BLACKLIST_LUA, encoding="utf-8")
+            self.assertEqual(reputations.hidden_quests(folder), {40, 7704, 1374, 2358, 78132})
+            path.write_text(BLACKLIST_LUA.replace("[17] = false", "[17] = SomeCall(1)"), encoding="utf-8")
+            with self.assertRaises(ValueError):
+                reputations.hidden_quests(folder)
+
+    def test_the_quests_one_character_can_do(self):
+        with tempfile.TemporaryDirectory() as folder:
+            store = questie.Store(questie_addon(Path(folder) / "QuestieDB", EARNING_ROWS))
+            found = reputations.earning(store, hidden={40})
+        rows = lambda faction: [row[:3] + row[5:] for row in found[faction]["methods"]]
+        # the steps of a chain stay apart; what helps only below Neutral or at Exalted comes last
+        self.assertEqual(rows(21), [["The Bloodsail Buccaneers", 75, 0, "", "", ""],
+                                    ["The Bloodsail Buccaneers", 75, 0, "", "", ""],
+                                    ["Traitor", 499, 1, "", 3, ""], ["Late", 200, 0, 7, "", ""]])
+        self.assertEqual({name: found[21][name] for name in ("quests", "repeatable", "once")},
+                         {"quests": 4, "repeatable": 0, "once": {"a": 150, "h": 150}})
+        # one quest at three givers; the hidden one and the one below level 60 are left out
+        self.assertEqual(rows(529), [["Scourgestones", 25, 1, "", "", ""]])
+        # the paths: each step knows its branch, and the most one path gives counts
+        self.assertEqual(rows(910), [["Path B", 150, 0, "", "", "10:20"], ["Path A", 100, 0, "", "", "10:10"],
+                                     ["Path A", 100, 0, 4, "", "10:10"]])
+        self.assertEqual(found[910]["once"], {"a": 200, "h": 200})
+        # the unfinished copy is not a quest of its own
+        self.assertEqual(rows(2799), [["Clash", 100, 1, "", "", ""]])
+        # the Skyborne of the Horde are the Horde
+        self.assertEqual(found[609]["methods"][0][3], "h")
 
 
 if __name__ == "__main__":

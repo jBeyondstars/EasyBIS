@@ -1196,7 +1196,8 @@ Refresh = function()
 end
 
 function Browser.ShowSlot(slot)
-    state.tab, state.slot, state.source, state.zone = "items", slot, nil, nil
+    -- the filters off: the piece clicked must be in the list
+    state.tab, state.slot, state.source, state.zone, state.reputation = "items", slot, nil, nil, nil
     Refresh()
 end
 

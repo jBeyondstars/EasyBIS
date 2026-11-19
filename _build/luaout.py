@@ -360,9 +360,10 @@ def reputation_file(db, all_ladders, reading: dict) -> str:
         factions.append("|".join(map(str, (
             number, _field(name), side, known["quests"], known["repeatable"], known["once"].get("a", 0),
             known["once"].get("h", 0), vendors.get(number, ""), "1" if number in rewards else ""))))
-        for title, amount, repeats, quest_side, *classes in known["methods"]:
-            mask = classes[0] if classes and classes[0] else ""
-            methods.append("|".join(map(str, (number, _field(title), amount, repeats, quest_side, mask))))
+        for title, amount, repeats, quest_side, mask, *gates in known["methods"]:
+            low, high, choice = (gates + ["", "", ""])[:3]
+            methods.append("|".join(map(str, (number, _field(title), amount, repeats, quest_side, mask or "",
+                                              low, high, choice))))
 
     items, used = [], set(vendors.values())
     for item_id in sorted(shown):
@@ -388,10 +389,14 @@ def reputation_file(db, all_ladders, reading: dict) -> str:
 
     lines = _header(db, "The reputations the listed items and enchants ask for, and the quests that earn them.", (
         f"Read in ForeverDB's Items.lua and Recipes.lua and in QuestieDB {reading.get('questiedb', '?')} "
-        f"(https://github.com/Questie/QuestieDB, GPL-3.0) on {reading.get('date', '?')}. See _build/reputations.py.",
+        f"(https://github.com/Questie/QuestieDB, GPL-3.0) on {reading.get('date', '?')}, without the "
+        f"{reading.get('hidden', 0)} quests Questie {reading.get('questie', '?')} (https://github.com/Questie/Questie, "
+        f"GPL-3.0) says the game does not have. See _build/reputations.py.",
         "  factions  id|name|side|quests|repeatable|reputation from the quests done once, Alliance|the same, Horde|"
         "npc that sells the most|1 when a quest rewards its pieces",
-        "  methods   faction|quest|amount|1 when it repeats|side|the classes that may take it (the game's mask), empty for all",
+        "  methods   faction|quest|amount|1 when it repeats|side|the classes that may take it (the game's mask), empty for all|"
+        "the standing it is offered from|the standing it is offered up to|<set>:<quest> for a branch of quests that "
+        "exclude one another",
         "  vendors   npc|name|uiMap|x|y",
         "  items     id|side|faction|standing|kind|vendor npc|price in copper|quest or recipe|profession|skill|"
         "the recipe's item",

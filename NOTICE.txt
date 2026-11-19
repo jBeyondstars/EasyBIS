@@ -83,7 +83,12 @@ https://github.com/jBeyondstars/EasyBIS
    as ForeverDB's Items.lua and Recipes.lua give it, and what QuestieDB holds
    of the quests that ask for a reputation or earn it, their vendors and
    where those stand. It is read by _build/reputations.py and kept in
-   _build/corrections/reputations.json.
+   _build/corrections/reputations.json. The quests the Questie addon
+   (https://github.com/Questie/Questie) hides because the game does not
+   have them, as its Database/Corrections/QuestieQuestBlacklist.lua lists
+   them, are left out of it: only which quests those are is read, not
+   Questie's code. Copyright (C) the Questie team and its contributors,
+   GPL-3.0 with the same reservation as QuestieDB's.
 
 5. Drops counted in Forever
    The sources labelled w (the boss that drops an item and how often) come

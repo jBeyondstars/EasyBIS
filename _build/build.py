@@ -28,7 +28,8 @@
     python build.py --import-reputations [FOLDER]
                                        keep the reputations items and enchants ask for (reputations.py), then build;
                                        FOLDER holds ForeverDB's Items.lua and Recipes.lua and defaults to the local
-                                       copy; QuestieDB is read in the addon installed next to Easy BIS
+                                       copy; QuestieDB, and the quests the Questie addon hides, are read in the
+                                       addons installed next to Easy BIS
 
 The local copy is _build/cache/ForeverDB. Data from ForeverDB.net
 (https://foreverdb.net), GPL-3.0 with an attribution term: see NOTICE.txt.
@@ -437,15 +438,22 @@ def main(argv=None) -> int:
         if store is None:
             print(f"No {questie.TOC} in {ADDONS / questie.ADDON}: install the QuestieDB addon.")
             return 1
+        hider = ADDONS / reputations.QUESTIE
+        if reputations.hidden_quests(hider) is None:
+            print(f"No {reputations.BLACKLIST} in {hider}: install the Questie addon, whose list of the quests the "
+                  f"game does not have is read.")
+            return 1
         db = fdb.load(CACHE)
         try:
-            reading = reputations.collect(db, folder, questie.Store(store), luaout.shown_ids(ladders.build_all(db)))
+            reading = reputations.collect(db, folder, questie.Store(store), luaout.shown_ids(ladders.build_all(db)),
+                                          questie_folder=hider)
         except ValueError as error:
             print(f"{folder}: {error}")
             return 1
         reputations.save(reading)
         print(f"Reputations: {len(reading['items'])} items and {len(reading['enchants'])} enchants of the data ask for "
-              f"one. Kept in {reputations.FILE.name}.")
+              f"one; {reading['hidden']} quests Questie {reading['questie']} says the game does not have are left "
+              f"out. Kept in {reputations.FILE.name}.")
     suspicious = build(details=args.audit)
     return 1 if args.audit and suspicious else 0
 

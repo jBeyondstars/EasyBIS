@@ -2033,7 +2033,7 @@ class WindowTest(unittest.TestCase):
         game.stub.run(button, "OnClick")
         self.assertFalse(view.banner.shown)
         self.assertIn("Recipes: the crafter's reputation is what counts.", strip_colors(view.you.text))
-        self.assertEqual(strip_colors(button.state.text), "Not met", "the player's own standing, as before")
+        self.assertEqual(strip_colors(button.state.text), "Not met yet", "the player's own standing, as before")
 
     def test_faction_emblems(self):
         """An emblem the game has: faint behind the faction in the list, and by its name; none for the others."""
@@ -2080,23 +2080,28 @@ class WindowTest(unittest.TestCase):
         self.assertNotIn(2799, shown())
 
     def test_reputation_quests_ten_to_a_page(self):
-        """Every quest the class can take, the repeatable ones first, ten to a page; the arrows turn the pages."""
+        """Every quest the class can take, the repeatable ones that help first, ten to a page, each with the
+        standings it is offered between; the arrows turn the pages."""
         game = self.open(cls="MAGE")
         rep, state = game.ns.Reputation, game.ns.Browser.state
         found = next((cls, spec, mode, group.factionID) for cls in test_addon.CLASSES
                      for spec in range(1, int(game.ns.Index.SpecCount(cls)) + 1) for mode in ("pve", "pvp")
                      for group in rep.Needs(cls, spec, mode).own.values()
-                     if len(rep.Ways(group.factionID, cls).quests) > 25)
+                     if len(rep.Ways(group.factionID, cls).quests) > 20)
         cls, state.spec, state.list, faction = found
         state["class"] = cls
         game.stub.run(game.ns.Browser.window.tabs.buttons[5], "OnClick")
         view = game.ns.ReputationView.view
         game.stub.run(next(b for b in view.buttons.values() if b.shown and b.group.factionID == faction), "OnClick")
         quests = [quest for quest in rep.Ways(faction, cls).quests.values()]
-        titles = [quest.quest for quest in quests]
-        repeats = [bool(quest.repeats) for quest in quests]
-        self.assertEqual(repeats, sorted(repeats, reverse=True), "the repeatable ones first")
+        name = lambda standing: rep.StandingName(standing)
+        titles = [quest.quest + (f" from {name(quest['from'])}" if quest["from"] else "")
+                  + (f" until {name(quest.upto)}" if quest.upto else "") for quest in quests]
+        usable = lambda quest: (quest["from"] or 3) < 7 and (quest.upto is None or quest.upto > 3)
+        ranks = [(not usable(quest), not quest.repeats) for quest in quests]
+        self.assertEqual(ranks, sorted(ranks), "the repeatable ones that help first")
         last = (len(titles) + 9) // 10
+        self.assertGreaterEqual(last, 3)
         shown = lambda: [plain(line.text) for line in view.detailData.values() if line.kind == "quest"]
 
         def pager():
@@ -2169,6 +2174,29 @@ class WindowTest(unittest.TestCase):
         self.assertTrue(view.empty.shown)
         self.assertEqual(view.empty.text, "This spec needs no reputation for this list and this phase.")
         self.assertFalse(view.list.shown or view.detail.shown or view.title.shown)
+
+    def test_a_piece_clicked_opens_its_slot_unfiltered(self):
+        """The Reputation filter is set aside with the others: the piece clicked is in the list."""
+        game = self.pvp_game()
+        state = game.ns.Browser.state
+        state.reputation, state.source = "ok", "vendor"
+        game.ns.Browser.ShowSlot("finger")
+        self.assertEqual((state.tab, state.slot, state.reputation, state.source), ("items", "finger", None, None))
+
+    def test_character_sheet_a_crafters_piece_is_not_earned_by_another_profession(self):
+        """A piece made from a recipe of another profession: the crafter's standing, so no gold on the sheet."""
+        for profession, earned in ((("Tailoring", 300, 197), False), (("Leatherworking", 300, 165), True)):
+            game = self.crafter_game(profession)
+            self.earn(game, 576, 8, 42000, 42000, 43000)
+            game.stub.run(game.ns.Browser.window.tabs.buttons[3], "OnClick")
+            view = game.ns.Character.view
+            cells = [view.cells[index] for index in range(1, len(view.cellData) + 1)
+                     if view.cellData[index].reputation and view.cellData[index].reputation.kind == "r"
+                     and view.cellData[index].reputation.profession == "Leatherworking"]
+            self.assertTrue(cells, "Fury's sheet has a Timbermaw pattern's piece")
+            for cell in cells:
+                self.assertEqual("Earned" in plain(cell.where.text), earned, profession[0])
+                self.assertEqual("|cffffd100" in cell.where.text, earned, profession[0])
 
     def test_character_sheet_sums_up_the_reputations(self):
         game = self.pvp_game()

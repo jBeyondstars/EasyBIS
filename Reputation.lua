@@ -39,18 +39,24 @@ Nothing here depends on the window: a tab, a tooltip or a later feature reads th
                  group also has craftStatus (as Crafts) and crafter (true when it is the player's profession)
       entry      { id, enchant, slot, role = "best"|"alt"|"other", requirement }
   Reputation.Summary(cells)                the sheet's cells (Rows.Character) per faction, recipes left out:
-                                           { { factionID, name, met, total }, ... }
+                                           { { factionID, name, met, total, state }, ... }; state "unknown" when
+                                           the game does not say, "other" for the other side's faction
   Reputation.Factions()                    the catalogue: { { factionID, name, side, quests, repeatable, once,
                                            vendor, rewards, methods }, ... }
   Reputation.Faction(factionID)            one of them, or nil
   Reputation.Unknown(factionID)            true when no source says how to earn it nor who sells its pieces
   Reputation.UnknownMark(requirement)      " ?" in grey for what such a faction opens, "" otherwise: it follows a name
   Reputation.UnknownRemark(requirement)    the tooltip's line that explains it, or nil
-  Reputation.Ways(factionID, class)        how to earn it: { listed, repeatable, once, quests = { { quest, amount,
-                                           repeats }, ... }, checks = { text, ... }, unknowns = { text, ... } }
-                                           quests: the ones kept for the player's side that class may take; checks:
-                                           what a person wrote down and the game should confirm; unknowns: what no
-                                           source says
+  Reputation.Ways(factionID, class)        how to earn it: { total, listed, repeatable, once, quests = { { quest,
+                                           amount, repeats, from, upto }, ... }, checks = { text, ... },
+                                           unknowns = { text, ... } }
+                                           total: the quests the data has for the faction; quests: the ones of them
+                                           the player's side and that class may take, listed counts them; from and
+                                           upto: the standings a quest is offered from and up to, when it says;
+                                           repeatable: those that repeat and help from Neutral; once: the most the
+                                           others give from Neutral to Exalted, of branches that exclude one another
+                                           the one that gives the most; checks: what a person wrote down and the
+                                           game should confirm; unknowns: what no source says
   Reputation.Sellers(group)                where a group's pieces come from: { { text, map, x, y }, ... }; map, x and
                                            y only for a vendor whose place is known
 
@@ -65,11 +71,10 @@ Where the player stands, counted from the start of Neutral (THRESHOLDS: the stan
 
 Words, for the frames to show:
   Reputation.StandingName(standing)        Reputation.FactionName(factionID)
-  Reputation.ProgressText(factionID, short)     "Honored 4,200 / 12,000", "Exalted", "Not met", "Unknown"
+  Reputation.ProgressText(factionID, short)     "Honored 4,200 / 12,000", "Exalted", "Not met yet", "Unknown"
   Reputation.Ratio(factionID)              how far along the current standing, from 0 to 1
   Reputation.NeedText(requirement)         "Timbermaw Hold, Honored", with what kind of requirement it is
   Reputation.StateText(requirement)        "Earned" in gold, "You: Honored", "Not met", "Unknown"...
-  Reputation.VendorText(factionID)         who sells its pieces, or "Unknown"
   Reputation.TooltipLines(itemId)          { { text, r, g, b }, ... }
 
 Fires REPUTATION_CHANGED (ns:On) once after a burst of the game's UPDATE_FACTION or SKILL_LINES_CHANGED.
@@ -82,13 +87,12 @@ local Reputation = {}
 ns.Reputation = Reputation
 
 Reputation.WEAR, Reputation.QUEST, Reputation.RECIPE = "w", "q", "r"
-Reputation.NEUTRAL = 3
 Reputation.STANDINGS = { 3, 4, 5, 6, 7 }
 Reputation.THRESHOLDS = { [3] = 0, [4] = 3000, [5] = 9000, [6] = 21000, [7] = 42000 }
 
 local WEAR, QUEST, RECIPE = Reputation.WEAR, Reputation.QUEST, Reputation.RECIPE
 local NEUTRAL_REACTION = 4        -- the game counts from 1 Hated; the data from 0
-local EXALTED = 7
+local NEUTRAL, EXALTED = 3, 7
 local GOLD, GREY, WHITE = "|cffffd100", "|cffa8a8b0", "|cffffffff"
 local UNSURE = "|cff808080"        -- the colour of the signs the data wears when it is less than sure
 local MUTED = { 0.66, 0.66, 0.70 }
@@ -133,7 +137,7 @@ local function Catalog()
         if faction then
             faction.methods[#faction.methods + 1] = {
                 quest = f[2], amount = tonumber(f[3]) or 0, repeats = f[4] == "1", side = f[5],
-                classes = tonumber(f[6]) or 0,
+                classes = tonumber(f[6]) or 0, from = tonumber(f[7]), upto = tonumber(f[8]), choice = Text(f[9]),
             }
         end
     end
@@ -308,7 +312,9 @@ end
 
 function Reputation.Status(requirement)
     local faction = Catalog().factions[requirement.factionID]
-    if faction and faction.side ~= "" and faction.side ~= ns.PlayerSide() then return "other" end
+    -- the character's side, not the one the lists show: an Alliance character looking at the Horde's lists earns
+    -- none of the Horde's factions
+    if faction and faction.side ~= "" and faction.side ~= ns.CharacterSide() then return "other" end
     local standing = Reputation.Standing(requirement.factionID)
     if not standing.known then return "unknown" end
     if standing.met == false then return "missing" end
@@ -407,9 +413,13 @@ function Reputation.Professions()
         return ok and found or nil
     end
     if GetNumSkillLines and GetSkillLineInfo then
+        -- the skills are known by their names, which the addon reads in English and French only
+        local locale = GetLocale and GetLocale() or "enUS"
+        if locale:sub(1, 2) ~= "en" and locale ~= "frFR" then return nil end
         local found = {}
         for index = 1, GetNumSkillLines() or 0 do
-            local name, isHeader, _, rank = GetSkillLineInfo(index)
+            local name, isHeader, isExpanded, rank = GetSkillLineInfo(index)
+            if isHeader and not isExpanded then return nil end   -- a folded header hides the skills under it
             local english = not isHeader and Profession(name)
             if english then found[english] = rank or 0 end
         end
@@ -522,10 +532,12 @@ function Reputation.Needs(class, spec, list, phase, side)
             end
         end
     end
+    local formulas = {}   -- an enchant the one-handed and two-handed weapons share counts once, at the first
     for _, group in ipairs(ns.Enchants.For(class, spec, phase)) do
         for index, id in ipairs(group.ids) do
-            local requirement = Reputation.EnchantRequirement(id)
+            local requirement = not formulas[id] and Reputation.EnchantRequirement(id)
             if requirement then
+                formulas[id] = true
                 Add(requirement, { enchant = id, slot = group.key, role = index == 1 and "best" or "alt" })
             end
         end
@@ -561,7 +573,12 @@ function Reputation.Summary(cells)
                 summary[#summary + 1] = line
             end
             line.total = line.total + 1
-            if Reputation.Status(requirement) == "met" then line.met = line.met + 1 end
+            local status = Reputation.Status(requirement)
+            if status == "met" then
+                line.met = line.met + 1
+            elseif status == "unknown" or status == "other" then
+                line.state = status
+            end
         end
     end
     table.sort(summary, function(a, b)
@@ -650,15 +667,8 @@ local function VendorLine(npc)
     return zone and (vendor.name .. ", " .. zone) or vendor.name
 end
 
-function Reputation.VendorText(factionID)
-    local faction = Catalog().factions[factionID]
-    local line = faction and VendorLine(faction.vendor)
-    if line then return line end
-    return faction and faction.rewards and L.REP_VENDOR_QUESTS or L.REP_UNKNOWN
-end
-
 function Reputation.Sellers(group)
-    local sellers, seen = {}, {}
+    local sellers, seen, counted, unknown = {}, {}, {}, 0
     local function Add(text, vendor)
         if seen[text] then return end
         seen[text] = true
@@ -679,11 +689,26 @@ function Reputation.Sellers(group)
                 end
             else
                 local line = VendorLine(requirement.vendor)
-                if line then Add(line, Catalog().vendors[requirement.vendor]) end
+                if line then
+                    Add(line, Catalog().vendors[requirement.vendor])
+                elseif requirement.via then
+                    Add(L.REP_SELLER_QUEST:format(requirement.via))
+                else
+                    local piece = entry.id or entry.enchant or entry
+                    if not counted[piece] then
+                        counted[piece] = true
+                        unknown = unknown + 1
+                    end
+                end
             end
         end
     end
-    if not sellers[1] then Add(L.REP_UNKNOWN) end
+    -- the pieces no source places: said, not dropped
+    if not sellers[1] then
+        Add(L.REP_UNKNOWN)
+    elseif unknown > 0 then
+        Add(L.REP_SELLER_REST:format(unknown))
+    end
     return sellers
 end
 
@@ -741,25 +766,52 @@ local function TakesClass(classes, class)
     return math.floor(classes / 2 ^ (number - 1)) % 2 == 1
 end
 
+-- The quest helps on the way from Neutral to Exalted (_build/reputations.py, usable): it is not offered only
+-- below Neutral, nor only at Exalted.
+local function Usable(method)
+    return (method.from or NEUTRAL) < EXALTED and (method.upto == nil or method.upto > NEUTRAL)
+end
+
 -- What is known of how to earn a faction. The quests are QuestieDB's; what no source says stays unknown.
 function Reputation.Ways(factionID, class)
     local faction = Catalog().factions[factionID]
     local side = ns.PlayerSide()
-    local ways = { listed = 0, repeatable = 0, once = 0, quests = {}, checks = {}, unknowns = {} }
+    local ways = { total = 0, listed = 0, repeatable = 0, once = 0, quests = {}, checks = {}, unknowns = {} }
+    local whole, branches = false, {}
     if faction then
-        ways.listed, ways.repeatable, ways.once = faction.quests, faction.repeatable, faction.once[side] or 0
+        ways.total = faction.quests
         for _, method in ipairs(faction.methods) do
             if (method.side == "" or method.side == side) and TakesClass(method.classes, class) then
-                ways.quests[#ways.quests + 1] = { quest = method.quest, amount = method.amount, repeats = method.repeats }
+                ways.quests[#ways.quests + 1] = { quest = method.quest, amount = method.amount, repeats = method.repeats,
+                    from = method.from, upto = method.upto }
+                if not Usable(method) then
+                    -- listed, counted nowhere
+                elseif method.repeats then
+                    ways.repeatable = ways.repeatable + 1
+                    whole = whole or method.upto == nil or method.upto >= EXALTED
+                elseif method.choice then
+                    -- of the branches that exclude one another, the one that gives the most counts
+                    local set, branch = method.choice:match("^(%d+):(%d+)$")
+                    branches[set] = branches[set] or {}
+                    branches[set][branch] = (branches[set][branch] or 0) + method.amount
+                else
+                    ways.once = ways.once + method.amount
+                end
             end
         end
+        ways.listed = #ways.quests
+    end
+    for _, totals in pairs(branches) do
+        local most = 0
+        for _, amount in pairs(totals) do most = math.max(most, amount) end
+        ways.once = ways.once + most
     end
     local note = L["REP_NOTE_" .. factionID]
     if note ~= "REP_NOTE_" .. factionID then ways.checks[1] = note end
-    if ways.listed == 0 then
+    if ways.total == 0 then
         ways.unknowns[1] = L.REP_WAY_NONE
     else
-        if ways.repeatable == 0 then ways.unknowns[#ways.unknowns + 1] = L.REP_WAY_ROUTE end
+        if not whole then ways.unknowns[#ways.unknowns + 1] = L.REP_WAY_ROUTE end
         ways.unknowns[#ways.unknowns + 1] = L.REP_WAY_CREATURES
     end
     return ways

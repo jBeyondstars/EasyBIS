@@ -376,7 +376,9 @@ class AddonTest(unittest.TestCase):
         self.assertEqual(legs(), OUTRIDERS_LEGGINGS)
         self.assertTrue(game.lines(OUTRIDERS_LEGGINGS))
         self.assertFalse(game.lines(SENTINELS_LEGGINGS))
-        self.assertEqual(ns.Reputation.Status(stormpike), "other")
+        self.assertEqual(ns.Reputation.Status(stormpike), "missing", "the character's own faction, whatever lists it reads")
+        defilers = game.lua.table_from({"factionID": 510, "standing": 4})
+        self.assertEqual(ns.Reputation.Status(defilers), "other", "the Horde's lists: the character earns none of it")
         self.assertEqual(ns.Ladders.For("SHAMAN", 2, "pve").head.best[1].id, EYE_OF_REND, "a piece for both")
         ns.SetSide(ns, "h")
         self.assertEqual(len(seen), 1, "nothing changed: nothing said")
@@ -883,7 +885,7 @@ class AddonTest(unittest.TestCase):
             stub.fire("UPDATE_FACTION")
         # never met: the game reads Neutral 0, the pane does not list it
         self.assertFalse(rep.Standing(576).met)
-        self.assertEqual(rep.ProgressText(576), "Not met")
+        self.assertEqual(rep.ProgressText(576), "Not met yet")
         self.assertEqual(rep.Status(need), "missing")
         be(5, 3500, 3000, 9000)        # Friendly, 500 into it
         self.assertEqual(rep.Status(need), "missing")
@@ -967,8 +969,13 @@ class AddonTest(unittest.TestCase):
         quest = rep.Sellers(group({"kind": "q", "via": "Honored Amongst the Guard"}))
         self.assertEqual(texts(quest), ["Quest reward: Honored Amongst the Guard"])
         recipe = rep.Sellers(group({"kind": "r", "via": "Plans: Dark Iron Helm"}))
-        self.assertEqual(texts(recipe), ["Plans: Dark Iron Helm: vendor unknown"])
+        self.assertEqual(texts(recipe), ["Plans: Dark Iron Helm: where to get it is unknown"])
         self.assertEqual(texts(rep.Sellers(group({"kind": "w"}))), ["Unknown"])
+        # a piece no vendor sells: the quest that rewards it, else said to be unknown, not dropped
+        self.assertEqual(texts(rep.Sellers(group({"kind": "w", "via": "The Path of the Protector"}))),
+                         ["Quest reward: The Path of the Protector"])
+        some = rep.Sellers(group({"kind": "w", "vendor": 263569}, {"kind": "w", "id": 1}, {"kind": "w", "id": 2}))
+        self.assertEqual(texts(some)[1:], ["Other pieces: where to get them is unknown (2)"])
         vendor = rep.Sellers(group({"kind": "w", "vendor": 263569}, {"kind": "w", "vendor": 263569}))
         self.assertEqual(len(texts(vendor)), 1, "a vendor is named once")
         self.assertTrue(texts(vendor)[0].startswith("Bryanna Embreeze, "))
@@ -1176,9 +1183,13 @@ class AddonTest(unittest.TestCase):
         self.assertTrue(values(powderfuse.checks), "what a person wrote down is to be checked")
         self.assertEqual(values(powderfuse.unknowns), ["The whole way to Exalted.", "Reputation from creatures."])
         argent = rep.Ways(529, "WARRIOR")
-        self.assertEqual((argent.listed, argent.repeatable), (204, 121), "each quest once, as the data names it")
+        quests = values(argent.quests)
+        usable = lambda quest: (quest["from"] or 3) < 7 and (quest.upto is None or quest.upto > 3)
+        self.assertEqual(argent.listed, len(quests), "the cards count the quests listed")
+        self.assertEqual(argent.repeatable, sum(1 for quest in quests if quest.repeats and usable(quest)))
+        self.assertGreater(argent.total, argent.listed, "the other side's quests and the other classes' are not listed")
         self.assertEqual(values(argent.unknowns), ["Reputation from creatures."])
-        names = [quest.quest for quest in values(argent.quests)]
+        names = [quest.quest for quest in quests]
         self.assertGreater(len(names), 100, "every quest a warrior can take, not a handful")
         self.assertLessEqual(len(names), argent.listed)
         self.assertIn("Corruptor's Scourgestones", names)
@@ -1198,6 +1209,72 @@ class AddonTest(unittest.TestCase):
             for key, value in words.items():
                 if str(key).startswith("REP_"):
                     self.assertIsNone(re.search(r"\b(hours?|heures?|minutes?|days?|jours?)\b", str(value), re.I), (language, key))
+
+    def test_reputation_ways_count_what_one_character_can_do(self):
+        """The cards count the quests of the list: of branches that exclude one another (the rings of Ahn'Qiraj)
+        the one that gives the most, nothing a quest gives only below Neutral or at Exalted; the same sums as the
+        generator's, class by class."""
+        game = Game()
+        rep = game.ns.Reputation
+        values = lambda table: list(table.values())
+        reading = reputations.load()
+        for faction in (21, 59, 270, 529, 609, 730, 910, 2799):
+            for cls, number in (("WARRIOR", 1), ("MAGE", 8), ("DRUID", 11)):
+                mine = [{"title": m[0], "amount": m[1], "repeats": bool(m[2]), "side": m[3], "classes": m[4],
+                         "from": m[5] or None, "until": m[6] or None, "choice": m[7]}
+                        for m in reading["factions"][faction]["methods"] if not m[4] or m[4] >> (number - 1) & 1]
+                ways = rep.Ways(faction, cls)
+                self.assertEqual(ways.once, reputations.once_total(mine, "a"), (faction, cls))
+                self.assertEqual(ways.repeatable, sum(1 for quest in mine if quest["repeats"] and quest["side"] in ("", "a")
+                                                      and reputations.usable(quest)), (faction, cls))
+        # the three paths of the rings: four steps of 100 each, one path counted
+        brood = rep.Ways(910, "WARRIOR")
+        paths = [quest for quest in values(brood.quests)
+                 if quest.quest in ("The Path of the Protector", "The Path of the Conqueror", "The Path of the Invoker")]
+        self.assertEqual(len(paths), 12)
+        usable = [quest for quest in values(brood.quests)
+                  if not quest.repeats and (quest["from"] or 3) < 7 and (quest.upto is None or quest.upto > 3)]
+        self.assertEqual(sum(quest.amount for quest in usable) - brood.once, 800)
+        # offered between two standings: said, and counted only where it helps
+        thorium = {quest.quest: quest for quest in values(rep.Ways(59, "WARRIOR").quests)}
+        flux = thorium["Restoring Fiery Flux Supplies via Iron"]
+        self.assertEqual((bool(flux.repeats), flux.upto), (True, 4), "repeatable until Friendly")
+        booty = rep.Ways(21, "WARRIOR")
+        traitor = next(quest for quest in values(booty.quests) if quest.quest == "Traitor to the Bloodsail")
+        self.assertEqual(traitor.upto, 3, "only below Neutral")
+        self.assertEqual(booty.repeatable, 0)
+        self.assertIn("The whole way to Exalted.", values(booty.unknowns))
+        # the quests Questie says the game does not have are gone
+        self.assertNotIn("DND FLAG The Dread Citadel - Naxxramas", [quest.quest for quest in values(rep.Ways(529).quests)])
+        self.assertNotIn("Wanted: ORCS!", [quest.quest for quest in values(rep.Ways(730).quests)])
+        self.assertFalse(values(Game(faction="Horde").ns.Reputation.Ways(730).quests), "Stormpike: nothing for the Horde")
+
+    def test_reputation_an_enchant_counts_once(self):
+        """An enchant the one-handed and two-handed weapons share is one piece of its faction."""
+        game = Game()
+        rep, ns = game.ns.Reputation, game.ns
+        seen = 0
+        for cls in CLASSES:
+            for spec in range(1, int(ns.Index.SpecCount(cls)) + 1):
+                for mode in ("pve", "pvp"):
+                    needs = rep.Needs(cls, spec, mode)
+                    for group in list(needs.own.values()) + list(needs.artisan.values()):
+                        enchants = [entry.enchant for entries in group.steps.values() for entry in entries.values()
+                                    if entry.enchant]
+                        self.assertEqual(len(enchants), len(set(enchants)), (cls, spec, mode, group.factionID))
+                        seen += len(enchants)
+        self.assertGreater(seen, 0)
+
+    def test_reputation_summary_when_the_game_does_not_say(self):
+        game = Game()
+        rep, lua = game.ns.Reputation, game.lua
+        cells = lambda: lua.table_from([lua.table_from({"reputation": lua.table_from(
+            {"factionID": 576, "standing": 5, "kind": "w"})})])
+        self.assertIsNone(rep.Summary(cells())[1].state)
+        game.stub.factionsUnknown = True
+        game.stub.fire("UPDATE_FACTION")
+        game.stub.runTimers()
+        self.assertEqual(rep.Summary(cells())[1].state, "unknown", "not 0 of 1: the game does not say")
 
     # -- the game runs Lua 5.1 ----------------------------------------------------------------
 
