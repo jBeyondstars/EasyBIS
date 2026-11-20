@@ -35,9 +35,10 @@ except ImportError:  # pragma: no cover
     lupa = None
 
 CLASSES = ("WARRIOR", "PALADIN", "HUNTER", "ROGUE", "PRIEST", "SHAMAN", "MAGE", "WARLOCK", "DRUID")
-EYE_OF_REND = 12587          # the best PvE head for an Alliance Enhancement Shaman
-SENTINELS_LEGGINGS = 22748   # Alliance; the Horde wears its twin
-OUTRIDERS_LEGGINGS = 22673
+EYE_OF_REND = 12587          # a drop of Upper Blackrock Spire, an alternative of Enhancement Shaman's PvE head
+DRAGONSCALE_HELM = 252605    # Black Dragonscale Helm: the best PvE head of Enhancement Shaman, for both factions
+GRAND_MARSHALS_DEMOLISHER = 23455   # the best PvE weapon of an Alliance Enhancement Shaman, PvP rewards counted;
+HIGH_WARLORDS_DESTROYER = 23465     # the Horde wears its twin
 ATIESH = 22589               # a Naxxramas quest reward: Classic data only
 MAGEBLADE = 23451            # Grand Marshal's Mageblade (Alliance), a rank 14 one-hander: the best main hand of a
 #                              Fire Mage before the raids. A PvP-rank reward is ranked in the PvE list on its stats.
@@ -81,7 +82,8 @@ def no_pictures(text: str) -> str:
 class Game:
     """The addon, loaded in a fresh Lua state as the game would load it."""
 
-    def __init__(self, locale="enUS", faction="Alliance", cls="SHAMAN", login=True, saved=None):
+    def __init__(self, locale="enUS", faction="Alliance", cls="SHAMAN", login=True, saved=None, prepare=None):
+        """prepare(ns): run once the files are loaded, before the game's events: to change the data a test reads."""
         self.lua = lupa.LuaRuntime(unpack_returned_tuples=True)
         self.stub = self.lua.execute((TESTS / "wowstub.lua").read_text(encoding="utf-8"))
         self.stub.locale, self.stub.faction, self.stub["class"] = locale, faction, cls
@@ -92,6 +94,8 @@ class Game:
             "function(source, name, addon, ns) local chunk = assert(load(source, name)); chunk(addon, ns) end")
         for path in toc_files():
             load(path.read_text(encoding="utf-8"), "@" + path.name, "EasyBIS", self.ns)
+        if prepare:
+            prepare(self.ns)
         self.stub.fire("ADDON_LOADED", "EasyBIS")
         if login:
             self.stub.fire("PLAYER_LOGIN")
@@ -352,10 +356,10 @@ class AddonTest(unittest.TestCase):
     def test_a_faction_sees_its_own_items(self):
         alliance = Game(faction="Alliance", saved=WITH_PVP).ns.Ladders.For("SHAMAN", 2, "pve")
         horde = Game(faction="Horde", saved=WITH_PVP).ns.Ladders.For("SHAMAN", 2, "pve")
-        self.assertEqual(alliance.legs.best[1].id, SENTINELS_LEGGINGS)
-        self.assertEqual(horde.legs.best[1].id, OUTRIDERS_LEGGINGS)
-        self.assertEqual(alliance.head.best[1].id, EYE_OF_REND)
-        self.assertEqual(horde.head.best[1].id, EYE_OF_REND)
+        self.assertEqual(alliance.main.best[1].id, GRAND_MARSHALS_DEMOLISHER)
+        self.assertEqual(horde.main.best[1].id, HIGH_WARLORDS_DESTROYER)
+        self.assertEqual(alliance.head.best[1].id, DRAGONSCALE_HELM)
+        self.assertEqual(horde.head.best[1].id, DRAGONSCALE_HELM)
         self.assertTrue(alliance.twoHand)
         self.assertEqual(len(alliance.off.best), 0)
 
@@ -364,10 +368,10 @@ class AddonTest(unittest.TestCase):
         reputations follow; the choice is the character's, and picking its own faction goes back to following it."""
         game = Game(faction="Alliance", saved=WITH_PVP)
         ns = game.ns
-        legs = lambda: ns.Ladders.For("SHAMAN", 2, "pve").legs.best[1].id
-        self.assertEqual((ns.CharacterSide(), ns.PlayerSide(), legs()), ("a", "a", SENTINELS_LEGGINGS))
-        self.assertTrue(game.lines(SENTINELS_LEGGINGS))
-        self.assertFalse(game.lines(OUTRIDERS_LEGGINGS), "the Horde's twin is nobody's on the Alliance")
+        weapon = lambda: ns.Ladders.For("SHAMAN", 2, "pve").main.best[1].id
+        self.assertEqual((ns.CharacterSide(), ns.PlayerSide(), weapon()), ("a", "a", GRAND_MARSHALS_DEMOLISHER))
+        self.assertTrue(game.lines(GRAND_MARSHALS_DEMOLISHER))
+        self.assertFalse(game.lines(HIGH_WARLORDS_DESTROYER), "the Horde's twin is nobody's on the Alliance")
         seen = []
         ns.On(ns, "OPTION_CHANGED", lambda key, value: seen.append((key, value)))
         stormpike = game.lua.table_from({"factionID": 730, "standing": 4})
@@ -376,31 +380,31 @@ class AddonTest(unittest.TestCase):
         ns.SetSide(ns, "h")
         self.assertEqual((ns.CharacterSide(), ns.PlayerSide(), ns.char.side), ("a", "h", "h"))
         self.assertEqual(seen, [("side", "h")])
-        self.assertEqual(legs(), OUTRIDERS_LEGGINGS)
-        self.assertTrue(game.lines(OUTRIDERS_LEGGINGS))
-        self.assertFalse(game.lines(SENTINELS_LEGGINGS))
+        self.assertEqual(weapon(), HIGH_WARLORDS_DESTROYER)
+        self.assertTrue(game.lines(HIGH_WARLORDS_DESTROYER))
+        self.assertFalse(game.lines(GRAND_MARSHALS_DEMOLISHER))
         self.assertEqual(ns.Reputation.Status(stormpike), "missing", "the character's own faction, whatever lists it reads")
         defilers = game.lua.table_from({"factionID": 510, "standing": 4})
         self.assertEqual(ns.Reputation.Status(defilers), "other", "the Horde's lists: the character earns none of it")
-        self.assertEqual(ns.Ladders.For("SHAMAN", 2, "pve").head.best[1].id, EYE_OF_REND, "a piece for both")
+        self.assertEqual(ns.Ladders.For("SHAMAN", 2, "pve").head.best[1].id, DRAGONSCALE_HELM, "a piece for both")
         ns.SetSide(ns, "h")
         self.assertEqual(len(seen), 1, "nothing changed: nothing said")
 
         ns.SetSide(ns, "a")   # the character's own: back to following it
         self.assertIsNone(ns.char.side)
         self.assertEqual(seen[-1], ("side", "a"))
-        self.assertEqual(legs(), SENTINELS_LEGGINGS)
+        self.assertEqual(weapon(), GRAND_MARSHALS_DEMOLISHER)
         ns.SetSide(ns, "x")
         self.assertEqual((ns.char.side, len(seen)), (None, 2))
 
         # kept per character
         saved = Game(faction="Alliance", saved=WITH_PVP + " EasyBISCharDB = { side = 'h' }")
         self.assertEqual(saved.ns.PlayerSide(), "h")
-        self.assertEqual(saved.ns.Ladders.For("SHAMAN", 2, "pve").legs.best[1].id, OUTRIDERS_LEGGINGS)
+        self.assertEqual(saved.ns.Ladders.For("SHAMAN", 2, "pve").main.best[1].id, HIGH_WARLORDS_DESTROYER)
         horde = Game(faction="Horde", saved=WITH_PVP)
         horde.ns.SetSide(horde.ns, "a")
         self.assertEqual((horde.ns.CharacterSide(), horde.ns.PlayerSide()), ("h", "a"))
-        self.assertEqual(horde.ns.Ladders.For("SHAMAN", 2, "pve").legs.best[1].id, SENTINELS_LEGGINGS)
+        self.assertEqual(horde.ns.Ladders.For("SHAMAN", 2, "pve").main.best[1].id, GRAND_MARSHALS_DEMOLISHER)
 
     def test_faction_command(self):
         game = Game(faction="Alliance")
@@ -584,23 +588,23 @@ class AddonTest(unittest.TestCase):
 
     def test_tooltip_lines(self):
         game = Game()
-        lines = game.lines(EYE_OF_REND)
+        lines = game.lines(DRAGONSCALE_HELM)
         shaman = [line for line in lines if "Shaman" in line[0]]
         self.assertEqual(shaman, [("<classicon-shaman> Shaman Enhancement", "BIS PvE")])
         # the same answer as the generator, class by class
-        wanted = {hit[0] for hit in self.expected_hits(default_filter())[EYE_OF_REND]}
+        wanted = {hit[0] for hit in self.expected_hits(default_filter())[DRAGONSCALE_HELM]}
         self.assertEqual({line[0].split()[1] for line in lines}, {token.capitalize() for token in wanted})
 
     def test_tooltip_gets_the_lines(self):
         game = Game()
-        tooltip = game.tooltip(EYE_OF_REND)
+        tooltip = game.tooltip(DRAGONSCALE_HELM)
         self.assertEqual(tooltip[0], (" ",))
         self.assertEqual(tooltip[1], ("Easy BIS",))
         self.assertIn(("<classicon-shaman> Shaman Enhancement", "BIS PvE"), tooltip[2:])
         self.assertEqual(game.tooltip(1), [], "an item nobody wants got lines")
 
         game.ns.SetOption(game.ns, "tooltip", False)
-        self.assertEqual(game.tooltip(EYE_OF_REND), [])
+        self.assertEqual(game.tooltip(DRAGONSCALE_HELM), [])
 
     def test_tooltip_options(self):
         game = Game(cls="SHAMAN")
@@ -612,7 +616,7 @@ class AddonTest(unittest.TestCase):
 
         game.ns.SetOption(game.ns, "onlyMyClass", False)
         game.ns.SetOption(game.ns, "alternatives", False)
-        for _, right in game.lines(EYE_OF_REND):
+        for _, right in game.lines(DRAGONSCALE_HELM):
             self.assertNotIn("Alt", right)
 
     def test_whole_class_line_drops_the_spec_names(self):
@@ -644,7 +648,7 @@ class AddonTest(unittest.TestCase):
         custom, stub = game.ns.Custom, game.stub
         stub.equipLocs[crown], stub.itemNames[crown] = "INVTYPE_HEAD", "Crown of Tests"
         stub.equipLocs[blade], stub.equipLocs[dagger], stub.equipLocs[potion] = "INVTYPE_WEAPON", "INVTYPE_WEAPON", ""
-        stub.equipLocs[EYE_OF_REND] = "INVTYPE_HEAD"
+        stub.equipLocs[DRAGONSCALE_HELM] = "INVTYPE_HEAD"
 
         self.assertEqual(custom.Add("SHAMAN", 2, "pve", crown), "head")
         self.assertEqual(list(custom.List("SHAMAN", 2, "pve", "head").values()), [crown])
@@ -652,8 +656,8 @@ class AddonTest(unittest.TestCase):
         self.assertEqual(custom.Add("SHAMAN", 2, "pve", crown), (None, "duplicate"))
         self.assertEqual(custom.Add("SHAMAN", 2, "pve", potion), (None, "notGear"))
         self.assertEqual(custom.Add("SHAMAN", 2, "pve", 424242), (None, "unknown"))
-        self.assertEqual(custom.Add("SHAMAN", 2, "pve", EYE_OF_REND), (None, "listed"), "the data already picks it")
-        self.assertEqual(custom.Add("MAGE", 1, "pve", EYE_OF_REND), "head", "another spec may still add it")
+        self.assertEqual(custom.Add("SHAMAN", 2, "pve", DRAGONSCALE_HELM), (None, "listed"), "the data already picks it")
+        self.assertEqual(custom.Add("MAGE", 1, "pve", DRAGONSCALE_HELM), "head", "another spec may still add it")
         # a one-handed weapon: the main hand, or the off hand when asked
         self.assertEqual(custom.Add("SHAMAN", 2, "pve", blade), "main")
         self.assertEqual(custom.Add("SHAMAN", 2, "pve", dagger, "off"), "off")
@@ -661,8 +665,8 @@ class AddonTest(unittest.TestCase):
 
         # tooltips name the spec; an item the data also picks keeps the data's word
         self.assertEqual(game.lines(crown), [("<classicon-shaman> Shaman Enhancement", "Added PvE")])
-        self.assertIn(("<classicon-mage> Mage Arcane", "Added PvE"), game.lines(EYE_OF_REND))
-        self.assertIn(("<classicon-shaman> Shaman Enhancement", "BIS PvE"), game.lines(EYE_OF_REND))
+        self.assertIn(("<classicon-mage> Mage Arcane", "Added PvE"), game.lines(DRAGONSCALE_HELM))
+        self.assertIn(("<classicon-shaman> Shaman Enhancement", "BIS PvE"), game.lines(DRAGONSCALE_HELM))
         game.ns.SetOption(game.ns, "alternatives", False)
         self.assertEqual(len(game.lines(crown)), 1, "an added item is not an alternative to hide")
 
@@ -672,7 +676,7 @@ class AddonTest(unittest.TestCase):
         self.assertEqual(list(custom.List("SHAMAN", 2, "pve", "head").values()), [])
 
         # reading what the player gives: a link, an ID, a name the game knows
-        self.assertEqual(custom.Read("|cffa335ee|Hitem:12587::::::::60|h[Eye of Rend]|h|r"), 12587)
+        self.assertEqual(custom.Read("|cffa335ee|Hitem:12587::::::::60|h[Black Dragonscale Helm]|h|r"), 12587)
         self.assertEqual(custom.Read(" 456 "), 456)
         self.assertEqual(custom.Read("Crown of Tests"), crown)
         self.assertIsNone(custom.Read("no such thing"))
@@ -728,7 +732,7 @@ class AddonTest(unittest.TestCase):
         self.assertEqual(game.ns.SpecName("Enhancement"), "Amélioration")
         self.assertEqual(game.ns.L.LIST_PVE, "JcE")
         self.assertEqual(game.ns.SlotName("head"), "Tête")
-        self.assertIn(("<classicon-shaman> Shaman Amélioration", "BIS JcE"), game.lines(EYE_OF_REND))
+        self.assertIn(("<classicon-shaman> Shaman Amélioration", "BIS JcE"), game.lines(DRAGONSCALE_HELM))
 
     def test_unknown_language_falls_back_to_english(self):
         game = Game(locale="deDE")
@@ -784,8 +788,8 @@ class AddonTest(unittest.TestCase):
 
     def test_item_command(self):
         game = Game()
-        game.stub.itemNames[EYE_OF_REND] = "Eye of Rend"
-        chat = game.slash(f"item |cffa335ee|Hitem:{EYE_OF_REND}::::::::60|h[Eye of Rend]|h|r")
+        game.stub.itemNames[DRAGONSCALE_HELM] = "Black Dragonscale Helm"
+        chat = game.slash(f"item |cffa335ee|Hitem:{DRAGONSCALE_HELM}::::::::60|h[Black Dragonscale Helm]|h|r")
         self.assertIn("is wanted by", chat[0])
         self.assertTrue(any("Shaman Enhancement" in line and "BIS PvE" in line for line in chat[1:]))
         self.assertIn("nobody", game.slash("item 1")[0])
@@ -1676,12 +1680,15 @@ class DungeonsTest(unittest.TestCase):
     def test_what_the_player_has_leaves_the_counts(self):
         game = Game()
         game.ns.SetOption(game.ns, "listAlts", False)
-        before = self.model(game, *self.DESTRUCTION)
-        busy = next(run for run in before.runs.values() if run.need == 2)   # a run that holds two best picks
+        # a spec with a run that holds two best picks
+        specs = [self.DESTRUCTION] + [(token, spec) for token in CLASSES for spec in self.kept[token]]
+        spec, before, busy = next((spec, before, busy) for spec in specs
+                                  for before in [self.model(game, *spec)]
+                                  for busy in [next((run for run in before.runs.values() if run.need == 2), None)] if busy)
         key = busy.key
         first, second = (entry.piece.id for entry in busy.entries.values())
         game.stub.itemCounts[first] = 1    # in the bags or in the bank
-        model = self.model(game, *self.DESTRUCTION)
+        model = self.model(game, *spec)
         run = next(run for run in model.runs.values() if run.key == key)
         self.assertEqual((model.need, model.got), (before.need - 1, 1))
         self.assertEqual((run.need, run.got), (1, 1))
@@ -1689,7 +1696,7 @@ class DungeonsTest(unittest.TestCase):
         self.assertFalse(run.entries[2].piece.owned)
         self.assertEqual(model.dungeons, before.dungeons)
         game.stub.equipped[second] = True     # worn
-        model = self.model(game, *self.DESTRUCTION)
+        model = self.model(game, *spec)
         run = next(run for run in model.runs.values() if run.key == key)
         self.assertEqual((run.need, run.got, model.dungeons), (0, 2, before.dungeons - 1))
         self.assertEqual(list(model.runs.values())[-1].key, key, "a run with nothing left comes last")

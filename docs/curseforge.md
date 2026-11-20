@@ -30,7 +30,7 @@ The window has two tabs on its right side: the lists, with their own tabs at the
 **Items** lists the best items slot by slot, with the alternatives under each one.
 
 - The bar shows how close each alternative comes to the BIS.
-- The PvE lists of the damage specs are ranked by simulation, which counts the items with an effect (Hand of Justice...). Until a spec has its own, those items are placed where a close spec's simulation ranks them, marked Estimated, with no score.
+- The PvE lists of the damage specs are ranked by simulation, which counts the items with an effect (Hand of Justice...).
 - The source is shown for every item: dungeon boss and drop chance, quest, crafting profession and skill, vendor, reputation or world drop.
 - You can filter by spec, PvE or PvP list, content phase, slot, source, zone and reputation.
 - Hover an item to see its tooltip and its full source. Shift-click an item to link it in chat.

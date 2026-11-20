@@ -8,6 +8,7 @@ what the generator's rules give.
 """
 from __future__ import annotations
 
+import dataclasses
 import math
 import re
 import sys
@@ -21,6 +22,7 @@ sys.path.insert(0, str(TESTS))
 
 import fdb  # noqa: E402
 import ladders  # noqa: E402
+import luaout  # noqa: E402
 import phases  # noqa: E402
 import reputations  # noqa: E402
 import test_addon  # noqa: E402
@@ -29,7 +31,8 @@ from test_addon import (  # noqa: E402
 
 lupa = test_addon.lupa
 
-EYE_OF_REND = 12587
+EYE_OF_REND = 12587             # a drop of Warchief Rend Blackhand: Enhancement Shaman's second PvE head
+DRAGONSCALE_HELM = 252605       # Black Dragonscale Helm, Leatherworking 300: Enhancement Shaman's best PvE head
 TIMBERMAW_TUNIC = 252484        # crafted, Leatherworking 300
 GRAND_MARSHALS_SUNDERER = 18830  # PvP rank 14
 GENERALS_GREAVES = 231656       # no known source
@@ -217,27 +220,33 @@ class WindowTest(unittest.TestCase):
 
     def test_item_row_texts(self):
         game = Game(saved=ENHANCEMENT)
+        game.stub.itemNames[DRAGONSCALE_HELM] = "Black Dragonscale Helm"
         game.stub.itemNames[EYE_OF_REND] = "Eye of Rend"
         game.ns.Browser.Open()
         row = self.frames(game)[0]
         # one line: name, score bar and rank, type, then a picture and the words for where it comes from
-        self.assertEqual(row.name.text, "|cffa335eeEye of Rend|r", "the name wears the quality color, and nothing else")
+        self.assertEqual(row.name.text, "|cffa335eeBlack Dragonscale Helm|r",
+                         "the name wears the quality color, and nothing else")
         self.assertEqual(strip_colors(row.rank.text), "BIS")
         self.assertTrue(row.bar.shown)
         self.assertEqual(row.bar.width, BAR, "the best pick's bar is full")
         self.assertEqual(row.sub.text, "Mail", "the header names the slot, the row says the item's type")
-        self.assertEqual(row.sourceIcon.texture, "Interface\\TargetingFrame\\UI-RaidTargetingIcon_8")
+        self.assertEqual(row.sourceIcon.texture, "Interface\\Icons\\Trade_LeatherWorking", "a craft: its profession")
         self.assertFalse(row.kind.shown, "on one line the picture stands for the category")
-        self.assertEqual(strip_colors(row.detail.text), "Warchief Rend Blackhand - Blackrock Spire (15%)",
-                         "a drop counted in Forever wears no sign")
+        self.assertEqual(strip_colors(row.detail.text), "Leatherworking (300)")
         self.assertEqual(row.height, ONE_LINE)
         self.assertFalse(row.remove.shown)
 
         second = self.frames(game)[1]
-        self.assertEqual(strip_colors(second.name.text), "Mask of the Unforgiven")
+        self.assertEqual(second.name.text, "|cffa335eeEye of Rend|r")
         self.assertRegex(strip_colors(second.rank.text), r"^-\d+%$")
         self.assertLess(second.bar.width, BAR, "an alternative's bar is shorter")
-        self.assertEqual(second.sub.text, "", "the item type is not known before the game loads the item")
+        self.assertEqual(second.sourceIcon.texture, "Interface\\TargetingFrame\\UI-RaidTargetingIcon_8")
+        self.assertEqual(strip_colors(second.detail.text), "Warchief Rend Blackhand - Blackrock Spire (15%)",
+                         "a drop counted in Forever wears no sign")
+        third = self.frames(game)[2]
+        self.assertEqual(strip_colors(third.name.text), "Mask of the Unforgiven")
+        self.assertEqual(third.sub.text, "", "the item type is not known before the game loads the item")
 
         # what was seen or counted in Forever or read in its files wears no sign
         for frame in self.frames(game):
@@ -249,9 +258,10 @@ class WindowTest(unittest.TestCase):
         game.ns.SetOption(game.ns, "compact", False)
         self.assertEqual(row.height, ROW)
         self.assertTrue(row.kind.shown)
-        self.assertEqual(strip_colors(row.kind.text), "Dungeon")
-        self.assertEqual(row.detail.text, "Warchief Rend Blackhand - Blackrock Spire (15%)")
+        self.assertEqual(strip_colors(row.kind.text), "Crafted")
         self.assertEqual(strip_colors(row.rank.text), "BIS")
+        self.assertEqual(strip_colors(second.kind.text), "Dungeon")
+        self.assertEqual(second.detail.text, "Warchief Rend Blackhand - Blackrock Spire (15%)")
 
     def test_rows_use_larger_fonts(self):
         """A row's texts are the game's own fonts made larger, so the list reads at a glance."""
@@ -410,12 +420,12 @@ class WindowTest(unittest.TestCase):
 
     def test_row_tooltip_and_link(self):
         game = Game(saved=ENHANCEMENT)
-        game.stub.itemNames[EYE_OF_REND] = "Eye of Rend"
+        game.stub.itemNames[DRAGONSCALE_HELM] = "Black Dragonscale Helm"
         game.ns.Browser.Open()
         row, tooltip = self.frames(game)[0], game.lua.globals().GameTooltip
         compare = game.lua.globals().ShoppingTooltip1
         game.stub.run(row, "OnEnter")
-        self.assertEqual(tooltip.item, EYE_OF_REND)
+        self.assertEqual(tooltip.item, DRAGONSCALE_HELM)
         self.assertTrue(tooltip.shown)
         self.assertFalse(compare.shown, "the comparison with the gear worn waits for Shift")
         game.stub.shift = True
@@ -444,21 +454,21 @@ class WindowTest(unittest.TestCase):
         self.assertIsNone(game.stub.linked, "a plain click must not link the item")
         game.stub.modifier = True
         game.stub.run(row, "OnClick")
-        self.assertIn(f"item:{EYE_OF_REND}", game.stub.linked)
+        self.assertIn(f"item:{DRAGONSCALE_HELM}", game.stub.linked)
 
     def test_names_arrive_later(self):
         game = self.open(saved=ENHANCEMENT)
         row = self.frames(game)[0]
-        self.assertEqual(strip_colors(row.name.text), "Eye of Rend")   # the data's English name
-        game.stub.itemNames[EYE_OF_REND] = "Oeil de Rend"
-        game.stub.fire("GET_ITEM_INFO_RECEIVED", EYE_OF_REND, True)
-        game.stub.fire("GET_ITEM_INFO_RECEIVED", EYE_OF_REND, True)
+        self.assertEqual(strip_colors(row.name.text), "Black Dragonscale Helm")   # the data's English name
+        game.stub.itemNames[DRAGONSCALE_HELM] = "Heaume en écailles de dragon noir"
+        game.stub.fire("GET_ITEM_INFO_RECEIVED", DRAGONSCALE_HELM, True)
+        game.stub.fire("GET_ITEM_INFO_RECEIVED", DRAGONSCALE_HELM, True)
         while game.stub.runTimers():
             pass
-        self.assertEqual(strip_colors(row.name.text), "Oeil de Rend")
+        self.assertEqual(strip_colors(row.name.text), "Heaume en écailles de dragon noir")
         game.ns.Browser.Close()
-        game.stub.itemNames[EYE_OF_REND] = "Eye"
-        game.stub.fire("GET_ITEM_INFO_RECEIVED", EYE_OF_REND, True)
+        game.stub.itemNames[DRAGONSCALE_HELM] = "Helm"
+        game.stub.fire("GET_ITEM_INFO_RECEIVED", DRAGONSCALE_HELM, True)
         self.assertEqual(game.stub.runTimers(), 0, "a closed window keeps listening")
 
     # -- filters ------------------------------------------------------------------------------
@@ -1017,9 +1027,12 @@ class WindowTest(unittest.TestCase):
         self.assertTrue(mine and all("BIS" in right for right in mine), "a tie is as good as the best in tooltips")
 
     def a_placed_item(self) -> tuple:
-        """(class, spec, slot, item): an alternative a PvE list shows, with six alternatives asked for, that the
-        data placed from a close spec's simulation (flag e). Weapons are left out: their lists are weighed first."""
+        """(class, spec, slot, item, prepare): an alternative a PvE list shows, with six alternatives asked for,
+        that the data placed from a close spec's simulation (flag e). Weapons are left out: their lists are weighed
+        first. Once the simulator has measured every spec the data places nothing: the last alternative of a list is
+        then flagged e in the data the game loads (prepare), as the generator writes a placement."""
         flt = for_list(default_filter(), "pve")
+        stand_in = None
         for token in test_addon.CLASSES:
             for spec, modes in self.kept[token].items():
                 for slot, _ in ladders.SLOTS:
@@ -1029,13 +1042,30 @@ class WindowTest(unittest.TestCase):
                     _, alternatives = ladders.picks(slot, visible, ladders.MAX_ALTERNATIVES)
                     placed = next((e for e in alternatives if e.placed), None)
                     if placed:
-                        return token, spec, slot, placed.shown("a")
-        self.fail("no placed item in the PvE lists: this test needs another example, or placed.json is empty")
+                        return token, spec, slot, placed.shown("a"), None
+                    if alternatives and not stand_in and alternatives[-1].shown("a"):
+                        stand_in = token, spec, slot, alternatives[-1]
+        self.assertIsNotNone(stand_in, "no alternative in the PvE lists")
+        token, spec, slot, entry = stand_in
+        token_text = luaout.encode_entry(entry)
+        flagged = luaout.encode_entry(dataclasses.replace(entry, placed=True))
+
+        def prepare(ns):
+            head = f"L\t{spec}\tpve\t{slot}\t"
+            lines = ns.data.lists[token].split("\n")
+            hits = [i for i, line in enumerate(lines) if line.startswith(head)]
+            self.assertEqual(len(hits), 1, head)
+            tokens = lines[hits[0]][len(head):].split(" ")
+            self.assertIn(token_text, tokens)
+            tokens[tokens.index(token_text)] = flagged
+            lines[hits[0]] = head + " ".join(tokens)
+            ns.data.lists[token] = "\n".join(lines)
+        return token, spec, slot, entry.shown("a"), prepare
 
     def test_a_placed_item_has_no_score(self):
         """An item placed from a close spec's simulation reads Estimated, with no bar and no figure."""
-        token, spec, slot, item_id = self.a_placed_item()
-        game = self.open(cls=token, saved=f"EasyBISDB = {{ altCount = {ladders.MAX_ALTERNATIVES} }} "
+        token, spec, slot, item_id, prepare = self.a_placed_item()
+        game = self.open(cls=token, prepare=prepare, saved=f"EasyBISDB = {{ altCount = {ladders.MAX_ALTERNATIVES} }} "
                                           f"EasyBISCharDB = {{ class = '{token}', spec = {spec}, list = 'pve' }}")
         row = next(frame for frame in self.frames(game) if frame.data.kind == "item" and frame.data.id == item_id)
         self.assertTrue(row.data.placed)
@@ -1069,11 +1099,10 @@ class WindowTest(unittest.TestCase):
         game.stub.run(rows[0], "OnEnter")
         self.assertEqual((tooltip.points[1][1], tooltip.points[1][3]), ("TOPRIGHT", "TOPLEFT"))
         # what the row shortens is in the tooltip in full
+        game.stub.run(rows[1], "OnEnter")
         lines = [strip_colors(line[1]) for line in tooltip.lines.values()]
         self.assertIn("Source: Dungeon - Warchief Rend Blackhand - Blackrock Spire (15%)", lines)
         self.assertNotIn("* Source from Classic's data, not confirmed in Forever.", lines)
-        game.stub.run(rows[1], "OnEnter")
-        lines = [strip_colors(line[1]) for line in tooltip.lines.values()]
         self.assertTrue(any(re.match(r"Score for this slot: \d+% of the best pick's\.", line) for line in lines), lines)
 
     def test_window_height_is_kept(self):
@@ -1186,7 +1215,7 @@ class WindowTest(unittest.TestCase):
 
     def test_add_an_item_by_name_search(self):
         legs, helm, shoulders, chest = 15052, 252605, 15051, 15050
-        game = Game(saved=ENHANCEMENT)
+        game = Game(saved=FIRE_MAGE)   # a list that does not have the helm
         stub = game.stub
         for item in (legs, helm, shoulders, chest):
             stub.equipLocs[item] = "INVTYPE_HEAD"
@@ -1237,7 +1266,7 @@ class WindowTest(unittest.TestCase):
         stub.run(box, "OnEnterPressed")
         self.assertIn("[Black Dragonscale Helm] added", strip_colors(dialog.result.text))
         self.assertFalse(suggest.shown)
-        self.assertEqual(list(game.ns.Custom.List("SHAMAN", 2, "pve", "head").values()), [helm])
+        self.assertEqual(list(game.ns.Custom.List("MAGE", 2, "pve", "head").values()), [helm])
 
         # a click on a row adds it too; a word inside the name is found
         type_text("black dragonscale shoul")
@@ -1254,7 +1283,7 @@ class WindowTest(unittest.TestCase):
         stub.fire("MODIFIER_STATE_CHANGED", "LSHIFT", 0)
         self.assertFalse(compare.shown)
         stub.run(suggest.rows[1], "OnClick")
-        self.assertIn(shoulders, list(game.ns.Custom.List("SHAMAN", 2, "pve", "head").values()))
+        self.assertIn(shoulders, list(game.ns.Custom.List("MAGE", 2, "pve", "head").values()))
 
         # more matches than rows: the line under them says how many more
         type_text("of the")
@@ -1348,7 +1377,7 @@ class WindowTest(unittest.TestCase):
 
     def test_character_tab(self):
         game = Game(saved=ENHANCEMENT)
-        game.stub.itemNames[EYE_OF_REND] = "Eye of Rend"
+        game.stub.itemNames[DRAGONSCALE_HELM] = "Black Dragonscale Helm"
         game.ns.Browser.Open()
         window = game.ns.Browser.window
         self.assertEqual([label(button) for button in window.tabs.buttons.values()],
@@ -1372,9 +1401,9 @@ class WindowTest(unittest.TestCase):
         cells = list(view.cells.values())
         self.assertEqual(len(cells), 17)
         head = cells[0]
-        self.assertEqual(head.name.text, "|cffa335eeEye of Rend|r", "the name wears the quality color")
-        self.assertIn("UI-RaidTargetingIcon_8", head.where.text, "a picture says what kind of source it is")
-        self.assertEqual(plain(head.where.text), "Blackrock Spire", "the place, in a few words")
+        self.assertEqual(head.name.text, "|cffa335eeBlack Dragonscale Helm|r", "the name wears the quality color")
+        self.assertIn("Trade_BlackSmithing", head.where.text, "a picture says what kind of source it is")
+        self.assertEqual(plain(head.where.text), "Leatherworking (300)", "where it comes from, in a few words")
         self.assertTrue(head.icon.shown)
         self.assertFalse(head.mirrored)
         self.assertEqual(head.points[1][1], "TOPLEFT")
@@ -1482,7 +1511,7 @@ class WindowTest(unittest.TestCase):
 
     def test_character_cell_tooltip_and_click(self):
         game = Game(saved=ENHANCEMENT)
-        game.stub.itemNames[EYE_OF_REND] = "Eye of Rend"
+        game.stub.itemNames[DRAGONSCALE_HELM] = "Black Dragonscale Helm"
         game.ns.Browser.Open()
         window, state, tooltip = game.ns.Browser.window, game.ns.Browser.state, game.lua.globals().GameTooltip
         game.stub.run(window.tabs.buttons[3], "OnClick")
@@ -1490,7 +1519,7 @@ class WindowTest(unittest.TestCase):
         head, chest, ring, off = cells[0], cells[4], cells[10], cells[15]
 
         game.stub.run(head, "OnEnter")
-        self.assertEqual(tooltip.item, EYE_OF_REND)
+        self.assertEqual(tooltip.item, DRAGONSCALE_HELM)
         self.assertTrue(tooltip.shown)
         self.assertEqual((tooltip.anchor, tooltip.points[1][2].name), ("ANCHOR_NONE", "EasyBISWindow"),
                          "the left column's opens beside the window, as a row's does")
@@ -1503,7 +1532,7 @@ class WindowTest(unittest.TestCase):
         self.assertFalse(game.lua.globals().ShoppingTooltip1.shown)
         game.stub.run(head, "OnEnter")
         lines = [strip_colors(line[1]) for line in tooltip.lines.values()]
-        self.assertIn("Source: Dungeon - Warchief Rend Blackhand - Blackrock Spire (15%)", lines)
+        self.assertIn("Source: Crafted - Leatherworking (300)", lines)
         self.assertNotIn("* Source from Classic's data, not confirmed in Forever.", lines)
         self.assertEqual(lines[-1], "Click to see this slot's other picks.")
         self.assertFalse(any(line.startswith("Score for this slot") for line in lines))
@@ -1521,7 +1550,7 @@ class WindowTest(unittest.TestCase):
         # Shift-click links the item and stays on the sheet; a plain click opens the slot's list
         game.stub.modifier = True
         game.stub.run(head, "OnClick")
-        self.assertIn(f"item:{EYE_OF_REND}", game.stub.linked)
+        self.assertIn(f"item:{DRAGONSCALE_HELM}", game.stub.linked)
         self.assertEqual(state.tab, "character")
         game.stub.modifier = False
         game.stub.run(ring, "OnClick")
@@ -1558,8 +1587,8 @@ class WindowTest(unittest.TestCase):
         game.ns.SetOption(game.ns, "minimap", False)
         self.assertEqual(model.undressed, 1)
         # an item the game has just loaded can be tried on at last
-        game.stub.itemNames[EYE_OF_REND] = "Eye of Rend"
-        game.stub.fire("GET_ITEM_INFO_RECEIVED", EYE_OF_REND, True)
+        game.stub.itemNames[DRAGONSCALE_HELM] = "Black Dragonscale Helm"
+        game.stub.fire("GET_ITEM_INFO_RECEIVED", DRAGONSCALE_HELM, True)
         while game.stub.runTimers():
             pass
         self.assertEqual(model.undressed, 2)
@@ -1992,29 +2021,46 @@ class WindowTest(unittest.TestCase):
 
     TIMBERMAW_PIECES = (15065, 19044, 19049)   # made from Timbermaw's patterns 20254, 19326 and 19327
 
-    def timbermaw_spec(self, worn=False) -> tuple:
-        """(class, spec): the first PvE list that shows the pieces of Timbermaw's three leatherworking patterns;
-        worn: one of them is a best pick, on the sheet."""
+    def shown_pieces(self, token, spec, count) -> tuple[set, set]:
+        """(shown, best): the items a PvE list shows with that many alternatives, and its best picks."""
         flt = for_list(default_filter(), "pve")
-        pieces = set(self.TIMBERMAW_PIECES)
-        for token in test_addon.CLASSES:
-            for spec, modes in self.kept[token].items():
-                visible = {slot: [e for e in modes["pve"][slot] if e.passes(flt)] for slot, _ in ladders.SLOTS}
-                visible["main"], visible["off"] = ladders.weapon_lists(visible["main"], visible["off"])
-                shown, best = set(), set()
-                for slot, _ in ladders.SLOTS:
-                    picks, alternatives = ladders.picks(slot, visible[slot], ladders.ALTERNATIVES)
-                    shown |= {e.shown("a") for e in picks + alternatives}
-                    best |= {e.shown("a") for e in picks}
-                if pieces <= shown and (not worn or best & pieces):
-                    return token, spec
+        visible = {slot: [e for e in self.kept[token][spec]["pve"][slot] if e.passes(flt)] for slot, _ in ladders.SLOTS}
+        visible["main"], visible["off"] = ladders.weapon_lists(visible["main"], visible["off"])
+        shown, best = set(), set()
+        for slot, _ in ladders.SLOTS:
+            picks, alternatives = ladders.picks(slot, visible[slot], count)
+            shown |= {e.shown("a") for e in picks + alternatives}
+            best |= {e.shown("a") for e in picks}
+        return shown, best
+
+    def timbermaw_spec(self) -> tuple:
+        """(class, spec, alternatives): the first PvE list that shows the pieces of Timbermaw's three
+        leatherworking patterns, with the fewest alternatives it takes."""
+        for count in range(ladders.ALTERNATIVES, ladders.MAX_ALTERNATIVES + 1):
+            for token in test_addon.CLASSES:
+                for spec in self.kept[token]:
+                    if set(self.TIMBERMAW_PIECES) <= self.shown_pieces(token, spec, count)[0]:
+                        return token, spec, count
         self.fail("no PvE list shows the pieces of Timbermaw's three patterns: these tests need another example")
 
-    def crafter_game(self, *professions, worn=False) -> Game:
-        """A list where Timbermaw sells three leatherworking patterns (timbermaw_spec); the player has these
-        professions."""
-        token, spec = self.timbermaw_spec(worn)
-        game = self.open(saved=f"EasyBISCharDB = {{ class = '{token}', spec = {spec}, list = 'pve' }}", cls=token)
+    def timbermaw_best_pick(self) -> tuple:
+        """(class, spec, profession): the first PvE list with a best pick made from a pattern Timbermaw sells,
+        and that pattern's profession."""
+        rep = Game().ns.Reputation
+        for token in test_addon.CLASSES:
+            for spec in self.kept[token]:
+                for item_id in sorted(self.shown_pieces(token, spec, ladders.ALTERNATIVES)[1]):
+                    requirement = rep.Requirement(item_id, "a")
+                    if requirement and requirement.kind == "r" and requirement.factionID == 576:
+                        return token, spec, requirement.profession
+        self.fail("no best pick is made from a pattern Timbermaw sells: this test needs another example")
+
+    def crafter_game(self, *professions, picked=None) -> Game:
+        """A list where Timbermaw sells patterns: the one timbermaw_spec finds, or picked (class, spec,
+        alternatives); the player has these professions."""
+        token, spec, count = picked or self.timbermaw_spec()
+        game = self.open(saved=f"EasyBISDB = {{ altCount = {count} }} "
+                               f"EasyBISCharDB = {{ class = '{token}', spec = {spec}, list = 'pve' }}", cls=token)
         lua, stub = game.lua, game.stub
         stub.learn(lua.table_from({index: lua.table_from({1: name, 2: rank, 3: line})
                                    for index, (name, rank, line) in enumerate(professions, 1)}))
@@ -2272,14 +2318,17 @@ class WindowTest(unittest.TestCase):
 
     def test_character_sheet_a_crafters_piece_is_not_earned_by_another_profession(self):
         """A piece made from a recipe of another profession: the crafter's standing, so no gold on the sheet."""
-        for profession, earned in ((("Tailoring", 300, 197), False), (("Leatherworking", 300, 165), True)):
-            game = self.crafter_game(profession, worn=True)
+        token, spec, craft = self.timbermaw_best_pick()
+        lines = {"Leatherworking": 165, "Tailoring": 197}
+        other = next(name for name in lines if name != craft)
+        for profession, earned in (((other, 300, lines[other]), False), ((craft, 300, lines[craft]), True)):
+            game = self.crafter_game(profession, picked=(token, spec, ladders.ALTERNATIVES))
             self.earn(game, 576, 8, 42000, 42000, 43000)
             game.stub.run(game.ns.Browser.window.tabs.buttons[3], "OnClick")
             view = game.ns.Character.view
             cells = [view.cells[index] for index in range(1, len(view.cellData) + 1)
                      if view.cellData[index].reputation and view.cellData[index].reputation.kind == "r"
-                     and view.cellData[index].reputation.profession == "Leatherworking"]
+                     and view.cellData[index].reputation.profession == craft]
             self.assertTrue(cells, "the sheet has a Timbermaw pattern's piece")
             for cell in cells:
                 self.assertEqual("Earned" in plain(cell.where.text), earned, profession[0])
@@ -2692,8 +2741,19 @@ class WindowTest(unittest.TestCase):
         self.assertFalse(view.shown)
         self.assertTrue(window.scroll.shown and window.slot.shown and window.tabs.shown)
 
+    def busy_spec(self) -> str:
+        """The saved character of a spec with a run that holds two best picks: Destruction Warlock's, or else the
+        first spec's that has one."""
+        game = Game()
+        game.ns.SetOption(game.ns, "listAlts", False)
+        for token, spec in [("WARLOCK", 3)] + [(token, spec) for token in test_addon.CLASSES for spec in self.kept[token]]:
+            model = game.ns.Dungeons.For(game.lua.table_from({"class": token, "spec": spec, "list": "pve"}))
+            if any(run.need == 2 for run in model.runs.values()):
+                return f"EasyBISCharDB = {{ class = '{token}', spec = {spec}, list = 'pve' }}"
+        self.fail("no spec has a run that holds two best picks")
+
     def test_dungeons_light_what_the_mouse_is_on(self):
-        game, view = self.open_dungeons()
+        game, view = self.open_dungeons(self.busy_spec())
         busy = next(lane for lane in self.lanes(view) if lane.run.need == 2)   # a run that holds two best picks
         key, name = busy.run.key, busy.run.name
         chip, sibling = self.chips(busy)
@@ -2767,7 +2827,7 @@ class WindowTest(unittest.TestCase):
         self.assertTrue(rows and all(row.source.category == button.category for row in rows))
 
     def test_dungeons_count_what_the_player_has(self):
-        game, view = self.open_dungeons()
+        game, view = self.open_dungeons(self.busy_spec())
         before = view.model.need
         busy = next(lane for lane in self.lanes(view) if lane.run.need == 2)   # a run that holds two best picks
         key = busy.run.key

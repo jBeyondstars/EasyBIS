@@ -1,3 +1,14 @@
+# Easy BIS 1.8.0
+
+## Changed
+
+- **Every damage spec ranked by simulation.** The PvE lists of the last ten damage specs are now ranked with WoWSims Forever's simulator too: Marksmanship and Survival Hunter, Retribution Paladin, Shadow Priest, Assassination Rogue, Elemental and Enhancement Shaman, Affliction, Demonology and Destruction Warlock. In the simulator, the best set of their new lists does 0.7 % (Shadow Priest, Destruction Warlock) to 8.9 % (Assassination Rogue) more damage than the set ForeverDB's stat weights gave.
+- **No more Estimated items.** The items with an effect have their own score in every damage spec's list now:
+  - Hand of Justice is a best trinket of Retribution Paladin and Assassination Rogue, and an alternative for Enhancement Shaman.
+  - Destiny is the best two-hander of Retribution Paladin.
+- Many best picks of these ten lists change. For example, Robe of Winter Night is now the best PvE chest of Shadow Priest and Ironfeather Breastplate that of Elemental Shaman, in place of Robes of Dark Summons.
+- Tanks and healers keep ForeverDB's weights.
+
 # Easy BIS 1.7.0
 
 ## New

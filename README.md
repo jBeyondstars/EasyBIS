@@ -4,7 +4,7 @@
 
 Best-in-slot gear for every class and spec of **WoW Forever**, in a window and in item tooltips.
 
-- **Items**: the best items of each slot at level 60, PvE and PvP, with their alternatives and sources. You can filter by phase, slot, source and zone, and add items to a list yourself. The PvE lists of the damage specs are ranked by simulation, which counts the items with an effect (Hand of Justice...). Until a spec has its own, those items are placed where a close spec's simulation ranks them, marked Estimated, with no score.
+- **Items**: the best items of each slot at level 60, PvE and PvP, with their alternatives and sources. You can filter by phase, slot, source and zone, and add items to a list yourself. The PvE lists of the damage specs are ranked by simulation, which counts the items with an effect (Hand of Justice...).
 - **Character**: the BIS #1 of each slot laid out as a character sheet, with its best enchant, worn by your own character.
 - **Enchants**: the best enchant of each slot and how to get it.
 - **Auction house**: open the **EasyBis** tab, pick a class, a spec and the PvE or PvP list, and click **Scan auctions** to see the lowest available buyout for each BIS or alternative, in a list laid out as the game's own results. The scan asks the auction house for each piece of the list, the best picks first, and leaves out those that bind when picked up. Click an item to open its auctions. The tab comes after the other addons' tabs; Options > Auction house tab takes it away.
