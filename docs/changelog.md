@@ -1,4 +1,4 @@
-# Unreleased
+# Easy BIS 1.7.0
 
 ## New
 
