@@ -147,11 +147,7 @@ https://github.com/jBeyondstars/EasyBIS
    are ranked with WoWSims Forever (https://github.com/wowsims/forever), the
    simulator of the WoWSims team, Copyright (c) 2022 wowsims team, MIT License.
    An item's score in those lists is the damage per second it adds to a
-   reference set, kept in _build/corrections/simulated.json. Until the
-   simulator has measured a damage spec, its list stays on ForeverDB's weights,
-   but for a few items with an effect placed where the simulation of a close
-   spec ranks them, with no score of their own
-   (_build/corrections/placed.json; the first lines of Data/Lists.lua name
-   both kinds of specs). Every other list stays on ForeverDB's weights.
+   reference set, kept in _build/corrections/simulated.json. Every other list
+   (the tanks', the healers', and the PvP lists) stays on ForeverDB's weights.
    Nothing of the simulator's code is part of Easy BIS, and Easy BIS does not
    need it to run.
