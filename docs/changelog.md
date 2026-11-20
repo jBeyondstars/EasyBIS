@@ -1,3 +1,15 @@
+# Easy BIS 1.6.0
+
+## New
+
+- **Auction house tab.** An **EasyBis** tab at the auction house shows which pieces of your list are on sale, each with its lowest buyout.
+  - Pick a class, a spec and the PvE or PvP list in the tab, then click **Scan auctions**. The choice is the window's own: changing one changes the other.
+  - The results read like the game's own list: price, item, BIS or alternative, and slot. The best picks come first, then the cheapest.
+  - Click an item to open its auctions in the game's Buy tab.
+  - The scan asks the auction house for each piece of your list, the best picks first, and shows how far along it is. Pieces that bind when picked up are left out, as they are never on sale.
+  - A piece sold with several random enchantments shows its cheapest one. Bids without a buyout and your own auctions don't count as a price.
+  - The tab comes after the other addons' tabs, Auctionator's included. **Options > Auction house tab** takes it away.
+
 # Easy BIS 1.5.0
 
 ## New

@@ -61,6 +61,7 @@ local DEFAULTS = {
     altCount = 2,          -- picks listed after the best one of a slot, second ring or trinket included
     minimap = true,        -- the button on the minimap
     minimapAngle = 215,    -- where it sits around the minimap, in degrees
+    auctionTab = true,     -- the EasyBis tab of the auction house
     lists = { pve = true, pvp = true }, -- the lists tooltips read
     compact = true,        -- the window: an item or a consumable on one line instead of two
     listAlts = true,       -- the window: the alternatives too, not only the best picks

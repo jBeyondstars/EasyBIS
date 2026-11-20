@@ -26,6 +26,9 @@ opens beside the window; Shift-click links the item in chat.
 
   Browser.Toggle(), Browser.Open(), Browser.Close()
   Browser.Target()                class, spec, list: what the window shows, or will show once opened
+  Browser.SpecFilter(parent)      the spec filter and the list filter (with its label, .label), for the
+  Browser.ListFilter(parent)      window and for the auction house's tab: both set the same choice;
+                                  :Refresh() shows it
   Browser.ShowSlot(slot)          the Items tab, on that slot alone
   Browser.ShowReputation(factionID, artisan)   the Reputations tab, on that faction
   Browser.EnchantTooltip(owner, enchant, requirement)   an enchant's tooltip beside the window; the caller shows it
@@ -916,7 +919,7 @@ end
 local OPTION_GROUPS = {
     { "tooltip", "onlyMyClass", "alternatives", "repTooltip" },
     { "unsourced", "seenOnly" },
-    { "compact", "repCompact", "minimap" },
+    { "compact", "repCompact", "minimap", "auctionTab" },
 }
 
 local function FillOptionsMenu(_, root)
@@ -966,6 +969,49 @@ local function FillOptionsMenu(_, root)
     end
 end
 
+-- A new spec or list, picked in the window or in the auction house's tab.
+local function SetTarget(class, spec, list)
+    state.class, state.spec, state.list = class, spec, list
+    state.source, state.zone = nil, nil
+    SaveState()
+    Refresh()
+end
+
+function Browser.SpecFilter(parent)
+    local filter = Widgets.Dropdown(parent, L.FILTER_SPEC, 176)
+    SetupChoices(filter.button, SpecChoices,
+        function() return SpecKey(Browser.Target()) end,
+        function(value)
+            local class, spec = value:match("^(%u+):(%d+)$")
+            local _, _, list = Browser.Target()
+            SetTarget(class, tonumber(spec), list)
+        end)
+
+    function filter:Refresh()
+        local class, spec = Browser.Target()
+        self:Set(ClassHex(class) .. ns.ClassName(class) .. "|r " .. ns.SpecName(ns.Index.SpecName(class, spec) or ""), false)
+    end
+
+    return filter
+end
+
+function Browser.ListFilter(parent)
+    local filter = Widgets.Segmented(parent,
+        { { value = "pve", text = L.LIST_PVE }, { value = "pvp", text = L.LIST_PVP } },
+        function() return select(3, Browser.Target()) end,
+        function(value)
+            local class, spec = Browser.Target()
+            SetTarget(class, spec, value)
+        end)
+    filter:Layout(50)
+    -- level with a dropdown's label when their bottoms are
+    filter.label = filter:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    filter.label:SetPoint("TOPLEFT", 2, 16)
+    filter.label:SetTextColor(MUTED[1], MUTED[2], MUTED[3])
+    filter.label:SetText(L.FILTER_LIST)
+    return filter
+end
+
 local function Build()
     window = CreateWindow()
     Browser.window = window
@@ -973,32 +1019,10 @@ local function Build()
     window.facets = { sources = {}, zones = {} }
 
     -- Filters
-    window.spec = Widgets.Dropdown(window, L.FILTER_SPEC, 176)
+    window.spec = Browser.SpecFilter(window)
     window.spec:SetPoint("TOPLEFT", 66, -26)
-    SetupChoices(window.spec.button, SpecChoices,
-        function() return SpecKey(state.class, state.spec) end,
-        function(value)
-            local class, spec = value:match("^(%u+):(%d+)$")
-            state.class, state.spec = class, tonumber(spec)
-            state.source, state.zone = nil, nil
-            SaveState()
-            Refresh()
-        end)
-
-    window.listLabel = window:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    window.listLabel:SetPoint("TOPLEFT", window.spec, "TOPRIGHT", 10, 0)
-    window.listLabel:SetTextColor(MUTED[1], MUTED[2], MUTED[3])
-    window.listLabel:SetText(L.FILTER_LIST)
-    window.list = Widgets.Segmented(window,
-        { { value = "pve", text = L.LIST_PVE }, { value = "pvp", text = L.LIST_PVP } },
-        function() return state.list end,
-        function(value)
-            state.list = value
-            state.source, state.zone = nil, nil
-            SaveState()
-            Refresh()
-        end)
-    window.list:Layout(50)
+    window.list = Browser.ListFilter(window)
+    window.listLabel = window.list.label
     window.list:SetPoint("BOTTOMLEFT", window.spec, "BOTTOMRIGHT", 8, 0)
 
     -- Not the window's own: the phase is the character's, and tooltips follow it too.
@@ -1151,8 +1175,7 @@ Refresh = function()
     end
     window.facets = facets
 
-    window.spec:Set(ClassHex(state.class) .. ns.ClassName(state.class) .. "|r "
-        .. ns.SpecName(ns.Index.SpecName(state.class, state.spec) or ""), false)
+    window.spec:Refresh()
     window.phase:Set(ns.PhaseName(ns.Phase()), false)
     window.phase.button:SetEnabled(not ns:GetOption("availableNow"))
     window.slot.label:SetText(consumables and L.FILTER_CATEGORY or L.FILTER_SLOT)

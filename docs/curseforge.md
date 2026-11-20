@@ -2,7 +2,7 @@
 
 **The best gear for every class and spec of WoW Forever, in one window and in your item tooltips.**
 
-Easy BIS is a BIS list for every class and spec: the best-in-slot (BIS) item of every slot at level 60, for PvE and PvP, with the alternatives behind it and where each piece comes from. Plan your pre-BIS gear before the raids, follow your full BIS gear set as new phases open, and keep track of what to farm next. It knows the enchants, the consumables and the reputations too, and it lays your spec's best set out as a character sheet.
+Easy BIS is a BIS list for every class and spec: the best-in-slot (BIS) item of every slot at level 60, for PvE and PvP, with the alternatives behind it and where each piece comes from. Plan your pre-BIS gear before the raids, follow your full BIS gear set as new phases open, and keep track of what to farm next. It knows the enchants, the consumables and the reputations too, it lays your spec's best set out as a character sheet, and it finds the pieces of your list that are on sale at the auction house.
 
 ## The window
 
@@ -47,6 +47,18 @@ Type `/easybis` (or `/ebis`), or click the minimap button.
 - A faction that sells recipes, such as Timbermaw Hold's patterns, counts for the crafter: the tab names the recipes and their vendors, and follows your professions.
 - Click a faction to follow it in the game's reputation bar.
 - Items, Enchants and the Character sheet say which reputation a piece asks for and where you stand.
+
+## At the auction house
+
+![The EasyBis tab of the auction house](https://raw.githubusercontent.com/jBeyondstars/EasyBIS/main/docs/screenshots/auction-house.png)
+
+The **EasyBis** tab of the auction house shows which pieces of your list are on sale, each with its lowest buyout.
+
+- Pick a class, a spec and the PvE or PvP list, then click **Scan auctions**. The choice is the window's own: changing one changes the other.
+- The results read like the game's own list: price, item, BIS or alternative, and slot. The best picks come first, then the cheapest.
+- Click an item to open its auctions.
+- The scan asks for each piece of your list and shows how far along it is. Pieces that bind when picked up are left out, and neither bids without a buyout nor your own auctions count as a price.
+- The tab comes after the other addons' tabs, Auctionator's included. **Options > Auction house tab** takes it away.
 
 ## In your tooltips
 

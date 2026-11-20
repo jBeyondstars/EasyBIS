@@ -809,7 +809,8 @@ class WindowTest(unittest.TestCase):
                                        "Tooltips show alternatives too", "Reputation needed in item tooltips",
                                        "Items with no known source",
                                        "Only items seen in Forever", "PvP rewards", "Alternatives per slot",
-                                       "Faction", "Compact rows", "Short reputation lines", "Minimap button"])
+                                       "Faction", "Compact rows", "Short reputation lines", "Minimap button",
+                                       "Auction house tab"])
         tooltips = find(menu, "BIS lines")
         self.assertTrue(tooltips.selected())
         tooltips.pick()

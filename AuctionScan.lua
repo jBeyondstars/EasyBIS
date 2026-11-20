@@ -1,13 +1,22 @@
 local _, ns = ...
 
--- Browse first to discover the exact keys on sale (including level and random suffix).
--- A browse price can be a bid. Only publish a price after reading the actual buyouts.
+-- One search per wanted item, by its ID with no level and no suffix: the game answers with every variant
+-- on sale, as it does for a piece put up for sale. The house is not browsed. A price is published only
+-- from the buyouts read, and never from the player's own auctions.
+--
+--   Scan.Start(ids, progress, offer, finished)   ids: the items, in the order they are searched
+--       progress(index, total)    the item being searched
+--       offer(key, price, link)   its lowest buyout, and the key of the variant sold at that price
+--       finished(complete)        false: stopped, or an item got no answer
+--   Scan.Stop()
 local Scan = {}
 ns.AuctionScan = Scan
 
+local ANSWER_WAIT = 10   -- seconds left to the game to know an item, then to answer its search
+local SEND_WAIT = 90     -- and to let a search through: it allows a hundred of them a minute
+
 local active, frame
 local events = {
-    "AUCTION_HOUSE_BROWSE_RESULTS_UPDATED", "AUCTION_HOUSE_BROWSE_RESULTS_ADDED", "AUCTION_HOUSE_BROWSE_FAILURE",
     "ITEM_SEARCH_RESULTS_UPDATED", "ITEM_SEARCH_RESULTS_ADDED",
     "COMMODITY_SEARCH_RESULTS_UPDATED", "COMMODITY_SEARCH_RESULTS_ADDED", "AUCTION_HOUSE_CLOSED",
 }
@@ -37,23 +46,6 @@ local function NextKey(job)
     job.progress(job.index, #job.keys)
 end
 
-local function ReadBrowse(job)
-    local ah = C_AuctionHouse
-    if not ah.HasFullBrowseResults() then
-        Schedule(job, "moreBrowse")
-        return
-    end
-    -- GetBrowseResults contains all the pages accumulated for this query.
-    for _, result in ipairs(ah.GetBrowseResults()) do
-        local key = result.itemKey
-        if key and job.wanted[key.itemID] and result.totalQuantity > 0 then
-            job.keys[#job.keys + 1] = key
-            ah.GetItemKeyInfo(key) -- start loading metadata for the subsequent searches
-        end
-    end
-    NextKey(job)
-end
-
 local function ReadBuyouts(job, commodity)
     local ah, key = C_AuctionHouse, job.key
     local arg = commodity and key.itemID or key
@@ -65,7 +57,7 @@ local function ReadBuyouts(job, commodity)
 
     local count = commodity and ah.GetNumCommoditySearchResults or ah.GetNumItemSearchResults
     local get = commodity and ah.GetCommoditySearchResultInfo or ah.GetItemSearchResultInfo
-    local lowest, link
+    local lowest, link, variant
     for i = 1, count(arg) do
         local row = get(arg, i)
         if row then
@@ -75,11 +67,15 @@ local function ReadBuyouts(job, commodity)
                 available = row.quantity > row.numOwnerItems
             end
             if available and row.quantity > 0 and price and price > 0 and (not lowest or price < lowest) then
-                lowest, link = price, row.itemLink
+                lowest, link, variant = price, row.itemLink, row.itemKey
             end
         end
     end
-    if lowest then job.offer(key, lowest, link) end
+    if lowest then
+        variant = variant or key
+        ah.GetItemKeyInfo(variant)   -- starts loading what opening this variant's auctions needs
+        job.offer(variant, lowest, link)
+    end
     NextKey(job)
 end
 
@@ -92,42 +88,31 @@ local function OnEvent(_, event, arg)
     local job = active
     if not job then return end
     if event == "AUCTION_HOUSE_CLOSED" then return Finish(false) end
-    local waiting = job.waiting
-    if waiting == "browse" or waiting == "moreBrowse" then
-        if event == "AUCTION_HOUSE_BROWSE_FAILURE" then return Finish(false) end
-        if event == "AUCTION_HOUSE_BROWSE_RESULTS_UPDATED"
-            or (waiting == "moreBrowse" and event == "AUCTION_HOUSE_BROWSE_RESULTS_ADDED") then
-            ReadBrowse(job)
-        end
-    elseif waiting == "search" or waiting == "moreItem" or waiting == "moreCommodity" then
-        if (event == "ITEM_SEARCH_RESULTS_UPDATED" or event == "ITEM_SEARCH_RESULTS_ADDED") and SameKey(job.key, arg) then
-            ReadBuyouts(job, false)
-        elseif (event == "COMMODITY_SEARCH_RESULTS_UPDATED" or event == "COMMODITY_SEARCH_RESULTS_ADDED")
-            and arg == job.key.itemID then
-            ReadBuyouts(job, true)
-        end
+    if not job.waiting then return end
+    if (event == "ITEM_SEARCH_RESULTS_UPDATED" or event == "ITEM_SEARCH_RESULTS_ADDED") and SameKey(job.key, arg) then
+        ReadBuyouts(job, false)
+    elseif (event == "COMMODITY_SEARCH_RESULTS_UPDATED" or event == "COMMODITY_SEARCH_RESULTS_ADDED")
+        and arg == job.key.itemID then
+        ReadBuyouts(job, true)
     end
 end
 
 local function OnUpdate(_, elapsed)
     local job = active
     job.elapsed = job.elapsed + elapsed
-    if job.elapsed >= 30 then
-        if not job.key then return Finish(false) end
+    local action, ah = job.pending, C_AuctionHouse
+    -- A search waits for the game to know its item: until then the game often ignores it.
+    local known = action and ah.GetItemKeyInfo(job.key)
+    if job.elapsed >= (known and SEND_WAIT or ANSWER_WAIT) then
         job.incomplete = true
         return NextKey(job)
     end
-    local action, ah = job.pending, C_AuctionHouse
-    if not action or not ah.IsThrottledMessageSystemReady() then return end
-    if action == "search" and not ah.GetItemKeyInfo(job.key) then return end
+    if not known or not ah.IsThrottledMessageSystemReady() then return end
     -- Set the expected response first: cached results can arrive during the API call.
     job.pending, job.waiting, job.elapsed = nil, action, 0
-    if action == "browse" then
-        ah.SendBrowseQuery(job.query)
-    elseif action == "search" then
-        ah.SendSearchQuery(job.key, {}, true) -- separate the player's own auctions
-    elseif action == "moreBrowse" then
-        if ah.HasFullBrowseResults() then ReadBrowse(job) else ah.RequestMoreBrowseResults() end
+    if action == "search" then
+        -- the last argument sets the player's own auctions apart
+        if known.isCommodity then ah.SendSearchQuery(job.key, {}, true) else ah.SendSellSearchQuery(job.key, {}, true) end
     elseif action == "moreItem" then
         if ah.RequestMoreItemSearchResults(job.key) and active == job and job.waiting == action then ReadBuyouts(job, false) end
     elseif action == "moreCommodity" then
@@ -135,40 +120,20 @@ local function OnUpdate(_, elapsed)
     end
 end
 
--- The browse cache is shared with Blizzard and other addons. A new browse query replaces it.
-local function OtherBrowse(query)
-    if active and not active.key and (active.waiting or active.pending == "moreBrowse")
-        and query ~= active.query then Finish(false) end
-end
-
-local function BrowseQuery(wanted)
-    local query = { searchString = "", sorts = {}, filters = {}, itemClassFilters = {} }
-    local classes = {}
-    local getInstant = (C_Item and C_Item.GetItemInfoInstant) or GetItemInfoInstant
-    for id in pairs(wanted) do
-        local _, _, _, _, _, class = getInstant(id)
-        if not class then return query end -- unknown class: include the whole market
-        classes[class] = true
-    end
-    for class in pairs(classes) do
-        query.itemClassFilters[#query.itemClassFilters + 1] = { classID = class }
-    end
-    return query
-end
-
-function Scan.Start(wanted, progress, offer, finished)
+function Scan.Start(ids, progress, offer, finished)
     Scan.Stop()
-    if not next(wanted) then return finished(true) end
+    if not ids[1] then return finished(true) end
     if not frame then
         frame = CreateFrame("Frame")
         frame:SetScript("OnEvent", OnEvent)
-        for _, name in ipairs({ "SendBrowseQuery", "SearchForFavorites", "SearchForItemKeys" }) do
-            if C_AuctionHouse[name] then hooksecurefunc(C_AuctionHouse, name, OtherBrowse) end
-        end
     end
-    active = { wanted = wanted, query = BrowseQuery(wanted), keys = {}, index = 0,
-        progress = progress, offer = offer, finished = finished }
-    Schedule(active, "browse")
+    local keys = {}
+    for index, id in ipairs(ids) do
+        keys[index] = { itemID = id, itemLevel = 0, itemSuffix = 0, battlePetSpeciesID = 0 }
+        C_AuctionHouse.GetItemKeyInfo(keys[index])   -- starts loading them all at once
+    end
+    active = { keys = keys, index = 0, progress = progress, offer = offer, finished = finished }
     for _, event in ipairs(events) do frame:RegisterEvent(event) end
     frame:SetScript("OnUpdate", OnUpdate)
+    NextKey(active)
 end
