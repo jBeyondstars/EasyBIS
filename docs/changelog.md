@@ -1,3 +1,9 @@
+# Easy BIS 1.8.1
+
+## Known issue
+
+- **Some weapons are ranked wrong.** I know some weapons are currently not where they should be in the lists. A fix is on its way and will be out shortly. Until then, a notice under the window's filters says so.
+
 # Easy BIS 1.8.0
 
 ## Changed

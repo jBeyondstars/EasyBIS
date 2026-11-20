@@ -125,6 +125,7 @@ local enUS = {
     DATA_VERSION = "Data from ForeverDB.net, game build %s",
     MINIMAP_HINT = "Click to open or close the window.",
     MINIMAP_DRAG_HINT = "Drag to move this button.",
+    NOTICE_WEAPONS = "I know some weapons are currently ranked wrong. A fix is on its way and will be out shortly.",
 
     -- Where items come from
     SRC_quest = "Quest",
@@ -498,6 +499,7 @@ local frFR = {
     DATA_VERSION = "Données de ForeverDB.net, version du jeu %s",
     MINIMAP_HINT = "Cliquez pour ouvrir ou fermer la fenêtre.",
     MINIMAP_DRAG_HINT = "Faites glisser pour déplacer ce bouton.",
+    NOTICE_WEAPONS = "Je suis au courant que certaines armes sont actuellement mal classées. Un correctif est en cours et sera publié d'ici peu.",
 
     SRC_quest = "Quête",
     SRC_dungeon = "Donjon",

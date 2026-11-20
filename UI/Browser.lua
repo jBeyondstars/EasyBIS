@@ -8,6 +8,8 @@ The Easy BIS window: the best gear of a spec, slot by slot.
   top      filters: spec, list (PvE, PvP), phase, slot, source, zone, reputation. A filter that narrows
            the list down is gold; the others stay quiet. On the Consumables tab the slot filter is a category
            filter.
+  notice   a band under the filters while a known problem awaits its fix (NOTICE); none otherwise, and the
+           middle takes its room.
   middle   the rows (UI\Rows.lua). An item or a consumable takes one line: icon, name, score bar and rank,
            type or effect, where it comes from. With the option "compact" off it takes two, as an enchant
            always does. What a reputation stands in front of says so under where it comes from.
@@ -56,7 +58,12 @@ ns.Browser = Browser
 local WINDOW_NAME = "EasyBISWindow"
 local WIDTH, HEIGHT = 960, 620
 local MIN_HEIGHT, MAX_HEIGHT = 380, 1400
-local INSET_TOP, INSET_BOTTOM = 70, 58   -- what the filters and the footer take of the window's height
+-- A notice under the filters while a known problem awaits its fix: the key of its text, nil when there is none.
+local NOTICE = "NOTICE_WEAPONS"
+local NOTICE_HEIGHT, NOTICE_GAP = 24, 4   -- its band, and the room between it and the list
+local NOTICE_MARK = "|TInterface\\DialogFrame\\UI-Dialog-Icon-AlertNew:16:16:0:0|t "
+local FILTERS, INSET_BOTTOM = 70, 58   -- what the filters and the footer take of the window's height
+local INSET_TOP = FILTERS + (NOTICE and NOTICE_HEIGHT + NOTICE_GAP or 0)   -- where the list starts
 local ROW_HEIGHT = 54      -- a row on two lines
 local COMPACT_HEIGHT = 36  -- an item or a consumable on one line
 local REPUTATION_LINE = 16 -- what a reputation adds to a row on two lines; a row on one keeps its height
@@ -416,6 +423,22 @@ local function CreateInset(parent)
     inset:SetBackdropColor(0, 0, 0, 0.35)
     inset:SetBackdropBorderColor(1, 1, 1, 0.1)
     return inset
+end
+
+-- A band across the window: one line of text over amber, after the game's alert mark.
+local function CreateNotice(parent, text)
+    local notice = CreateFrame("Frame", nil, parent, "BackdropTemplate")
+    notice:SetBackdrop(Widgets.FLAT)
+    notice:SetBackdropColor(0.32, 0.20, 0.02, 0.92)
+    notice:SetBackdropBorderColor(1, 0.72, 0.10, 0.9)
+    notice:SetHeight(NOTICE_HEIGHT)
+    notice.text = notice:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+    notice.text:SetPoint("LEFT", 10, 0)
+    notice.text:SetPoint("RIGHT", -10, 0)
+    notice.text:SetJustifyH("CENTER")
+    notice.text:SetWordWrap(false)
+    notice.text:SetText(NOTICE_MARK .. text)
+    return notice
 end
 
 ---------------------------------------------------------------------------
@@ -1078,6 +1101,13 @@ local function Build()
     -- below them, the border's title bar hides the box.
     local over = window.TitleContainer or window.NineSlice
     if over then window.available:SetFrameLevel(over:GetFrameLevel() + 1) end
+
+    -- On every tab and on the dungeons, where the list used to start
+    if NOTICE then
+        window.notice = CreateNotice(window, L[NOTICE])
+        window.notice:SetPoint("TOPLEFT", 8, -FILTERS)
+        window.notice:SetPoint("TOPRIGHT", -8, -FILTERS)
+    end
 
     -- Rows
     local inset = CreateInset(window)
