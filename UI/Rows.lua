@@ -4,7 +4,7 @@ local L = ns.L
 --[[
 What the window lists, as plain tables: the frames only draw them.
 
-  Rows.Items(state)      rows, facets
+  Rows.Items(state, withAlts)      rows, facets. Omit withAlts to follow the browser option.
       state    { class, spec, list, slot, source, zone, reputation }   slot, source, zone and reputation are nil
                for "all"; reputation "ok": what is within the player's reach, "todo": what is still to earn
       a row    { kind = "item", id, slot, bis, tie, gap, ratio, source, other, custom, reputation }
@@ -89,11 +89,11 @@ local function PassesReputation(row, wanted)
     return ns.Reputation.Reachable(row.reputation) == (wanted == "ok")
 end
 
-function Rows.Items(state)
+function Rows.Items(state, withAlts)
     local all, facets = {}, { sources = {}, zones = {} }
     local slots = ns.Ladders.For(state.class, state.spec, state.list)
     if not slots then return all, facets end
-    local withAlts = ns:GetOption("listAlts")
+    if withAlts == nil then withAlts = ns:GetOption("listAlts") end
 
     local function Add(slot, id, row)
         local source = row.custom and not ns.Items.Get(id) and ns.Sources.Manual() or ns.Sources.Describe(id)

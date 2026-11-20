@@ -7,6 +7,7 @@ Best-in-slot gear for every class and spec of **WoW Forever**, in a window and i
 - **Items**: the best items of each slot at level 60, PvE and PvP, with their alternatives and sources. You can filter by phase, slot, source and zone, and add items to a list yourself. The PvE lists of the damage specs are ranked by simulation, which counts the items with an effect (Hand of Justice...). Until a spec has its own, those items are placed where a close spec's simulation ranks them, marked Estimated, with no score.
 - **Character**: the BIS #1 of each slot laid out as a character sheet, with its best enchant, worn by your own character.
 - **Enchants**: the best enchant of each slot and how to get it.
+- **Auction house**: open the **EasyBis** tab and click **Scan auctions** to see the lowest available buyout for each BIS or alternative in your selected spec and list. Click an item to open its auctions.
 - **Consumables**: flasks, elixirs, food, scrolls, weapon stones and oils and potions, ranked category by category for each spec, in PvE and PvP.
 - **Reputations**: what your spec needs of each faction, with its emblem where the game has the icon, on a track from Neutral to Exalted with each piece above the standing that unlocks it; what is left to earn, where the pieces come from (with the vendor on the map), the quests QuestieDB lists for your class and faction at level 60, the repeatable ones first and ten to a page, with the standings a quest is offered between (seasonal and profession quests are among them), and what no source says. The quests Questie says the game does not have are left out, and the variants of one quest count once. A battleground's faction says so, its header naming the battleground. A click follows the faction in the game's reputation bar. A faction that sells recipes (Timbermaw's patterns, for instance) counts for the crafter, apart from your own: the tab names the recipes and who sells them, and follows your professions. Your skill against what the recipes ask when the profession is yours; otherwise how to get the pieces, from how the game says they bind. A piece of a faction no source says how to earn (The Watchers) stays listed, with a grey ? after its name.
 - **Tooltips**: which classes and specs want an item, whether it is their BIS, and the reputation it asks for.
@@ -43,6 +44,7 @@ Offline tests (they need `lupa`, and `Pillow` for the textures):
 python -P _build/tests/test_generator.py
 python -P _build/tests/test_addon.py
 python -P _build/tests/test_ui.py
+python -P _build/tests/test_auctions.py
 python -P _build/tests/test_consumables.py
 ```
 

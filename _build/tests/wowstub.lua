@@ -115,6 +115,7 @@ function METHODS:IsShown() return self.shown end
 
 function METHODS:SetSize(width, height) self.width, self.height = width, height end
 function METHODS:SetWidth(width) self.width = width end
+function METHODS:SetVerticalScroll(offset) self.verticalScroll = offset end
 function METHODS:SetHeight(height) self.height = height end
 function METHODS:GetWidth() return self.width or 0 end
 function METHODS:GetHeight() return self.height or 0 end

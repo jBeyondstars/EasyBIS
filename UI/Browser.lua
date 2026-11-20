@@ -148,6 +148,7 @@ end
 
 local function SaveState()
     ns.char.class, ns.char.spec, ns.char.list = state.class, state.spec, state.list
+    ns:Fire("TARGET_CHANGED")
 end
 
 function Browser.Target()

@@ -36,6 +36,8 @@ UI\Rows.lua
 UI\Widgets.lua
 UI\AddItem.lua
 UI\Browser.lua
+AuctionScan.lua
+UI\AuctionHouse.lua
 UI\Character.lua
 UI\Reputations.lua
 UI\MinimapButton.lua
