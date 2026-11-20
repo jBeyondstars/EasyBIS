@@ -1118,6 +1118,24 @@ class WindowTest(unittest.TestCase):
         tiny = self.open(saved="EasyBISDB = { windowHeight = 12 }")
         self.assertEqual(tiny.ns.Browser.window.height, 620, "a height too small to use is not restored")
 
+    def test_notice_under_the_filters(self):
+        """A known problem awaits its fix: a band says so between the filters and the list, on every page."""
+        for locale, word in (("enUS", "weapons"), ("frFR", "armes")):
+            game = self.open(locale=locale)
+            window = game.ns.Browser.window
+            notice = window.notice
+            self.assertEqual(plain(notice.text.text), game.ns.L.NOTICE_WEAPONS, locale)
+            self.assertIn(word, notice.text.text, locale)
+            self.assertEqual((notice.points[1][1], notice.points[2][1]), ("TOPLEFT", "TOPRIGHT"), "across the window")
+            top, list_top = -notice.points[1][3], -window.inset.points[1][3]
+            self.assertGreaterEqual(top, 70, "under the filters")
+            self.assertLessEqual(top + notice.height, list_top, "over the list, which starts lower")
+            for tab in window.tabs.buttons.values():
+                game.stub.run(tab, "OnClick")
+                self.assertTrue(notice.shown)
+            game.stub.run(window.pages.buttons[2], "OnClick")
+            self.assertTrue(notice.shown, "on the dungeons too")
+
     # -- items added by hand --------------------------------------------------------------------
 
     def test_add_an_item_by_hand(self):
@@ -1650,19 +1668,20 @@ class WindowTest(unittest.TestCase):
         game, _ = self.open_sheet(saved=ENHANCEMENT)
         window, view = game.ns.Browser.window, game.ns.Character.view
         cells = list(view.cells.values())
-        self.assertEqual((view.scale, view.width, view.height), (1, WIDTH - 32, 472))
-        self.assertEqual([cells[index].points[1][5] for index in (0, 1, 5)], [0, -52, -260], "the left column")
-        self.assertEqual([cells[index].points[1][5] for index in (6, 13)], [0, -364], "the right column")
+        # the notice under the filters takes 28 of the sheet's height (472 without it, a cell every 52)
+        self.assertEqual((view.scale, view.width, view.height), (1, WIDTH - 32, 444))
+        self.assertEqual([cells[index].points[1][5] for index in (0, 1, 5)], [0, -48, -240], "the left column")
+        self.assertEqual([cells[index].points[1][5] for index in (6, 13)], [0, -336], "the right column")
         self.assertEqual([(cells[index].points[1][1], cells[index].points[1][4]) for index in (14, 15, 16)],
                          [("BOTTOMLEFT", 0), ("BOTTOMLEFT", 332), ("BOTTOMLEFT", 664)], "the weapons, under them")
         # a taller window gives the cells more air, up to a point
         window.height = 900
         game.stub.run(window.grip, "OnMouseUp")
-        self.assertEqual((view.scale, view.height, cells[1].points[1][5]), (1, 752, -60))
+        self.assertEqual((view.scale, view.height, cells[1].points[1][5]), (1, 724, -60))
         # too short for the sheet: it is drawn smaller, whole
         window.height = 380
         game.stub.run(window.grip, "OnMouseUp")
-        self.assertAlmostEqual(view.scale, 232 / 424)
+        self.assertAlmostEqual(view.scale, 204 / 424)
         self.assertEqual((view.height, cells[1].points[1][5]), (424, -46))
 
     def test_character_in_french(self):
