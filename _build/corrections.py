@@ -45,7 +45,10 @@ in Forever. A source ForeverDB comes to give is used instead: that part retires 
 A drop that is not confirmed is checked against the loot counts of Wowhead Forever two other addons hold
 (corrections/drops.json, confirm): `build.py --import-drops` reads them (drops.py). The boss they name
 and the rate they count replace Classic's, with the label w, which the addon shows like a source seen in
-Forever. A source ForeverDB saw itself stays as it is.
+Forever. A source ForeverDB saw itself stays as it is. The counts are kept dungeon by dungeon, so they also
+say where a creature is: one the data names with no place becomes a boss of the dungeon it was counted in,
+the dungeons of Forever the data has no instance for among them (runs.py). And an item the data gives no
+source at all takes the bosses it was counted on: it is no longer an item "with no known source".
 
 What a vendor asks in a currency is laid over the data as well (corrections/costs.json, price): the data
 says 0 for it. The same file names the vendors who sell to both factions, whose items the data keeps for
@@ -59,6 +62,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 import phases
+import runs
 
 FILE = Path(__file__).resolve().parent / "corrections" / "weapons.json"
 GAME_FILE = FILE.with_name("game.json")
@@ -570,10 +574,13 @@ class Confirmed:
     named: list = field(default_factory=list)       # of which the data named the dungeon and not the boss
     moved: list = field(default_factory=list)       # ids whose boss was another one: the counted one replaces it
     disputed: list = field(default_factory=list)    # ids named for another creature, on too little to replace it
+    placed: list = field(default_factory=list)      # ids whose creature became a boss of the dungeon it is counted in
+    sourced: list = field(default_factory=list)     # ids the data gave no source at all, given the bosses counted
+    dungeons: list = field(default_factory=list)    # the instances added for the dungeons the data lacks (runs.py)
 
     @property
     def changed(self) -> bool:
-        return bool(self.items or self.moved)
+        return bool(self.items or self.moved or self.sourced)
 
 
 def load_drops(path=DROPS_FILE) -> dict:
@@ -641,26 +648,122 @@ def _counted_drop(db, source: list, seen: list, tooltip) -> dict | None:
                 None if seen else tooltip)
 
 
+_NAMELESS = re.compile(r"^NPC \d+$")   # a creature ForeverDB saw drop an item and has no name for
+
+
+def _place_seen(db, item: dict, seen: list) -> bool:
+    """Write the creatures ForeverDB saw itself as bosses of the dungeon the journal counts them in; True
+    when one was. What the data saw stays as it saw it: the journal only says where the creature is, names
+    the one the data could not (when the item has no other creature), and gives the rate the data lacks."""
+    creatures = [source for source in item["sources"] if source[0] in ("m", "R") and source[-1] not in UNSURE]
+    placed = False
+    for source in creatures:
+        nameless = bool(_NAMELESS.match(source[2]))
+        if nameless:
+            entry = next((entry for entry in seen if entry["drops"] >= MIN_DROPS), None) if len(creatures) == 1 else None
+        else:
+            entry = next((entry for entry in seen if _same_boss(source[2], entry["boss"])), None)
+        number = _instance(db, entry["dungeon"]) if entry else None
+        if not number:
+            continue
+        rate, label = source[3], source[-1]
+        if not rate or float(rate) <= 0:
+            rate, label = f"{entry['percent']:g}", DROP_LABEL
+        source[:] = ["d", str(number), entry["boss"].split(" / ")[0] if nameless else source[2], rate, "0", label]
+        placed = True
+    return placed
+
+
+def _give_sources(db, item: dict, seen: list) -> bool:
+    """Give an item the data has no source for the bosses the journal counted it on; True when it counted one.
+
+    An item of ForeverDB's lists is then a dungeon's and no longer one "with no known source": the lists
+    count it. A piece added from the game (align) gets the sources to show and stays where it showed, as it
+    does with a source read in QuestieDB (fill). A tooltip alone gives nothing: it names a creature and no
+    place, and such an item stays without a source.
+    """
+    counted = [entry for entry in seen if entry["drops"] >= MIN_DROPS]
+    if not counted:
+        return False
+    sources = []
+    for entry in counted:
+        number = _instance(db, entry["dungeon"])
+        boss, percent = entry["boss"].split(" / ")[0].replace("\\", ""), f"{entry['percent']:g}"
+        sources.append(["d", str(number), boss, percent, "0", DROP_LABEL] if number
+                       else ["m", "0", boss, percent, DROP_LABEL])
+    item["sources"] = sources
+    if not item.get("added"):
+        item["groups"] = frozenset(set(item["groups"]) - {"u"} | {"d"})
+    return True
+
+
+def _one_per_boss(sources: list) -> list:
+    """The sources without the second line of a boss of one dungeon: the data may hold a boss twice, as a boss
+    and as a creature, under two spellings (Kirtonos, Kirtonos the Herald), or name the dungeon alone on one
+    line and its boss on the next."""
+    named = {source[1] for source in sources if source[0] == "d" and source[2]}
+    kept = []
+    for source in sources:
+        if source[0] == "d" and (
+                (not source[2] and source[1] in named)
+                or any(other[0] == "d" and other[1] == source[1] and _same_boss(other[2], source[2]) for other in kept)):
+            continue
+        kept.append(source)
+    return kept
+
+
+def _dungeon_groups(item: dict, others: list) -> None:
+    """An item a boss was counted for is a dungeon's, and a world drop only while one of its other sources
+    says so. A piece added from the game stays with the items of no known source (fill)."""
+    if item.get("added"):
+        return
+    groups = set(item["groups"]) | {"d"}
+    if not any(source[0] in ("m", "R", "w") for source in others):
+        groups -= {"w", "R"}
+    item["groups"] = frozenset(groups)
+
+
 def confirm(db, reading: dict) -> Confirmed:
     """Lay the drops counted in Forever over the sources that are not confirmed; the report is kept as db.confirmed.
 
     A source whose boss was counted takes the rate counted and the label w, and comes first among the
     item's sources: the addon shows the first one. Where the journal counts another boss, often enough to
     be no stray record, that boss replaces the creatures the data names: as a boss of its dungeon, or as a
-    creature when the data has no such dungeon. A tooltip alone replaces nothing: it names one creature,
+    creature when nothing has such a dungeon. A tooltip alone replaces nothing: it names one creature,
     when several may drop the item. What ForeverDB saw itself is left alone.
+
+    The journal counts dungeon by dungeon. A creature the data gives no place (the bosses of an arena, of a
+    dungeon ForeverDB's table lacks) is written as a boss of the dungeon it was counted in, the ones
+    ForeverDB saw itself among them (_place_seen); the dungeons of Forever the data has no instance for are
+    added first (runs.add_dungeons). db.boss_wings keeps the wing of each boss (runs.boss_wings), for the
+    data files.
+
+    An item the data gives no source at all takes the bosses the journal counted it on (_give_sources), and
+    is then an item of the lists like any other.
     """
     report = Confirmed(journal=reading.get("journal", ""), date=reading.get("date", ""),
                        known=len(reading.get("items", {})))
     db.confirmed = report
+    db.boss_wings = runs.boss_wings(reading)
+    if reading.get("items"):
+        report.dungeons = runs.add_dungeons(db)
     for item_id in sorted(reading.get("items", {})):
         item, record = db.items.get(item_id), reading["items"][item_id]
         if item is None:
             continue
+        seen, tooltip, found = record.get("seen", []), record.get("tooltip"), False
+        if not item["sources"]:
+            if _give_sources(db, item, seen):
+                report.sourced.append(item_id)
+            continue
+        placed = _place_seen(db, item, seen)
         unsure = [source for source in item["sources"] if source[0] in _CREATURES and source[-1] in UNSURE]
         if not unsure:
+            if placed:
+                item["sources"] = _one_per_boss(item["sources"])
+                _dungeon_groups(item, [source for source in item["sources"] if source[0] != "d"])
+                report.placed.append(item_id)
             continue
-        seen, tooltip, found = record.get("seen", []), record.get("tooltip"), False
         for source in unsure:
             counted = _counted_drop(db, source, seen, tooltip)
             if counted is None:
@@ -669,10 +772,19 @@ def confirm(db, reading: dict) -> Confirmed:
                 source[2] = counted["boss"].split(" / ")[0]
                 report.named.append(item_id)
             source[3], source[-1] = f"{counted['percent']:g}", DROP_LABEL
+            number = _instance(db, counted.get("dungeon", "")) if source[0] != "d" else None
+            if number:
+                source[:] = ["d", str(number), source[2], source[3], "0", DROP_LABEL]
+                placed = True
             found = True
         if found:
             item["sources"].sort(key=lambda source: _CERTAIN_FIRST.get(source[-1], 2))
             report.items.append(item_id)
+        if found or placed:
+            if placed:
+                item["sources"] = _one_per_boss(item["sources"])
+                _dungeon_groups(item, [source for source in item["sources"] if source[0] != "d"])
+                report.placed.append(item_id)
             continue
         if any(source[0] in _CREATURES and source[-1] not in UNSURE for source in item["sources"]):
             continue
@@ -684,10 +796,6 @@ def confirm(db, reading: dict) -> Confirmed:
         number, boss, percent = _instance(db, best["dungeon"]), best["boss"].split(" / ")[0], f"{best['percent']:g}"
         counted = ["d", str(number), boss, percent, "0", DROP_LABEL] if number else ["m", "0", boss, percent, DROP_LABEL]
         item["sources"] = [counted, *rest]
-        if not item.get("added"):   # a piece added from the game stays with the items of no known source (fill)
-            groups = set(item["groups"]) | {"d"}
-            if not any(source[0] in ("m", "R", "w") for source in rest):
-                groups -= {"w", "R"}
-            item["groups"] = frozenset(groups)
+        _dungeon_groups(item, rest)
         report.moved.append(item_id)
     return report

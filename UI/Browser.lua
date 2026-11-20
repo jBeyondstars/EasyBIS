@@ -17,6 +17,10 @@ The Easy BIS window: the best gear of a spec, slot by slot.
   bottom   Items / Enchants / Character / Consumables / Reputations, the data's credit, "Add an item"
            (UI\AddItem.lua), the alternatives switch and the options menu. The grip in the corner changes the
            window's height.
+  side     two tabs down the right edge, as the game's professions have them: the lists (all of the above),
+           and the dungeons, which dungeons hold the spec's best picks (UI\Dungeons.lua). The dungeons take
+           the whole middle and follow the spec, the list, the phase and the alternatives switch; the tabs
+           of the bottom are the lists' and go while the dungeons show.
 
 The class, spec, list and phase are remembered per character; the other
 filters last until the window is rebuilt (a reload). The phase is not the
@@ -30,6 +34,9 @@ opens beside the window; Shift-click links the item in chat.
   Browser.ListFilter(parent)      window and for the auction house's tab: both set the same choice;
                                   :Refresh() shows it
   Browser.ShowSlot(slot)          the Items tab, on that slot alone
+  Browser.ShowSource(category)    the Items tab, on what comes from that kind of source
+  Browser.ShowDungeons()          the dungeons
+  Browser.Font(name, base, size)  a font object: one of the game's, at another size
   Browser.ShowReputation(factionID, artisan)   the Reputations tab, on that faction
   Browser.EnchantTooltip(owner, enchant, requirement)   an enchant's tooltip beside the window; the caller shows it
   Browser.PlaceTooltip(owner, side)  the game's tooltip, owned by a part of the window and set beside
@@ -60,7 +67,9 @@ local ICON, COMPACT_ICON = 44, 30   -- the item's picture, on two lines and on o
 local SOURCE_ICON = 16     -- the picture of where it comes from
 local BAR_WIDTH = 52       -- the score bar
 local LINE_ONE = 17        -- on two lines: how far under the row's top the first line's middle is
-local TOOLTIP_ROOM = 340   -- room a tooltip needs on the window's right; without it, it opens on the left
+local TOOLTIP_ROOM = 340 + Widgets.SIDE_ROOM   -- room a tooltip needs on the window's right, past the side tabs;
+--                                                without it, it opens on the left
+local DUNGEON_ICON = "Interface\\Icons\\INV_Misc_Bone_HumanSkull_01"   -- the side tab of the dungeons
 local ALL = "*"            -- the "all" choice of a filter
 local UNKNOWN_ICON = "Interface\\Icons\\INV_Misc_QuestionMark"
 
@@ -91,7 +100,7 @@ local GetInfo = (C_Item and C_Item.GetItemInfo) or GetItemInfo
 local GetIcon = (C_Item and C_Item.GetItemIconByID) or GetItemIcon
 
 local window
-local state = { tab = "items" }
+local state = { tab = "items", page = "lists" }   -- page: the side tab chosen, "lists" or "dungeons"
 Browser.state = state
 local Refresh
 
@@ -468,7 +477,7 @@ local function PlaceTooltip(owner, side)
     elseif right and edge and edge - right < TOOLTIP_ROOM then
         GameTooltip:SetPoint("TOPRIGHT", window, "TOPLEFT", -2, -24)
     else
-        GameTooltip:SetPoint("TOPLEFT", window, "TOPRIGHT", 2, -24)
+        GameTooltip:SetPoint("TOPLEFT", window, "TOPRIGHT", Widgets.SIDE_ROOM, -24)   -- clear of the side tabs
     end
 end
 
@@ -1102,9 +1111,22 @@ local function Build()
             Refresh()
         end)
     window.tabs:Layout(nil, 10)   -- five tabs: narrower each, so the credit keeps its room
-    Widgets.MarkNew(window.tabs.buttons[4], L.TAB_NEW)
     Widgets.MarkNew(window.tabs.buttons[5], L.TAB_NEW)
     window.tabs:SetPoint("BOTTOMLEFT", 10, 28)
+
+    -- Down the right edge: the lists, and the dungeons
+    window.pages = Widgets.SideTabs(window,
+        {
+            { value = "lists", text = L.PAGE_LISTS, icon = ns.ICON },
+            { value = "dungeons", text = L.TAB_DUNGEONS, icon = DUNGEON_ICON },
+        },
+        function() return state.page end,
+        function(value)
+            state.page = value
+            Refresh()
+        end)
+    Widgets.MarkNew(window.pages.buttons[2], L.TAB_NEW)
+    if window.SetClampRectInsets then window:SetClampRectInsets(0, Widgets.SIDE_ROOM, 0, 0) end   -- they stay on the screen
 
     window.options = Widgets.MenuButton(window, L.OPTIONS, 88)
     window.options:SetPoint("BOTTOMRIGHT", -28, 28)
@@ -1153,8 +1175,11 @@ end
 Refresh = function()
     if not window or not window:IsShown() then return end
     ShowTitle(window)
-    local items, character, consumables = state.tab == "items", state.tab == "character", state.tab == "consumables"
-    local enchants, reputations = state.tab == "enchants", state.tab == "reputations"
+    -- the dungeons take the place of the lists: none of the lists' tabs is open then
+    local dungeons = state.page == "dungeons"
+    local tab = not dungeons and state.tab or nil
+    local items, character, consumables = tab == "items", tab == "character", tab == "consumables"
+    local enchants, reputations = tab == "enchants", tab == "reputations"
     local rows, facets = {}, { sources = {}, zones = {} }
     if items then
         rows, facets = ns.Rows.Items(state)
@@ -1190,7 +1215,8 @@ Refresh = function()
         state.reputation ~= nil)
     -- The two lists do not apply to enchants. Where an item comes from and adding one by hand belong to
     -- the list of items. The character sheet and the reputations have every slot and no alternative: only
-    -- the spec, the list and the phase apply to them.
+    -- the spec, the list and the phase apply to them. The dungeons have every slot too, and the alternatives
+    -- when asked for.
     local listed = items or enchants or consumables
     window.listLabel:SetShown(not enchants)
     window.list:SetShown(not enchants)
@@ -1199,10 +1225,12 @@ Refresh = function()
     window.zone:SetShown(items)
     window.reputation:SetShown(items or enchants)
     window.add:SetShown(items)
-    window.alts:SetShown(listed)
+    window.alts:SetShown(listed or dungeons)
+    window.tabs:SetShown(not dungeons)
 
     window.list:Refresh()
     window.tabs:Refresh()
+    window.pages:Refresh()
     window.alts:Refresh()
     window.available:Refresh()
     ns.AddItem.Refresh()
@@ -1220,22 +1248,39 @@ Refresh = function()
     else
         ns.ReputationView.Hide()
     end
+    if dungeons then
+        if not window.dungeons then window.dungeons = ns.DungeonView.Create(window.inset) end
+        ns.DungeonView.Update(state)
+    else
+        ns.DungeonView.Hide()
+    end
     if listed then LayoutRows(ns.Rows.Grouped(rows)) end
 end
 
 function Browser.ShowSlot(slot)
     -- the filters off: the piece clicked must be in the list
-    state.tab, state.slot, state.source, state.zone, state.reputation = "items", slot, nil, nil, nil
+    state.page, state.tab, state.slot, state.source, state.zone, state.reputation = "lists", "items", slot, nil, nil, nil
+    Refresh()
+end
+
+function Browser.ShowSource(category)
+    state.page, state.tab, state.slot, state.source, state.zone, state.reputation = "lists", "items", nil, category, nil, nil
     Refresh()
 end
 
 function Browser.ShowReputation(factionID, artisan)
-    state.tab, state.faction, state.factionArtisan = "reputations", factionID, artisan == true
+    state.page, state.tab, state.faction, state.factionArtisan = "lists", "reputations", factionID, artisan == true
+    Refresh()
+end
+
+function Browser.ShowDungeons()
+    state.page = "dungeons"
     Refresh()
 end
 
 Browser.PlaceTooltip = PlaceTooltip
 Browser.FONTS = { name = FONT_NAME, text = FONT_TEXT, header = FONT_HEADER }   -- for the other tabs
+Browser.Font = RowFont
 Browser.ItemTooltip = ItemTooltip
 Browser.EnchantTooltip = EnchantTooltip
 Browser.ShowTooltip = ShowTooltip

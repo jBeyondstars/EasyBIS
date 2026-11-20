@@ -90,6 +90,10 @@ https://github.com/jBeyondstars/EasyBIS
    them, are left out of it: only which quests those are is read, not
    Questie's code. Copyright (C) the Questie team and its contributors,
    GPL-3.0 with the same reservation as QuestieDB's.
+   The dungeon a quest is done in (Data/Items.lua, questRuns) is the
+   instance QuestieDB sorts the quest under, read by _build/runs.py and
+   kept in _build/corrections/quests.json. The wing of that dungeon, for
+   a few quests, is written by hand in _build/runs.py.
 
 5. Drops counted in Forever
    The sources labelled w (the boss that drops an item and how often) come
@@ -97,9 +101,20 @@ https://github.com/jBeyondstars/EasyBIS
    (https://www.wowhead.com/forever), as two addons shared by players hold
    them: DungeonJournal by Exehn and GearQuest Forever by Henrik8210. They
    are read by _build/drops.py and kept in _build/corrections/drops.json.
+   DungeonJournal counts dungeon by dungeon and wing by wing: the dungeon a
+   creature is a boss of, where ForeverDB's data gives it no place, and the
+   wing of a boss (Data/Items.lua, wings) are read in the same counts by
+   _build/corrections.py and _build/runs.py. The wing of the bosses those
+   counts do not place is written by hand in _build/runs.py. An item
+   ForeverDB's data gives no source at all takes the bosses those counts
+   name for it, and is then listed like any other item.
    Nothing of those addons' code is part of Easy BIS, and Easy BIS does not
    need them to run. Neither addon states a licence: their authors can ask
    for this data to be removed, and it will be.
+   The instance numbers of six dungeons of Forever that ForeverDB's table
+   of instances lacks (_build/runs.py, DUNGEONS) are the ones the Forever
+   Dungeon Routes addon lists (Data/Dungeons.lua), Copyright (c) 2026
+   Checkov23, MIT License. Only those six numbers are taken.
 
 6. Reputations in AtlasLoot Forever
    For a piece a vendor sells and ForeverDB's data gives no requirement (the

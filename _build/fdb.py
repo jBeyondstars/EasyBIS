@@ -10,7 +10,8 @@ the stats its data lacks, the pieces its lists leave out, and it drops the
 items the game does not have. Then it gives the items that have no source in
 the data the one read in QuestieDB (corrections.fill), and checks the drops
 that are not confirmed against the ones counted in Forever (corrections.confirm),
-and writes what the vendors ask in a currency (corrections.price). So the build and the tests rank the same database; load(..., corrected=False)
+and writes what the vendors ask in a currency (corrections.price). Last, it notes which dungeon each quest
+is done in (runs.quest_places). So the build and the tests rank the same database; load(..., corrected=False)
 is ForeverDB's data as published.
 """
 from __future__ import annotations
@@ -20,6 +21,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 import corrections
+import runs
 import simulated
 
 DATA_FILES = ("GearFinder.lua", "Gear.lua", "GearSources.lua", "Enhance.lua", "Meta.lua")
@@ -102,6 +104,8 @@ class Database:
         self.aligned = None     # what corrections.align changed (a corrections.Alignment), None for the published data
         self.filled = None      # what corrections.fill changed (a corrections.Filled), None for the published data
         self.confirmed = None   # what corrections.confirm changed (a corrections.Confirmed), None for the published data
+        self.boss_wings = {}    # instance -> {boss, in lower-case words: wing key} (runs.boss_wings)
+        self.quest_places = {}  # quest -> (instance, wing key or "") for the quests done in a dungeon (runs.quest_places)
         self.priced = None      # what corrections.price changed (a corrections.Priced), None for the published data
         self.simulated = None   # the PvE lists WoWSims Forever ranked (a simulated.Reading), None for the published data
         self.data_dir = None    # the folder this was read from
@@ -124,6 +128,7 @@ def load(data_dir, corrected: bool = True) -> Database:
         corrections.confirm(db, corrections.load_drops())
         corrections.price(db, corrections.load_costs())
         corrections.assign_sides(db)
+        db.quest_places = runs.quest_places(db, runs.load_quests())
         db.simulated = simulated.load() if simulated.IN_USE else simulated.Reading()
     return db
 

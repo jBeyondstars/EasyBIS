@@ -1,0 +1,542 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Easy BIS · onglet Dungeons · maquette</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+:root {
+  --gold: #ffd100;
+  --muted: #a8a8b0;
+  --faint: #6f6f78;
+  --line: rgba(255, 255, 255, .08);
+  --q0: #9d9d9d; --q1: #ffffff; --q2: #1eff00; --q3: #0070dd; --q4: #a335ee; --q5: #ff8000;
+  --game: "Friz Quadrata TT", "Friz Quadrata", "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif;
+  --page: "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: #17181c; color: #d9dae0; font: 14px/1.45 var(--page); padding: 22px 16px 60px; }
+
+/* ---------- outside the game: the mockup's own controls and notes ---------- */
+.bench { width: 960px; margin: 0 auto 18px; }
+.bench h1 { font-size: 19px; margin: 0 0 4px; color: #fff; font-weight: 600; }
+.bench p { margin: 0 0 12px; color: #a3a5b0; }
+.controls { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; padding: 10px 12px; background: #20222a;
+  border: 1px solid #2f323d; border-radius: 6px; }
+.controls .label { color: #8d90a0; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; margin-right: 6px; }
+.pill { display: inline-flex; border: 1px solid #3b3f4d; border-radius: 5px; overflow: hidden; }
+.pill button { background: transparent; color: #c7c9d3; border: 0; padding: 6px 12px; font: 13px var(--page); cursor: pointer; }
+.pill button + button { border-left: 1px solid #3b3f4d; }
+.pill button.on { background: #3a6df0; color: #fff; }
+.controls .ghost { background: transparent; border: 1px solid #3b3f4d; color: #c7c9d3; border-radius: 5px; padding: 6px 12px;
+  font: 13px var(--page); cursor: pointer; }
+.controls .hint { color: #8d90a0; font-size: 12.5px; }
+.notes { width: 960px; margin: 22px auto 0; display: grid; grid-template-columns: 1fr 1fr; gap: 10px 26px; }
+.notes h2 { grid-column: 1 / -1; font-size: 15px; color: #fff; margin: 0 0 2px; font-weight: 600; }
+.notes div { color: #b3b5c0; font-size: 13.5px; }
+.notes b { color: #fff; font-weight: 600; }
+.notes .num { display: inline-block; min-width: 20px; height: 20px; line-height: 20px; text-align: center; border-radius: 10px;
+  background: #3a6df0; color: #fff; font-size: 12px; font-weight: 700; margin-right: 6px; }
+
+/* ---------- the game's window, as Easy BIS draws it (960 x 620) ---------- */
+.window { position: relative; width: 960px; height: 620px; margin: 0 auto; font-family: var(--game); color: #fff;
+  border-radius: 5px; border: 1px solid #000;
+  box-shadow: 0 0 0 2px #5d5446, 0 0 0 3px #17130c, 0 18px 50px rgba(0, 0, 0, .65);
+  background:
+    radial-gradient(900px 380px at 28% 8%, rgba(255, 255, 255, .045), transparent 62%),
+    radial-gradient(700px 420px at 86% 96%, rgba(255, 255, 255, .03), transparent 60%),
+    repeating-linear-gradient(118deg, rgba(255, 255, 255, .013) 0 2px, transparent 2px 9px),
+    #121214; }
+.titlebar { position: absolute; left: 0; right: 0; top: 0; height: 22px; border-radius: 4px 4px 0 0;
+  background: linear-gradient(#2b2520, #15120f); border-bottom: 1px solid #000; text-align: center; color: var(--gold);
+  font-size: 13px; line-height: 21px; letter-spacing: .02em; }
+.portrait { position: absolute; left: -7px; top: -9px; width: 64px; height: 64px; border-radius: 50%; background: #0b1622 center/cover;
+  border: 3px solid #7d7466; box-shadow: 0 0 0 1px #000, inset 0 0 8px #000; z-index: 3; }
+.close { position: absolute; right: 2px; top: 1px; width: 20px; height: 20px; border-radius: 3px; border: 1px solid #f2c94c;
+  background: linear-gradient(#b3261a, #6d120b); color: #ffe27a; font: 700 13px/18px var(--page); text-align: center; }
+.available { position: absolute; right: 34px; top: 2px; font-size: 12px; color: var(--gold); display: flex; gap: 5px; align-items: center; }
+.available i { width: 14px; height: 14px; border: 1px solid #8a7a52; background: #111; border-radius: 2px; display: inline-block; }
+
+.filter { position: absolute; top: 26px; height: 38px; }
+.filter label { display: block; font-size: 11px; color: var(--muted); margin: 0 0 3px 2px; line-height: 11px; }
+.drop { position: relative; height: 24px; border: 1px solid #6a6a6e; border-radius: 4px; background: linear-gradient(#232326, #141416);
+  font-size: 13px; line-height: 22px; padding: 0 28px 0 7px; white-space: nowrap; }
+.drop::after { content: ""; position: absolute; right: 2px; top: 2px; width: 20px; height: 18px; border-radius: 3px;
+  background: linear-gradient(#f3c63b, #a8770f) ; clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%); border: 1px solid #5c4208; }
+.drop::before { content: ""; position: absolute; right: 8px; top: 9px; border: 4px solid transparent; border-top: 5px solid #2a1a00; z-index: 1; }
+.drop.off { opacity: .5; }
+.drop select { position: absolute; inset: 0; width: 100%; opacity: 0; cursor: pointer; }
+.seg { display: inline-flex; gap: 4px; }
+.btn { height: 22px; min-width: 44px; padding: 0 10px; border-radius: 3px; border: 1px solid #7a5a1c; cursor: default;
+  background: linear-gradient(#4b1e12, #260d07); color: var(--gold); font: 11px/20px var(--game); text-align: center;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .55); position: relative; white-space: nowrap; }
+.btn.on { background: linear-gradient(#66751f, #2e3a0c); color: #fff; border-color: #b9c66a; }
+.btn.click { cursor: pointer; }
+.new { position: absolute; right: -14px; top: -11px; height: 13px; padding: 0 4px; font: 10px/11px var(--game); color: #fff;
+  background: #1a7333; border: 1px solid #59e680; z-index: 2; }
+
+.inset { position: absolute; left: 6px; right: 6px; top: 70px; bottom: 58px; border: 1px solid #3a352c; border-radius: 3px;
+  background: rgba(0, 0, 0, .34); box-shadow: inset 0 0 14px rgba(0, 0, 0, .6); }
+.scroll { position: absolute; left: 8px; top: 40px; right: 6px; bottom: 8px; overflow-y: auto; overflow-x: hidden; padding-right: 10px;
+  scrollbar-width: thin; scrollbar-color: #8a6a1e #0c0c0d; }
+.head { position: absolute; left: 8px; right: 12px; top: 8px; height: 32px; display: flex; align-items: center; }
+.head .seg .btn { min-width: 86px; }
+.footer { position: absolute; left: 10px; right: 28px; bottom: 28px; height: 22px; display: flex; align-items: center; gap: 4px; }
+.footer .credit { flex: 1; text-align: center; color: var(--muted); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 10px; }
+.footer .options { min-width: 88px; background: linear-gradient(#2a2a2d, #151517); border-color: #77777c; }
+.sidetabs { position: absolute; left: 100%; top: 36px; display: flex; flex-direction: column; gap: 17px; }
+.st { position: relative; width: 38px; height: 38px; padding: 3px 3px 3px 0; border: 2px solid #6b5a3a; border-left: 0; border-radius: 0 6px 6px 0;
+  background: linear-gradient(90deg, #17130c, #2a241a); }
+.st img { display: block; width: 32px; height: 32px; object-fit: cover; }
+.st.on { border-color: #f3c63b; box-shadow: 0 0 8px rgba(243, 198, 59, .55); }
+.st .new { right: -16px; top: -9px; }
+.grip { position: absolute; right: 8px; bottom: 26px; width: 14px; height: 14px; opacity: .6;
+  background: repeating-linear-gradient(135deg, transparent 0 3px, #9a9aa2 3px 4px); }
+
+/* ---------- shared parts of the view ---------- */
+.q0 { color: var(--q0); } .q1 { color: var(--q1); } .q2 { color: var(--q2); } .q3 { color: var(--q3); } .q4 { color: var(--q4); } .q5 { color: var(--q5); }
+.ico { position: relative; flex: none; width: 38px; height: 38px; border: 1px solid var(--qc, #555); background: #0a0a0c; }
+.ico img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.ico.q0 { --qc: var(--q0); } .ico.q1 { --qc: #8d8d8d; } .ico.q2 { --qc: var(--q2); } .ico.q3 { --qc: var(--q3); } .ico.q4 { --qc: var(--q4); } .ico.q5 { --qc: var(--q5); }
+.ico .check { position: absolute; right: -6px; top: -7px; width: 18px; height: 18px; display: none; color: #ffd100; font: 700 17px/18px var(--page);
+  text-shadow: 0 0 2px #000, 0 1px 0 #000, 1px 0 0 #000, -1px 0 0 #000; }
+.owned .ico .check { display: block; }
+.owned .ico img { filter: grayscale(1) brightness(.6); }
+
+.headline { flex: 1; display: flex; align-items: baseline; padding: 0 6px; font-size: 14px; color: #fff; }
+.headline .sep { color: var(--muted); margin: 0 9px; }
+.headline .quiet { color: var(--muted); }
+.ico .quest { position: absolute; right: -5px; bottom: -6px; width: 14px; height: 18px; display: none; color: #ffd100; font: 900 18px/18px var(--page);
+  text-align: center; text-shadow: 0 0 2px #000, 0 1px 0 #000, 1px 0 0 #000, -1px 0 0 #000, 0 -1px 0 #000; }
+.isquest .ico .quest { display: block; }
+
+/* the set, one square per slot, each over its dungeon's colour */
+.strip { display: flex; align-items: flex-start; gap: 5px; padding: 6px 4px 12px; border-bottom: 1px solid var(--line); }
+.tile { width: 42px; cursor: pointer; transition: opacity .12s; }
+.tile .ico { width: 42px; height: 42px; }
+.tile .bar { height: 6px; margin-top: 3px; background: rgba(255, 255, 255, .10); }
+.tile.run .bar { background: var(--c); box-shadow: 0 0 6px color-mix(in srgb, var(--c) 60%, transparent); }
+.tile.hollow .ico { border-color: rgba(255, 255, 255, .14); }
+.tile:not(.run) { opacity: .7; }   /* a piece no dungeon holds: in black and white, a little darker */
+.tile:not(.run) .ico { --qc: #737378; }
+.tile:not(.run) .ico img { filter: grayscale(1); }
+.tile.gap { margin-left: 12px; }
+.tile.dim { opacity: .22; }
+.tile.lit .ico { box-shadow: 0 0 0 2px var(--c), 0 0 12px var(--c); }
+.strip .legend { margin-left: auto; align-self: center; font-size: 11px; color: var(--faint); line-height: 16px; white-space: nowrap; }
+.strip .legend i { display: inline-block; width: 18px; height: 6px; vertical-align: middle; margin-right: 6px; }
+
+/* ---------- A: one lane per dungeon ---------- */
+.lane { display: flex; margin-top: 6px; min-height: 56px; position: relative; transition: opacity .12s;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--c) 24%, transparent), color-mix(in srgb, var(--c) 4%, transparent) 70%); }
+.lane::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: var(--line); }
+.lane.dim { opacity: .3; }
+.block { flex: none; width: 56px; display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(180deg, var(--c), color-mix(in srgb, var(--c) 62%, #000)); text-shadow: 0 1px 2px rgba(0, 0, 0, .85); }
+.block .count { font-size: 32px; line-height: 34px; color: #fff; }
+.block .count.small { font-size: 14px; opacity: .95; }
+.lane.done .block { background: linear-gradient(180deg, #4a4a50, #2a2a2e); }
+.lane.done { background: none; }
+.who { flex: none; width: 184px; padding: 0 8px 0 12px; display: flex; flex-direction: column; justify-content: center; min-width: 0; }
+.who .name { font-size: 15px; line-height: 19px; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.who .meta { display: flex; align-items: center; gap: 8px; height: 18px; font-size: 12px; color: var(--muted); }
+.who .runs b { color: #fff; font-weight: 400; font-size: 13px; }
+.chips { flex: 1; min-width: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px 8px; padding: 6px 6px 6px 0;
+  align-content: center; }
+.chip { display: flex; align-items: center; gap: 8px; min-width: 0; padding: 2px 4px 2px 2px; cursor: pointer; }
+.chip:hover { background: linear-gradient(90deg, rgba(255, 220, 120, .22), rgba(255, 220, 120, .04)); }
+.chip .txt { min-width: 0; flex: 1; }
+.chip .nm { display: flex; align-items: center; font-size: 14px; line-height: 18px; min-width: 0; }
+.chip .nm .n { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.chip .nm .tag { flex: none; line-height: 13px; }
+.chip .sub { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); line-height: 16px; }
+.chip .boss { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.chip .pct { flex: none; color: #fff; }
+.chip .mark { color: #808080; }
+.tag { font-size: 10.5px; color: #c0c0c0; border: 1px solid rgba(255, 255, 255, .22); padding: 0 4px; margin-left: 6px; vertical-align: 1px; }
+.chip.alt .ico { width: 30px; height: 30px; margin: 4px; }
+.chip.alt .nm { opacity: .86; }
+.chip.owned .nm, .chip.owned .sub, .chip.moot { opacity: .42; }
+.chip.owned .pct { visibility: hidden; }
+
+.elsewhere { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 16px; margin-top: 12px; padding: 8px 6px 4px;
+  color: var(--muted); font-size: 12px; }
+.elsewhere .cat { display: inline-flex; align-items: center; gap: 5px; cursor: pointer; }
+.elsewhere .cat:hover { color: #fff; }
+.elsewhere .cat b { color: #fff; font-weight: 400; font-size: 14px; }
+.glyph { width: 16px; height: 16px; flex: none; display: inline-block; background: #111 center/cover; border: 1px solid #333; }
+.glyph.mark { border: 0; background: none; color: #ffd100; font: 700 15px/16px var(--page); text-align: center; }
+.nothing { text-align: center; color: var(--muted); padding: 56px 0 30px; font-size: 14px; }
+.nothing b { display: block; color: #fff; font-size: 18px; font-weight: 400; margin-bottom: 6px; }
+
+/* ---------- B: the spreadsheet, a row per piece and a column per dungeon ---------- */
+.grid { display: grid; margin-top: 6px; column-gap: 3px; align-items: stretch; }
+.grid > div { min-width: 0; }
+.gh { height: 54px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: sticky; top: 0; z-index: 2;
+  background: linear-gradient(180deg, var(--c), color-mix(in srgb, var(--c) 62%, #000)); text-shadow: 0 1px 2px rgba(0, 0, 0, .85); cursor: default; }
+.gh b { font-size: 20px; line-height: 22px; font-weight: 400; }
+.gh span { font-size: 10.5px; line-height: 11px; text-align: center; }   /* two lines where the column is narrow */
+.gh.piece, .gh.else { background: #121214; align-items: flex-start; justify-content: flex-end; padding: 0 6px 5px; color: var(--muted); font-size: 12px; text-shadow: none; }
+.gr { height: 28px; display: flex; align-items: center; border-bottom: 1px solid var(--line); }
+.gr.first { border-top: 1px solid rgba(255, 255, 255, .13); }
+.gr.name { gap: 7px; padding-left: 3px; cursor: pointer; }
+.gr.name .ico { width: 22px; height: 22px; }
+.gr.name .ico .check { right: -5px; top: -6px; width: 14px; height: 14px; font-size: 13px; line-height: 14px; }
+.gr.name .nm { font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gr.name.alt { padding-left: 18px; }
+.gr.name.alt .nm { opacity: .8; }
+.gr.cell { justify-content: center; font-size: 12px; background: rgba(255, 255, 255, .025); }
+.gr.cell.on { background: color-mix(in srgb, var(--c) 88%, #000); color: #fff; text-shadow: 0 1px 1px rgba(0, 0, 0, .9); }
+.gr.cell.on.alt { background: color-mix(in srgb, var(--c) 34%, #101012); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 70%, transparent); }
+.gr.else { gap: 6px; padding-left: 8px; color: var(--muted); font-size: 12px; white-space: nowrap; overflow: hidden; }
+.gr.else span { overflow: hidden; text-overflow: ellipsis; }
+.gr.owned .nm, .gr.moot .nm, .gr.name.else .nm, .gr.name.else .ico { opacity: .45; }
+.gr.cell.on.owned { background: color-mix(in srgb, var(--c) 30%, #101012); color: #ffd100; }
+.gh.done { background: linear-gradient(180deg, #4a4a50, #2a2a2e); }
+.gf { height: 30px; display: flex; align-items: center; justify-content: center; font-size: 12px; color: var(--muted); }
+.gf b { color: #fff; font-weight: 400; font-size: 14px; margin-right: 3px; }
+.gf.label { justify-content: flex-start; padding-left: 6px; }
+.grid .dimcol { opacity: .25; }
+
+/* ---------- the game's tooltip ---------- */
+#tip { position: fixed; z-index: 50; display: none; max-width: 300px; padding: 9px 11px; border: 1px solid #b9b9b9; border-radius: 6px;
+  background: rgba(8, 10, 22, .96); font: 13px/18px var(--game); color: #fff; pointer-events: none; box-shadow: 0 4px 16px rgba(0, 0, 0, .6); }
+#tip .t { font-size: 15px; margin-bottom: 2px; }
+#tip .g { color: var(--gold); }
+#tip .m { color: var(--muted); }
+#tip .sp { height: 8px; }
+</style>
+</head>
+<body>
+
+<div class="bench">
+  <h1>Easy BIS · onglet « Dungeons » · maquette de ce qui est implémenté</h1>
+  <p>Les pièces, les runs et les couleurs viennent du modèle de l'addon (<code>Dungeons.lua</code>), PvE pré-raid. La fenêtre est en anglais comme les captures du dépôt ; le jeu en français a ses textes en français.</p>
+  <div class="controls">
+    <button class="ghost" id="reset">Tout remettre à « pas encore obtenu »</button>
+    <span class="hint">Dans la fenêtre : changez de spé, basculez « By dungeon / By piece », activez « Alternatives », survolez un donjon ou une pièce.
+      Cliquez une pièce pour simuler son obtention (en jeu, c'est détecté tout seul, et le clic ouvre l'onglet Items).</span>
+  </div>
+</div>
+
+<div class="window" id="window">
+  <div class="titlebar">Easy BIS</div>
+  <div class="portrait" style="background-image:url('../../logo.png')"></div>
+  <div class="available"><i></i> Available now</div>
+  <div class="close">×</div>
+
+  <div class="filter" style="left:66px; width:190px">
+    <label>Spec</label>
+    <div class="drop"><span id="specText"></span><select id="spec"></select></div>
+  </div>
+  <div class="filter" style="left:266px">
+    <label>List</label>
+    <div class="seg"><div class="btn on" style="width:50px">PvE</div><div class="btn" style="width:50px">PvP</div></div>
+  </div>
+  <div class="filter" style="left:382px; width:100px">
+    <label>Phase</label>
+    <div class="drop">Pre-raid</div>
+  </div>
+
+  <div class="inset">
+    <div class="head">
+      <div class="headline" id="headline"></div>
+      <div class="seg" id="mode"><div class="btn click" data-v="A">By dungeon</div><div class="btn click" data-v="B">By piece</div></div>
+    </div>
+    <div class="scroll" id="view"></div>
+  </div>
+
+  <div class="sidetabs">
+    <div class="st" title="Gear lists"><img src="../../logo.png" alt=""></div>
+    <div class="st on" title="Dungeons"><img src="https://wow.zamimg.com/images/wow/icons/large/inv_misc_bone_humanskull_01.jpg" alt=""><span class="new">New</span></div>
+  </div>
+
+  <div class="footer">
+    <div style="width:340px"></div>
+    <div class="credit">Data from ForeverDB.net, game build 1.60.1.70938</div>
+    <div class="btn click" id="alts" style="min-width:96px">Alternatives</div>
+    <div class="btn options">Options &nbsp;▸</div>
+  </div>
+  <div class="grip"></div>
+</div>
+
+<div class="notes" id="notes"></div>
+<div id="tip"></div>
+
+<script>
+const DATA = {"runs":{"Lower Blackrock Spire":{"short":"LBRS","color":"#f08f2e"},"Blackmaw Hold":{"short":"Blackmaw","color":"#a87d5c"},"Blackrock Depths":{"short":"BRD","color":"#ba8f52"},"Upper Blackrock Spire":{"short":"UBRS","color":"#e3523d"},"Dire Maul: North":{"short":"DM North","color":"#c2cf3b"},"Maraudon":{"short":"Mara","color":"#59a8e8"},"Scholomance":{"short":"Scholo","color":"#36b2ab"},"Stratholme: Living":{"short":"Strat Live","color":"#e66ba3"},"Stratholme: Undead":{"short":"Strat UD","color":"#8f7de6"},"Dire Maul":{"short":"DM","color":"#70b84c"},"Dire Maul: East":{"short":"DM East","color":"#87c440"},"Stratholme":{"short":"Strat","color":"#b873c9"},"Zul'Farrak":{"short":"ZF","color":"#d9bf7a"},"Dire Maul: West":{"short":"DM West","color":"#2ea35e"},"Shaper's Terrace":{"short":"Shaper's","color":"#59c7d6"},"Alcaz Prison":{"short":"Alcaz","color":"#8094ab"},"The Drowned City":{"short":"Drowned","color":"#3d87cc"},"Uldaman":{"short":"Ulda","color":"#998f80"}},"specs":[{"class":"WARRIOR","spec":"Fury","pieces":[{"id":12640,"name":"Lionheart Helm","slot":"head","role":"best","rank":1,"quality":4,"icon":"inv_helmet_36","category":"crafted","text":"Blacksmithing (300)"},{"id":20521,"name":"Fury Visor","slot":"head","role":"alt","rank":1,"quality":3,"icon":"inv_helmet_01","category":"quest","text":"Voodoo Feathers"},{"id":13404,"name":"Mask of the Unforgiven","slot":"head","role":"alt","rank":2,"quality":3,"icon":"inv_misc_bandana_01","runs":[{"run":"Stratholme: Living","boss":"The Unforgiven","percent":18.8,"label":"w","quest":null}]},{"id":15411,"name":"Mark of Fordring","slot":"neck","role":"best","rank":1,"quality":3,"icon":"inv_jewelry_talisman_07","category":"quest","text":"In Dreams"},{"id":19491,"name":"Amulet of the Darkmoon","slot":"neck","role":"alt","rank":1,"quality":4,"icon":"inv_jewelry_necklace_14","category":"vendor","text":"Gelvas Grimegate"},{"id":22150,"name":"Beads of Ogre Might","slot":"neck","role":"alt","rank":2,"quality":3,"icon":"inv_jewelry_amulet_05","runs":[{"run":"Dire Maul: North","boss":"","percent":0,"label":"k","quest":"Falrin's Vendetta"}]},{"id":271955,"name":"Theramore Pauldrons","slot":"shoulder","role":"best","rank":1,"quality":3,"icon":"inv_shoulder_23","category":"vendor","text":""},{"id":271956,"name":"Theramore Epaulets","slot":"shoulder","role":"alt","rank":1,"quality":3,"icon":"inv_shoulder_23","category":"vendor","text":""},{"id":271959,"name":"Theramore Spaulders","slot":"shoulder","role":"alt","rank":2,"quality":3,"icon":"inv_shoulder_23","category":"vendor","text":""},{"id":272414,"name":"Howler's Furs","slot":"back","role":"best","rank":1,"quality":3,"icon":"inv_misc_cape_18","category":"vendor","text":"Pix Xizzix"},{"id":13340,"name":"Cape of the Black Baron","slot":"back","role":"alt","rank":1,"quality":3,"icon":"inv_misc_cape_20","runs":[{"run":"Stratholme: Undead","boss":"Baron Rivendare","percent":11.7,"label":"w","quest":null}]},{"id":272415,"name":"Stalwart Cloak","slot":"back","role":"alt","rank":2,"quality":3,"icon":"inv_misc_cape_18","category":"vendor","text":"Pix Xizzix"},{"id":252484,"name":"Timbermaw Tunic","slot":"chest","role":"best","rank":1,"quality":3,"icon":"inv_chest_chain_15","category":"crafted","text":"Leatherworking (300)"},{"id":252483,"name":"Dawn Armor","slot":"chest","role":"alt","rank":1,"quality":3,"icon":"inv_chest_chain_15","category":"crafted","text":"Leatherworking (300)"},{"id":11726,"name":"Savage Gladiator Chain","slot":"chest","role":"alt","rank":2,"quality":4,"icon":"inv_chest_chain_15","runs":[{"run":"Blackrock Depths","boss":"Gorosh the Dervish","percent":10.3,"label":"w","quest":null}]},{"id":12936,"name":"Battleborn Armbraces","slot":"wrist","role":"best","rank":1,"quality":3,"icon":"inv_bracer_17","runs":[{"run":"Upper Blackrock Spire","boss":"Warchief Rend Blackhand","percent":18.2,"label":"w","quest":null}]},{"id":280061,"name":"Spike Crested Bracers","slot":"wrist","role":"alt","rank":1,"quality":3,"icon":"inv_bracer_07","runs":[{"run":"Blackmaw Hold","boss":"Bonesnout the Unbroken","percent":27.1,"label":"w","quest":null}]},{"id":13211,"name":"Slashclaw Bracers","slot":"wrist","role":"alt","rank":2,"quality":3,"icon":"inv_bracer_07","runs":[{"run":"Lower Blackrock Spire","boss":"Halycon","percent":24.3,"label":"w","quest":null}]},{"id":271940,"name":"Theramore Gauntlets","slot":"hands","role":"best","rank":1,"quality":3,"icon":"inv_gauntlets_04","category":"vendor","text":""},{"id":21998,"name":"Gauntlets of Heroism","slot":"hands","role":"alt","rank":1,"quality":4,"icon":"inv_gauntlets_26","category":"quest","text":"Just Compensation"},{"id":271948,"name":"Theramore Gloves","slot":"hands","role":"alt","rank":2,"quality":3,"icon":"inv_gauntlets_04","category":"vendor","text":""},{"id":272403,"name":"Valiant's Waistguard","slot":"waist","role":"best","rank":1,"quality":3,"icon":"inv_belt_13","category":"vendor","text":"Pix Xizzix"},{"id":19044,"name":"Might of the Timbermaw","slot":"waist","role":"alt","rank":1,"quality":3,"icon":"inv_belt_09","category":"crafted","text":"Leatherworking (265)"},{"id":13959,"name":"Omokk's Girth Restrainer","slot":"waist","role":"alt","rank":2,"quality":3,"icon":"inv_belt_13","runs":[{"run":"Lower Blackrock Spire","boss":"","percent":0,"label":"k","quest":"Warlord's Command"}]},{"id":22385,"name":"Titanic Leggings","slot":"legs","role":"best","rank":1,"quality":4,"icon":"inv_pants_04","category":"crafted","text":"Blacksmithing (300)"},{"id":12963,"name":"Blademaster Leggings","slot":"legs","role":"alt","rank":1,"quality":3,"icon":"inv_pants_06","runs":[{"run":"Upper Blackrock Spire","boss":"The Beast","percent":13.2,"label":"w","quest":null}]},{"id":18736,"name":"Plaguehound Leggings","slot":"legs","role":"alt","rank":2,"quality":3,"icon":"inv_pants_12","category":"world","text":"World drop"},{"id":226857,"name":"Battleboots of Heroism","slot":"feet","role":"best","rank":1,"quality":4,"icon":"inv_boots_plate_03","category":"vendor","text":"Deliana"},{"id":21995,"name":"Boots of Heroism","slot":"feet","role":"alt","rank":1,"quality":4,"icon":"inv_boots_plate_03","category":"quest","text":"Anthion's Parting Words"},{"id":13967,"name":"Windreaver Greaves","slot":"feet","role":"alt","rank":2,"quality":3,"icon":"inv_boots_plate_04","runs":[{"run":"Scholomance","boss":"Kirtonos","percent":18.4,"label":"w","quest":null}]},{"id":275981,"name":"Warden's Signet of Ferocity","slot":"finger","role":"best","rank":1,"quality":3,"icon":"inv_jewelry_ring_15","category":"reputation","text":"The Watchers, Exalted"},{"id":272408,"name":"Cutthroat's Signet","slot":"finger","role":"best","rank":2,"quality":3,"icon":"inv_jewelry_ring_15","category":"vendor","text":"Pix Xizzix"},{"id":275976,"name":"Watcher's Signet of Ferocity","slot":"finger","role":"alt","rank":1,"quality":3,"icon":"inv_jewelry_ring_15","category":"reputation","text":"The Watchers, Revered"},{"id":11815,"name":"Hand of Justice","slot":"trinket","role":"best","rank":1,"quality":3,"icon":"inv_jewelry_talisman_01","runs":[{"run":"Blackrock Depths","boss":"Emperor Dagran Thaurissan","percent":19.2,"label":"w","quest":null}]},{"id":280065,"name":"Behemoth Bones","slot":"trinket","role":"best","rank":2,"quality":3,"icon":"inv_misc_gem_pearl_05","runs":[{"run":"Blackmaw Hold","boss":"Blackmaw Behemoth","percent":34.9,"label":"w","quest":null}]},{"id":272437,"name":"Adaptive Combat Assistant","slot":"trinket","role":"alt","rank":1,"quality":3,"icon":"inv_misc_gem_pearl_05","category":"vendor","text":"Pix Xizzix"},{"id":22384,"name":"Persuader","slot":"main","role":"best","rank":1,"quality":4,"icon":"inv_hammer_08","category":"crafted","text":"Blacksmithing (300)"},{"id":1728,"name":"Teebu's Blazing Longsword","slot":"main","role":"alt","rank":1,"quality":4,"icon":"inv_sword_22","category":"container","text":"Heavy Junkbox"},{"id":12798,"name":"Annihilator","slot":"main","role":"alt","rank":2,"quality":3,"icon":"inv_axe_12","category":"crafted","text":"Blacksmithing (300)"},{"id":13204,"name":"Bashguuder","slot":"off","role":"best","rank":1,"quality":3,"icon":"inv_mace_15","runs":[{"run":"Lower Blackrock Spire","boss":"Ghok Bashguud","percent":37.5,"label":"w","quest":null}]},{"id":12798,"name":"Annihilator","slot":"off","role":"alt","rank":1,"quality":3,"icon":"inv_axe_12","category":"crafted","text":"Blacksmithing (300)"},{"id":279259,"name":"Ironwood Blade","slot":"off","role":"alt","rank":2,"quality":3,"icon":"inv_shield_06","category":"crafted","text":"Blacksmithing (300)"},{"id":19107,"name":"Bloodseeker","slot":"ranged","role":"best","rank":1,"quality":3,"icon":"inv_weapon_crossbow_07","category":"quest","text":"The Legend of Korrak"},{"id":12651,"name":"Blackcrow","slot":"ranged","role":"alt","rank":1,"quality":3,"icon":"inv_weapon_crossbow_04","runs":[{"run":"Lower Blackrock Spire","boss":"Shadow Hunter Vosh'gajin","percent":11.5,"label":"w","quest":null}]},{"id":287070,"name":"Skypierce Javelin","slot":"ranged","role":"alt","rank":2,"quality":3,"icon":"inv_weapon_bow_08","runs":[{"run":"Maraudon","boss":"Noxious Slime","percent":0,"label":"t","quest":null},{"run":"Maraudon","boss":"Deep Borer","percent":0,"label":"t","quest":null}]}]},{"class":"WARLOCK","spec":"Destruction","pieces":[{"id":22267,"name":"Spellweaver's Turban","slot":"head","role":"best","rank":1,"quality":3,"icon":"inv_helmet_62","runs":[{"run":"Upper Blackrock Spire","boss":"General Drakkisath","percent":18.1,"label":"w","quest":null}]},{"id":22074,"name":"Deathmist Mask","slot":"head","role":"alt","rank":1,"quality":4,"icon":"inv_helmet_29","category":"quest","text":"Saving the Best for Last"},{"id":18727,"name":"Crimson Felt Hat","slot":"head","role":"alt","rank":2,"quality":3,"icon":"inv_helmet_51","runs":[{"run":"Stratholme: Undead","boss":"Magistrate Barthilas","percent":13.6,"label":"w","quest":null}]},{"id":22403,"name":"Nacreous Shell Necklace","slot":"neck","role":"best","rank":1,"quality":3,"icon":"inv_jewelry_necklace_10","runs":[{"run":"Stratholme: Living","boss":"Cannon Master Willey","percent":18.1,"label":"w","quest":null}]},{"id":19426,"name":"Orb of the Darkmoon","slot":"neck","role":"alt","rank":1,"quality":4,"icon":"inv_jewelry_necklace_16","category":"vendor","text":"Gelvas Grimegate"},{"id":23125,"name":"Chains of the Lich","slot":"neck","role":"alt","rank":2,"quality":3,"icon":"inv_belt_18","runs":[{"run":"Stratholme","boss":"","percent":33.33,"label":"k","quest":null}]},{"id":19050,"name":"Mantle of the Timbermaw","slot":"shoulder","role":"best","rank":1,"quality":3,"icon":"inv_shoulder_19","category":"crafted","text":"Tailoring (290)"},{"id":18681,"name":"Burial Shawl","slot":"shoulder","role":"alt","rank":1,"quality":3,"icon":"inv_shoulder_05","runs":[{"run":"Scholomance","boss":"Lord Alexei Barov","percent":0.46,"label":"w","quest":null},{"run":"Scholomance","boss":"Instructor Malicia","percent":1.6,"label":"w","quest":null}]},{"id":19059,"name":"Argent Shoulders","slot":"shoulder","role":"alt","rank":2,"quality":3,"icon":"inv_shoulder_13","category":"crafted","text":"Tailoring (290)"},{"id":272411,"name":"Arcanoweave Cloak","slot":"back","role":"best","rank":1,"quality":3,"icon":"inv_misc_cape_18","category":"vendor","text":"Pix Xizzix"},{"id":13007,"name":"Mageflame Cloak","slot":"back","role":"alt","rank":1,"quality":3,"icon":"inv_misc_cape_18","category":"world","text":"World drop"},{"id":18510,"name":"Hide of the Wild","slot":"back","role":"alt","rank":2,"quality":4,"icon":"inv_misc_cape_01","category":"crafted","text":"Leatherworking (300)"},{"id":14153,"name":"Robe of the Void","slot":"chest","role":"best","rank":1,"quality":4,"icon":"inv_chest_cloth_51","category":"crafted","text":"Tailoring (295)"},{"id":280057,"name":"Robes of Dark Summons","slot":"chest","role":"alt","rank":1,"quality":3,"icon":"inv_chest_chain_15","runs":[{"run":"Blackmaw Hold","boss":"Impaan the Imprisoner","percent":31.5,"label":"w","quest":null}]},{"id":22075,"name":"Deathmist Robe","slot":"chest","role":"alt","rank":2,"quality":4,"icon":"inv_chest_cloth_49","category":"quest","text":"Saving the Best for Last"},{"id":18497,"name":"Sublime Wristguards","slot":"wrist","role":"best","rank":1,"quality":3,"icon":"inv_bracer_13","runs":[{"run":"Dire Maul: North","boss":"Guard Mol'dar","percent":4.8,"label":"w","quest":null},{"run":"Dire Maul: North","boss":"Guard Slip'kik","percent":4.9,"label":"w","quest":null}]},{"id":14629,"name":"Necropile Cuffs","slot":"wrist","role":"alt","rank":1,"quality":3,"icon":"inv_bracer_07","runs":[{"run":"Scholomance","boss":"Lord Alexei Barov","percent":2.3,"label":"w","quest":null},{"run":"Scholomance","boss":"Instructor Malicia","percent":2.8,"label":"w","quest":null}]},{"id":254065,"name":"Netherflame Cuffs","slot":"wrist","role":"alt","rank":2,"quality":3,"icon":"inv_bracer_07","category":"crafted","text":"Tailoring (205)"},{"id":14146,"name":"Gloves of Spell Mastery","slot":"hands","role":"best","rank":1,"quality":4,"icon":"inv_gauntlets_06","category":"crafted","text":"Tailoring (295)"},{"id":18408,"name":"Inferno Gloves","slot":"hands","role":"alt","rank":1,"quality":3,"icon":"inv_gauntlets_19","category":"crafted","text":"Tailoring (280)"},{"id":22077,"name":"Deathmist Wraps","slot":"hands","role":"alt","rank":2,"quality":4,"icon":"inv_gauntlets_32","category":"quest","text":"Just Compensation"},{"id":18405,"name":"Belt of the Archmage","slot":"waist","role":"best","rank":1,"quality":4,"icon":"inv_belt_31","category":"crafted","text":"Tailoring (295)"},{"id":11662,"name":"Ban'thok Sash","slot":"waist","role":"alt","rank":1,"quality":3,"icon":"inv_belt_29","runs":[{"run":"Blackrock Depths","boss":"Ok'thor the Breaker","percent":27.1,"label":"w","quest":null}]},{"id":254085,"name":"Fiery Waistcord","slot":"waist","role":"alt","rank":2,"quality":3,"icon":"inv_belt_13","category":"crafted","text":"Tailoring (215)"},{"id":13170,"name":"Skyshroud Leggings","slot":"legs","role":"best","rank":1,"quality":3,"icon":"inv_pants_13","runs":[{"run":"Lower Blackrock Spire","boss":"Highlord Omokk","percent":15.7,"label":"w","quest":null}]},{"id":9484,"name":"Spellshock Leggings","slot":"legs","role":"alt","rank":1,"quality":3,"icon":"inv_pants_08","runs":[{"run":"Zul'Farrak","boss":"Chief Ukorz Sandscalp","percent":0.02,"label":"k","quest":null},{"run":"Zul'Farrak","boss":"Witch Doctor Zum'rah","percent":0.02,"label":"k","quest":null}]},{"id":14045,"name":"Cindercloth Pants","slot":"legs","role":"alt","rank":2,"quality":2,"icon":"inv_pants_06","category":"crafted","text":"Tailoring (235)"},{"id":13369,"name":"Fire Striders","slot":"feet","role":"best","rank":1,"quality":3,"icon":"inv_boots_05","runs":[{"run":"Stratholme: Living","boss":"Balnazzar","percent":21.3,"label":"w","quest":null}]},{"id":11822,"name":"Omnicast Boots","slot":"feet","role":"alt","rank":1,"quality":3,"icon":"inv_boots_05","runs":[{"run":"Blackrock Depths","boss":"Golem Lord Argelmach","percent":21.2,"label":"w","quest":null}]},{"id":18102,"name":"Dragonrider Boots","slot":"feet","role":"alt","rank":2,"quality":3,"icon":"inv_boots_05","runs":[{"run":"Upper Blackrock Spire","boss":"Warchief Rend Blackhand","percent":18.6,"label":"w","quest":null}]},{"id":23237,"name":"Ring of the Eternal Flame","slot":"finger","role":"best","rank":1,"quality":4,"icon":"inv_jewelry_ring_48naxxramas","category":"world","text":"Monsters level 60-63"},{"id":275982,"name":"Warden's Signet of Brilliance","slot":"finger","role":"best","rank":2,"quality":3,"icon":"inv_jewelry_ring_15","category":"reputation","text":"The Watchers, Exalted"},{"id":275977,"name":"Watcher's Signet of Brilliance","slot":"finger","role":"alt","rank":1,"quality":3,"icon":"inv_jewelry_ring_15","category":"reputation","text":"The Watchers, Revered"},{"id":272438,"name":"Weakness Analyzer","slot":"trinket","role":"best","rank":1,"quality":3,"icon":"inv_misc_gem_pearl_05","category":"vendor","text":"Pix Xizzix"},{"id":18354,"name":"Pimgib's Collar","slot":"trinket","role":"best","rank":2,"quality":3,"icon":"inv_jewelry_amulet_05","runs":[{"run":"Dire Maul","boss":"","percent":14,"label":"k","quest":null}]},{"id":13213,"name":"Smolderweb's Eye","slot":"trinket","role":"alt","rank":1,"quality":3,"icon":"inv_misc_gem_pearl_01","runs":[{"run":"Lower Blackrock Spire","boss":"Mother Smolderweb","percent":29.7,"label":"w","quest":null}]},{"id":22383,"name":"Sageblade","slot":"main","role":"best","rank":1,"quality":4,"icon":"inv_sword_51","category":"crafted","text":"Blacksmithing (300)"},{"id":287034,"name":"Grove Subjugator's Blade","slot":"main","role":"alt","rank":1,"quality":3,"icon":"inv_sword_27","category":"drop","text":"Swarming Imp"},{"id":271928,"name":"Clever Expeditionary's Spellblade","slot":"main","role":"alt","rank":2,"quality":3,"icon":"inv_sword_27","category":"vendor","text":""},{"id":18316,"name":"Obsidian Bauble","slot":"off","role":"best","rank":1,"quality":3,"icon":"inv_misc_orb_04","runs":[{"run":"Dire Maul: East","boss":"Pusillin","percent":24.4,"label":"w","quest":null}]},{"id":22253,"name":"Tome of the Lost","slot":"off","role":"alt","rank":1,"quality":3,"icon":"inv_misc_book_06","runs":[{"run":"Upper Blackrock Spire","boss":"General Drakkisath","percent":20.1,"label":"w","quest":null}]},{"id":11904,"name":"Spirit of Aquementas","slot":"off","role":"alt","rank":2,"quality":2,"icon":"inv_ore_arcanite_02","category":"quest","text":"It's Dangerous to Go Alone"},{"id":13938,"name":"Bonecreeper Stylus","slot":"ranged","role":"best","rank":1,"quality":3,"icon":"inv_misc_bone_taurenskull_01","runs":[{"run":"Scholomance","boss":"Darkmaster Gandling","percent":14,"label":"w","quest":null}]},{"id":22408,"name":"Ritssyn's Wand of Bad Mojo","slot":"ranged","role":"alt","rank":1,"quality":3,"icon":"inv_wand_07","runs":[{"run":"Stratholme: Undead","boss":"Baron Rivendare","percent":15.8,"label":"w","quest":null}]},{"id":11748,"name":"Pyric Caduceus","slot":"ranged","role":"alt","rank":2,"quality":3,"icon":"inv_staff_13","runs":[{"run":"Blackrock Depths","boss":"Pyromancer Loregrain","percent":23.1,"label":"w","quest":null}]}]},{"class":"MAGE","spec":"Fire","pieces":[{"id":22267,"name":"Spellweaver's Turban","slot":"head","role":"best","rank":1,"quality":3,"icon":"inv_helmet_62","runs":[{"run":"Upper Blackrock Spire","boss":"General Drakkisath","percent":18.1,"label":"w","quest":null}]},{"id":22065,"name":"Sorcerer's Crown","slot":"head","role":"alt","rank":1,"quality":4,"icon":"inv_crown_02","category":"quest","text":"Saving the Best for Last"},{"id":18727,"name":"Crimson Felt Hat","slot":"head","role":"alt","rank":2,"quality":3,"icon":"inv_helmet_51","runs":[{"run":"Stratholme: Undead","boss":"Magistrate Barthilas","percent":13.6,"label":"w","quest":null}]},{"id":22403,"name":"Nacreous Shell Necklace","slot":"neck","role":"best","rank":1,"quality":3,"icon":"inv_jewelry_necklace_10","runs":[{"run":"Stratholme: Living","boss":"Cannon Master Willey","percent":18.1,"label":"w","quest":null}]},{"id":12103,"name":"Star of Mystaria","slot":"neck","role":"alt","rank":1,"quality":3,"icon":"inv_jewelry_talisman_08","runs":[{"run":"Stratholme: Living","boss":"Balnazzar","percent":17.5,"label":"w","quest":null}]},{"id":19426,"name":"Orb of the Darkmoon","slot":"neck","role":"alt","rank":2,"quality":4,"icon":"inv_jewelry_necklace_16","category":"vendor","text":"Gelvas Grimegate"},{"id":19050,"name":"Mantle of the Timbermaw","slot":"shoulder","role":"best","rank":1,"quality":3,"icon":"inv_shoulder_19","category":"crafted","text":"Tailoring (290)"},{"id":18681,"name":"Burial Shawl","slot":"shoulder","role":"alt","rank":1,"quality":3,"icon":"inv_shoulder_05","runs":[{"run":"Scholomance","boss":"Lord Alexei Barov","percent":0.46,"label":"w","quest":null},{"run":"Scholomance","boss":"Instructor Malicia","percent":1.6,"label":"w","quest":null}]},{"id":19059,"name":"Argent Shoulders","slot":"shoulder","role":"alt","rank":2,"quality":3,"icon":"inv_shoulder_13","category":"crafted","text":"Tailoring (290)"},{"id":272411,"name":"Arcanoweave Cloak","slot":"back","role":"best","rank":1,"quality":3,"icon":"inv_misc_cape_18","category":"vendor","text":"Pix Xizzix"},{"id":13007,"name":"Mageflame Cloak","slot":"back","role":"alt","rank":1,"quality":3,"icon":"inv_misc_cape_18","category":"world","text":"World drop"},{"id":272415,"name":"Stalwart Cloak","slot":"back","role":"alt","rank":2,"quality":3,"icon":"inv_misc_cape_18","category":"vendor","text":"Pix Xizzix"},{"id":14152,"name":"Robe of the Archmage","slot":"chest","role":"best","rank":1,"quality":4,"icon":"inv_chest_cloth_38","category":"crafted","text":"Tailoring (295)"},{"id":280057,"name":"Robes of Dark Summons","slot":"chest","role":"alt","rank":1,"quality":3,"icon":"inv_chest_chain_15","runs":[{"run":"Blackmaw Hold","boss":"Impaan the Imprisoner","percent":31.5,"label":"w","quest":null}]},{"id":13314,"name":"Alanna's Embrace","slot":"chest","role":"alt","rank":2,"quality":4,"icon":"inv_chest_cloth_12","runs":[{"run":"Scholomance","boss":"Ras Frostwhisperer","percent":4.2,"label":"w","quest":null}]},{"id":18497,"name":"Sublime Wristguards","slot":"wrist","role":"best","rank":1,"quality":3,"icon":"inv_bracer_13","runs":[{"run":"Dire Maul: North","boss":"Guard Mol'dar","percent":4.8,"label":"w","quest":null},{"run":"Dire Maul: North","boss":"Guard Slip'kik","percent":4.9,"label":"w","quest":null}]},{"id":254065,"name":"Netherflame Cuffs","slot":"wrist","role":"alt","rank":1,"quality":3,"icon":"inv_bracer_07","category":"crafted","text":"Tailoring (205)"},{"id":254123,"name":"Runecloth Cuffs","slot":"wrist","role":"alt","rank":2,"quality":3,"icon":"inv_bracer_07","category":"crafted","text":"Tailoring (250)"},{"id":14146,"name":"Gloves of Spell Mastery","slot":"hands","role":"best","rank":1,"quality":4,"icon":"inv_gauntlets_06","category":"crafted","text":"Tailoring (295)"},{"id":226930,"name":"Sorcerer's Gauntlets","slot":"hands","role":"alt","rank":1,"quality":4,"icon":"inv_gauntlets_17","category":"vendor","text":"Deliana"},{"id":18408,"name":"Inferno Gloves","slot":"hands","role":"alt","rank":2,"quality":3,"icon":"inv_gauntlets_19","category":"crafted","text":"Tailoring (280)"},{"id":18405,"name":"Belt of the Archmage","slot":"waist","role":"best","rank":1,"quality":4,"icon":"inv_belt_31","category":"crafted","text":"Tailoring (295)"},{"id":11662,"name":"Ban'thok Sash","slot":"waist","role":"alt","rank":1,"quality":3,"icon":"inv_belt_29","runs":[{"run":"Blackrock Depths","boss":"Ok'thor the Breaker","percent":27.1,"label":"w","quest":null}]},{"id":272393,"name":"Magician's Cord","slot":"waist","role":"alt","rank":2,"quality":3,"icon":"inv_belt_13","category":"vendor","text":"Pix Xizzix"},{"id":13170,"name":"Skyshroud Leggings","slot":"legs","role":"best","rank":1,"quality":3,"icon":"inv_pants_13","runs":[{"run":"Lower Blackrock Spire","boss":"Highlord Omokk","percent":15.7,"label":"w","quest":null}]},{"id":14045,"name":"Cindercloth Pants","slot":"legs","role":"alt","rank":1,"quality":2,"icon":"inv_pants_06","category":"crafted","text":"Tailoring (235)"},{"id":14144,"name":"Ghostweave Pants","slot":"legs","role":"alt","rank":2,"quality":2,"icon":"inv_pants_01","category":"crafted","text":"Tailoring (245)"},{"id":226931,"name":"Sorcerer's Sandals","slot":"feet","role":"best","rank":1,"quality":4,"icon":"inv_boots_02","category":"vendor","text":"Deliana"},{"id":13369,"name":"Fire Striders","slot":"feet","role":"alt","rank":1,"quality":3,"icon":"inv_boots_05","runs":[{"run":"Stratholme: Living","boss":"Balnazzar","percent":21.3,"label":"w","quest":null}]},{"id":22064,"name":"Sorcerer's Boots","slot":"feet","role":"alt","rank":2,"quality":4,"icon":"inv_boots_02","category":"quest","text":"Anthion's Parting Words"},{"id":23237,"name":"Ring of the Eternal Flame","slot":"finger","role":"best","rank":1,"quality":4,"icon":"inv_jewelry_ring_48naxxramas","category":"world","text":"Monsters level 60-63"},{"id":272406,"name":"Channeler's Ring","slot":"finger","role":"best","rank":2,"quality":3,"icon":"inv_jewelry_ring_15","category":"vendor","text":"Pix Xizzix"},{"id":22339,"name":"Rune Band of Wizardry","slot":"finger","role":"alt","rank":1,"quality":3,"icon":"inv_jewelry_ring_35","runs":[{"run":"Upper Blackrock Spire","boss":"Lord Valthalak","percent":35.3,"label":"k","quest":null}]},{"id":272438,"name":"Weakness Analyzer","slot":"trinket","role":"best","rank":1,"quality":3,"icon":"inv_misc_gem_pearl_05","category":"vendor","text":"Pix Xizzix"},{"id":13213,"name":"Smolderweb's Eye","slot":"trinket","role":"best","rank":2,"quality":3,"icon":"inv_misc_gem_pearl_01","runs":[{"run":"Lower Blackrock Spire","boss":"Mother Smolderweb","percent":29.7,"label":"w","quest":null}]},{"id":20036,"name":"Fire Ruby","slot":"trinket","role":"alt","rank":1,"quality":3,"icon":"inv_misc_gem_bloodstone_02","category":"quest","text":"Destroy Morphaz"},{"id":22383,"name":"Sageblade","slot":"main","role":"best","rank":1,"quality":4,"icon":"inv_sword_51","category":"crafted","text":"Blacksmithing (300)"},{"id":287034,"name":"Grove Subjugator's Blade","slot":"main","role":"alt","rank":1,"quality":3,"icon":"inv_sword_27","category":"drop","text":"Swarming Imp"},{"id":271928,"name":"Clever Expeditionary's Spellblade","slot":"main","role":"alt","rank":2,"quality":3,"icon":"inv_sword_27","category":"vendor","text":""},{"id":18316,"name":"Obsidian Bauble","slot":"off","role":"best","rank":1,"quality":3,"icon":"inv_misc_orb_04","runs":[{"run":"Dire Maul: East","boss":"Pusillin","percent":24.4,"label":"w","quest":null}]},{"id":22329,"name":"Scepter of Interminable Focus","slot":"off","role":"alt","rank":1,"quality":3,"icon":"inv_wand_07","category":"drop","text":"Jarien"},{"id":11904,"name":"Spirit of Aquementas","slot":"off","role":"alt","rank":2,"quality":2,"icon":"inv_ore_arcanite_02","category":"quest","text":"It's Dangerous to Go Alone"},{"id":13938,"name":"Bonecreeper Stylus","slot":"ranged","role":"best","rank":1,"quality":3,"icon":"inv_misc_bone_taurenskull_01","runs":[{"run":"Scholomance","boss":"Darkmaster Gandling","percent":14,"label":"w","quest":null}]},{"id":11748,"name":"Pyric Caduceus","slot":"ranged","role":"alt","rank":1,"quality":3,"icon":"inv_staff_13","runs":[{"run":"Blackrock Depths","boss":"Pyromancer Loregrain","percent":23.1,"label":"w","quest":null}]},{"id":18761,"name":"Oblivion's Touch","slot":"ranged","role":"alt","rank":2,"quality":3,"icon":"inv_wand_12","runs":[{"run":"Scholomance","boss":"Death Knight Darkreaver","percent":37.1,"label":"w","quest":null}]}]},{"class":"PALADIN","spec":"Holy","pieces":[{"id":252561,"name":"Living Crown","slot":"head","role":"best","rank":1,"quality":3,"icon":"inv_helmet_03","category":"crafted","text":"Leatherworking (300)"},{"id":14140,"name":"Mooncloth Circlet","slot":"head","role":"alt","rank":1,"quality":3,"icon":"inv_misc_bandana_01","category":"crafted","text":"Tailoring (280)"},{"id":12633,"name":"Whitesoul Helm","slot":"head","role":"alt","rank":2,"quality":3,"icon":"inv_helmet_13","category":"crafted","text":"Blacksmithing (290)"},{"id":20685,"name":"Wavefront Necklace","slot":"neck","role":"best","rank":1,"quality":4,"icon":"inv_jewelry_necklace_21","category":"drop","text":"Lord Skwol"},{"id":18723,"name":"Animated Chain Necklace","slot":"neck","role":"alt","rank":1,"quality":3,"icon":"inv_jewelry_necklace_01","runs":[{"run":"Stratholme: Undead","boss":"Ramstein the Gorger","percent":15.2,"label":"w","quest":null}]},{"id":1443,"name":"Jeweled Amulet of Cainwyn","slot":"neck","role":"alt","rank":2,"quality":4,"icon":"inv_jewelry_amulet_01","category":"world","text":"World drop"},{"id":271957,"name":"Theramore Mantle","slot":"shoulder","role":"best","rank":1,"quality":3,"icon":"inv_shoulder_23","category":"vendor","text":""},{"id":12625,"name":"Dawnbringer Shoulders","slot":"shoulder","role":"alt","rank":1,"quality":3,"icon":"inv_shoulder_20","category":"crafted","text":"Blacksmithing (265)"},{"id":22234,"name":"Mantle of Lost Hope","slot":"shoulder","role":"alt","rank":2,"quality":3,"icon":"inv_shoulder_09","runs":[{"run":"Blackrock Depths","boss":"Lord Roccor","percent":21.1,"label":"w","quest":null}]},{"id":18510,"name":"Hide of the Wild","slot":"back","role":"best","rank":1,"quality":4,"icon":"inv_misc_cape_01","category":"crafted","text":"Leatherworking (300)"},{"id":272413,"name":"Drape of Recovery","slot":"back","role":"alt","rank":1,"quality":3,"icon":"inv_misc_cape_18","category":"vendor","text":"Pix Xizzix"},{"id":18389,"name":"Cloak of the Cosmos","slot":"back","role":"alt","rank":2,"quality":3,"icon":"inv_misc_cape_01","runs":[{"run":"Dire Maul: West","boss":"Immol'thar","percent":13.1,"label":"w","quest":null}]},{"id":10020,"name":"Stormcloth Vest","slot":"chest","role":"best","rank":1,"quality":2,"icon":"inv_chest_cloth_08","category":"crafted","text":"Tailoring (190)"},{"id":15047,"name":"Red Dragonscale Breastplate","slot":"chest","role":"alt","rank":1,"quality":3,"icon":"inv_chest_chain_06","category":"crafted","text":"Leatherworking (290)"},{"id":280013,"name":"Frostfang Mail Vest","slot":"chest","role":"alt","rank":2,"quality":3,"icon":"inv_chest_chain_15","runs":[{"run":"Shaper's Terrace","boss":"Izha'Rel and Tor'Rel","percent":25,"label":"w","quest":null}]},{"id":13969,"name":"Loomguard Armbraces","slot":"wrist","role":"best","rank":1,"quality":3,"icon":"inv_bracer_16","runs":[{"run":"Scholomance","boss":"Kirtonos","percent":18.4,"label":"w","quest":null}]},{"id":18525,"name":"Bracers of Prosperity","slot":"wrist","role":"alt","rank":1,"quality":3,"icon":"inv_bracer_12","runs":[{"run":"Dire Maul: North","boss":"King Gordok","percent":20.9,"label":"w","quest":null}]},{"id":250584,"name":"Prefect's Wristguards","slot":"wrist","role":"alt","rank":2,"quality":3,"icon":"inv_bracer_07","category":"crafted","text":"Blacksmithing (225)"},{"id":18409,"name":"Mooncloth Gloves","slot":"hands","role":"best","rank":1,"quality":3,"icon":"inv_gauntlets_17","category":"crafted","text":"Tailoring (280)"},{"id":250554,"name":"Prefect's Gloves","slot":"hands","role":"alt","rank":1,"quality":3,"icon":"inv_gauntlets_04","category":"crafted","text":"Blacksmithing (250)"},{"id":20296,"name":"Green Dragonscale Gauntlets","slot":"hands","role":"alt","rank":2,"quality":3,"icon":"inv_gauntlets_12","category":"crafted","text":"Leatherworking (275)"},{"id":14553,"name":"Sash of Mercy","slot":"waist","role":"best","rank":1,"quality":4,"icon":"inv_belt_09","category":"world","text":"World drop"},{"id":18327,"name":"Whipvine Cord","slot":"waist","role":"alt","rank":1,"quality":3,"icon":"inv_belt_17","runs":[{"run":"Dire Maul: East","boss":"Alzzin the Wildshaper","percent":16.1,"label":"w","quest":null}]},{"id":18391,"name":"Eyestalk Cord","slot":"waist","role":"alt","rank":2,"quality":3,"icon":"inv_belt_26","runs":[{"run":"Dire Maul: West","boss":"Immol'thar","percent":17.2,"label":"w","quest":null}]},{"id":250600,"name":"Martyr's Legplates","slot":"legs","role":"best","rank":1,"quality":3,"icon":"inv_pants_06","category":"crafted","text":"Blacksmithing (300)"},{"id":18386,"name":"Padre's Trousers","slot":"legs","role":"alt","rank":1,"quality":3,"icon":"inv_pants_06","runs":[{"run":"Dire Maul: West","boss":"Illyanna Ravenoak","percent":14.5,"label":"w","quest":null}]},{"id":12945,"name":"Legplates of the Chromatic Defier","slot":"legs","role":"alt","rank":2,"quality":4,"icon":"inv_pants_03","runs":[{"run":"Upper Blackrock Spire","boss":"","percent":0,"label":"k","quest":"Legplates of the Chromatic Defier"}]},{"id":13954,"name":"Verdant Footpads","slot":"feet","role":"best","rank":1,"quality":3,"icon":"inv_boots_08","runs":[{"run":"Stratholme: Undead","boss":"Stonespine","percent":26.5,"label":"w","quest":null}]},{"id":275609,"name":"Swarmtender's Footpads","slot":"feet","role":"alt","rank":1,"quality":3,"icon":"inv_boots_05","category":"crafted","text":"Tailoring (295)"},{"id":275621,"name":"Broodwatcher's Treaders","slot":"feet","role":"alt","rank":2,"quality":3,"icon":"inv_boots_05","category":"crafted","text":"Leatherworking (295)"},{"id":16058,"name":"Fordring's Seal","slot":"finger","role":"best","rank":1,"quality":3,"icon":"inv_jewelry_ring_19","category":"quest","text":"In Dreams"},{"id":275983,"name":"Warden's Signet of Resolve","slot":"finger","role":"best","rank":2,"quality":3,"icon":"inv_jewelry_ring_15","category":"reputation","text":"The Watchers, Exalted"},{"id":22334,"name":"Band of Mending","slot":"finger","role":"alt","rank":1,"quality":3,"icon":"inv_jewelry_ring_05","category":"drop","text":"Jarien"},{"id":18472,"name":"Royal Seal of Eldre'Thalas","slot":"trinket","role":"best","rank":1,"quality":3,"icon":"inv_jewelry_talisman_10","runs":[{"run":"Dire Maul","boss":"","percent":0,"label":"k","quest":"The Light and How To Swing It"}]},{"id":272439,"name":"Serenity Field","slot":"trinket","role":"best","rank":2,"quality":3,"icon":"inv_misc_gem_pearl_05","category":"vendor","text":"Pix Xizzix"},{"id":11302,"name":"Uther's Strength","slot":"trinket","role":"alt","rank":1,"quality":3,"icon":"inv_jewelry_talisman_06","category":"world","text":"World drop"},{"id":276404,"name":"Masterwork Crimson Hammer","slot":"main","role":"best","rank":1,"quality":3,"icon":"inv_sword_27","runs":[{"run":"Stratholme","boss":"","percent":0,"label":"c","quest":null}]},{"id":2243,"name":"Hand of Edward the Odd","slot":"main","role":"alt","rank":1,"quality":4,"icon":"inv_mace_14","category":"world","text":"World drop"},{"id":22383,"name":"Sageblade","slot":"main","role":"alt","rank":2,"quality":4,"icon":"inv_sword_51","category":"crafted","text":"Blacksmithing (300)"},{"id":279262,"name":"Evergreen Shield","slot":"off","role":"best","rank":1,"quality":3,"icon":"inv_shield_06","category":"crafted","text":"Blacksmithing (300)"},{"id":15805,"name":"Penelope's Rose","slot":"off","role":"alt","rank":1,"quality":3,"icon":"inv_misc_flower_04","runs":[{"run":"Scholomance","boss":"","percent":0,"label":"k","quest":"Kirtonos the Herald"}]},{"id":18523,"name":"Brightly Glowing Stone","slot":"off","role":"alt","rank":2,"quality":3,"icon":"inv_misc_orb_01","runs":[{"run":"Dire Maul: North","boss":"King Gordok","percent":26.9,"label":"w","quest":null}]}]},{"class":"PRIEST","spec":"Discipline","pieces":[{"id":14140,"name":"Mooncloth Circlet","slot":"head","role":"best","rank":1,"quality":3,"icon":"inv_misc_bandana_01","category":"crafted","text":"Tailoring (280)"},{"id":13102,"name":"Cassandra's Grace","slot":"head","role":"alt","rank":1,"quality":3,"icon":"inv_jewelry_ring_03","category":"container","text":"Emerald Encrusted Chest"},{"id":254137,"name":"Earthenweave Crown","slot":"head","role":"alt","rank":2,"quality":3,"icon":"inv_helmet_03","category":"crafted","text":"Tailoring (260)"},{"id":20685,"name":"Wavefront Necklace","slot":"neck","role":"best","rank":1,"quality":4,"icon":"inv_jewelry_necklace_21","category":"drop","text":"Lord Skwol"},{"id":18723,"name":"Animated Chain Necklace","slot":"neck","role":"alt","rank":1,"quality":3,"icon":"inv_jewelry_necklace_01","runs":[{"run":"Stratholme: Undead","boss":"Ramstein the Gorger","percent":15.2,"label":"w","quest":null}]},{"id":1443,"name":"Jeweled Amulet of Cainwyn","slot":"neck","role":"alt","rank":2,"quality":4,"icon":"inv_jewelry_amulet_01","category":"world","text":"World drop"},{"id":14139,"name":"Mooncloth Shoulders","slot":"shoulder","role":"best","rank":1,"quality":3,"icon":"inv_shoulder_02","category":"crafted","text":"Tailoring (275)"},{"id":22234,"name":"Mantle of Lost Hope","slot":"shoulder","role":"alt","rank":1,"quality":3,"icon":"inv_shoulder_09","runs":[{"run":"Blackrock Depths","boss":"Lord Roccor","percent":21.1,"label":"w","quest":null}]},{"id":254049,"name":"Nethergeld Shoulders","slot":"shoulder","role":"alt","rank":2,"quality":3,"icon":"inv_shoulder_23","category":"crafted","text":"Tailoring (195)"},{"id":18510,"name":"Hide of the Wild","slot":"back","role":"best","rank":1,"quality":4,"icon":"inv_misc_cape_01","category":"crafted","text":"Leatherworking (300)"},{"id":272413,"name":"Drape of Recovery","slot":"back","role":"alt","rank":1,"quality":3,"icon":"inv_misc_cape_18","category":"vendor","text":"Pix Xizzix"},{"id":18389,"name":"Cloak of the Cosmos","slot":"back","role":"alt","rank":2,"quality":3,"icon":"inv_misc_cape_01","runs":[{"run":"Dire Maul: West","boss":"Immol'thar","percent":13.1,"label":"w","quest":null}]},{"id":14154,"name":"Truefaith Vestments","slot":"chest","role":"best","rank":1,"quality":4,"icon":"inv_chest_cloth_31","category":"crafted","text":"Tailoring (295)"},{"id":10020,"name":"Stormcloth Vest","slot":"chest","role":"alt","rank":1,"quality":2,"icon":"inv_chest_cloth_08","category":"crafted","text":"Tailoring (190)"},{"id":13346,"name":"Robes of the Exalted","slot":"chest","role":"alt","rank":2,"quality":3,"icon":"inv_chest_cloth_08","runs":[{"run":"Stratholme: Undead","boss":"Baron Rivendare","percent":15.8,"label":"w","quest":null}]},{"id":254061,"name":"Nethergeld Cuffs","slot":"wrist","role":"best","rank":1,"quality":3,"icon":"inv_bracer_07","category":"crafted","text":"Tailoring (205)"},{"id":13958,"name":"Wyrmthalak's Shackles","slot":"wrist","role":"alt","rank":1,"quality":3,"icon":"inv_bracer_04","runs":[{"run":"Lower Blackrock Spire","boss":"","percent":0,"label":"k","quest":"Warlord's Command"}]},{"id":254131,"name":"Earthenweave Cuffs","slot":"wrist","role":"alt","rank":2,"quality":3,"icon":"inv_bracer_07","category":"crafted","text":"Tailoring (255)"},{"id":20717,"name":"Desert Bloom Gloves","slot":"hands","role":"best","rank":1,"quality":3,"icon":"inv_gauntlets_17","category":"quest","text":"Armaments of War"},{"id":12554,"name":"Hands of the Exalted Herald","slot":"hands","role":"alt","rank":1,"quality":3,"icon":"inv_gauntlets_32","runs":[{"run":"Blackrock Depths","boss":"Princess Moira Bronzebeard","percent":14.8,"label":"w","quest":null}]},{"id":18409,"name":"Mooncloth Gloves","slot":"hands","role":"alt","rank":2,"quality":3,"icon":"inv_gauntlets_17","category":"crafted","text":"Tailoring (280)"},{"id":18327,"name":"Whipvine Cord","slot":"waist","role":"best","rank":1,"quality":3,"icon":"inv_belt_17","runs":[{"run":"Dire Maul: East","boss":"Alzzin the Wildshaper","percent":16.1,"label":"w","quest":null}]},{"id":19047,"name":"Wisdom of the Timbermaw","slot":"waist","role":"alt","rank":1,"quality":3,"icon":"inv_belt_09","category":"crafted","text":"Tailoring (255)"},{"id":18405,"name":"Belt of the Archmage","slot":"waist","role":"alt","rank":2,"quality":4,"icon":"inv_belt_31","category":"crafted","text":"Tailoring (295)"},{"id":18386,"name":"Padre's Trousers","slot":"legs","role":"best","rank":1,"quality":3,"icon":"inv_pants_06","runs":[{"run":"Dire Maul: West","boss":"Illyanna Ravenoak","percent":14.5,"label":"w","quest":null}]},{"id":11841,"name":"Senior Designer's Pantaloons","slot":"legs","role":"alt","rank":1,"quality":3,"icon":"inv_pants_09","runs":[{"run":"Blackrock Depths","boss":"Fineous Darkvire","percent":25.8,"label":"w","quest":null}]},{"id":16694,"name":"Devout Skirt","slot":"legs","role":"alt","rank":2,"quality":3,"icon":"inv_pants_08","runs":[{"run":"Stratholme: Undead","boss":"Baron Rivendare","percent":7.9,"label":"w","quest":null}]},{"id":275609,"name":"Swarmtender's Footpads","slot":"feet","role":"best","rank":1,"quality":3,"icon":"inv_boots_05","category":"crafted","text":"Tailoring (295)"},{"id":13282,"name":"Ogreseer Tower Boots","slot":"feet","role":"alt","rank":1,"quality":3,"icon":"inv_boots_05","runs":[{"run":"Lower Blackrock Spire","boss":"Spirestone Lord Magus","percent":39.3,"label":"w","quest":null}]},{"id":18507,"name":"Boots of the Full Moon","slot":"feet","role":"alt","rank":2,"quality":3,"icon":"inv_boots_05","runs":[{"run":"Dire Maul: North","boss":"Captain Kromcrush","percent":24.6,"label":"w","quest":null}]},{"id":275983,"name":"Warden's Signet of Resolve","slot":"finger","role":"best","rank":1,"quality":3,"icon":"inv_jewelry_ring_15","category":"reputation","text":"The Watchers, Exalted"},{"id":16058,"name":"Fordring's Seal","slot":"finger","role":"best","rank":2,"quality":3,"icon":"inv_jewelry_ring_19","category":"quest","text":"In Dreams"},{"id":275979,"name":"Watcher's Signet of Resolve","slot":"finger","role":"alt","rank":1,"quality":3,"icon":"inv_jewelry_ring_15","category":"reputation","text":"The Watchers, Revered"},{"id":18469,"name":"Royal Seal of Eldre'Thalas","slot":"trinket","role":"best","rank":1,"quality":3,"icon":"inv_jewelry_talisman_10","runs":[{"run":"Dire Maul","boss":"","percent":0,"label":"k","quest":"Holy Bologna: What the Light Won't Tell You"}]},{"id":272439,"name":"Serenity Field","slot":"trinket","role":"best","rank":2,"quality":3,"icon":"inv_misc_gem_pearl_05","category":"vendor","text":"Pix Xizzix"},{"id":11302,"name":"Uther's Strength","slot":"trinket","role":"alt","rank":1,"quality":3,"icon":"inv_jewelry_talisman_06","category":"world","text":"World drop"},{"id":13360,"name":"Gift of the Elven Magi","slot":"main","role":"best","rank":1,"quality":3,"icon":"inv_weapon_shortblade_15","runs":[{"run":"Stratholme: Living","boss":"Balnazzar","percent":19.8,"label":"w","quest":null}]},{"id":18491,"name":"Lorespinner","slot":"main","role":"alt","rank":1,"quality":3,"icon":"inv_weapon_shortblade_21","runs":[{"run":"Dire Maul: East","boss":"","percent":0,"label":"k","quest":"Lethtendris's Web"}]},{"id":276404,"name":"Masterwork Crimson Hammer","slot":"main","role":"alt","rank":2,"quality":3,"icon":"inv_sword_27","runs":[{"run":"Stratholme","boss":"","percent":0,"label":"c","quest":null}]},{"id":15805,"name":"Penelope's Rose","slot":"off","role":"best","rank":1,"quality":3,"icon":"inv_misc_flower_04","runs":[{"run":"Scholomance","boss":"","percent":0,"label":"k","quest":"Kirtonos the Herald"}]},{"id":11928,"name":"Thaurissan's Royal Scepter","slot":"off","role":"alt","rank":1,"quality":3,"icon":"inv_mace_13","runs":[{"run":"Blackrock Depths","boss":"Emperor Dagran Thaurissan","percent":23,"label":"w","quest":null}]},{"id":18523,"name":"Brightly Glowing Stone","slot":"off","role":"alt","rank":2,"quality":3,"icon":"inv_misc_orb_01","runs":[{"run":"Dire Maul: North","boss":"King Gordok","percent":26.9,"label":"w","quest":null}]},{"id":279246,"name":"Torch of Light","slot":"ranged","role":"best","rank":1,"quality":3,"icon":"inv_weapon_bow_08","category":"crafted","text":"Enchanting (300)"},{"id":22254,"name":"Wand of Eternal Light","slot":"ranged","role":"alt","rank":1,"quality":3,"icon":"inv_wand_02","runs":[{"run":"Blackrock Depths","boss":"Warbringer Construct","percent":0.09,"label":"k","quest":null}]},{"id":13938,"name":"Bonecreeper Stylus","slot":"ranged","role":"alt","rank":2,"quality":3,"icon":"inv_misc_bone_taurenskull_01","runs":[{"run":"Scholomance","boss":"Darkmaster Gandling","percent":14,"label":"w","quest":null}]}]},{"class":"ROGUE","spec":"Combat","pieces":[{"id":279253,"name":"Outlaw's Collar","slot":"head","role":"best","rank":1,"quality":3,"icon":"inv_helmet_03","category":"crafted","text":"Leatherworking (300)"},{"id":22005,"name":"Darkmantle Cap","slot":"head","role":"alt","rank":1,"quality":4,"icon":"inv_helmet_41","category":"quest","text":"Saving the Best for Last"},{"id":13404,"name":"Mask of the Unforgiven","slot":"head","role":"alt","rank":2,"quality":3,"icon":"inv_misc_bandana_01","runs":[{"run":"Stratholme: Living","boss":"The Unforgiven","percent":18.8,"label":"w","quest":null}]},{"id":15411,"name":"Mark of Fordring","slot":"neck","role":"best","rank":1,"quality":3,"icon":"inv_jewelry_talisman_07","category":"quest","text":"In Dreams"},{"id":19491,"name":"Amulet of the Darkmoon","slot":"neck","role":"alt","rank":1,"quality":4,"icon":"inv_jewelry_necklace_14","category":"vendor","text":"Gelvas Grimegate"},{"id":22150,"name":"Beads of Ogre Might","slot":"neck","role":"alt","rank":2,"quality":3,"icon":"inv_jewelry_amulet_05","runs":[{"run":"Dire Maul: North","boss":"","percent":0,"label":"k","quest":"Falrin's Vendetta"}]},{"id":15058,"name":"Stormshroud Shoulders","slot":"shoulder","role":"best","rank":1,"quality":3,"icon":"inv_shoulder_05","category":"crafted","text":"Leatherworking (270)"},{"id":271955,"name":"Theramore Pauldrons","slot":"shoulder","role":"alt","rank":1,"quality":3,"icon":"inv_shoulder_23","category":"vendor","text":""},{"id":12927,"name":"Truestrike Shoulders","slot":"shoulder","role":"alt","rank":2,"quality":3,"icon":"inv_shoulder_10","runs":[{"run":"Upper Blackrock Spire","boss":"Pyroguard Emberseer","percent":15.6,"label":"w","quest":null}]},{"id":13340,"name":"Cape of the Black Baron","slot":"back","role":"best","rank":1,"quality":3,"icon":"inv_misc_cape_20","runs":[{"run":"Stratholme: Undead","boss":"Baron Rivendare","percent":11.7,"label":"w","quest":null}]},{"id":272414,"name":"Howler's Furs","slot":"back","role":"alt","rank":1,"quality":3,"icon":"inv_misc_cape_18","category":"vendor","text":"Pix Xizzix"},{"id":18511,"name":"Shifting Cloak","slot":"back","role":"alt","rank":2,"quality":4,"icon":"inv_misc_cape_20","category":"crafted","text":"Leatherworking (300)"},{"id":252483,"name":"Dawn Armor","slot":"chest","role":"best","rank":1,"quality":3,"icon":"inv_chest_chain_15","category":"crafted","text":"Leatherworking (300)"},{"id":22009,"name":"Darkmantle Tunic","slot":"chest","role":"alt","rank":1,"quality":4,"icon":"inv_chest_leather_07","category":"quest","text":"Saving the Best for Last"},{"id":252484,"name":"Timbermaw Tunic","slot":"chest","role":"alt","rank":2,"quality":3,"icon":"inv_chest_chain_15","category":"crafted","text":"Leatherworking (300)"},{"id":18375,"name":"Bracers of the Eclipse","slot":"wrist","role":"best","rank":1,"quality":3,"icon":"inv_bracer_07","runs":[{"run":"Dire Maul: West","boss":"Prince Tortheldrin","percent":20.2,"label":"w","quest":null}]},{"id":22004,"name":"Darkmantle Bracers","slot":"wrist","role":"alt","rank":1,"quality":3,"icon":"inv_bracer_07","category":"quest","text":"An Earnest Proposition"},{"id":13120,"name":"Deepfury Bracers","slot":"wrist","role":"alt","rank":2,"quality":3,"icon":"inv_bracer_07","category":"world","text":"World drop"},{"id":21278,"name":"Stormshroud Gloves","slot":"hands","role":"best","rank":1,"quality":3,"icon":"inv_gauntlets_05","category":"crafted","text":"Leatherworking (290)"},{"id":271948,"name":"Theramore Gloves","slot":"hands","role":"alt","rank":1,"quality":3,"icon":"inv_gauntlets_04","category":"vendor","text":""},{"id":22006,"name":"Darkmantle Gloves","slot":"hands","role":"alt","rank":2,"quality":4,"icon":"inv_gauntlets_24","category":"quest","text":"Just Compensation"},{"id":272395,"name":"Assassin's Waistguard","slot":"waist","role":"best","rank":1,"quality":3,"icon":"inv_belt_13","category":"vendor","text":"Pix Xizzix"},{"id":19044,"name":"Might of the Timbermaw","slot":"waist","role":"alt","rank":1,"quality":3,"icon":"inv_belt_09","category":"crafted","text":"Leatherworking (265)"},{"id":22002,"name":"Darkmantle Belt","slot":"waist","role":"alt","rank":2,"quality":3,"icon":"inv_belt_03","category":"quest","text":"Just Compensation"},{"id":15057,"name":"Stormshroud Pants","slot":"legs","role":"best","rank":1,"quality":3,"icon":"inv_pants_09","category":"crafted","text":"Leatherworking (250)"},{"id":18736,"name":"Plaguehound Leggings","slot":"legs","role":"alt","rank":1,"quality":3,"icon":"inv_pants_12","category":"world","text":"World drop"},{"id":15062,"name":"Devilsaur Leggings","slot":"legs","role":"alt","rank":2,"quality":3,"icon":"inv_pants_wolf","category":"crafted","text":"Leatherworking (290)"},{"id":226831,"name":"Darkmantle Footpads","slot":"feet","role":"best","rank":1,"quality":4,"icon":"inv_boots_08","category":"vendor","text":"Deliana"},{"id":20715,"name":"Dunestalker's Boots","slot":"feet","role":"alt","rank":1,"quality":3,"icon":"inv_boots_08","category":"quest","text":"Armaments of War"},{"id":12553,"name":"Swiftwalker Boots","slot":"feet","role":"alt","rank":2,"quality":3,"icon":"inv_boots_02","runs":[{"run":"Blackrock Depths","boss":"Princess Moira Bronzebeard","percent":22.2,"label":"w","quest":null}]},{"id":275981,"name":"Warden's Signet of Ferocity","slot":"finger","role":"best","rank":1,"quality":3,"icon":"inv_jewelry_ring_15","category":"reputation","text":"The Watchers, Exalted"},{"id":272408,"name":"Cutthroat's Signet","slot":"finger","role":"best","rank":2,"quality":3,"icon":"inv_jewelry_ring_15","category":"vendor","text":"Pix Xizzix"},{"id":275976,"name":"Watcher's Signet of Ferocity","slot":"finger","role":"alt","rank":1,"quality":3,"icon":"inv_jewelry_ring_15","category":"reputation","text":"The Watchers, Revered"},{"id":11815,"name":"Hand of Justice","slot":"trinket","role":"best","rank":1,"quality":3,"icon":"inv_jewelry_talisman_01","runs":[{"run":"Blackrock Depths","boss":"Emperor Dagran Thaurissan","percent":19.2,"label":"w","quest":null}]},{"id":280065,"name":"Behemoth Bones","slot":"trinket","role":"best","rank":2,"quality":3,"icon":"inv_misc_gem_pearl_05","runs":[{"run":"Blackmaw Hold","boss":"Blackmaw Behemoth","percent":34.9,"label":"w","quest":null}]},{"id":272437,"name":"Adaptive Combat Assistant","slot":"trinket","role":"alt","rank":1,"quality":3,"icon":"inv_misc_gem_pearl_05","category":"vendor","text":"Pix Xizzix"},{"id":6622,"name":"Sword of Zeal","slot":"main","role":"best","rank":1,"quality":3,"icon":"inv_sword_39","category":"world","text":"World drop"},{"id":1728,"name":"Teebu's Blazing Longsword","slot":"main","role":"alt","rank":1,"quality":4,"icon":"inv_sword_22","category":"container","text":"Heavy Junkbox"},{"id":279259,"name":"Ironwood Blade","slot":"main","role":"alt","rank":2,"quality":3,"icon":"inv_sword_27","category":"crafted","text":"Blacksmithing (300)"},{"id":13204,"name":"Bashguuder","slot":"off","role":"best","rank":1,"quality":3,"icon":"inv_mace_15","runs":[{"run":"Lower Blackrock Spire","boss":"Ghok Bashguud","percent":37.5,"label":"w","quest":null}]},{"id":14555,"name":"Alcor's Sunrazor","slot":"off","role":"alt","rank":1,"quality":4,"icon":"inv_sword_34","category":"container","text":"Heavy Junkbox"},{"id":13368,"name":"Bonescraper","slot":"off","role":"alt","rank":2,"quality":3,"icon":"inv_weapon_shortblade_12","runs":[{"run":"Stratholme: Undead","boss":"Baron Rivendare","percent":11.3,"label":"w","quest":null}]},{"id":12651,"name":"Blackcrow","slot":"ranged","role":"best","rank":1,"quality":3,"icon":"inv_weapon_crossbow_04","runs":[{"run":"Lower Blackrock Spire","boss":"Shadow Hunter Vosh'gajin","percent":11.5,"label":"w","quest":null}]},{"id":280020,"name":"Deep Jungle Rifle","slot":"ranged","role":"alt","rank":1,"quality":3,"icon":"inv_weapon_bow_08","runs":[{"run":"Shaper's Terrace","boss":"Thunderhoof","percent":35.3,"label":"w","quest":null}]},{"id":18323,"name":"Satyr's Bow","slot":"ranged","role":"alt","rank":2,"quality":3,"icon":"inv_weapon_bow_03","runs":[{"run":"Dire Maul: East","boss":"Zevrim Thornhoof","percent":14.5,"label":"w","quest":null}]}]},{"class":"HUNTER","spec":"Marksmanship","pieces":[{"id":279253,"name":"Outlaw's Collar","slot":"head","role":"best","rank":1,"quality":3,"icon":"inv_helmet_03","category":"crafted","text":"Leatherworking (300)"},{"id":252605,"name":"Black Dragonscale Helm","slot":"head","role":"alt","rank":1,"quality":3,"icon":"inv_helmet_03","category":"crafted","text":"Leatherworking (300)"},{"id":13404,"name":"Mask of the Unforgiven","slot":"head","role":"alt","rank":2,"quality":3,"icon":"inv_misc_bandana_01","runs":[{"run":"Stratholme: Living","boss":"The Unforgiven","percent":18.8,"label":"w","quest":null}]},{"id":22340,"name":"Pendant of Celerity","slot":"neck","role":"best","rank":1,"quality":3,"icon":"inv_jewelry_necklace_04","runs":[{"run":"Upper Blackrock Spire","boss":"Lord Valthalak","percent":36.96,"label":"k","quest":null}]},{"id":19491,"name":"Amulet of the Darkmoon","slot":"neck","role":"alt","rank":1,"quality":4,"icon":"inv_jewelry_necklace_14","category":"vendor","text":"Gelvas Grimegate"},{"id":12103,"name":"Star of Mystaria","slot":"neck","role":"alt","rank":2,"quality":3,"icon":"inv_jewelry_talisman_08","runs":[{"run":"Stratholme: Living","boss":"Balnazzar","percent":17.5,"label":"w","quest":null}]},{"id":271955,"name":"Theramore Pauldrons","slot":"shoulder","role":"best","rank":1,"quality":3,"icon":"inv_shoulder_23","category":"vendor","text":""},{"id":271956,"name":"Theramore Epaulets","slot":"shoulder","role":"alt","rank":1,"quality":3,"icon":"inv_shoulder_23","category":"vendor","text":""},{"id":16708,"name":"Shadowcraft Spaulders","slot":"shoulder","role":"alt","rank":2,"quality":3,"icon":"inv_shoulder_07","runs":[{"run":"Stratholme: Living","boss":"Cannon Master Willey","percent":21.9,"label":"w","quest":null}]},{"id":18511,"name":"Shifting Cloak","slot":"back","role":"best","rank":1,"quality":4,"icon":"inv_misc_cape_20","category":"crafted","text":"Leatherworking (300)"},{"id":22269,"name":"Shadow Prowler's Cloak","slot":"back","role":"alt","rank":1,"quality":3,"icon":"inv_misc_cape_20","runs":[{"run":"Upper Blackrock Spire","boss":"General Drakkisath","percent":24.4,"label":"w","quest":null}]},{"id":284866,"name":"Windserpent Scaled Cloak","slot":"back","role":"alt","rank":2,"quality":3,"icon":"inv_misc_cape_18","category":"rare","text":"Arash-ethis"},{"id":252483,"name":"Dawn Armor","slot":"chest","role":"best","rank":1,"quality":3,"icon":"inv_chest_chain_15","category":"crafted","text":"Leatherworking (300)"},{"id":22060,"name":"Beastmaster's Tunic","slot":"chest","role":"alt","rank":1,"quality":4,"icon":"inv_chest_chain_03","category":"quest","text":"Saving the Best for Last"},{"id":1981,"name":"Icemail Jerkin","slot":"chest","role":"alt","rank":2,"quality":4,"icon":"inv_chest_plate06","category":"drop","text":"Cinderscale Warrior"},{"id":18508,"name":"Swift Flight Bracers","slot":"wrist","role":"best","rank":1,"quality":3,"icon":"inv_bracer_05","category":"crafted","text":"Leatherworking (290)"},{"id":13211,"name":"Slashclaw Bracers","slot":"wrist","role":"alt","rank":1,"quality":3,"icon":"inv_bracer_07","runs":[{"run":"Lower Blackrock Spire","boss":"Halycon","percent":24.3,"label":"w","quest":null}]},{"id":274599,"name":"Oathbound Bracers","slot":"wrist","role":"alt","rank":2,"quality":3,"icon":"inv_bracer_07","runs":[{"run":"The Drowned City","boss":"Zul'Alai","percent":34.2,"label":"w","quest":null}]},{"id":13963,"name":"Voone's Vice Grips","slot":"hands","role":"best","rank":1,"quality":3,"icon":"inv_gauntlets_15","runs":[{"run":"Lower Blackrock Spire","boss":"","percent":0,"label":"k","quest":"Warlord's Command"}]},{"id":271948,"name":"Theramore Gloves","slot":"hands","role":"alt","rank":1,"quality":3,"icon":"inv_gauntlets_04","category":"vendor","text":""},{"id":18349,"name":"Gauntlets of Accuracy","slot":"hands","role":"alt","rank":2,"quality":2,"icon":"inv_gauntlets_12","runs":[{"run":"Dire Maul: West","boss":"Illyanna Ravenoak","percent":21.7,"label":"w","quest":null}]},{"id":22232,"name":"Marksman's Girdle","slot":"waist","role":"best","rank":1,"quality":3,"icon":"inv_belt_18","runs":[{"run":"Lower Blackrock Spire","boss":"Urok Doomhowl","percent":28.1,"label":"w","quest":null}]},{"id":18393,"name":"Warpwood Binding","slot":"waist","role":"alt","rank":1,"quality":3,"icon":"inv_belt_34","runs":[{"run":"Dire Maul: West","boss":"Tendris Warpwood","percent":25.1,"label":"w","quest":null}]},{"id":272397,"name":"Ranger's Belt","slot":"waist","role":"alt","rank":2,"quality":3,"icon":"inv_belt_13","category":"vendor","text":"Pix Xizzix"},{"id":18736,"name":"Plaguehound Leggings","slot":"legs","role":"best","rank":1,"quality":3,"icon":"inv_pants_12","category":"world","text":"World drop"},{"id":12903,"name":"Legguards of the Chromatic Defier","slot":"legs","role":"alt","rank":1,"quality":4,"icon":"inv_pants_03","runs":[{"run":"Upper Blackrock Spire","boss":"","percent":0,"label":"k","quest":"Legplates of the Chromatic Defier"}]},{"id":276746,"name":"Defias Enforcer's Legguards","slot":"legs","role":"alt","rank":2,"quality":3,"icon":"inv_pants_06","runs":[{"run":"Alcaz Prison","boss":"Blazeroar","percent":33.8,"label":"w","quest":null}]},{"id":13967,"name":"Windreaver Greaves","slot":"feet","role":"best","rank":1,"quality":3,"icon":"inv_boots_plate_04","runs":[{"run":"Scholomance","boss":"Kirtonos","percent":18.4,"label":"w","quest":null}]},{"id":226881,"name":"Beastmaster's Treads","slot":"feet","role":"alt","rank":1,"quality":4,"icon":"inv_boots_plate_07","category":"vendor","text":"Deliana"},{"id":16711,"name":"Shadowcraft Boots","slot":"feet","role":"alt","rank":2,"quality":3,"icon":"inv_boots_08","runs":[{"run":"Scholomance","boss":"Rattlegore","percent":16.1,"label":"w","quest":null}]},{"id":272408,"name":"Cutthroat's Signet","slot":"finger","role":"best","rank":1,"quality":3,"icon":"inv_jewelry_ring_15","category":"vendor","text":"Pix Xizzix"},{"id":18500,"name":"Tarnished Elven Ring","slot":"finger","role":"best","rank":2,"quality":3,"icon":"inv_jewelry_ring_13","category":"chest","text":"Gordok Tribute"},{"id":18701,"name":"Innervating Band","slot":"finger","role":"alt","rank":1,"quality":3,"icon":"inv_jewelry_ring_24","category":"world","text":"World drop"},{"id":13213,"name":"Smolderweb's Eye","slot":"trinket","role":"best","rank":1,"quality":3,"icon":"inv_misc_gem_pearl_01","runs":[{"run":"Lower Blackrock Spire","boss":"Mother Smolderweb","percent":29.7,"label":"w","quest":null}]},{"id":249469,"name":"Frozen Heart of the Mountain","slot":"trinket","role":"best","rank":2,"quality":3,"icon":"inv_misc_gem_pearl_05","category":"crafted","text":"Enchanting (265)"},{"id":18473,"name":"Royal Seal of Eldre'Thalas","slot":"trinket","role":"alt","rank":1,"quality":3,"icon":"inv_jewelry_talisman_10","runs":[{"run":"Dire Maul","boss":"","percent":0,"label":"k","quest":"The Greatest Race of Hunters"}]},{"id":279910,"name":"Beastslayer's Trident","slot":"main","role":"best","rank":1,"quality":3,"icon":"inv_sword_27","category":"quest","text":"Mapping the Way Forward"},{"id":13052,"name":"Warmonger","slot":"main","role":"alt","rank":1,"quality":3,"icon":"inv_sword_46","category":"container","text":"Mithril Lockbox"},{"id":280056,"name":"Flameslash Crescent","slot":"main","role":"alt","rank":2,"quality":3,"icon":"inv_sword_27","runs":[{"run":"Blackmaw Hold","boss":"Impaan the Imprisoner","percent":34.7,"label":"w","quest":null}]},{"id":279273,"name":"Hyper Deluxe Sniper Rifle Mk XVII","slot":"ranged","role":"best","rank":1,"quality":3,"icon":"inv_weapon_bow_08","category":"crafted","text":"Engineering (300)"},{"id":13023,"name":"Eaglehorn Long Bow","slot":"ranged","role":"alt","rank":1,"quality":3,"icon":"inv_weapon_bow_11","category":"world","text":"World drop"},{"id":19107,"name":"Bloodseeker","slot":"ranged","role":"alt","rank":2,"quality":3,"icon":"inv_weapon_crossbow_07","category":"quest","text":"The Legend of Korrak"}]},{"class":"DRUID","spec":"Feral Combat","pieces":[{"id":279253,"name":"Outlaw's Collar","slot":"head","role":"best","rank":1,"quality":3,"icon":"inv_helmet_03","category":"crafted","text":"Leatherworking (300)"},{"id":252485,"name":"Warbear Helm","slot":"head","role":"alt","rank":1,"quality":3,"icon":"inv_helmet_03","category":"crafted","text":"Leatherworking (300)"},{"id":14539,"name":"Bone Ring Helm","slot":"head","role":"alt","rank":2,"quality":3,"icon":"inv_helmet_14","runs":[{"run":"Scholomance","boss":"Rattlegore","percent":11,"label":"w","quest":null}]},{"id":19491,"name":"Amulet of the Darkmoon","slot":"neck","role":"best","rank":1,"quality":4,"icon":"inv_jewelry_necklace_14","category":"vendor","text":"Gelvas Grimegate"},{"id":13177,"name":"Talisman of Evasion","slot":"neck","role":"alt","rank":1,"quality":3,"icon":"inv_jewelry_amulet_04","runs":[{"run":"Lower Blackrock Spire","boss":"War Master Voone","percent":16.8,"label":"w","quest":null}]},{"id":11755,"name":"Verek's Collar","slot":"neck","role":"alt","rank":2,"quality":3,"icon":"inv_misc_bandage_14","runs":[{"run":"Blackrock Depths","boss":"Verek","percent":26.92,"label":"w","quest":null}]},{"id":226798,"name":"Feralheart Pauldrons","slot":"shoulder","role":"best","rank":1,"quality":3,"icon":"inv_shoulder_01","category":"vendor","text":"Deliana"},{"id":271955,"name":"Theramore Pauldrons","slot":"shoulder","role":"alt","rank":1,"quality":3,"icon":"inv_shoulder_23","category":"vendor","text":""},{"id":19058,"name":"Golden Mantle of the Dawn","slot":"shoulder","role":"alt","rank":2,"quality":3,"icon":"inv_shoulder_26","category":"crafted","text":"Leatherworking (295)"},{"id":18511,"name":"Shifting Cloak","slot":"back","role":"best","rank":1,"quality":4,"icon":"inv_misc_cape_20","category":"crafted","text":"Leatherworking (300)"},{"id":272415,"name":"Stalwart Cloak","slot":"back","role":"alt","rank":1,"quality":3,"icon":"inv_misc_cape_18","category":"vendor","text":"Pix Xizzix"},{"id":13397,"name":"Stoneskin Gargoyle Cape","slot":"back","role":"alt","rank":2,"quality":3,"icon":"inv_misc_cape_19","runs":[{"run":"Stratholme: Undead","boss":"Stonespine","percent":38.8,"label":"w","quest":null}]},{"id":252483,"name":"Dawn Armor","slot":"chest","role":"best","rank":1,"quality":3,"icon":"inv_chest_chain_15","category":"crafted","text":"Leatherworking (300)"},{"id":15064,"name":"Warbear Harness","slot":"chest","role":"alt","rank":1,"quality":3,"icon":"inv_chest_leather_04","category":"crafted","text":"Leatherworking (250)"},{"id":13378,"name":"Songbird Blouse","slot":"chest","role":"alt","rank":2,"quality":3,"icon":"inv_chest_cloth_38","runs":[{"run":"Stratholme: Living","boss":"Hearthsinger Forresten","percent":19.2,"label":"w","quest":null}]},{"id":226796,"name":"Feralheart Wristguards","slot":"wrist","role":"best","rank":1,"quality":3,"icon":"inv_bracer_09","category":"vendor","text":"Deliana"},{"id":18375,"name":"Bracers of the Eclipse","slot":"wrist","role":"alt","rank":1,"quality":3,"icon":"inv_bracer_07","runs":[{"run":"Dire Maul: West","boss":"Prince Tortheldrin","percent":20.2,"label":"w","quest":null}]},{"id":252541,"name":"Warden's Leather Bracers","slot":"wrist","role":"alt","rank":2,"quality":3,"icon":"inv_bracer_07","category":"crafted","text":"Leatherworking (225)"},{"id":226802,"name":"Feralheart Grips","slot":"hands","role":"best","rank":1,"quality":4,"icon":"inv_gauntlets_17","category":"vendor","text":"Deliana"},{"id":271948,"name":"Theramore Gloves","slot":"hands","role":"alt","rank":1,"quality":3,"icon":"inv_gauntlets_04","category":"vendor","text":""},{"id":271949,"name":"Theramore Gloves","slot":"hands","role":"alt","rank":2,"quality":3,"icon":"inv_gauntlets_04","category":"vendor","text":""},{"id":226797,"name":"Feralheart Waistguard","slot":"waist","role":"best","rank":1,"quality":3,"icon":"inv_belt_15","category":"vendor","text":"Deliana"},{"id":272396,"name":"Shifter's Belt","slot":"waist","role":"alt","rank":1,"quality":3,"icon":"inv_belt_13","category":"vendor","text":"Pix Xizzix"},{"id":13252,"name":"Cloudrunner Girdle","slot":"waist","role":"alt","rank":2,"quality":3,"icon":"inv_belt_10","runs":[{"run":"Lower Blackrock Spire","boss":"Quartermaster Zigris","percent":10.5,"label":"w","quest":null}]},{"id":226799,"name":"Feralheart Legguards","slot":"legs","role":"best","rank":1,"quality":3,"icon":"inv_pants_08","category":"vendor","text":"Deliana"},{"id":11821,"name":"Warstrife Leggings","slot":"legs","role":"alt","rank":1,"quality":3,"icon":"inv_pants_09","runs":[{"run":"Blackrock Depths","boss":"General Angerforge","percent":13,"label":"w","quest":null}]},{"id":12963,"name":"Blademaster Leggings","slot":"legs","role":"alt","rank":2,"quality":3,"icon":"inv_pants_06","runs":[{"run":"Upper Blackrock Spire","boss":"The Beast","percent":13.2,"label":"w","quest":null}]},{"id":226803,"name":"Feralheart Treads","slot":"feet","role":"best","rank":1,"quality":4,"icon":"inv_boots_08","category":"vendor","text":"Deliana"},{"id":18716,"name":"Ash Covered Boots","slot":"feet","role":"alt","rank":1,"quality":3,"icon":"inv_boots_08","runs":[{"run":"Stratholme: Living","boss":"Archivist Galford","percent":13.1,"label":"w","quest":null}]},{"id":19052,"name":"Dawn Treaders","slot":"feet","role":"alt","rank":2,"quality":3,"icon":"inv_boots_cloth_08","category":"crafted","text":"Leatherworking (265)"},{"id":275984,"name":"Warden's Signet of Vigilance","slot":"finger","role":"best","rank":1,"quality":3,"icon":"inv_jewelry_ring_15","category":"reputation","text":"The Watchers, Exalted"},{"id":15855,"name":"Ring of Protection","slot":"finger","role":"best","rank":2,"quality":3,"icon":"inv_jewelry_ring_26","category":"quest","text":"Hidden Treasures"},{"id":275980,"name":"Watcher's Signet of Vigilance","slot":"finger","role":"alt","rank":1,"quality":3,"icon":"inv_jewelry_ring_15","category":"reputation","text":"The Watchers, Revered"},{"id":17904,"name":"Stormpike Insignia Rank 6","slot":"trinket","role":"best","rank":1,"quality":4,"icon":"inv_jewelry_stormpiketrinket_05","category":"quest","text":"The Eye of Command"},{"id":272440,"name":"Defender's Grip Stabilizer","slot":"trinket","role":"best","rank":2,"quality":3,"icon":"inv_misc_gem_pearl_05","category":"vendor","text":"Pix Xizzix"},{"id":4130,"name":"Smotts' Compass","slot":"trinket","role":"alt","rank":1,"quality":2,"icon":"inv_misc_pocketwatch_02","category":"quest","text":"Facing Negolash"},{"id":18531,"name":"Unyielding Maul","slot":"main","role":"best","rank":1,"quality":3,"icon":"inv_hammer_22","category":"chest","text":"Gordok Tribute"},{"id":274432,"name":"Stone Keeper Spire","slot":"main","role":"alt","rank":1,"quality":3,"icon":"inv_sword_27","runs":[{"run":"Uldaman","boss":"Archaedas","percent":0,"label":"s","quest":null}]},{"id":19106,"name":"Ice Barbed Spear","slot":"main","role":"alt","rank":2,"quality":3,"icon":"inv_spear_04","category":"quest","text":"The Legend of Korrak"}]}]};
+const ICONS = "https://wow.zamimg.com/images/wow/icons/large/";
+const SHEET = [["head", 1], ["neck", 1], ["shoulder", 1], ["back", 1], ["chest", 1], ["wrist", 1], ["hands", 1], ["waist", 1],
+  ["legs", 1], ["feet", 1], ["finger", 1], ["finger", 2], ["trinket", 1], ["trinket", 2], ["main", 1], ["off", 1], ["ranged", 1]];
+const GAPS = { finger1: true, main1: true };   // a little room before the jewellery and before the weapons
+const SLOT_NAMES = { head: "Head", neck: "Neck", shoulder: "Shoulder", back: "Back", chest: "Chest", wrist: "Wrist", hands: "Hands",
+  waist: "Waist", legs: "Legs", feet: "Feet", finger: "Finger", trinket: "Trinket", main: "Main hand", off: "Off hand", ranged: "Ranged or relic" };
+const CLASS_NAMES = { WARRIOR: ["Warrior", "#c79c6e"], WARLOCK: ["Warlock", "#9482c9"], MAGE: ["Mage", "#69ccf0"], PALADIN: ["Paladin", "#f58cba"],
+  SHAMAN: ["Shaman", "#0070de"], ROGUE: ["Rogue", "#fff569"], HUNTER: ["Hunter", "#abd473"], DRUID: ["Druid", "#ff7d0a"], PRIEST: ["Priest", "#ffffff"] };
+const CATEGORIES = [
+  ["quest", "Quest", "!"], ["dungeon", "Dungeon", "inv_misc_head_dragon_01"], ["raid", "Raid", "inv_misc_head_dragon_01"],
+  ["crafted", "Crafted", "trade_blacksmithing"], ["vendor", "Vendor", "inv_misc_bag_10"],
+  ["reputation", "Reputation", "inv_misc_tabardpvp_01"], ["pvp", "PvP rank", "inv_bannerpvp_02"], ["drop", "Drop", "ability_dualwield"],
+  ["rare", "Rare", "*"], ["world", "World drop", "inv_misc_map_01"], ["chest", "Chest", "inv_box_01"],
+  ["container", "Container", "inv_misc_ornatebox"], ["unknown", "Unknown source", "inv_misc_questionmark"],
+];
+const state = { spec: 1, alts: false, variant: "A", owned: new Set() };
+const $ = (id) => document.getElementById(id);
+const esc = (text) => String(text).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const run = (key) => DATA.runs[key] || { short: key, color: "#8c8c96" };
+const percent = (value) => value <= 0 ? "" : (value >= 10 ? Math.round(value) : value.toFixed(1)) + "%";
+const icon = (piece, extra = "") => `<div class="ico q${piece.quality} ${extra}"><img loading="lazy" src="${ICONS}${piece.icon}.jpg" alt="" onerror="this.style.visibility='hidden'"><span class="check">✓</span><span class="quest">!</span></div>`;
+const mark = (label) => (label === "k" || label === "t") ? ' <span class="mark">*</span>' : label === "c" ? ' <span class="mark">?</span>' : "";
+
+/* The same rules as Dungeons.lua: a run per dungeon or wing, the best picks counted, the alternatives listed. */
+function model() {
+  const spec = DATA.specs[state.spec];
+  const best = spec.pieces.filter((p) => p.role === "best");
+  const shown = spec.pieces.filter((p) => p.role === "best" || state.alts);
+  const covered = {};
+  for (const slot of Object.keys(SLOT_NAMES)) {
+    const picks = best.filter((p) => p.slot === slot);
+    covered[slot] = picks.length > 0 && picks.every((p) => state.owned.has(p.id));
+  }
+  const lanes = new Map();
+  for (const piece of shown) {
+    const byRun = new Map();
+    for (const drop of piece.runs || []) byRun.set(drop.run, [...(byRun.get(drop.run) || []), drop]);
+    for (const [key, drops] of byRun) {
+      const quest = drops[0].quest || null;
+      const known = !quest && drops.every((d) => d.percent > 0);
+      const entry = { piece, drops, quest, rate: known ? 1 - drops.reduce((miss, d) => miss * (1 - d.percent / 100), 1) : 0,
+        best: piece.role === "best", owned: state.owned.has(piece.id), moot: piece.role !== "best" && covered[piece.slot] };
+      if (!lanes.has(key)) lanes.set(key, { key, ...run(key), entries: [] });
+      lanes.get(key).entries.push(entry);
+    }
+  }
+  const list = [...lanes.values()];
+  for (const lane of list) {
+    lane.entries = [...lane.entries.filter((e) => e.best), ...lane.entries.filter((e) => !e.best)];
+    lane.need = lane.entries.filter((e) => e.best && !e.owned);
+    lane.got = lane.entries.filter((e) => e.best && e.owned);
+    lane.alts = lane.entries.filter((e) => !e.best);
+  }
+  list.sort((a, b) => b.need.length - a.need.length || b.got.length - a.got.length || b.alts.length - a.alts.length
+    || a.key.localeCompare(b.key));
+  const elsewhere = new Map();
+  for (const piece of best) if (!piece.runs) elsewhere.set(piece.category, (elsewhere.get(piece.category) || 0) + 1);
+  return { spec, best, shown, lanes: list, elsewhere, covered };
+}
+
+function headline(m) {
+  const pieces = m.best.filter((p) => p.runs);
+  const need = pieces.filter((p) => !state.owned.has(p.id)).length, got = pieces.length - need;
+  const active = m.lanes.filter((lane) => lane.need.length).length;
+  if (!need && !got) return "";
+  if (!need) return `<span style="color:var(--gold)">Every best pick the dungeons hold is yours.</span>`;
+  return `<span>${need} best pick${need > 1 ? "s" : ""} to farm</span><span class="sep">·</span>`
+    + `<span>${active} dungeon${active > 1 ? "s" : ""}</span>`
+    + (got ? `<span class="sep">·</span><span class="quiet">${got} already yours</span>` : "");
+}
+
+function strip(m) {
+  let html = `<div class="strip">`;
+  for (const [slot, rank] of SHEET) {
+    const piece = m.best.filter((p) => p.slot === slot)[rank - 1];
+    const gap = GAPS[slot + rank] ? " gap" : "";
+    if (!piece) { html += `<div class="tile hollow${gap}" data-slot="${slot}"><div class="ico"></div><div class="bar"></div></div>`; continue; }
+    const key = piece.runs && piece.runs[0].run;
+    const owned = state.owned.has(piece.id) ? " owned" : "";
+    html += `<div class="tile${key ? " run" : ""}${gap}${owned}" data-id="${piece.id}" data-slot="${slot}" ${key ? `data-run="${esc(key)}" style="--c:${run(key).color}"` : ""}>`
+      + icon(piece) + `<div class="bar"></div></div>`;
+  }
+  return html + `</div>`;
+}
+
+function chip(entry, lane) {
+  const piece = entry.piece, drops = entry.drops;
+  const classes = ["chip", entry.best ? "" : "alt", entry.owned ? "owned" : "", entry.moot ? "moot" : "", entry.quest ? "isquest" : ""].join(" ");
+  let sub;
+  if (entry.quest) {
+    sub = `<span class="glyph mark">!</span><span class="boss">${esc(entry.quest)}</span>`;
+  } else {
+    const boss = drops.length > 1 ? `${drops.length} bosses` : (drops[0].boss || "Boss not named");
+    sub = `<span class="boss">${esc(boss)}</span><span class="pct">${percent(entry.rate * 100)}${mark(drops[0].label)}</span>`;
+  }
+  return `<div class="${classes}" data-id="${piece.id}" data-slot="${piece.slot}" data-run="${esc(lane.key)}">${icon(piece)}<div class="txt">`
+    + `<div class="nm q${piece.quality}"><span class="n">${esc(piece.name)}</span>${entry.best ? "" : '<span class="tag">Alt</span>'}</div>`
+    + `<div class="sub">${sub}</div></div></div>`;
+}
+
+function viewA(m) {
+  let html = strip(m);
+  const lanes = m.lanes;
+  if (!lanes.length) {
+    html += `<div class="nothing"><b>No best pick of this spec comes from a dungeon.</b>Turn on Alternatives to see the dungeon pieces that come next.</div>`;
+  }
+  for (const lane of lanes) {
+    const done = !lane.need.length && lane.got.length > 0;
+    const count = `<div class="count">${lane.entries.length}</div>`;   // every piece of the line
+    html += `<div class="lane${done ? " done" : ""}" data-run="${esc(lane.key)}" style="--c:${lane.color}">`
+      + `<div class="block">${count}</div>`
+      + `<div class="who"><div class="name">${esc(lane.key)}</div></div>`
+      + `<div class="chips">${lane.entries.map((entry) => chip(entry, lane)).join("")}</div></div>`;
+  }
+  return html + elsewhere(m);
+}
+
+function glyph(art) {
+  if (art === "!" || art === "*") return `<span class="glyph mark">${art === "!" ? "!" : "★"}</span>`;
+  return `<span class="glyph" style="background-image:url('${ICONS}${art}.jpg')"></span>`;
+}
+
+function elsewhere(m) {
+  if (!m.elsewhere.size) return "";
+  const total = [...m.elsewhere.values()].reduce((a, b) => a + b, 0);
+  let html = `<div class="elsewhere"><span>${total} best pick${total > 1 ? "s" : ""} from elsewhere:</span>`;
+  for (const [key, name, art] of CATEGORIES) {
+    if (m.elsewhere.has(key)) html += `<span class="cat" data-cat="${key}">${glyph(art)}<b>${m.elsewhere.get(key)}</b>${name}</span>`;
+  }
+  return html + `</div>`;
+}
+
+function viewB(m) {
+  const lanes = m.lanes;
+  const crowded = lanes.length > 8, name = crowded ? 210 : 250, rest = crowded ? 120 : 150;
+  const width = Math.max(30, Math.min(66, Math.floor((904 - name - rest) / Math.max(1, lanes.length)) - 3));
+  let html = `<div class="grid" style="grid-template-columns: ${name}px repeat(${lanes.length}, ${width}px) minmax(0, 1fr)">`;
+  html += `<div class="gh piece"></div>`;
+  for (const lane of lanes) {
+    const done = !lane.need.length && lane.got.length > 0;
+    html += `<div class="gh${done ? " done" : ""}" data-run="${esc(lane.key)}" title="${esc(lane.key)}" style="--c:${lane.color}"><b>${lane.entries.length}</b><span>${esc(lane.short)}</span></div>`;
+  }
+  html += `<div class="gh else">Elsewhere</div>`;
+  for (const [slot, rank] of SHEET) {
+    const picks = m.best.filter((p) => p.slot === slot);
+    const rows = [];
+    if (picks[rank - 1]) rows.push(picks[rank - 1]);
+    if (state.alts && rank === Math.max(1, picks.length)) rows.push(...m.shown.filter((p) => p.slot === slot && p.role !== "best"));
+    rows.forEach((piece, index) => {
+      const alt = piece.role !== "best", owned = state.owned.has(piece.id);
+      const first = (rank === 1 && index === 0) ? " first" : "";
+      const flags = (alt ? " alt" : "") + (owned ? " owned" : "") + (alt && m.covered[slot] ? " moot" : "") + first;
+      const quest = (piece.runs || []).some((drop) => drop.quest);
+      html += `<div class="gr name${flags}${piece.runs ? "" : " else"}${quest ? " isquest" : ""}" data-id="${piece.id}" data-slot="${slot}">${icon(piece)}<span class="nm q${piece.quality}">${esc(piece.name)}</span></div>`;
+      for (const lane of lanes) {
+        const entry = lane.entries.find((e) => e.piece === piece);
+        html += entry
+          ? `<div class="gr cell on${flags}" data-id="${piece.id}" data-slot="${slot}" data-run="${esc(lane.key)}" style="--c:${lane.color}">`
+            + `${owned ? "✓" : entry.quest ? '<span class="glyph mark">!</span>' : (percent(entry.rate * 100) || "?")}</div>`
+          : `<div class="gr cell${first}"></div>`;
+      }
+      const category = CATEGORIES.find((c) => c[0] === piece.category);
+      html += `<div class="gr else${flags}">` + (piece.runs ? "" : glyph(category ? category[2] : "inv_misc_questionmark")
+        + `<span>${esc(piece.text || (category ? category[1] : ""))}</span>`) + `</div>`;
+    });
+  }
+  return html + `</div>`;
+}
+
+const NOTES = [
+  ["Deux onglets sur le côté", "Comme le panneau des métiers : le premier pour les listes (Items, Enchants, Character…), le second pour les donjons. Les onglets du bas sont ceux des listes et disparaissent sur les donjons."],
+  ["La réponse d'abord", "Combien de pièces BIS restent à farmer, et dans combien de donjons. À droite, le bouton qui bascule entre les deux vues ; le choix est mémorisé."],
+  ["Par donjon : la tenue", "Les 17 emplacements du BIS, chacun souligné de la <b>couleur de son donjon</b>. Une pièce qui ne vient pas d'un donjon est en noir et blanc, sa barre grise."],
+  ["Par donjon : un bandeau par run", "Trié du plus rentable au moins rentable. Le chiffre = le nombre de pièces de la ligne, BIS et alternatives. Les ailes comptent à part (UBRS ≠ LBRS, Strat Live ≠ UD)."],
+  ["Les pièces", "Icône, nom, boss et taux de drop. Survol = infobulle de l'objet ; clic = l'emplacement dans l'onglet Items ; Maj-clic = lien dans le chat."],
+  ["Quêtes de donjon", "La récompense d'une quête faite dans un donjon est rangée avec ce donjon, sous le « ! » des quêtes, avec le titre de la quête à la place du boss (voir Priest Discipline)."],
+  ["Ce que vous avez déjà", "Une pièce portée, en sac ou en banque est cochée et grisée ; le chiffre du donjon baisse, un donjon terminé passe sous les autres."],
+  ["Alternatives", "Le bouton du pied de fenêtre ajoute les alternatives (étiquette « Alt », plus petites). Elles ne comptent dans aucun chiffre et s'effacent quand le BIS de l'emplacement est obtenu."],
+  ["Par pièce : la grille", "Une ligne par pièce, une colonne par run, une case colorée là où la pièce tombe. La dernière colonne dit d'où vient une pièce hors donjon ; sa ligne est assombrie."],
+];
+
+function render() {
+  const m = model();
+  const [name, color] = CLASS_NAMES[m.spec.class];
+  $("specText").innerHTML = `<span style="color:${color}">${name}</span> ${esc(m.spec.spec)}`;
+  $("alts").classList.toggle("on", state.alts);
+  $("headline").innerHTML = headline(m);
+  $("view").innerHTML = state.variant === "A" ? viewA(m) : viewB(m);
+  for (const button of $("mode").children) button.classList.toggle("on", button.dataset.v === state.variant);
+  $("notes").innerHTML = `<h2>Ce que montre l'onglet</h2>`
+    + NOTES.map(([title, text], index) => `<div><span class="num">${index + 1}</span><b>${title}.</b> ${text}</div>`).join("");
+}
+
+/* pointing at a dungeon lights its slots, pointing at a piece lights its dungeon */
+function light(key, slot) {
+  for (const node of $("view").querySelectorAll(".tile, .lane")) {
+    const mine = node.dataset.run === key;
+    if (node.classList.contains("tile")) {
+      const lit = key !== null && mine && (slot === undefined || node.dataset.slot === slot);
+      node.classList.toggle("dim", key !== null && !lit);
+      node.classList.toggle("lit", lit);
+    } else {
+      node.classList.toggle("dim", key !== null && !mine);
+    }
+  }
+}
+
+function tooltip(target) {
+  const spec = DATA.specs[state.spec];
+  const piece = spec.pieces.find((p) => String(p.id) === target.dataset.id && p.slot === target.dataset.slot);
+  if (!piece) return "";
+  let html = `<div class="t q${piece.quality}">${esc(piece.name)}</div><div class="m">${SLOT_NAMES[piece.slot]} · ${piece.role === "best" ? "BIS" : "Alternative"}</div><div class="sp"></div>`;
+  for (const drop of piece.runs || []) {
+    const color = run(drop.run).color;
+    if (drop.quest) {
+      html += `<div style="color:${color}">${esc(drop.run)} - reward of the quest ${esc(drop.quest)}. One run is enough.</div>`;
+    } else {
+      html += `<div style="color:${color}">${esc(drop.run)} - ${esc(drop.boss || "Boss not named")}${drop.percent > 0 ? " (" + percent(drop.percent) + ")" : ""}</div>`;
+      if (drop.label === "k") html += `<div class="m">* Source from Classic's data, not confirmed in Forever.</div>`;
+      if (drop.label === "c") html += `<div class="m">? Source from a clue, not confirmed.</div>`;
+    }
+  }
+  if (!piece.runs) {
+    const category = CATEGORIES.find((c) => c[0] === piece.category);
+    html += `<div class="g">Source: ${category ? category[1] : ""}${piece.text ? " - " + esc(piece.text) : ""}</div>`;
+  }
+  if (state.owned.has(piece.id)) html += `<div style="color:#1eff00">You have it.</div>`;
+  return html + `<div class="m">Click: the pieces of this slot. Shift-click: link it.</div>`;
+}
+
+$("view").addEventListener("mouseover", (event) => {
+  const lane = event.target.closest(".lane"), piece = event.target.closest(".chip, .tile[data-id], .gr[data-id]");
+  if (piece && piece.dataset.run) light(piece.dataset.run, piece.dataset.slot);
+  else if (piece) light(null);
+  else if (lane) light(lane.dataset.run);
+  else light(null);
+  const tip = $("tip");
+  if (piece) { tip.innerHTML = tooltip(piece); tip.style.display = tip.innerHTML ? "block" : "none"; } else tip.style.display = "none";
+});
+$("view").addEventListener("mousemove", (event) => {
+  const tip = $("tip");
+  if (tip.style.display !== "block") return;
+  const x = Math.min(event.clientX + 18, window.innerWidth - tip.offsetWidth - 8);
+  tip.style.left = x + "px";
+  tip.style.top = Math.min(event.clientY + 18, window.innerHeight - tip.offsetHeight - 8) + "px";
+});
+$("view").addEventListener("mouseleave", () => { light(null); $("tip").style.display = "none"; });
+$("view").addEventListener("click", (event) => {
+  const piece = event.target.closest("[data-id]");
+  if (!piece) return;
+  const id = Number(piece.dataset.id);
+  if (state.owned.has(id)) state.owned.delete(id); else state.owned.add(id);
+  $("tip").style.display = "none";
+  render();
+});
+$("alts").addEventListener("click", () => { state.alts = !state.alts; render(); });
+$("mode").addEventListener("click", (event) => { if (event.target.dataset.v) { state.variant = event.target.dataset.v; render(); } });
+$("reset").addEventListener("click", () => { state.owned.clear(); render(); });
+$("spec").innerHTML = DATA.specs.map((spec, index) => `<option value="${index}">${CLASS_NAMES[spec.class][0]} ${spec.spec}</option>`).join("");
+$("spec").addEventListener("change", (event) => { state.spec = Number(event.target.value); state.owned.clear(); render(); });
+
+/* ?spec=2&alts=1&variant=B&owned=12587,13141&height=760&bare=1 opens the mockup in a given state */
+const query = new URLSearchParams(location.search);
+if (query.has("spec")) state.spec = Math.max(0, Math.min(DATA.specs.length - 1, Number(query.get("spec")) || 0));
+if (query.get("alts") === "1") state.alts = true;
+if (query.get("variant") === "B") state.variant = "B";
+for (const id of (query.get("owned") || "").split(",")) if (Number(id)) state.owned.add(Number(id));
+if (query.has("height")) $("window").style.height = (Number(query.get("height")) || 620) + "px";
+if (query.get("bare") === "1") for (const node of document.querySelectorAll(".bench, .notes")) node.style.display = "none";
+$("spec").value = state.spec;
+render();
+</script>
+</body>
+</html>

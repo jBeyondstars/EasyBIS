@@ -65,6 +65,7 @@ local DEFAULTS = {
     lists = { pve = true, pvp = true }, -- the lists tooltips read
     compact = true,        -- the window: an item or a consumable on one line instead of two
     listAlts = true,       -- the window: the alternatives too, not only the best picks
+    dungeonGrid = false,   -- the Dungeons tab: a line per piece and a column per dungeon, instead of a band per dungeon
     window = {},           -- where the window was left: point, relativePoint, x, y
     windowHeight = 0,      -- its height once resized (0: not resized)
     custom = {},           -- the items added by hand (Custom.lua)

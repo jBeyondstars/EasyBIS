@@ -1,3 +1,25 @@
+# Unreleased
+
+## New
+
+- **Dungeons.** Which dungeons to run for your spec's best picks, each dungeon in its own colour. The window has two tabs on its right side, as the game's professions do: the lists, and the dungeons.
+  - **By dungeon**: your set, every slot over the colour of its dungeon (a piece no dungeon holds is in black and white), then a band per run with how many pieces it holds. Each piece shows its boss and its drop rate.
+  - **By piece**: a line per piece and a column per run, with a coloured cell where the piece drops.
+  - A run is a dungeon, or a wing that is run on its own: Upper and Lower Blackrock Spire, Stratholme Living and Undead, the three wings of Dire Maul, the four of the Scarlet Monastery.
+  - A quest's reward sits with the dungeon its quest is done in, under the quest mark: one run is enough for it.
+  - What you already have, worn, in your bags or in the bank, is checked and leaves the count at the top.
+  - The **Alternatives** button adds the alternatives. They fade once the slot's best pick is yours.
+  - Point at a run to light its slots, click a piece to see its slot in the Items tab.
+
+## Changed
+
+- **Bosses the data left without a dungeon.** About a hundred listed items now name the dungeon their boss is in: the arena of Blackrock Depths, and the dungeons of Forever the data had no place for (Blackmaw Hold, The Drowned City, Krol'dok Stronghold). The Items tab shows them as dungeon drops, and the Zone filter finds them.
+- **Items that had no known source.** 60 items of the lists now have one: the boss Wowhead Forever counted them on, mostly in Shaper's Terrace, Alcaz Prison, Blackmaw Hold and Krol'dok Stronghold. They no longer need the option **Items with no known source** to show, so a few best picks change:
+  - Obsidian Bauble (Pusillin, Dire Maul East) is the best PvE off hand of the three Mage specs, Demonology and Destruction Warlock, Balance Druid and Elemental Shaman.
+  - Robes of Dark Summons (Impaan the Imprisoner, Blackmaw Hold) is the best PvE chest of Shadow Priest and Elemental Shaman.
+  - Frostfang Mail Vest (Shaper's Terrace) is the best PvP chest of Restoration Shaman, and of a Horde Holy Paladin.
+  - Deep Jungle Rifle (Thunderhoof, Shaper's Terrace) is the best PvE ranged weapon of Subtlety Rogue.
+
 # Easy BIS 1.6.0
 
 ## New

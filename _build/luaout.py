@@ -14,6 +14,7 @@ import ladders
 import phases
 import reputations
 import ranks
+import runs
 
 CREDIT = "Data from ForeverDB.net (https://foreverdb.net)"
 ENCHANTS_PER_SLOT = 3
@@ -138,9 +139,16 @@ def _drops_note(db) -> list:
     confirmed = getattr(db, "confirmed", None)
     if not confirmed or not confirmed.changed:
         return []
-    return [f"Confirmed in Forever: {len(confirmed.items)} items take the boss and the rate Wowhead Forever counted, and "
-            f"{len(confirmed.moved)} the boss it counted in place of the data's,",
-            f"read in the DungeonJournal {confirmed.journal} and GearQuest Forever addons, labelled w. See _build/drops.py."]
+    lines = [f"Confirmed in Forever: {len(confirmed.items)} items take the boss and the rate Wowhead Forever counted, and "
+             f"{len(confirmed.moved)} the boss it counted in place of the data's,",
+             f"read in the DungeonJournal {confirmed.journal} and GearQuest Forever addons, labelled w. See _build/drops.py."]
+    if confirmed.placed:
+        lines.append(f"For {len(confirmed.placed)} of them a creature the data gives no place is written as a boss of the "
+                     "dungeon it was counted in. See _build/runs.py.")
+    if confirmed.sourced:
+        lines.append(f"Added to ForeverDB's data: {len(confirmed.sourced)} items it gives no source take the bosses "
+                     "counted for them, and are no longer flagged u.")
+    return lines
 
 
 def lists_file(db, all_ladders) -> str:
@@ -200,8 +208,25 @@ def _inline_source(db, source: list[str]) -> str:
     return "^".join(source)
 
 
+def _wing_rows(db, bosses: dict) -> list[str]:
+    """The wings of the instances written, each with its bosses among the sources: [instance]="key^name^boss|..."."""
+    known = getattr(db, "boss_wings", None) or {}
+    rows = []
+    for instance in sorted(set(bosses) & set(runs.WINGS)):
+        wings = []
+        for key, name in runs.WINGS[instance].items():
+            inside = sorted(boss for boss in bosses[instance] if runs.wing_of(known, instance, boss) == key)
+            wings.append("^".join((key, name, *inside)))
+        value = "|".join(wings)
+        if '"' in value or "\\" in value:
+            raise ValueError(f"unexpected character in the wings of instance {instance}")
+        rows.append(f'[{instance}]="{value}",')
+    return rows
+
+
 def items_file(db, all_ladders) -> str:
-    rows, instances = [], set()
+    rows, instances, bosses, quests = [], set(), {}, {}
+    places = getattr(db, "quest_places", None) or {}
     for item_id in sorted(shown_ids(all_ladders)):
         item = db.items.get(item_id)
         if item is None:
@@ -212,6 +237,11 @@ def items_file(db, all_ladders) -> str:
         for source in sources:
             if source[0] == "d" and source[1].isdigit():
                 instances.add(int(source[1]))
+                bosses.setdefault(int(source[1]), set()).add(source[2])
+            elif source[0] == "q" and source[1].isdigit() and int(source[1]) in places:
+                quests[int(source[1])] = places[int(source[1])]
+                instances.add(places[int(source[1])][0])
+                bosses.setdefault(places[int(source[1])][0], set())
         text = "~".join(_inline_source(db, source) for source in sources)
         rows.append("|".join((str(item_id), _field(item["name"]), "".join(sorted(item["groups"])),
                               item["flags"], _field(text))))
@@ -245,6 +275,16 @@ def items_file(db, all_ladders) -> str:
             if '"' in value or "\\" in value:
                 raise ValueError(f"unexpected character in instance {instance}")
             lines.append(f'[{instance}]="{value}",')
+    lines.append("}")
+    lines.append("-- Wings: the parts of an instance that are run on their own, and the bosses of each among the sources")
+    lines.append("-- above (_build/runs.py): key^name^boss^boss|key^name^boss. A boss no wing lists is not placed.")
+    lines.append("ns.data.wings = {")
+    lines += _wing_rows(db, {instance: names - {""} for instance, names in bosses.items()})
+    lines.append("}")
+    lines.append("-- Dungeon quests: where a quest of the sources above is done, <instance> or <instance>:<wing key>")
+    lines.append("ns.data.questRuns = {")
+    for quest, (instance, wing) in sorted(quests.items()):
+        lines.append(f'[{quest}]="{instance}{":" + wing if wing else ""}",')
     lines.append("}")
     lines.append("-- Currencies, by their item id: the game's currency id^English name")
     lines.append("ns.data.currencies = {")

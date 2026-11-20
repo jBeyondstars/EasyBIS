@@ -1333,7 +1333,6 @@ items = [==[
 19685||270|6|r|14921||Pattern: Primal Batskin Jerkin|Leatherworking|300|19769
 19686||270|5|r|14921||Pattern: Primal Batskin Gloves|Leatherworking|300|19770
 19687||270|4|r|14921||Pattern: Primal Batskin Bracers|Leatherworking|300|19771
-19689||270|5|r|14921||Pattern: Blood Tiger Shoulders|Leatherworking|300|19773
 19690||270|6|r|14921||Plans: Bloodsoul Breastplate|Blacksmithing|300|19776
 19691||270|5|r|14921||Plans: Bloodsoul Shoulders|Blacksmithing|300|19777
 19692||270|4|r|14921||Plans: Bloodsoul Gauntlets|Blacksmithing|300|19778

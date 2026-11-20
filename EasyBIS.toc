@@ -29,6 +29,7 @@ Sources.lua
 Enchants.lua
 Reputation.lua
 Consumables.lua
+Dungeons.lua
 Custom.lua
 Index.lua
 Tooltip.lua
@@ -40,5 +41,6 @@ AuctionScan.lua
 UI\AuctionHouse.lua
 UI\Character.lua
 UI\Reputations.lua
+UI\Dungeons.lua
 UI\MinimapButton.lua
 Commands.lua

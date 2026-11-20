@@ -38,6 +38,19 @@ Where an item comes from, in words (its first source in Data\Items.lua).
   Sources.ToPay(cells)                what is left to pay for cells ({ id, source }, ...), per currency:
                                       { { item, amount, held }, ... }. What the player owns is paid for
   Sources.ToPayLine(owed)             the character sheet's line for one of those
+  Sources.Owned(id)                   whether the player has the item, worn, in the bags or in the bank
+  Sources.Runs(id)                    the dungeon runs an item is farmed in, or nil for an item of elsewhere:
+                                      { { run, instance, wing, boss, percent, origin, quest }, ... }
+      An item is a dungeon's when the source the addon says for it (the first, see Describe) is a boss of a
+      dungeon, and then every boss of a dungeon among its sources counts; or when that source is a quest done
+      in a dungeon (ns.data.questRuns), and then quest holds its title and there is no boss. A raid is no run.
+      run        what tells one run from another: "<instance>", or "<instance>:<wing>" for a boss of an
+                 instance that is run wing by wing (ns.data.wings) when the data places the boss in one
+      percent    the drop chance as a number, nil when the data has none
+  Sources.RunName(instance, wing)     the run's name: the wing's, in the game's language where Easy BIS has
+                                      it, else the instance's
+  Sources.HasWings(instance)          whether the instance is run wing by wing
+  Sources.PercentText(value)          "17%", "4.2%"; "" for nothing
 
 The pictures tell the categories apart; the texts next to them keep one quiet
 color, so the item names stay the only ones that wear the quality colors.
@@ -198,6 +211,88 @@ function Sources.Manual()
     return { category = "manual", detail = "", percent = "", origin = "" }
 end
 
+function Sources.PercentText(value)
+    return Percent(value)
+end
+
+---------------------------------------------------------------------------
+-- The runs of a dungeon
+---------------------------------------------------------------------------
+
+local wings   -- [instance] = { names = { [key] = English name }, bosses = { [boss] = key } }, split on first use
+
+local function Wings(instance)
+    if not wings then
+        wings = {}
+        for number, text in pairs(ns.data and ns.data.wings or {}) do
+            local entry = { names = {}, bosses = {} }
+            for part in text:gmatch("[^|]+") do
+                local key
+                for field in part:gmatch("[^%^]+") do
+                    if not key then
+                        key = field
+                    elseif not entry.names[key] then
+                        entry.names[key] = field
+                    else
+                        entry.bosses[field] = key
+                    end
+                end
+            end
+            wings[number] = entry
+        end
+    end
+    return wings[instance]
+end
+
+local function Run(instance, wing)
+    return wing and (instance .. ":" .. wing) or tostring(instance)
+end
+
+function Sources.HasWings(instance)
+    return Wings(instance) ~= nil
+end
+
+function Sources.RunName(instance, wing)
+    local known = wing and Wings(instance)
+    if known and known.names[wing] then
+        local key = "WING_" .. instance .. "_" .. wing
+        local text = L[key]
+        return text ~= key and text or known.names[wing]
+    end
+    return (InstanceName(instance)) or tostring(instance)
+end
+
+function Sources.Runs(id)
+    local item = ns.Items.Get(id)
+    local own = item and OwnSource(item)
+    if not own then return nil end
+    if own.kind == "q" then
+        local instance, wing = ((ns.data and ns.data.questRuns or {})[tonumber(own[2]) or 0] or ""):match("^(%d+):?(%a*)$")
+        instance = tonumber(instance)
+        if not instance or select(2, InstanceName(instance)) == "raid" then return nil end
+        if wing == "" then wing = nil end
+        return { { run = Run(instance, wing), instance = instance, wing = wing, boss = "", quest = own[3] or "",
+            origin = own[6] } }
+    end
+    local function Dungeon(source)
+        local instance = source.kind == "d" and tonumber(source[2])
+        return instance and source[5] ~= "1" and select(2, InstanceName(instance)) ~= "raid" and instance or nil
+    end
+    if not Dungeon(own) then return nil end
+    local runs = {}
+    for _, source in ipairs(item.sources) do
+        local instance = Dungeon(source)
+        if instance then
+            local known = Wings(instance)
+            local wing = known and known.bosses[source[3] or ""] or nil
+            local percent = tonumber(source[4])
+            runs[#runs + 1] = { run = Run(instance, wing), instance = instance, wing = wing, boss = source[3] or "",
+                percent = percent and percent > 0 and percent or nil, origin = source[6] }
+        end
+    end
+    return runs[1] and runs or nil
+end
+
 function Sources.CategoryName(category)
     return L["SRC_" .. category]
 end
@@ -345,6 +440,8 @@ local function Owned(id)
     count = ok and Count(count) or nil
     return count ~= nil and count > 0
 end
+
+Sources.Owned = Owned
 
 function Sources.ToPay(cells)
     local owed, byItem = {}, {}

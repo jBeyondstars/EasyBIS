@@ -2499,9 +2499,9 @@ class WindowTest(unittest.TestCase):
             game = self.open(locale=locale)
             window = game.ns.Browser.window
             buttons = window.tabs.buttons
-            for index in (1, 2, 3):
+            for index in (1, 2, 3, 4):   # the consumables have had their day as a new tab
                 self.assertIsNone(buttons[index].newBadge, (locale, index))
-            for index in (4, 5):   # Consumables, Reputations
+            for index in (5,):   # Reputations
                 tab = buttons[index]
                 self.assertEqual(tab.newBadge.text.text, "New", (locale, index))
                 self.assertTrue(tab.newBadge.shown)
@@ -2509,6 +2509,68 @@ class WindowTest(unittest.TestCase):
                 self.assertTrue(tab.highlightLocked)
                 self.assertTrue(tab.newBadge.shown, "the badge stays on the open tab")
                 self.assertEqual(tab.newBadge.points[1][3], "TOPRIGHT", "on the corner, so the credit keeps its room")
+            # the dungeons, on the window's side
+            self.assertIsNone(window.pages.buttons[1].newBadge, locale)
+            self.assertEqual(window.pages.buttons[2].newBadge.text.text, "New", locale)
+
+    def test_the_side_tabs(self):
+        """Down the window's right edge: the lists, and the dungeons, as the game's professions have their tabs."""
+        game = self.open()
+        window, state = game.ns.Browser.window, game.ns.Browser.state
+        lists, dungeons = window.pages.buttons[1], window.pages.buttons[2]
+        self.assertEqual(len(window.pages.buttons), 2)
+        self.assertEqual(state.page, "lists")
+        self.assertEqual((bool(lists.checked.shown), bool(dungeons.checked.shown)), (True, False))
+        for tab in (lists, dungeons):
+            self.assertEqual((tab.width, tab.height), (32, 32))
+            self.assertEqual((tab.points[1][1], tab.points[1][2].name, tab.points[1][3], tab.points[1][4]),
+                             ("TOPLEFT", "EasyBISWindow", "TOPRIGHT", 0), "outside the window, against its right edge")
+            self.assertEqual(tab.back.texture, "Interface\\SpellBook\\SpellBook-SkillLineTab", "the game's own tab")
+        self.assertGreaterEqual(lists.points[1][5] - dungeons.points[1][5], 32 + 8, "one under the other")
+        self.assertEqual(lists.icon.texture, game.ns.ICON)
+        self.assertTrue(dungeons.icon.texture.startswith("Interface\\Icons\\"))
+        tooltip = game.lua.globals().GameTooltip
+        game.stub.run(lists, "OnEnter")
+        self.assertEqual((tooltip.text, tooltip.owner.value), ("Gear lists", "lists"))
+        game.stub.run(dungeons, "OnEnter")
+        self.assertEqual(tooltip.text, "Dungeons")
+        game.stub.run(dungeons, "OnLeave")
+        self.assertFalse(tooltip.shown)
+
+        # the dungeons take the middle of the window; the lists' tabs go with the lists
+        game.stub.run(window.tabs.buttons[2], "OnClick")
+        game.stub.run(dungeons, "OnClick")
+        self.assertEqual((state.page, state.tab), ("dungeons", "enchants"))
+        self.assertEqual((bool(lists.checked.shown), bool(dungeons.checked.shown)), (False, True))
+        self.assertTrue(game.ns.DungeonView.view.shown)
+        for hidden in (window.tabs, window.scroll, window.slot, window.reputation, window.add):
+            self.assertFalse(hidden.shown)
+        for kept in (window.spec, window.list, window.listLabel, window.phase, window.alts, window.options, window.credit):
+            self.assertTrue(kept.shown)
+        game.stub.run(dungeons, "OnClick")   # the tab already open: nothing changes
+        self.assertEqual(state.page, "dungeons")
+        # back to the lists: the tab left open is there again
+        game.stub.run(lists, "OnClick")
+        self.assertEqual((state.page, state.tab), ("lists", "enchants"))
+        self.assertFalse(game.ns.DungeonView.view.shown)
+        self.assertTrue(window.tabs.shown and window.scroll.shown and window.slot.shown)
+        self.assertFalse(window.list.shown, "the enchants have no list")
+        self.assertEqual(look(window.tabs.buttons[2]), "lit")
+        # the character sheet and the reputations give way to the dungeons too
+        for index, shown in ((3, lambda: game.ns.Character.view), (5, lambda: game.ns.ReputationView.view)):
+            game.stub.run(window.tabs.buttons[index], "OnClick")
+            self.assertTrue(shown().shown)
+            game.stub.run(dungeons, "OnClick")
+            self.assertFalse(shown().shown)
+            game.stub.run(lists, "OnClick")
+            self.assertTrue(shown().shown)
+        game.ns.Browser.ShowDungeons()
+        self.assertEqual(state.page, "dungeons")
+        # a tooltip of the window opens clear of the side tabs
+        game.stub.run(lists, "OnClick")
+        game.stub.run(window.tabs.buttons[1], "OnClick")
+        game.stub.run(self.frames(game)[0], "OnEnter")
+        self.assertGreaterEqual(tooltip.points[1][4], 32)
 
     def test_the_consumables_tab_in_french(self):
         game = self.open_consumables(locale="frFR")
@@ -2517,6 +2579,455 @@ class WindowTest(unittest.TestCase):
         self.assertEqual(window.slot.label.text, "Catégorie")
         data = list(window.rowData.values())
         self.assertEqual(data[1].text, "Flacons")
+
+    # -- the Dungeons tab ---------------------------------------------------------------------
+
+    DESTRUCTION = "EasyBISCharDB = { class = 'WARLOCK', spec = 3, list = 'pve' }"
+    DISCIPLINE = "EasyBISCharDB = { class = 'PRIEST', spec = 1, list = 'pve' }"
+    FERAL = "EasyBISCharDB = { class = 'DRUID', spec = 2, list = 'pve' }"
+    # the view's sizes (UI\Dungeons.lua): what scrolls, a slot of the set, a piece of a run, a faded and a dimmed part
+    PANE, TILE, CHIP, FADED, DIM, GREY = 904, 40, 213, 0.22, 0.45, 0.7
+
+    def item_id(self, name: str) -> int:
+        return next(item_id for item_id, item in self.db.items.items() if item["name"] == name)
+
+    def open_dungeons(self, saved=DESTRUCTION, alts=False, grid=False, **options):
+        """The game on the Dungeons tab, and the tab's view."""
+        saved += f" EasyBISDB = {{ listAlts = {str(alts).lower()}, dungeonGrid = {str(grid).lower()} }}"
+        game = Game(saved=saved, **options)
+        game.ns.Browser.Open()
+        game.stub.run(game.ns.Browser.window.pages.buttons[2], "OnClick")
+        return game, game.ns.DungeonView.view
+
+    @staticmethod
+    def lanes(view) -> list:
+        return [lane for lane in view.lanes.values() if lane.shown]
+
+    @staticmethod
+    def chips(lane) -> list:
+        return [chip for chip in lane.chips.values() if chip.shown]
+
+    def chip_of(self, view, name: str):
+        wanted = self.item_id(name)
+        return next(chip for lane in self.lanes(view) for chip in self.chips(lane) if chip.entry.piece.id == wanted)
+
+    def test_dungeons_tab(self):
+        game = Game(saved=self.DESTRUCTION + " EasyBISDB = { listAlts = false }")
+        game.ns.Browser.Open()
+        window = game.ns.Browser.window
+        self.assertIsNone(game.ns.DungeonView.view, "the tab is made when it is first asked for")
+        game.stub.run(window.pages.buttons[2], "OnClick")
+        view = game.ns.DungeonView.view
+        self.assertTrue(view.shown)
+        self.assertTrue(window.pages.buttons[2].checked.shown)
+        for hidden in (window.slot, window.source, window.zone, window.reputation, window.add, window.scroll, window.tabs):
+            self.assertFalse(hidden.shown)
+        for kept in (window.spec, window.list, window.phase, window.alts):
+            self.assertTrue(kept.shown)
+
+        model = view.model
+        self.assertGreater(model.need, 0)
+        self.assertEqual(plain(view.summary.text), f"{model.need} best picks to farm  ·  {model.dungeons} dungeons")
+        self.assertEqual(look(view.mode.buttons[1]), "lit", "a band per dungeon until the player asks for the grid")
+        self.assertTrue(view.runsPane.shown)
+        self.assertFalse(view.gridPane.shown or view.gridHead.shown)
+        self.assertFalse(view.empty.shown)
+
+        # the set: every slot, a piece of no dungeon in black and white, and a little darker
+        tiles = list(view.tiles.values())
+        self.assertEqual([(tile.piece.slot, tile.piece.rank) for tile in tiles],
+                         [(cell.slot, cell.rank) for cell in model.sheet.values()])
+        self.assertEqual(len(tiles), 17)
+        for tile in tiles:
+            held = tile.piece.runs is not None
+            self.assertEqual((tile.alpha, bool(tile.icon.art.desaturated), bool(tile.grey)),
+                             (1 if held else self.GREY, not held, not held), tile.piece.slot)
+            self.assertEqual(tile.rest, tile.alpha)
+            self.assertFalse(tile.icon.check.shown or tile.glow.shown)
+        self.assertTrue(any(tile.grey for tile in tiles) and any(not tile.grey for tile in tiles))
+        lefts = [tile.points[1][4] for tile in tiles]
+        self.assertTrue(all(after - before >= self.TILE + 5 for before, after in zip(lefts, lefts[1:])), lefts)
+        self.assertGreater(lefts[10] - lefts[9], lefts[9] - lefts[8], "room before the rings")
+        self.assertLessEqual(lefts[-1] + self.TILE, self.PANE)
+
+        # a band per run, the one with the most to get first, each under the one before
+        lanes = self.lanes(view)
+        self.assertEqual([lane.run.key for lane in lanes], [run.key for run in model.runs.values()])
+        offset = None
+        for lane in lanes:
+            run = lane.run
+            self.assertEqual((lane.count.text, lane.count.shown), (str(len(self.chips(lane))), True),
+                             f"{run.key}: the number of pieces the line shows")
+            self.assertEqual(lane.name.text, run.name)
+            self.assertEqual(lane.name.points[1][5], 8 if run.noWing else 0,
+                             f"{run.key}: the name alone in the middle of its band, or over its note")
+            self.assertIsNone(lane.pips, "no square under the name: the count and the pieces say it")
+            top = -lane.points[1][5]
+            if offset is not None:
+                self.assertEqual(top, offset, run.key)
+            offset = top + lane.height + 6
+            chips = self.chips(lane)
+            self.assertEqual([chip.entry.piece.id for chip in chips], [entry.piece.id for entry in run.entries.values()])
+            for chip in chips:
+                self.assertFalse(chip.tag.shown)
+                self.assertLessEqual(chip.points[1][4] + self.CHIP, self.PANE)
+                self.assertLessEqual(-chip.points[1][5] + chip.height, lane.height)
+        turban = self.chip_of(view, "Spellweaver's Turban")
+        self.assertEqual(turban.run.key, "229:u")
+        self.assertEqual(strip_colors(turban.name.text), "Spellweaver's Turban")
+        self.assertRegex(plain(turban.sub.text), r"^General Drakkisath  \d+%$")
+        self.assertFalse(turban.icon.quest.shown)
+        self.assertEqual(plain(self.chip_of(view, "Sublime Wristguards").sub.text).split("  ")[0], "2 bosses")
+
+        # what no dungeon holds, in one line
+        shown = [button for button in view.elsewhere.values() if button.shown]
+        self.assertEqual([button.category for button in shown], [entry.category for entry in model.elsewhere.values()])
+        total = sum(entry.count for entry in model.elsewhere.values())
+        self.assertEqual(view.elsewhereLabel.text, f"{total} best picks from elsewhere:")
+        self.assertEqual(plain(shown[0].text.text), f"{model.elsewhere[1].count} {game.ns.Sources.CategoryName(shown[0].category)}")
+        self.assertEqual(model.need + model.got + total, sum(1 for cell in model.sheet.values() if cell.id))
+
+        # leaving the tab hides it
+        game.stub.run(window.pages.buttons[1], "OnClick")
+        self.assertFalse(view.shown)
+        self.assertTrue(window.scroll.shown and window.slot.shown and window.tabs.shown)
+
+    def test_dungeons_light_what_the_mouse_is_on(self):
+        game, view = self.open_dungeons()
+        busy = next(lane for lane in self.lanes(view) if lane.run.need == 2)   # a run that holds two best picks
+        key, name = busy.run.key, busy.run.name
+        chip, sibling = self.chips(busy)
+        tiles = {(tile.piece.slot, tile.piece.rank): tile for tile in view.tiles.values()}
+        mine = tiles[chip.entry.piece.slot, chip.entry.piece.rank]
+        same = tiles[sibling.entry.piece.slot, sibling.entry.piece.rank]
+        other = next(tile for tile in view.tiles.values() if tile.piece.runs is not None and tile.piece.runs[key] is None)
+        game.stub.run(chip, "OnEnter")
+        self.assertEqual((mine.alpha, mine.glow.shown), (1, True))
+        self.assertEqual((same.alpha, same.glow.shown), (self.FADED, False),
+                         "another piece of the same run is not what the mouse is on")
+        self.assertEqual(other.alpha, self.FADED)
+        for lane in self.lanes(view):
+            self.assertEqual(lane.alpha, 1 if lane.run.key == key else 0.35, lane.run.key)
+        said = [plain(line[1]) for line in game.lua.globals().GameTooltip.lines.values()]
+        self.assertTrue(any(re.fullmatch(re.escape(name) + r" - .+ \(\d+(\.\d)?%\)", text) for text in said), said)
+        self.assertIn("Click: the pieces of this slot. Shift-click: link it.", said)
+        game.stub.run(chip, "OnLeave")
+        self.assertEqual([tile.alpha for tile in view.tiles.values()], [tile.rest for tile in view.tiles.values()])
+        self.assertTrue(all(lane.alpha == 1 for lane in self.lanes(view)))
+        self.assertFalse(any(tile.glow.shown for tile in view.tiles.values()))
+        # a run lights every slot it holds; a slot of the set lights its run
+        game.stub.run(busy, "OnEnter")
+        self.assertEqual((mine.alpha, same.alpha, other.alpha), (1, 1, self.FADED))
+        game.stub.run(busy, "OnLeave")
+        game.stub.run(mine, "OnEnter")
+        self.assertEqual(busy.alpha, 1)
+        self.assertTrue(all(lane.alpha == 0.35 for lane in self.lanes(view) if lane.run.key != key))
+        game.stub.run(mine, "OnLeave")
+        # a slot of no dungeon lights nothing, and says where its piece comes from
+        elsewhere = next(tile for tile in view.tiles.values() if tile.piece.id and tile.piece.runs is None)
+        game.stub.run(elsewhere, "OnEnter")
+        self.assertTrue(all(lane.alpha == 1 for lane in self.lanes(view)))
+        said = [plain(line[1]) for line in game.lua.globals().GameTooltip.lines.values()]
+        self.assertTrue(any(text.startswith("Source: ") for text in said), said)
+
+    def test_dungeon_pieces_open_their_slot_or_link(self):
+        game, view = self.open_dungeons()
+        state = game.ns.Browser.state
+        turban = self.item_id("Spellweaver's Turban")
+        game.stub.itemNames[turban] = "Spellweaver's Turban"
+        chip = self.chip_of(view, "Spellweaver's Turban")
+        game.stub.modifier = True
+        game.stub.run(chip, "OnClick")
+        self.assertIn(f"item:{turban}", game.stub.linked, "Shift-click links the item")
+        self.assertEqual(state.page, "dungeons")
+        game.stub.modifier = False
+        state.tab = "reputations"   # whatever the lists were left on
+        game.stub.run(chip, "OnClick")
+        self.assertEqual((state.page, state.tab, state.slot), ("lists", "items", "head"))
+        self.assertFalse(view.shown)
+        self.assertTrue(game.ns.Browser.window.tabs.shown)
+        # from the set
+        game.stub.run(game.ns.Browser.window.pages.buttons[2], "OnClick")
+        tile = next(tile for tile in view.tiles.values() if tile.piece.slot == "neck")
+        game.stub.run(tile, "OnClick")
+        self.assertEqual((state.page, state.tab, state.slot), ("lists", "items", "neck"))
+
+    def test_dungeons_elsewhere_opens_the_items(self):
+        game, view = self.open_dungeons()
+        state = game.ns.Browser.state
+        state.slot = "head"
+        button = view.elsewhere[1]
+        game.stub.run(button, "OnEnter")
+        tooltip = game.lua.globals().GameTooltip
+        self.assertEqual(tooltip.text, game.ns.Sources.CategoryName(button.category))
+        self.assertEqual([plain(line[1]) for line in tooltip.lines.values()], ["Click: these pieces in the Items tab."])
+        game.stub.run(button, "OnClick")
+        self.assertEqual((state.page, state.tab, state.source, state.slot), ("lists", "items", button.category, None))
+        rows = [row for row in game.ns.Browser.window.rowData.values() if row.kind == "item"]
+        self.assertTrue(rows and all(row.source.category == button.category for row in rows))
+
+    def test_dungeons_count_what_the_player_has(self):
+        game, view = self.open_dungeons()
+        before = view.model.need
+        busy = next(lane for lane in self.lanes(view) if lane.run.need == 2)   # a run that holds two best picks
+        key = busy.run.key
+        first, second = (chip.entry.piece.id for chip in self.chips(busy))
+        slot = self.chips(busy)[0].entry.piece.slot
+        game.stub.itemCounts[first] = 1
+        game.stub.fire("BAG_UPDATE_DELAYED")
+        self.assertEqual(plain(view.summary.text),
+                         f"{before - 1} best picks to farm  ·  {view.model.dungeons} dungeons  ·  1 already yours")
+        lane = next(lane for lane in self.lanes(view) if lane.run.key == key)
+        chip, sibling = self.chips(lane)
+        self.assertEqual((chip.entry.piece.id, sibling.entry.piece.id), (first, second))
+        self.assertTrue(chip.icon.check.shown)
+        self.assertEqual((chip.name.alpha, chip.sub.alpha), (self.DIM, self.DIM))
+        self.assertEqual(sibling.name.alpha, 1)
+        self.assertEqual(lane.count.text, "2", "the line still shows both")
+        tile = next(tile for tile in view.tiles.values() if tile.piece.id == first and tile.piece.slot == slot)
+        self.assertTrue(tile.icon.check.shown)
+        self.assertEqual(tile.alpha, 1)
+        # the run done: its count gives way to a check, and it goes after the others
+        game.stub.equipped[second] = True
+        game.stub.fire("PLAYER_EQUIPMENT_CHANGED")
+        last = self.lanes(view)[-1]
+        self.assertEqual(last.run.key, key)
+        self.assertEqual((last.count.text, last.band.shown), ("2", False), "its colour goes, its count stays")
+        # every dungeon piece in hand
+        for cell in view.model.sheet.values():
+            if cell.id:
+                game.stub.itemCounts[cell.id] = 1
+        game.stub.fire("BAG_UPDATE_DELAYED")
+        self.assertEqual(plain(view.summary.text), "Every best pick the dungeons hold is yours.")
+        self.assertIn("|cffffd100", view.summary.text)
+        # a hidden tab does not follow the bags
+        game.stub.run(game.ns.Browser.window.pages.buttons[1], "OnClick")
+        game.stub.fire("BAG_UPDATE_DELAYED")
+        self.assertFalse(view.shown)
+
+    def test_dungeons_alternatives(self):
+        game, view = self.open_dungeons()
+        window = game.ns.Browser.window
+        without = len(self.lanes(view))
+        self.assertFalse(any(chip.tag.shown for lane in self.lanes(view) for chip in self.chips(lane)))
+        game.stub.run(window.alts, "OnClick")
+        self.assertTrue(game.ns.db.listAlts)
+        lanes = self.lanes(view)
+        self.assertGreater(len(lanes), without)
+        tagged = [chip for lane in lanes for chip in self.chips(lane) if chip.tag.shown]
+        self.assertTrue(tagged)
+        self.assertTrue(all(not chip.entry.piece.best and chip.tag.text == "Alt" for chip in tagged))
+        self.assertTrue(all(chip.icon.border.width < 38 for chip in tagged), "an alternative's picture is smaller")
+        self.assertEqual(self.chip_of(view, "Spellweaver's Turban").icon.border.width, 38)
+        # a run that holds alternatives only says so in place of a count
+        only = [lane for lane in lanes if lane.run.need == 0]
+        self.assertTrue(only)
+        self.assertTrue(all(lane.count.text == str(lane.run.alts) for lane in only), "the alternatives are in the line")
+        # the number at the head of a line is the pieces the line shows, best picks and alternatives alike
+        for lane in lanes:
+            self.assertEqual(lane.count.text, str(len(self.chips(lane))), lane.run.key)
+            self.assertEqual(lane.run.total, lane.run.need + lane.run.got + lane.run.alts)
+        self.assertEqual(lanes[-1].run.need, 0, "after the runs with something to get")
+        # more pieces than a line holds: the band grows, and the next one makes room
+        tall = [lane for lane in lanes if len(self.chips(lane)) > 3]
+        for lane in tall:
+            self.assertGreaterEqual(lane.height, 2 * 46)
+        tops = [-lane.points[1][5] for lane in lanes]
+        for lane, top, after in zip(lanes, tops, tops[1:]):
+            self.assertEqual(after, top + lane.height + 6)
+        # the slot's best pick in hand: its alternatives fade
+        game.stub.itemCounts[self.item_id("Spellweaver's Turban")] = 1
+        game.stub.fire("BAG_UPDATE_DELAYED")
+        heads = [chip for lane in self.lanes(view) for chip in self.chips(lane)
+                 if chip.entry.piece.slot == "head" and not chip.entry.piece.best]
+        self.assertTrue(heads)
+        self.assertTrue(all(chip.name.alpha == self.DIM and chip.icon.art.alpha == self.DIM for chip in heads))
+
+    def test_dungeons_grid(self):
+        game, view = self.open_dungeons()
+        model = view.model
+        game.stub.run(view.mode.buttons[2], "OnClick")
+        self.assertTrue(game.ns.db.dungeonGrid)
+        self.assertTrue(game.lua.globals().EasyBISDB.dungeonGrid, "the choice is kept")
+        self.assertEqual(look(view.mode.buttons[2]), "lit")
+        self.assertTrue(view.gridPane.shown and view.gridHead.shown)
+        self.assertFalse(view.runsPane.shown)
+        model = view.model
+        # a column per run, in the order of the bands
+        headers = [header for header in view.headers.values() if header.shown]
+        self.assertEqual([header.run.key for header in headers], [run.key for run in model.runs.values()])
+        self.assertEqual([(header.count.text, header.short.text) for header in headers],
+                         [(str(run.total), run.short) for run in model.runs.values()])
+        lefts = [header.points[1][4] for header in headers]
+        width = headers[0].width
+        self.assertTrue(all(after - before == width + 3 for before, after in zip(lefts, lefts[1:])))
+        self.assertGreaterEqual(lefts[0], 250)
+        self.assertLessEqual(lefts[-1] + width + 150, self.PANE, "the last column keeps its room")
+        # a line per piece, in the order of the character sheet
+        rows = [row for row in view.rows.values() if row.shown]
+        self.assertEqual([row.piece.id for row in rows], [piece.id for piece in model.rows.values()])
+        self.assertEqual([-row.points[1][5] for row in rows], [index * 28 for index in range(len(rows))])
+        turban = next(row for row in rows if row.piece.id == self.item_id("Spellweaver's Turban"))
+        self.assertEqual(turban.used, 1)
+        cell = turban.cells[1]
+        self.assertTrue(cell.back.shown and cell.text.shown and not cell.check.shown)
+        self.assertRegex(cell.text.text, r"^\d+%$")
+        column = next(index for index, header in enumerate(headers) if header.run.key == "229:u")
+        self.assertEqual((cell.back.points[1][4], cell.back.width), (lefts[column], width), "under its run's name")
+        self.assertFalse(turban.where.shown)
+        self.assertEqual(turban.name.alpha, 1)
+        # a piece of no dungeon: dimmed, with where it comes from in the last column
+        crafted = next(row for row in rows if row.piece.runs is None)
+        self.assertEqual((crafted.used, crafted.name.alpha, crafted.icon.art.alpha), (0, self.DIM, self.DIM))
+        self.assertTrue(crafted.where.shown)
+        self.assertEqual(plain(crafted.where.text), game.ns.Sources.Short(crafted.piece.source)
+                         + ("" if crafted.piece.source.origin in ("f", "s", "w") else " *"))
+        self.assertGreater(crafted.where.points[1][4], lefts[-1] + width)
+        self.assertEqual(sum(1 for row in rows if row.used == 0), sum(1 for row in rows if row.piece.runs is None))
+        # the tooltip and the click are a piece's, as in the bands
+        game.stub.run(turban, "OnEnter")
+        said = [plain(line[1]) for line in game.lua.globals().GameTooltip.lines.values()]
+        self.assertTrue(any(text.startswith("Upper Blackrock Spire - ") for text in said), said)
+        game.stub.run(headers[column], "OnEnter")
+        self.assertEqual(game.lua.globals().GameTooltip.text, "Upper Blackrock Spire", "a column's short name in full")
+        game.stub.run(turban, "OnClick")
+        self.assertEqual((game.ns.Browser.state.tab, game.ns.Browser.state.slot), ("items", "head"))
+        # what the player has is checked in its cell
+        game.stub.itemCounts[turban.piece.id] = 1
+        game.stub.run(game.ns.Browser.window.pages.buttons[2], "OnClick")
+        turban = next(row for row in view.rows.values() if row.shown and row.piece.id == turban.piece.id)
+        self.assertTrue(turban.cells[1].check.shown and not turban.cells[1].text.shown)
+        self.assertEqual(turban.name.alpha, self.DIM)
+        # back to the bands, and the grid again for the next session
+        game.stub.run(view.mode.buttons[1], "OnClick")
+        self.assertTrue(view.runsPane.shown and not view.gridPane.shown and not view.gridHead.shown)
+        again, grid = self.open_dungeons(grid=True)
+        self.assertTrue(grid.gridPane.shown and not grid.runsPane.shown)
+        self.assertEqual(look(grid.mode.buttons[2]), "lit")
+
+    def test_dungeons_grid_with_alternatives(self):
+        for count in (2, 6):
+            game, view = self.open_dungeons(alts=True, grid=True)
+            game.ns.SetAlternatives(game.ns, count)
+            model = view.model
+            headers = [header for header in view.headers.values() if header.shown]
+            rows = [row for row in view.rows.values() if row.shown]
+            self.assertEqual(len(rows), len(model.rows))
+            self.assertGreater(len(rows), 17)
+            width = headers[0].width
+            self.assertGreaterEqual(width, 30)
+            self.assertLessEqual(headers[-1].points[1][4] + width, self.PANE, f"{len(headers)} runs fit")
+            # an alternative is set in from its slot's best pick; the first line of a slot is marked
+            alternative = next(row for row in rows if not row.piece.best)
+            best = next(row for row in rows if row.piece.best)
+            self.assertGreater(alternative.icon.border.points[1][4], best.icon.border.points[1][4])
+            self.assertEqual(sum(1 for row in rows if row.piece.first),
+                             len({row.piece.slot for row in rows}))
+            for row in rows:
+                self.assertEqual(row.used, len(list(row.piece.order.values())) if row.piece.order else 0)
+
+    def test_dungeons_say_a_quest(self):
+        game, view = self.open_dungeons(saved=self.DISCIPLINE)
+        rose = self.chip_of(view, "Penelope's Rose")
+        self.assertEqual(rose.run.key, "289")
+        self.assertTrue(rose.icon.quest.shown, "the game's quest mark on the piece")
+        self.assertIn("AvailableQuestIcon", rose.sub.text)
+        self.assertEqual(plain(rose.sub.text), "Kirtonos the Herald", "the quest's title in place of a boss, and no rate")
+        self.assertIsNone(rose.entry.percent)
+        lane = next(lane for lane in self.lanes(view) if lane.run.key == "289")
+        self.assertEqual(rose.run.need, sum(1 for chip in self.chips(lane) if chip.entry.piece.best),
+                         "a quest's reward counts as a piece to get there")
+        game.stub.run(rose, "OnEnter")
+        said = [plain(line[1]) for line in game.lua.globals().GameTooltip.lines.values()]
+        self.assertIn("Scholomance - reward of the quest Kirtonos the Herald. One run is enough.", said)
+        tile = next(tile for tile in view.tiles.values() if tile.piece.id == rose.entry.piece.id)
+        self.assertFalse(tile.grey or tile.icon.art.desaturated, "a dungeon's piece in the set")
+        # in the grid: the quest mark in the run's cell
+        game.stub.run(view.mode.buttons[2], "OnClick")
+        row = next(row for row in view.rows.values() if row.shown and row.piece.id == rose.entry.piece.id)
+        self.assertEqual(row.used, 1)
+        self.assertIn("AvailableQuestIcon", row.cells[1].text.text)
+        self.assertTrue(row.icon.quest.shown)
+
+    def test_dungeons_say_when_no_wing_is_named(self):
+        """Stratholme alone, next to Stratholme: Undead, would pass for the other wing."""
+        game, view = self.open_dungeons(saved=self.DISCIPLINE, alts=True)
+        lanes = {lane.run.key: lane for lane in self.lanes(view)}
+        if "329" not in lanes:
+            self.skipTest("the data places every piece of Stratholme in a wing by now")
+        whole = lanes["329"]
+        self.assertEqual((whole.name.text, whole.note.shown, whole.note.text), ("Stratholme", True, "wing not named"))
+        self.assertEqual(whole.note.points[1][4], whole.name.points[1][4], "under the name")
+        self.assertGreater(whole.name.points[1][5], 0)
+        self.assertLess(whole.note.points[1][5], 0)
+        for key, lane in lanes.items():
+            self.assertEqual(bool(lane.note.shown), key in ("329", "429", "229", "189"), key)
+        game.stub.run(self.chips(whole)[0], "OnEnter")
+        said = [plain(line[1]) for line in game.lua.globals().GameTooltip.lines.values()]
+        self.assertTrue(any(text.startswith("Stratholme (wing not named) - ") for text in said), said)
+        # in the grid: the column's name in full says it too
+        game.stub.run(view.mode.buttons[2], "OnClick")
+        header = next(header for header in view.headers.values() if header.shown and header.run.key == "329")
+        game.stub.run(header, "OnEnter")
+        tooltip = game.lua.globals().GameTooltip
+        self.assertEqual((tooltip.text, [line[1] for line in tooltip.lines.values()]), ("Stratholme", ["wing not named"]))
+
+    def test_dungeons_tab_with_no_dungeon(self):
+        game, view = self.open_dungeons(saved=self.FERAL, cls="DRUID")
+        if view.model.need:
+            self.skipTest("the data gives the Feral Druid a dungeon piece by now")
+        self.assertEqual(self.lanes(view), [])
+        self.assertEqual(view.summary.text, "")
+        self.assertTrue(view.empty.shown)
+        self.assertEqual(plain(view.empty.text), "No best pick of this spec comes from a dungeon.\n\n"
+                         "Turn on Alternatives to see the dungeon pieces that come next.")
+        self.assertTrue(all(tile.grey and tile.icon.art.desaturated for tile in view.tiles.values() if tile.piece.id))
+        self.assertFalse(any(tile.grey for tile in view.tiles.values() if not tile.piece.id), "an empty slot has no picture")
+        self.assertTrue(view.elsewhereLabel.shown)
+        # with the alternatives, the dungeons that hold some
+        game.stub.run(game.ns.Browser.window.alts, "OnClick")
+        self.assertFalse(view.empty.shown)
+        lanes = self.lanes(view)
+        self.assertTrue(lanes and all(lane.run.need == 0 and lane.count.text == str(lane.run.alts) for lane in lanes))
+        # the grid has its lines all the same, and no column
+        game.stub.run(game.ns.Browser.window.alts, "OnClick")
+        game.stub.run(view.mode.buttons[2], "OnClick")
+        self.assertFalse(any(header.shown for header in view.headers.values()))
+        self.assertTrue(all(row.where.shown for row in view.rows.values() if row.shown))
+
+    def test_dungeons_follow_the_spec_the_list_and_the_phase(self):
+        game, view = self.open_dungeons()
+        state = game.ns.Browser.state
+        before = [run.key for run in view.model.runs.values()]
+        state["class"], state.spec = "WARRIOR", 2
+        game.ns.SetOption(game.ns, "minimap", not game.ns.db.minimap)   # any option change refreshes
+        self.assertNotEqual([run.key for run in view.model.runs.values()], before)
+        self.assertEqual([lane.run.key for lane in self.lanes(view)], [run.key for run in view.model.runs.values()])
+        for token in test_addon.CLASSES:
+            for spec in self.kept[token]:
+                for mode in ladders.MODES:
+                    for grid in (False, True):
+                        state["class"], state.spec, state.list = token, spec, mode
+                        game.ns.SetOption(game.ns, "dungeonGrid", grid)
+                        game.ns.SetOption(game.ns, "minimap", not game.ns.db.minimap)
+                        self.assertEqual(bool(view.grid), grid)
+                        self.assertEqual(len(self.lanes(view)) if not grid else
+                                         len([header for header in view.headers.values() if header.shown]),
+                                         len(view.model.runs), (token, spec, mode, grid))
+
+    def test_dungeons_in_french(self):
+        game, view = self.open_dungeons(locale="frFR")
+        window = game.ns.Browser.window
+        game.stub.run(window.pages.buttons[1], "OnEnter")
+        self.assertEqual(game.lua.globals().GameTooltip.text, "Listes d'équipement")
+        game.stub.run(window.pages.buttons[2], "OnEnter")
+        self.assertEqual(game.lua.globals().GameTooltip.text, "Donjons")
+        self.assertEqual([label(button) for button in view.mode.buttons.values()], ["Par donjon", "Par pièce"])
+        self.assertEqual(plain(view.summary.text), f"{view.model.need} pièces BIS à farmer  ·  {view.model.dungeons} donjons")
+        names = [lane.name.text for lane in self.lanes(view)]
+        self.assertIn("Sommet du pic Blackrock", names)
+        self.assertIn("Stratholme : Vivants", names)
+        self.assertTrue(view.elsewhereLabel.text.endswith("pièces BIS viennent d'ailleurs :"))
 
 
 @unittest.skipIf(lupa is None, "lupa is not installed")

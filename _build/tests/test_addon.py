@@ -23,9 +23,11 @@ sys.path.insert(0, str(BUILD))
 import consumable_lists  # noqa: E402
 import fdb  # noqa: E402
 import ladders  # noqa: E402
+import luaout  # noqa: E402
 import phases  # noqa: E402
 import reputations  # noqa: E402
 import ranks  # noqa: E402
+import runs  # noqa: E402
 
 try:
     import lupa
@@ -1481,6 +1483,261 @@ class CostTest(unittest.TestCase):
         for faction in ("Alliance", "Horde"):
             game = Game(faction=faction, cls="DRUID")
             self.assertEqual(game.ns.Ladders.For("DRUID", 1, "pve").back.best[1].id, self.CLOAK, faction)
+
+
+@unittest.skipIf(lupa is None, "lupa is not installed")
+class DungeonsTest(unittest.TestCase):
+    """Which dungeons hold a spec's picks (Dungeons.lua), against the generator's data."""
+    DESTRUCTION = ("WARLOCK", 3)
+
+    @classmethod
+    def setUpClass(cls):
+        cls.db = fdb.load(BUILD / "cache" / "ForeverDB")
+        cls.kept = ladders.build_all(cls.db)
+        cls.by_name = {item["name"]: item_id for item_id, item in cls.db.items.items()}
+
+    def item(self, name: str) -> int:
+        return self.by_name[name]
+
+    @staticmethod
+    def model(game, token, spec, mode="pve"):
+        return game.ns.Dungeons.For(game.lua.table_from({"class": token, "spec": spec, "list": mode}))
+
+    # -- reference: what the generator's data says ----------------------------------------------
+
+    def expected_runs(self, item_id: int, side="a") -> list[str] | None:
+        """The keys of the runs the addon should place an item in, in order; None for an item of elsewhere."""
+        item = self.db.items.get(item_id)
+        if item is None:
+            return None
+        sources = phases.shown_sources(item)[:luaout.SOURCES_PER_ITEM]
+
+        def meant_for(source) -> str:
+            """The faction a source read in QuestieDB is for: the addon passes over the other side's."""
+            index = {"q": 4, "v": 7}.get(source[0]) if source[-1] == "t" else None
+            return source[index] if index is not None and len(source) > index else ""
+
+        own = next((source for source in sources if meant_for(source) in ("", side)), sources[0] if sources else None)
+        if own is None:
+            return None
+
+        def dungeon(number: int) -> bool:
+            return (self.db.instances[number] + ["", ""])[1] != "raid"
+
+        if own[0] == "q":
+            place = self.db.quest_places.get(int(own[1]))
+            return [f"{place[0]}:{place[1]}" if place[1] else str(place[0])] if place and dungeon(place[0]) else None
+        if own[0] != "d" or own[4] == "1" or not dungeon(int(own[1])):
+            return None
+        keys = []
+        for source in sources:
+            if source[0] == "d" and source[4] != "1" and dungeon(int(source[1])):
+                wing = runs.wing_of(self.db.boss_wings, int(source[1]), source[2])
+                key = f"{source[1]}:{wing}" if wing else source[1]
+                if key not in keys:
+                    keys.append(key)
+        return keys or None
+
+    # -- an item's runs ---------------------------------------------------------------------
+
+    def test_an_item_says_its_runs(self):
+        game = Game()
+        runs_of = lambda name: [dict(drop.items()) for drop in (game.ns.Sources.Runs(self.item(name)) or game.lua.table()).values()]
+        turban = runs_of("Spellweaver's Turban")
+        self.assertEqual([(drop["run"], drop["instance"], drop["wing"], drop["boss"]) for drop in turban],
+                         [("229:u", 229, "u", "General Drakkisath")])
+        self.assertGreater(turban[0]["percent"], 5)
+        self.assertEqual(turban[0]["origin"], "w")
+        self.assertNotIn("quest", turban[0])
+        # two bosses of one wing; a dungeon without wings; a dungeon ForeverDB's table lacks
+        self.assertEqual([drop["run"] for drop in runs_of("Sublime Wristguards")], ["429:n", "429:n"])
+        self.assertEqual([(drop["run"], drop.get("wing")) for drop in runs_of("Bonecreeper Stylus")], [("289", None)])
+        self.assertEqual([drop["run"] for drop in runs_of("Behemoth Bones")], ["2974"])
+        # a quest done in a dungeon: its title, and no boss
+        girdle = runs_of("Omokk's Girth Restrainer")
+        self.assertEqual([(drop["run"], drop["boss"]) for drop in girdle], [("229:l", "")])
+        self.assertIn(girdle[0]["quest"], ("Warlord's Command", "Maxwell's Mission"))
+        self.assertNotIn("percent", girdle[0])
+        # what no dungeon holds: crafted, a quest of the open world, an item the data does not have
+        for name in ("Lionheart Helm", "Mark of Fordring"):
+            self.assertIsNone(game.ns.Sources.Runs(self.item(name)), name)
+        self.assertIsNone(game.ns.Sources.Runs(1))
+        self.assertTrue(game.ns.Sources.Owned is not None and not game.ns.Sources.Owned(self.item("Lionheart Helm")))
+
+    def test_a_raid_is_no_run(self):
+        game = Game()
+        raids = [item_id for item_id in luaout.shown_ids(self.kept)
+                 if item_id in self.db.items and self.db.items[item_id]["sources"]
+                 and phases.shown_sources(self.db.items[item_id])[0][0] == "d"
+                 and phases.shown_sources(self.db.items[item_id])[0][4] == "1"]
+        self.assertTrue(raids)
+        for item_id in raids:
+            self.assertIsNone(game.ns.Sources.Runs(item_id), item_id)
+
+    def test_every_listed_item_has_the_generators_runs(self):
+        for faction, side in (("Alliance", "a"), ("Horde", "h")):
+            game = Game(faction=faction)
+            for item_id in sorted(luaout.shown_ids(self.kept)):
+                found = game.ns.Sources.Runs(item_id)
+                keys = None
+                if found:
+                    keys = []
+                    for drop in found.values():
+                        if drop.run not in keys:
+                            keys.append(drop.run)
+                self.assertEqual(keys, self.expected_runs(item_id, side), (item_id, faction))
+
+    def test_runs_are_named(self):
+        game = Game()
+        name = game.ns.Sources.RunName
+        self.assertEqual((name(229, "u"), name(429, "n"), name(329, "l")),
+                         ("Upper Blackrock Spire", "Dire Maul: North", "Stratholme: Living"))
+        self.assertEqual(name(289), "Scholomance", "the data's name until the game gives its own")
+        self.assertEqual(name(2974), "Blackmaw Hold")
+        game.stub.zoneNames[289] = "Scholomance (the game's)"
+        self.assertEqual(name(289), "Scholomance (the game's)")
+        self.assertEqual(name(229, "x"), "Blackrock Spire", "a wing nothing knows is the dungeon")
+        french = Game(locale="frFR")
+        self.assertEqual(french.ns.Sources.RunName(229, "u"), "Sommet du pic Blackrock")
+        self.assertEqual(french.ns.Sources.RunName(429, "e"), "Hache-tripes : Est")
+        # every wing the data names has its name in both languages
+        for instance, text in game.ns.data.wings.items():
+            for wing in text.split("|"):
+                key = f"WING_{instance}_{wing.split('^')[0]}"
+                self.assertEqual(game.ns.L[key], wing.split("^")[1], key)
+                self.assertNotEqual(french.ns.L[key], key)
+
+    # -- the runs of a spec -------------------------------------------------------------------
+
+    def test_the_runs_of_every_spec(self):
+        game = Game()
+        game.ns.SetOption(game.ns, "listAlts", False)
+        flt = default_filter()
+        for token in CLASSES:
+            for spec in self.kept[token]:
+                for mode in ladders.MODES:
+                    picks = AddonTest.expected_picks(self, token, spec, mode, flt)
+                    model = self.model(game, token, spec, mode)
+                    where = (token, spec, mode)
+                    # the set: the best pick of every slot, in the order of the character sheet
+                    sheet = [(cell.slot, cell.rank, cell.id) for cell in model.sheet.values()]
+                    self.assertEqual(len(sheet), 17, where)
+                    for slot, rank, item_id in sheet:
+                        best = picks[slot][0]
+                        self.assertEqual(item_id, best[rank - 1] if len(best) >= rank else None, (where, slot))
+                    # each piece in the runs the generator's data gives it
+                    need, per_run, elsewhere = 0, {}, 0
+                    for cell in model.sheet.values():
+                        if cell.id is None:
+                            continue
+                        expected = self.expected_runs(cell.id)
+                        self.assertEqual(list(cell.order.values()) if cell.order else None, expected, (where, cell.id))
+                        need += expected is not None
+                        elsewhere += expected is None
+                        for key in expected or ():
+                            per_run[key] = per_run.get(key, 0) + 1
+                    self.assertEqual((model.need, model.got), (need, 0), where)
+                    self.assertEqual({run.key: run.need for run in model.runs.values()}, per_run, where)
+                    self.assertEqual(model.dungeons, len(per_run), where)
+                    self.assertEqual(sum(entry.count for entry in model.elsewhere.values()), elsewhere, where)
+                    # the run with the most to get first
+                    counts = [run.need for run in model.runs.values()]
+                    self.assertEqual(counts, sorted(counts, reverse=True), where)
+                    self.assertEqual(len(model.rows), sum(1 for cell in model.sheet.values() if cell.id), where)
+
+    def test_a_run_knows_its_pieces(self):
+        game = Game()
+        game.ns.SetOption(game.ns, "listAlts", False)
+        model = self.model(game, *self.DESTRUCTION)
+        turban = self.item("Spellweaver's Turban")
+        upper = next(run for run in model.runs.values() if run.key == "229:u")
+        self.assertEqual((upper.instance, upper.wing, upper.name, upper.short), (229, "u", "Upper Blackrock Spire", "UBRS"))
+        self.assertEqual(len(list(upper.color.values())), 3)
+        self.assertEqual([entry.piece.id for entry in upper.entries.values()][0], turban)
+        self.assertEqual((upper.need, upper.got, upper.alts), (len(upper.entries), 0, 0))
+        order = [slot for slot, _ in ladders.SLOTS]
+        for run in model.runs.values():
+            slots = [order.index(entry.piece.slot) for entry in run.entries.values()]
+            self.assertEqual(slots, sorted(slots), f"{run.key}: in the order of the character sheet")
+        entry = upper.entries[1]
+        self.assertEqual((entry.piece.slot, entry.piece.best, entry.piece.owned, entry.piece.first), ("head", True, False, True))
+        self.assertAlmostEqual(entry.percent, entry.drops[1].percent)
+        self.assertEqual(entry.piece.source.category, "dungeon")
+        # a piece two bosses of a run drop: the chance that one of them does
+        wrist = next(entry for run in model.runs.values() for entry in run.entries.values()
+                     if entry.piece.id == self.item("Sublime Wristguards"))
+        first, second = (drop.percent for drop in wrist.drops.values())
+        self.assertAlmostEqual(wrist.percent, 100 * (1 - (1 - first / 100) * (1 - second / 100)))
+        # no two runs share a colour here, and every run has a short name of its own
+        runs_shown = list(model.runs.values())
+        self.assertEqual(len({tuple(run.color.values()) for run in runs_shown}), len(runs_shown))
+        self.assertEqual(len({run.short for run in runs_shown}), len(runs_shown))
+
+    def test_what_the_player_has_leaves_the_counts(self):
+        game = Game()
+        game.ns.SetOption(game.ns, "listAlts", False)
+        before = self.model(game, *self.DESTRUCTION)
+        busy = next(run for run in before.runs.values() if run.need == 2)   # a run that holds two best picks
+        key = busy.key
+        first, second = (entry.piece.id for entry in busy.entries.values())
+        game.stub.itemCounts[first] = 1    # in the bags or in the bank
+        model = self.model(game, *self.DESTRUCTION)
+        run = next(run for run in model.runs.values() if run.key == key)
+        self.assertEqual((model.need, model.got), (before.need - 1, 1))
+        self.assertEqual((run.need, run.got), (1, 1))
+        self.assertTrue(run.entries[1].piece.owned)
+        self.assertFalse(run.entries[2].piece.owned)
+        self.assertEqual(model.dungeons, before.dungeons)
+        game.stub.equipped[second] = True     # worn
+        model = self.model(game, *self.DESTRUCTION)
+        run = next(run for run in model.runs.values() if run.key == key)
+        self.assertEqual((run.need, run.got, model.dungeons), (0, 2, before.dungeons - 1))
+        self.assertEqual(list(model.runs.values())[-1].key, key, "a run with nothing left comes last")
+
+    def test_alternatives_come_with_the_option(self):
+        game = Game()
+        model = self.model(game, *self.DESTRUCTION)     # the alternatives are listed until the player says otherwise
+        picks = AddonTest.expected_picks(self, *self.DESTRUCTION, "pve", default_filter())
+        rows = [(piece.slot, piece.id, bool(piece.best)) for piece in model.rows.values()]
+        expected = []
+        for slot, _ in ladders.SLOTS:
+            best, alternatives = picks[slot]
+            expected += [(slot, item_id, True) for item_id in best] + [(slot, item_id, False) for item_id in alternatives]
+        order = [slot for slot in ("head", "neck", "shoulder", "back", "chest", "wrist", "hands", "waist", "legs", "feet",
+                                   "finger", "trinket", "main", "off", "ranged")]
+        self.assertEqual(rows, sorted(expected, key=lambda row: order.index(row[0])))
+        firsts = [piece.slot for piece in model.rows.values() if piece.first]
+        self.assertEqual(firsts, [slot for slot in order if picks[slot][0] or picks[slot][1]], "one first line per slot")
+        # an alternative counts in nothing, and sits after the run's best picks
+        alone = Game()
+        alone.ns.SetOption(alone.ns, "listAlts", False)
+        without = self.model(alone, *self.DESTRUCTION)
+        self.assertEqual((model.need, model.dungeons), (without.need, without.dungeons))
+        self.assertGreater(len(list(model.runs.values())), len(list(without.runs.values())))
+        for run in model.runs.values():
+            ranks = [bool(entry.piece.best) for entry in run.entries.values()]
+            self.assertEqual(ranks, sorted(ranks, reverse=True), run.key)
+            self.assertEqual((run.need + run.got, run.alts), (ranks.count(True), ranks.count(False)), run.key)
+        # once the slot's best pick is the player's, its alternatives have had their day
+        turban = self.item("Spellweaver's Turban")
+        heads = lambda found: [piece for piece in found.rows.values() if piece.slot == "head" and not piece.best]
+        self.assertTrue(heads(model))
+        self.assertFalse(any(piece.moot for piece in heads(model)))
+        game.stub.itemCounts[turban] = 1
+        self.assertTrue(all(piece.moot for piece in heads(self.model(game, *self.DESTRUCTION))))
+
+    def test_a_spec_with_no_dungeon(self):
+        game = Game()
+        game.ns.SetOption(game.ns, "listAlts", False)
+        feral = next(spec for spec, modes in self.kept["DRUID"].items() if self.db.classes["DRUID"]["specs"][spec]["name"] == "Feral Combat")
+        model = self.model(game, "DRUID", feral)
+        if any(self.expected_runs(cell.id) for cell in model.sheet.values() if cell.id):
+            self.skipTest("the data gives the Feral Druid a dungeon piece by now")
+        self.assertEqual((len(list(model.runs.values())), model.need, model.dungeons), (0, 0, 0))
+        self.assertTrue(list(model.elsewhere.values()))
+        # a class the data does not have: nothing, and no error
+        empty = self.model(game, "DEATHKNIGHT", 1)
+        self.assertEqual((len(list(empty.runs.values())), len(list(empty.sheet.values()))), (0, 0))
 
 
 if __name__ == "__main__":

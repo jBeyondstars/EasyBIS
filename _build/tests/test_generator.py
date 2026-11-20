@@ -38,6 +38,7 @@ import phases  # noqa: E402
 import ranks  # noqa: E402
 import questie  # noqa: E402
 import reputations  # noqa: E402
+import runs  # noqa: E402
 import simulated  # noqa: E402
 
 try:
@@ -674,6 +675,7 @@ class GeneratorTest(unittest.TestCase):
         before = fdb.load(CACHE, corrected=False)
         corrections.apply(before, corrections.load())   # the weapons' stats, not the game's items
         corrections.fill(before, corrections.load_sources())   # ... and the sources read in QuestieDB
+        corrections.confirm(before, corrections.load_drops())  # ... and the bosses counted in Forever, a source too
         corrections.price(before, corrections.load_costs())    # ... and who the neutral vendors sell to
         # ... and what the simulator ranked; placed.json is made on the corrected lists, so both sides leave it out
         unplaced = dataclasses.replace(self.db.simulated, placed={})
@@ -1832,7 +1834,7 @@ class DropsTest(unittest.TestCase):
                                phase=phases.LATER)
         db.items[SEAL].update(sources=[["d", "229", "", "0", "0", "c"]], groups=frozenset("d"))
         stray = {**self.EMBERSEER, "drops": 1, "percent": 0.3}
-        elsewhere = {"boss": "Bonesnout the Unbroken", "dungeon": "Blackmaw Hold", "drops": 77, "kills": 221, "percent": 34.8}
+        elsewhere = {"boss": "Bonesnout the Unbroken", "dungeon": "Halls of Nowhere", "drops": 77, "kills": 221, "percent": 34.8}
         report = corrections.confirm(db, self.reading(
             HOOD={"seen": [self.THELDREN]}, BELT={"seen": [stray]},
             GEM={"tooltip": {"boss": "Mizzle the Crafty", "percent": 2.5}}, CHARM={"seen": [self.THELDREN]},
@@ -1885,6 +1887,234 @@ class DropsTest(unittest.TestCase):
         self.assertEqual(loaded["about"], corrections.DROPS_ABOUT)
         self.assertEqual(loaded["items"][HOOD]["seen"], [self.EMBERSEER])
         self.assertEqual(corrections.load_drops(Path(folder) / "gone.json"), {})
+
+
+class RunsTest(unittest.TestCase):
+    """The runs of the Dungeons tab: the dungeons the data lacks, the creatures the counts place in one, the
+    wing of a boss and the dungeon of a quest."""
+
+    def db(self, **sources):
+        db = sourceless_db()
+        db.instances = {33: ["Shadowfang Keep", "dungeon"], 189: ["Scarlet Monastery", "dungeon"],
+                        229: ["Blackrock Spire", "dungeon"], 230: ["Blackrock Depths", "dungeon"],
+                        289: ["Scholomance", "dungeon"], 533: ["Naxxramas", "raid"]}
+        for name, listed in sources.items():
+            db.items[globals()[name]].update(sources=listed, groups=frozenset("w"))
+        return db
+
+    @staticmethod
+    def seen(boss, dungeon, percent, drops=50):
+        return {"seen": [{"boss": boss, "dungeon": dungeon, "drops": drops, "kills": 300, "percent": percent}]}
+
+    def test_the_dungeons_the_data_lacks_are_added(self):
+        db = self.db()
+        self.assertEqual(sorted(runs.add_dungeons(db)), sorted(runs.DUNGEONS.values()))
+        self.assertEqual(db.instances[2974], ["Blackmaw Hold", "dungeon", "", "", "", "", "w"])
+        self.assertEqual(runs.add_dungeons(db), [], "once")
+        # a dungeon the data names by now, whatever the article, is its own
+        named = self.db()
+        named.instances[7] = ["The Hall of Thanes", "dungeon"]
+        self.assertNotIn(3065, runs.add_dungeons(named))
+        self.assertEqual(corrections._instance(named, "Hall of Thanes"), 7)
+        # nothing counted yet: the data is left as it is
+        untouched = self.db()
+        self.assertEqual(corrections.confirm(untouched, {}).dungeons, [])
+        self.assertNotIn(2974, untouched.instances)
+
+    def test_a_creature_counted_in_a_dungeon_is_a_boss_of_it(self):
+        db = self.db(
+            HOOD=[["m", "9027", "Gorosh the Dervish", "10", "k"]],                       # Classic's, with no place
+            BELT=[["m", "258905", "NPC 258905", "0", "s"]],                              # seen, and not named
+            GEM=[["m", "6487", "Arcanist Doan", "0", "s"], ["w", "0", "0", "k"]],        # seen, with no rate
+            CHARM=[["d", "289", "Kirtonos", "20", "0", "k"], ["m", "10506", "Kirtonos the Herald", "20", "k"]],
+            SEAL=[["d", "229", "", "0", "0", "c"]],                                      # the wrong dungeon
+            RELIC=[["m", "3864", "Fel Steed", "8.24", "s"]],                             # seen, with its rate
+            CLOAK=[["m", "1", "NPC 1", "0", "s"], ["m", "2", "NPC 2", "0", "s"]])        # two creatures of no name
+        db.items[SEAL]["groups"] = frozenset("d")
+        report = corrections.confirm(db, {"journal": "2.0.11", "date": "2026-11-18", "items": {
+            HOOD: self.seen("Gorosh the Dervish", "Blackrock Depths", 10.3),
+            BELT: self.seen("Zul'Alai", "The Drowned City", 34.2),
+            GEM: self.seen("Arcanist Doan", "Scarlet Monastery: Library", 29.2),
+            CHARM: self.seen("Kirtonos the Herald", "Scholomance", 24),
+            SEAL: self.seen("Bonesnout the Unbroken", "Blackmaw Hold", 34.8),
+            RELIC: self.seen("Fel Steed / Shadow Charger", "Shadowfang Keep", 18.6),
+            CLOAK: self.seen("Zul'Alai", "The Drowned City", 34.2)}})
+        self.assertEqual(db.items[HOOD]["sources"], [["d", "230", "Gorosh the Dervish", "10.3", "0", "w"]])
+        self.assertEqual(db.items[HOOD]["groups"], frozenset("d"), "no longer a world drop")
+        self.assertEqual(db.items[BELT]["sources"], [["d", "2970", "Zul'Alai", "34.2", "0", "w"]],
+                         "the journal names the creature the data could not, in a dungeon the data lacked")
+        self.assertEqual(db.items[GEM]["sources"], [["d", "189", "Arcanist Doan", "29.2", "0", "w"], ["w", "0", "0", "k"]],
+                         "the rate the data lacks is the one counted")
+        self.assertEqual(db.items[GEM]["groups"], frozenset("dw"), "a world drop while another source says so")
+        self.assertEqual(db.items[CHARM]["sources"], [["d", "289", "Kirtonos", "24", "0", "w"]],
+                         "one boss under two names is one source")
+        self.assertEqual(db.items[SEAL]["sources"], [["d", "2974", "Bonesnout the Unbroken", "34.8", "0", "w"]])
+        self.assertEqual(db.items[RELIC]["sources"], [["d", "33", "Fel Steed", "8.24", "0", "s"]],
+                         "what ForeverDB saw keeps its rate and its label")
+        self.assertEqual(db.items[CLOAK]["sources"], [["m", "1", "NPC 1", "0", "s"], ["m", "2", "NPC 2", "0", "s"]],
+                         "nothing says which of two creatures the journal counted")
+        self.assertEqual((sorted(report.placed), report.moved), (sorted((HOOD, BELT, GEM, CHARM, RELIC)), [SEAL]))
+        self.assertEqual(sorted(report.dungeons), sorted(runs.DUNGEONS.values()))
+        self.assertIn("For 5 of them a creature the data gives no place is written as a boss", "\n".join(luaout._drops_note(db)))
+        # a tooltip names a creature and no dungeon: the creature stays one
+        alone = self.db(HOOD=[["m", "7", "Mizzle the Crafty", "1", "c"]])
+        corrections.confirm(alone, {"items": {HOOD: {"tooltip": {"boss": "Mizzle the Crafty", "percent": 2.5}}}})
+        self.assertEqual(alone.items[HOOD]["sources"], [["m", "7", "Mizzle the Crafty", "2.5", "w"]])
+        # a line that names the dungeon alone gives way to the one that names its boss
+        self.assertEqual(corrections._one_per_boss([["d", "189", "", "0", "0", "s"], ["d", "189", "Ironspine", "33", "0", "s"],
+                                                    ["d", "229", "", "0", "0", "s"]]),
+                         [["d", "189", "Ironspine", "33", "0", "s"], ["d", "229", "", "0", "0", "s"]])
+
+    def test_an_item_with_no_source_takes_the_bosses_counted(self):
+        db = self.db()
+        db.items[RELIC].update(added=True, phase=phases.LATER)   # a piece added from the game
+        count = lambda boss, drops, percent: {"boss": boss, "dungeon": "Shaper's Terrace", "drops": drops, "kills": 116,
+                                              "percent": percent}
+        report = corrections.confirm(db, {"journal": "2.0.11", "date": "2026-11-18", "items": {
+            HOOD: {"seen": [count("Thunderhoof", 38, 32.8), count("Bolt / Cinder", 5, 4.3), count("A Stray", 1, 0.9)]},
+            BELT: self.seen('\\"Pyromancer\\" Braxton', "Halls of Nowhere", 44.9),
+            GEM: {"tooltip": {"boss": "Thora Feathermoon", "percent": 6.24}},
+            CHARM: self.seen("Pusillin", "Dire Maul: East", 24.4, drops=2),
+            RELIC: self.seen("Blazeroar", "Alcaz Prison", 28.6)}})
+        hood = db.items[HOOD]
+        self.assertEqual(hood["sources"], [["d", "3001", "Thunderhoof", "32.8", "0", "w"], ["d", "3001", "Bolt", "4.3", "0", "w"]],
+                         "every boss counted often enough, the likeliest first")
+        self.assertEqual((hood["groups"], phases.item_phase(hood)), (frozenset("d"), phases.PRE_RAID))
+        self.assertEqual(db.items[BELT]["sources"], [["m", "0", '"Pyromancer" Braxton', "44.9", "w"]],
+                         "a dungeon nothing has: the boss, as a creature")
+        self.assertEqual((db.items[GEM]["sources"], db.items[GEM]["groups"]), ([], frozenset("u")),
+                         "a tooltip names a creature and no place")
+        self.assertEqual(db.items[CHARM]["sources"], [], "two drops may be a stray record")
+        relic = db.items[RELIC]
+        self.assertEqual((relic["sources"], relic["groups"], relic["phase"]),
+                         ([["d", "2994", "Blazeroar", "28.6", "0", "w"]], frozenset("u"), phases.LATER),
+                         "a piece added from the game gets the source to show, and stays where it showed")
+        self.assertEqual((report.sourced, report.items, report.moved, report.placed), ([HOOD, BELT, RELIC], [], [], []))
+        self.assertTrue(report.changed)
+        # in the lists: no longer an item of no known source
+        db.classes["PRIEST"]["pools"]["head"] = [(HOOD, 60), (RELIC, 60)]
+        for item_id in (HOOD, RELIC):
+            db.gear[item_id] = {"inv": 1, "kind": "4.1", "req": 60, "stats": {45: 10}, "dps": 0.0, "armor": 0.0, "wand": False}
+        ladder = {entry.item_id: entry for entry in ladders.full_ladder(db, "PRIEST", 1, "pve", "head")}
+        self.assertEqual([(ladder[item_id].unsourced, ladder[item_id].phase) for item_id in (HOOD, RELIC)],
+                         [(False, phases.PRE_RAID), (True, phases.LATER)])
+        text = luaout.items_file(db, ladders.build_all(db))
+        self.assertIn(f"\n{HOOD}|Hood of Tests|d||d^3001^Thunderhoof^32.8^0^w~d^3001^Bolt^4.3^0^w\n", text)
+        self.assertIn("3 items it gives no source take the bosses counted for them", text)
+
+    def test_the_counts_say_the_wing_of_a_boss(self):
+        self.assertEqual(runs.wing_key("Dire Maul: North"), (429, "n"))
+        self.assertIsNone(runs.wing_key("Scholomance"))
+        reading = {"items": {
+            HOOD: self.seen("Pyroguard Emberseer", "Upper Blackrock Spire", 15.6),
+            BELT: self.seen("Ras Frostwhisper", "Scholomance", 20),
+            GEM: self.seen("Guard Mol'dar / Guard Slip'kik", "Dire Maul: North", 4.8),
+            CHARM: self.seen("Wandering Ogre", "Dire Maul: North", 2),
+            SEAL: self.seen("Wandering Ogre", "Dire Maul: West", 3)}}
+        wings = runs.boss_wings(reading)
+        self.assertEqual(runs.wing_of(wings, 229, "Pyroguard Emberseer"), "u")
+        self.assertEqual(runs.wing_of(wings, 429, "Guard Slip'kik"), "n", "a line of the journal may name two bosses")
+        self.assertEqual(runs.wing_of(wings, 429, "Wandering Ogre"), "", "counted in two wings: in neither for sure")
+        self.assertEqual(runs.wing_of(wings, 229, "Lord Valthalak"), "u", "the counts say nothing of him: written by hand")
+        self.assertEqual(runs.wing_of(wings, 229, "Warchief Rend"), "",  "nobody of that name")
+        self.assertEqual(runs.wing_of(wings, 289, "Ras Frostwhisper"), "", "Scholomance has no wing")
+        self.assertEqual(runs.wing_of(wings, 229, ""), "")
+        # two spellings of one boss
+        self.assertEqual(runs.wing_of({229: {"pyroguard emberseer": "u"}}, 229, "Pyroguard"), "u")
+        db = self.db()
+        corrections.confirm(db, reading)
+        self.assertEqual(db.boss_wings, wings, "kept for the data files")
+        for instance, bosses in runs.BOSS_WINGS.items():
+            self.assertLessEqual(set(bosses.values()), set(runs.WINGS[instance]), instance)
+
+    def quest_db(self):
+        db = sourceless_db()
+        db.instances[533] = ["Naxxramas", "raid"]
+        db.items[HOOD]["sources"] = [["q", "700", "A Dungeon Errand", "55", "h", "t"], ["q", "701", "An Errand", "50", "", "t"]]
+        db.items[GEM]["sources"] = [["q", "703", "A Raid Errand", "60", "", "t"], ["v", "5", "A Vendor", "", "", "", "", "", "s"]]
+        return db
+
+    def test_the_dungeon_of_a_quest_is_read_in_questiedb(self):
+        rows = {**QUESTIE_ROWS, ("Quest", 703, "S"): {1: "A Raid Errand", 4: 60, 5: 60, 17: 3456}}
+        with tempfile.TemporaryDirectory() as folder:
+            store = questie.Store(questie_addon(Path(folder) / "QuestieDB", rows))
+            reading = runs.collect_quests(self.quest_db(), store, today="2026-11-20")
+            self.assertEqual(reading, {"questiedb": "9.9.9", "date": "2026-11-20", "quests": {
+                700: {"name": "A Dungeon Errand", "instance": 47}, 703: {"name": "A Raid Errand", "instance": 533}}},
+                "a quest of the open world is no dungeon's")
+            path = Path(folder) / "quests.json"
+            self.assertEqual(runs.load_quests(path), {})
+            runs.save_quests(reading, path)
+            written = path.read_bytes()
+            self.assertNotIn(b"\r", written)
+            self.assertIn('\n    "700": {"instance": 47, "name": "A Dungeon Errand"}', written.decode("utf-8"), "one quest per line")
+            self.assertEqual(runs.load_quests(path), {**reading, "about": runs.ABOUT})
+        db = self.quest_db()
+        self.assertEqual(runs.quest_places(db, reading), {700: (47, "")}, "a raid is not run again and again")
+        self.assertEqual(runs.quest_places(db, {}), {})
+        # the wing is written by hand, and only a wing of that instance counts
+        db.instances[229] = ["Blackrock Spire", "dungeon"]
+        with mock.patch.dict(runs.QUEST_WINGS, {700: "u", 4903: "l"}, clear=True), \
+                mock.patch.dict(runs.QUEST_INSTANCES, {4903: 229}, clear=True):
+            self.assertEqual(runs.quest_places(db, reading), {700: (47, ""), 4903: (229, "l")})
+
+    def test_the_data_files_name_the_wings_and_the_dungeon_quests(self):
+        db = self.quest_db()
+        db.instances[229] = ["Blackrock Spire", "dungeon"]
+        db.items[BELT].update(groups=frozenset("d"), sources=[["d", "229", "Pyroguard Emberseer", "20", "0", "k"],
+                                                              ["d", "229", "A Stray Orc", "1", "0", "k"]])
+        db.classes["PRIEST"]["pools"]["head"] = [(HOOD, 60), (BELT, 60)]
+        for item_id in (HOOD, BELT):
+            db.gear[item_id] = {"inv": 1, "kind": "4.1", "req": 60, "stats": {45: 10}, "dps": 0.0, "armor": 0.0, "wand": False}
+        corrections.confirm(db, {"journal": "2.0.11", "date": "2026-11-18", "items": {
+            BELT: self.seen("Pyroguard Emberseer", "Upper Blackrock Spire", 15.6)}})
+        db.quest_places = {700: (47, ""), 701: (229, "l"), 999: (229, "u")}
+        text = luaout.items_file(db, ladders.build_all(db))
+        self.assertIn('\nns.data.wings = {\n[229]="l^Lower Blackrock Spire|u^Upper Blackrock Spire^Pyroguard Emberseer",\n}\n',
+                      text, "a boss nothing places is in no wing")
+        self.assertIn('\nns.data.questRuns = {\n[700]="47",\n[701]="229:l",\n}\n', text, "the quests of the items written")
+        self.assertIn('\n[47]="Razorfen Kraul^dungeon^1413^The Barrens",\n', text, "a quest's dungeon is named")
+        self.assertNotIn("a creature the data gives no place", text, "none was placed")
+        # no wing and no quest: two empty tables, which the addon reads as nothing
+        plain = luaout.items_file(tiny_db(), ladders.build_all(tiny_db()))
+        self.assertIn("\nns.data.wings = {\n}\n", plain)
+        self.assertIn("\nns.data.questRuns = {\n}\n", plain)
+
+    def test_the_build_imports_the_dungeon_quests(self):
+        with tempfile.TemporaryDirectory() as folder:
+            addon = questie_addon(Path(folder) / "QuestieDB", QUESTIE_ROWS)
+            kept = Path(folder) / "quests.json"
+            said = []
+            with mock.patch.object(runs, "FILE", kept), \
+                    mock.patch.object(build, "build", lambda details=False: 0), \
+                    mock.patch.object(fdb, "load", lambda cache, corrected=True: self.quest_db()), \
+                    mock.patch("builtins.print", lambda *words: said.append(" ".join(map(str, words)))):
+                self.assertEqual(build.main(["--import-dungeon-quests", str(addon)]), 0)
+                self.assertEqual(sorted(runs.load_quests(kept)["quests"]), [700])
+                self.assertEqual(build.main(["--import-dungeon-quests", str(Path(folder) / "nowhere")]), 1)
+            self.assertIn("1 quests of the data's items are sorted under an instance", said[0])
+            self.assertIn("No QuestieDB_Forever.toc", said[-1])
+
+    def test_the_real_data_places_its_runs(self):
+        db = fdb.load(CACHE)
+        for quest, (instance, wing) in db.quest_places.items():
+            self.assertEqual(db.instances[instance][1], "dungeon", quest)
+            self.assertTrue(wing == "" or wing in runs.WINGS[instance], quest)
+        self.assertLessEqual({quest for quest in runs.QUEST_WINGS}, set(db.quest_places), "a quest written by hand is placed")
+        for name, number in runs.DUNGEONS.items():
+            self.assertEqual(corrections._instance(db, name), number, name)
+        text = luaout.items_file(db, ladders.build_all(db))
+        # every wing the data files name is one of runs.WINGS, and no boss is in two
+        for instance, value in re.findall(r'^\[(\d+)\]="([a-z]\^[^"]*)",$', text.split("ns.data.wings = {")[1].split("}")[0], re.M):
+            bosses = [boss for wing in value.split("|") for boss in wing.split("^")[2:]]
+            self.assertEqual(len(bosses), len(set(bosses)), instance)
+            self.assertEqual([wing.split("^")[0] for wing in value.split("|")], list(runs.WINGS[int(instance)]))
+        # no item is said to drop twice from one boss of one dungeon
+        for line in text.split("ns.data.items = [==[")[1].split("]==]")[0].splitlines():
+            drops = [source.split("^") for source in line.split("|")[-1].split("~") if source.startswith("d^")]
+            for index, source in enumerate(drops):
+                for other in drops[:index]:
+                    self.assertFalse(other[1] == source[1] and source[2] and corrections._same_boss(other[2], source[2]), line)
 
 
 class ConsumableListTest(unittest.TestCase):

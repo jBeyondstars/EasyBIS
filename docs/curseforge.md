@@ -2,11 +2,13 @@
 
 **The best gear for every class and spec of WoW Forever, in one window and in your item tooltips.**
 
-Easy BIS is a BIS list for every class and spec: the best-in-slot (BIS) item of every slot at level 60, for PvE and PvP, with the alternatives behind it and where each piece comes from. Plan your pre-BIS gear before the raids, follow your full BIS gear set as new phases open, and keep track of what to farm next. It knows the enchants, the consumables and the reputations too, it lays your spec's best set out as a character sheet, and it finds the pieces of your list that are on sale at the auction house.
+Easy BIS is a BIS list for every class and spec: the best-in-slot (BIS) item of every slot at level 60, for PvE and PvP, with the alternatives behind it and where each piece comes from. Plan your pre-BIS gear before the raids, follow your full BIS gear set as new phases open, and keep track of what to farm next. It knows the enchants, the consumables and the reputations too, it lays your spec's best set out as a character sheet, it shows which dungeons to run for it, and it finds the pieces of your list that are on sale at the auction house.
 
 ## The window
 
 Type `/easybis` (or `/ebis`), or click the minimap button.
+
+The window has two tabs on its right side: the lists, with their own tabs at the bottom, and the dungeons.
 
 ![The Items tab](https://raw.githubusercontent.com/jBeyondstars/EasyBIS/main/docs/screenshots/items.png)
 
@@ -47,6 +49,19 @@ Type `/easybis` (or `/ebis`), or click the minimap button.
 - A faction that sells recipes, such as Timbermaw Hold's patterns, counts for the crafter: the tab names the recipes and their vendors, and follows your professions.
 - Click a faction to follow it in the game's reputation bar.
 - Items, Enchants and the Character sheet say which reputation a piece asks for and where you stand.
+
+![The dungeons, by dungeon](https://raw.githubusercontent.com/jBeyondstars/EasyBIS/main/docs/screenshots/dungeons.png)
+
+**Dungeons** is the second tab on the window's right side: which dungeons to run for your spec's best picks, each dungeon in its own colour.
+
+- **By dungeon** shows your set, every slot over the colour of its dungeon, then a band per dungeon with the pieces it holds, each with its boss and its drop chance. A piece no dungeon holds is in black and white.
+- **By piece** shows a line per piece and a column per dungeon, with a coloured cell where the piece drops.
+- A wing that is run on its own counts as a dungeon: Upper and Lower Blackrock Spire, the wings of Dire Maul, Stratholme and the Scarlet Monastery.
+- A quest's reward sits with the dungeon its quest is done in, under the quest mark.
+- What you already have, worn, in your bags or in the bank, is checked. The **Alternatives** button adds the alternatives of every slot.
+- Point at a dungeon to light its slots. Click a piece to see its slot in the Items tab.
+
+![The dungeons, by piece](https://raw.githubusercontent.com/jBeyondstars/EasyBIS/main/docs/screenshots/dungeons-grid.png)
 
 ## At the auction house
 

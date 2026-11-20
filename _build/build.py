@@ -26,6 +26,10 @@
                                        keep the drops Wowhead Forever counted, as the DungeonJournal and GearQuest
                                        Forever addons hold them (drops.py), then build; FOLDER defaults to the
                                        AddOns folder Easy BIS is in
+    python build.py --import-dungeon-quests [FOLDER]
+                                       keep the dungeon QuestieDB sorts each quest of the data's items under
+                                       (runs.py), then build; FOLDER defaults to the QuestieDB addon installed
+                                       next to Easy BIS
     python build.py --import-reputations [FOLDER]
                                        keep the reputations items and enchants ask for (reputations.py), then build;
                                        FOLDER holds ForeverDB's Items.lua and Recipes.lua and defaults to the local
@@ -56,6 +60,7 @@ import luaout  # noqa: E402
 import phases  # noqa: E402
 import questie  # noqa: E402
 import reputations  # noqa: E402
+import runs  # noqa: E402
 import source  # noqa: E402
 
 CACHE = HERE / "cache" / "ForeverDB"
@@ -145,6 +150,16 @@ def build(cache_dir: Path = CACHE, out_dir: Path = OUT, details: bool = False) -
               f"boss confirmed and the rate counted in Forever, {len(confirmed.named)} of them with a boss the data did "
               f"not name; {len(confirmed.moved)} take the boss counted in place of the data's; "
               f"{len(confirmed.disputed)} are named for another creature on too little to change them.")
+        print(f"  {len(confirmed.placed)} of them have a creature the data gives no place written as a boss of the "
+              f"dungeon it was counted in, {len(confirmed.dungeons)} dungeons of Forever the data lacks among them "
+              f"(runs.py); {len(confirmed.sourced)} items the data gives no source take the bosses counted for them.")
+    quests = runs.load_quests()
+    if not quests:
+        print("Dungeon quests: none read in QuestieDB yet. The Dungeons tab lists no quest (--import-dungeon-quests).")
+    else:
+        print(f"Dungeon quests (QuestieDB {quests['questiedb']}, read {quests['date']}): {len(db.quest_places)} quests "
+              f"of the data's items are done in a dungeon, {sum(1 for _, wing in db.quest_places.values() if wing)} "
+              "of them in a wing named by hand (runs.QUEST_WINGS).")
 
     reading = reputations.load()
     if not reading:
@@ -334,6 +349,9 @@ def main(argv=None) -> int:
     parser.add_argument("--import-drops", nargs="?", const="", metavar="FOLDER",
                         help="keep the drops Wowhead Forever counted, read in the DungeonJournal and GearQuest Forever "
                              "addons; FOLDER defaults to the AddOns folder Easy BIS is in")
+    parser.add_argument("--import-dungeon-quests", nargs="?", const="", metavar="FOLDER",
+                        help="keep the dungeon QuestieDB sorts each quest of the data's items under; FOLDER defaults "
+                             "to the QuestieDB addon installed next to Easy BIS")
     parser.add_argument("--import-reputations", nargs="?", const="", metavar="FOLDER",
                         help="keep the reputations items and enchants ask for; FOLDER holds ForeverDB's Items.lua and "
                              "Recipes.lua and defaults to the local copy")
@@ -485,6 +503,20 @@ def main(argv=None) -> int:
         corrections.save_drops(reading, corrections.DROPS_FILE)
         print(f"DungeonJournal {reading['journal']} and GearQuest Forever {reading['gearquest']}: drops counted for "
               f"{len(reading['items'])} items of the data. Kept in {corrections.DROPS_FILE.name}.")
+    if args.import_dungeon_quests is not None:
+        folder = Path(args.import_dungeon_quests) if args.import_dungeon_quests else questie.find(ADDONS)
+        if folder is None or not (folder / questie.TOC).exists():
+            print(f"No {questie.TOC} in {folder or ADDONS / questie.ADDON}: install the QuestieDB addon, or name "
+                  "its folder.")
+            return 1
+        try:
+            reading = runs.collect_quests(fdb.load(CACHE), questie.Store(folder))
+        except ValueError as error:
+            print(f"{folder}: {error}")
+            return 1
+        runs.save_quests(reading, runs.FILE)
+        print(f"QuestieDB {reading['questiedb']} ({folder}): {len(reading['quests'])} quests of the data's items are "
+              f"sorted under an instance. Kept in {runs.FILE.name}.")
     if args.import_reputations is not None:
         folder = Path(args.import_reputations) if args.import_reputations else CACHE
         missing = [name for name in reputations.SOURCE_FILES if not (folder / name).exists()]

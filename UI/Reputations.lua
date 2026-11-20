@@ -110,20 +110,7 @@ local function HasTemplate(name)
     return C_XMLUtil ~= nil and C_XMLUtil.GetTemplateInfo ~= nil and C_XMLUtil.GetTemplateInfo(name) ~= nil
 end
 
--- A soft band of colour fading out to the right (or downwards), on any client: the newer gradient takes colours,
--- the older one numbers; without either, an even tint.
-local function Band(texture, orientation, r, g, b, from, to)
-    texture:SetTexture("Interface\\Buttons\\WHITE8x8")
-    if texture.SetGradient and CreateColor
-        and pcall(texture.SetGradient, texture, orientation, CreateColor(r, g, b, from), CreateColor(r, g, b, to)) then
-        return
-    end
-    if texture.SetGradientAlpha then
-        texture:SetGradientAlpha(orientation, r, g, b, from, r, g, b, to)
-    else
-        texture:SetColorTexture(r, g, b, (from + to) / 2)
-    end
-end
+local Band = Widgets.Band
 
 -- The same fade over a texture's own picture; false on a client with neither gradient.
 local function Fade(texture, orientation, from, to)

@@ -76,7 +76,7 @@ for _, method in ipairs({
     "RegisterForDrag", "RegisterForClicks", "SetDontSavePosition", "StartMoving", "StopMovingOrSizing",
     "SetPortraitToAsset", "SetPortraitTextureRaw", "SetBackdrop", "SetBackdropColor",
     "SetWordWrap", "SetJustifyH", "SetColorTexture", "SetTexCoord",
-    "SetHighlightTexture", "SetScrollChild", "UpdateScrollChildRect", "Raise", "SetAllPoints", "SetDesaturated",
+    "SetHighlightTexture", "SetScrollChild", "UpdateScrollChildRect", "Raise", "SetAllPoints",
     "SetResizable", "SetResizeBounds", "StartSizing", "SetNormalTexture", "SetPushedTexture", "SetAutoFocus",
     "SetMaxLetters", "SetBlendMode", "SetDisabledTexture", "SetAtlas", "SetJustifyV",
 }) do
@@ -86,6 +86,7 @@ end
 function METHODS:SetScale(scale) self.scale = scale end
 function METHODS:SetBackdropBorderColor(r, g, b, a) self.borderColor = { r, g, b, a } end
 function METHODS:SetVertexColor(r, g, b, a) self.vertexColor = { r, g, b, a } end
+function METHODS:SetDesaturated(desaturated) self.desaturated = desaturated and true or false end
 function METHODS:SetFontObject(font) self.fontObject = font end
 
 -- Model methods (a DressUpModel): what it was asked to show.

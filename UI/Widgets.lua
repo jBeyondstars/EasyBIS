@@ -11,6 +11,10 @@ The window's controls use the game's panel, menu and achievement artwork.
                                                    options: { { value, text }, ... }; :Refresh();
                                                    :Layout(width, padding): every button that wide, or each
                                                    as wide as its text plus the padding (24 when not given)
+  Widgets.SideTabs(parent, options, get, set)      the tabs down the window's right side, a picture each, the
+                                                   chosen one lit; options: { { value, text, icon }, ... };
+                                                   .buttons, :Refresh(). The text is the tab's tooltip
+  Widgets.SIDE_ROOM                                the width they take beside the window
   Widgets.Toggle(parent, text, get, set)           a button that stays lit while on; :Refresh()
   Widgets.Check(parent, text, get, set, tip)       a checkbox with a clickable label; :Refresh()
                                                    tip: gives the sentence of its tooltip
@@ -18,6 +22,9 @@ The window's controls use the game's panel, menu and achievement artwork.
   Widgets.ListHighlight(row, layer, alpha)          a quest-list highlight for an interactive row
   Widgets.Click()                                  the game's click sound
   Widgets.Scroll(parent)                           a scroll frame and the frame it scrolls: scroll, child
+  Widgets.Band(texture, orientation, r, g, b, from, to)
+                                                   makes a texture a band of one colour that fades from one
+                                                   alpha to the other ("HORIZONTAL": to the right)
 
 An active filter has a gold label. The green badge marks a new tab.
 ]]
@@ -30,10 +37,27 @@ Widgets.MUTED = { 0.66, 0.66, 0.70 }
 
 local GOLD = { 1, 0.82, 0 }
 local CONTROL_HEIGHT = 22
+local SIDE_TAB, SIDE_TAB_GAP, SIDE_TAB_TOP = 32, 17, 36   -- a tab of the window's side, the room under it, the first one's place
+Widgets.SIDE_ROOM = SIDE_TAB + 6   -- what the side tabs take on the window's right
 local CATEGORY_ART = "Interface\\AchievementFrame\\UI-Achievement-Category-"
 
 function Widgets.Click()
     if PlaySound and SOUNDKIT then PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON) end
+end
+
+-- A soft band of colour fading out to the right (or downwards), on any client: the newer gradient takes colours,
+-- the older one numbers; without either, an even tint.
+function Widgets.Band(texture, orientation, r, g, b, from, to)
+    texture:SetTexture("Interface\\Buttons\\WHITE8x8")
+    if texture.SetGradient and CreateColor
+        and pcall(texture.SetGradient, texture, orientation, CreateColor(r, g, b, from), CreateColor(r, g, b, to)) then
+        return
+    end
+    if texture.SetGradientAlpha then
+        texture:SetGradientAlpha(orientation, r, g, b, from, r, g, b, to)
+    else
+        texture:SetColorTexture(r, g, b, (from + to) / 2)
+    end
 end
 
 function Widgets.Scroll(parent)
@@ -192,6 +216,55 @@ function Widgets.Segmented(parent, options, get, set)
     end
 
     group:Layout()
+    group:Refresh()
+    return group
+end
+
+-- The tabs down the right side of the window, as the game's spellbook and professions have them: a picture
+-- each, the chosen one lit. The game's own art, laid out as its SpellBookSkillLineTabTemplate does.
+function Widgets.SideTabs(parent, options, get, set)
+    local group = { buttons = {} }
+    for index, option in ipairs(options) do
+        local button = CreateFrame("Button", nil, parent)
+        button:SetSize(SIDE_TAB, SIDE_TAB)
+        button:SetPoint("TOPLEFT", parent, "TOPRIGHT", 0, -SIDE_TAB_TOP - (index - 1) * (SIDE_TAB + SIDE_TAB_GAP))
+        button.value, button.text = option.value, option.text
+        button.back = button:CreateTexture(nil, "BACKGROUND")
+        button.back:SetTexture("Interface\\SpellBook\\SpellBook-SkillLineTab")
+        button.back:SetSize(64, 64)
+        button.back:SetPoint("TOPLEFT", -3, 11)
+        button.icon = button:CreateTexture(nil, "ARTWORK")
+        button.icon:SetAllPoints()
+        button.icon:SetTexture(option.icon)
+        local highlight = button:CreateTexture(nil, "HIGHLIGHT")
+        highlight:SetTexture("Interface\\Buttons\\ButtonHilight-Square")
+        highlight:SetBlendMode("ADD")
+        highlight:SetAllPoints()
+        button.checked = button:CreateTexture(nil, "OVERLAY")
+        button.checked:SetTexture("Interface\\Buttons\\CheckButtonHilight")
+        button.checked:SetBlendMode("ADD")
+        button.checked:SetAllPoints()
+        button:SetScript("OnClick", function(self)
+            if get() == self.value then return end
+            Widgets.Click()
+            set(self.value)
+        end)
+        button:SetScript("OnEnter", function(self)
+            GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+            GameTooltip:SetText(self.text, 1, 1, 1)
+            GameTooltip:Show()
+        end)
+        button:SetScript("OnLeave", function() GameTooltip:Hide() end)
+        group.buttons[index] = button
+    end
+
+    function group:Refresh()
+        local current = get()
+        for _, button in ipairs(self.buttons) do
+            button.checked:SetShown(button.value == current)
+        end
+    end
+
     group:Refresh()
     return group
 end
