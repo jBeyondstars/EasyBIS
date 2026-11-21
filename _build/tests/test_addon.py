@@ -1410,11 +1410,12 @@ class ConsumablesTest(unittest.TestCase):
         self.assertEqual(self.game.ns.Consumables.PER_CATEGORY, consumable_lists.PER_CATEGORY)
 
     def specs(self) -> list:
-        """(class, spec) of every list: three specs a class, and the Paladin's fourth."""
+        """(class, spec) of every list: ForeverDB's three specs a class, and the ones the lists add."""
         return [(token, spec) for token in CLASSES for spec in sorted(self.lists[token])]
 
     def test_the_lists_are_the_generators(self):
-        self.assertEqual(len(self.specs()), 28)
+        self.assertEqual(self.specs(), [(token, spec) for token in CLASSES for spec in sorted(self.db.classes[token]["specs"])])
+        self.assertIn(("PALADIN", 4), self.specs(), "the Shockadin has its consumables")
         for (token, spec), mode, phase in product(self.specs(), consumable_lists.MODES, phases.PHASES):
             groups = self.groups(token, spec, mode, phase)
             for category, shelf in self.lists[token][spec][mode].items():
