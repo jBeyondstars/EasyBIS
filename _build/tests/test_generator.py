@@ -672,6 +672,26 @@ class GeneratorTest(unittest.TestCase):
                                  for (token, spec), ranking in reading.specs.items()})
         self.assertTrue(all(re.fullmatch(r"\d{4}-\d\d-\d\d", day) for day in found.values()), found)
 
+    def test_a_score_that_is_no_full_measure_is_flagged(self):
+        """Flag g: an entry of a list ranked by simulation whose score the file does not hold as a full measure."""
+        reading = self.db.simulated
+        flagged = plain = 0
+        for (token, spec, mode, slot), ladder in self.full.items():
+            ranking = reading.specs.get((token, spec)) if mode == "pve" else None
+            slot_ranking = ranking.slots.get(slot) if ranking else None
+            for entry in ladder:
+                expected = slot_ranking is not None and not slot_ranking.measured(entry.item_id)
+                self.assertEqual(entry.estimated, expected, (token, spec, mode, slot, entry.item_id))
+                self.assertEqual("g" in luaout.encode_entry(entry).split(":")[2:3][0] if entry.estimated else False,
+                                 entry.estimated)
+                flagged += entry.estimated
+                plain += not entry.estimated
+        self.assertGreater(flagged, 0)
+        self.assertGreater(plain, flagged, "most scores are full measures")
+        ranking = next(iter(reading.specs.values()))
+        slot = next(iter(ranking.slots.values()))
+        self.assertFalse(slot.measured(-1), "an item the file does not hold is not measured")
+
     def test_a_piece_written_by_hand_is_listed(self):
         """corrections.include: Flurry Axe, which neither ForeverDB's lists nor the capture hold, is in the lists."""
         self.assertEqual(self.db.included, sorted(corrections.HAND_LISTED))

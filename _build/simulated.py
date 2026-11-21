@@ -44,6 +44,10 @@ class SlotRanking:
     estimated: frozenset = frozenset()   # scores of the file that are not a full measure: an item the simulator
     #                                      cannot wear (a random bonus) or whose effect it does not implement
 
+    def measured(self, item_id: int) -> bool:
+        """Whether the item's score is a full measure: neither one the file marks as estimated nor a stand-in."""
+        return item_id in self.scores and item_id not in self.estimated
+
     def value(self, item_id: int, weight: float) -> float:
         """The score of an item whose weighted score is `weight`."""
         known = self.scores.get(item_id)
