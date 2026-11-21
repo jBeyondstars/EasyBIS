@@ -7,6 +7,11 @@
   - Enhancement Shaman: measured with the setup WoWSims Forever's site starts from. Sulfuron Hammer is the best weapon, ahead of Forest Defender's Axe. Bloodmail Gauntlets and Tranquil Wristguards are the best hands and wrists.
   - Retribution Paladin: Lionheart Helm is the best head in place of Black Dragonscale Helm, and Tranquil Wristguards the best wrists in place of Battleborn Armbraces. Titanic Leggings leave the first place to Champion's Legplates and Pristine Scorpid Leggings. Smolderweb's Eye and Frozen Heart of the Mountain are the best trinkets. Destiny stays the best weapon.
   - Arms Warrior: no best pick changes.
+- **An item whose effect is not simulated is ranked on what was measured.** Such an item took its place from ForeverDB's stat weights, which know nothing of a weapon's speed, and could stand far too high: Treant's Bane was second in the two-hander lists of Enhancement Shaman, Retribution Paladin and Arms Warrior, where it does 19 to 97 damage per second less than the first. It is now ranked on its measure without that effect, in the seven lists measured again so far, Combat and Assassination Rogue and Fury Warrior included. It still shows no figure.
+  - Retribution Paladin: Treant's Bane and Runeblade of Baron Rivendare leave the weapons shown, and Forest Defender's Axe is back among them.
+  - Arms Warrior: Blackblade of Shahram is second, ahead of Runeblade of Baron Rivendare; Treant's Bane leaves the weapons shown.
+  - Enhancement Shaman: Forest Defender's Axe is second, Treant's Bane fourth.
+  - Rogues: Frightalon goes down the weapon lists.
 
 ## Known issue
 

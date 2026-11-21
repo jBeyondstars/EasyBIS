@@ -312,8 +312,7 @@ class WindowTest(unittest.TestCase):
 
     def test_a_score_that_is_no_full_measure_shows_nothing(self):
         """An alternative the simulator could not measure in full keeps its place: no bar, no figure, no word."""
-        game = self.open(saved=ENHANCEMENT)
-        game.ns.SetOption(game.ns, "altCount", 6)
+        game = self.open(saved=f"EasyBISDB = {{ altCount = {ladders.MAX_ALTERNATIVES} }} " + ENHANCEMENT)
         tooltip = game.lua.globals().GameTooltip
         frames = [frame for frame in self.frames(game) if frame.data.kind == "item"]
         guessed = [frame for frame in frames if frame.data.estimated]
