@@ -1236,11 +1236,11 @@ class WindowTest(unittest.TestCase):
 
     def test_notice_under_the_filters(self):
         """A known problem awaits its fix: a band says so between the filters and the list, on every page."""
-        for locale, word in (("enUS", "weapons"), ("frFR", "armes")):
+        for locale, word in (("enUS", "items"), ("frFR", "objets")):
             game = self.open(locale=locale)
             window = game.ns.Browser.window
             notice = window.notice
-            self.assertEqual(plain(notice.text.text), game.ns.L.NOTICE_WEAPONS, locale)
+            self.assertEqual(plain(notice.text.text), game.ns.L.NOTICE_ITEMS, locale)
             self.assertIn(word, notice.text.text, locale)
             self.assertEqual((notice.points[1][1], notice.points[2][1]), ("TOPLEFT", "TOPRIGHT"), "across the window")
             top, list_top = -notice.points[1][3], -window.inset.points[1][3]

@@ -1,3 +1,30 @@
+# Easy BIS 1.9.0
+
+## New
+
+- **A word on a rank that may surprise.** After the score of some items, an information mark. Its tooltip says in a line what the row does not show: what a proc is worth ("Its proc, 200 Strength for 12 seconds, is up about half of the fight: about 66 DPS" on Destiny for an Arms Warrior), an effect that adds no damage, a set bonus the score leaves out or counts. 271 notes, in the lists ranked by simulation. Each figure is the item measured with its effect and without it.
+- **Feral (Bear) and Feral (Cat).** The Druid had one Feral list, a tank's. It has two now: the bear's, for tanking, and the cat's, for damage, ranked on the stat weights WoWSims Forever publishes for the cat.
+- **Tank lists reworked.** Protection Paladin, Protection Warrior and the bear:
+  - A weapon counts for its damage. A caster's blade (Sageblade, Mastersmith's Hammer) no longer stands among a Protection Warrior's main hands.
+  - An item whose worth to a tank is mostly an effect shows no figure and stands level with the best picks: The Lion Horn of Stormwind, Mark of Tyranny, Arena Grand Master, Quel'Serrar, Force Reactive Disk.
+  - A tank's list no longer holds another class's Zul'Gurub enchant.
+
+## Changed
+
+- **Every damage list is measured again.** The nineteen damage specs are on the current version of WoWSims Forever, every item of each slot. This ends the work begun in 1.8.2.
+- **Rings and trinkets: the second pick is measured next to the first.** Each one was measured alone, so two trinkets of hit, shown together as the best pair, passed the hit cap. Retribution Paladin's pair is Smolderweb's Eye and Adaptive Combat Assistant again, Enhancement Shaman's Smolderweb's Eye and Hand of Justice.
+- **Dungeon pieces that were hidden.** A piece the game has and ForeverDB's lists leave out stayed with the items of no known source, even when a boss was counted for it in Forever. 97 of them now show like any dungeon item:
+  - The Blackrock Slicer is the first melee weapon of Survival Hunter, and enters the lists of Retribution Paladin, Arms Warrior and Enhancement Shaman with Demonshear and Malown's Slam.
+  - Draconic Infused Emblem enters the trinkets of the casters.
+  - Heart of Wyrmthalak is listed right after Hand of Justice, without a score.
+- **A list ranked by simulation keeps what the simulator measures.** An item ForeverDB's stat weights give nothing (a trinket that is all proc) was left out before any measure.
+- **An item whose effect is not simulated is ranked on what was measured**, in every damage list now.
+- The notice under the window's filters stays, and speaks of items rather than weapons alone.
+
+## Known issue
+
+- **Hit is counted next to the best set.** An item's hit is worth what the best set still lacks of it. For Beast Mastery Hunter the first pick of each slot, all worn together, gives up too much hit: about 29 damage per second less than the best set. Change one slot at a time.
+
 # Easy BIS 1.8.3
 
 ## Fixed

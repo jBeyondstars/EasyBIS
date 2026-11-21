@@ -62,7 +62,7 @@ local WINDOW_NAME = "EasyBISWindow"
 local WIDTH, HEIGHT = 960, 620
 local MIN_HEIGHT, MAX_HEIGHT = 380, 1400
 -- A notice under the filters while a known problem awaits its fix: the key of its text, nil when there is none.
-local NOTICE = "NOTICE_WEAPONS"
+local NOTICE = "NOTICE_ITEMS"
 local NOTICE_HEIGHT, NOTICE_GAP = 24, 4   -- its band, and the room between it and the list
 local NOTICE_MARK = "|TInterface\\DialogFrame\\UI-Dialog-Icon-AlertNew:16:16:0:0|t "
 local FILTERS, INSET_BOTTOM = 70, 58   -- what the filters and the footer take of the window's height
