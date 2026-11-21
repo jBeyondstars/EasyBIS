@@ -233,6 +233,7 @@ ns.data.items = [==[
 8176|Nightscape Headband|c|s|c^Leatherworking^200^10507^f
 8183|Precision Bow|dwx|s|d^34^^0^0^s~m^4805^Blackfathom Sea Witch^0^s
 8188|Explosive Shotgun|dwx|s|m^4657^Maraudine Windchaser^0^s~d^90^Mekgineer Thermaplugg^0.43^0^k
+8190|Hanzo Sword|x||x^5758^Mithril Lockbox^k
 9393|Beacon of Hope|d||d^70^Shadowforge Relic Hunter^0.01^0^k~d^70^Shadowforge Darkcaster^0.01^0^k
 9407|Stoneweaver Leggings|d|s|d^70^Ironaya^0^0^s
 9408|Ironshod Bludgeon|d|s|d^70^Ironaya^0^0^s
@@ -310,7 +311,6 @@ ns.data.items = [==[
 10774|Fleshhide Shoulders|d|s|d^129^Glutton^32.3^0^w
 10776|Silky Spider Cape|d|s|d^129^Tuten'kash^50^0^s
 10823|Vanquisher's Sword|Q|s|q^3341^Bring the End^37^h^s~q^3636^Bring the Light^39^a^s
-10837|Tooth of Eranikus|d||d^109^Shade of Eranikus^26.4^0^w
 10847|Dragon's Call|d||d^109^Shade of Eranikus^2^0^w
 11262|Orb of Lorica|Q|s|q^1053^In the Name of the Light^35^a^s
 11263|Nether Force Wand|q||q^1952^Mage's Wand^35^^k
@@ -413,6 +413,7 @@ ns.data.items = [==[
 12774|Dawn's Edge|c||c^Blacksmithing^250^16970^f
 12783|Heartseeker|c||c^Blacksmithing^300^16995^f
 12784|Arcanite Reaper|c||c^Blacksmithing^300^16994^f
+12790|Arcanite Champion|u||
 12895|Breastplate of the Chromatic Flight|Q||q^5166^Breastplate of the Chromatic Flight^57^^k
 12903|Legguards of the Chromatic Defier|Q||q^5167^Legplates of the Chromatic Defier^57^^k
 12927|Truestrike Shoulders|d||d^229^Pyroguard Emberseer^15.6^0^w
@@ -479,6 +480,7 @@ ns.data.items = [==[
 13262|Ashbringer|u|U|
 13282|Ogreseer Tower Boots|d||d^229^Spirestone Lord Magus^39.3^0^w
 13284|Swiftdart Battleboots|d||d^229^Spirestone Battle Lord^44.6^0^w
+13285|The Blackrock Slicer|u||d^229^Spirestone Battle Lord^51.8^0^w
 13314|Alanna's Embrace|d||d^289^Ras Frostwhisperer^4.2^0^w
 13340|Cape of the Black Baron|d||d^329^Baron Rivendare^11.7^0^w
 13344|Dracorian Gauntlets|d||d^329^Baron Rivendare^14.3^0^w
@@ -809,7 +811,6 @@ ns.data.items = [==[
 17043|Zealot's Robe|Q|s|q^6521^An Unholy Alliance^31^h^s
 17044|Will of the Martyr|Q||q^5125^Aurius' Reckoning^55^^k
 17045|Blood of the Martyr|Q||q^5125^Aurius' Reckoning^55^^k
-17073|Earthshaker|u||
 17111|Blazefury Medallion|w||m^12397^Lord Kazzak^19^k
 17182|Sulfuras, Hand of Ragnaros|u|U|
 17190|Ornate Buckler|v|s|v^8129^Wrinkle Goodsteel^1446^50.8^27.7^34609^^s
@@ -3125,7 +3126,6 @@ ns.data.items = [==[
 285348|Alliance Outrunner Healing Rod|R|sn|R^5799^Hannah Bladeleaf^0^s
 286428|Band of Bossman|d|sn|d^3039^Bossman Toof^31.3^0^w
 286429|Big-Belly Belt|d|sn|d^3039^Bossman Toof^31.5^0^w
-286556|Winds of Tanaris|u|n|
 286590|Silithid Queen's Husk|u|n|
 286613|King Mosh's Tooth|u|n|
 286646|Gill's Gills|d|sn|d^2970^Gill^51.6^0^w
