@@ -58,6 +58,7 @@ def encode_entry(entry: ladders.Entry) -> str:
     flags += "p" if entry.pvp else ""
     flags += "v" if entry.honor else ""
     flags += "e" if entry.placed else ""
+    flags += "g" if entry.estimated else ""
     flags += str(entry.phase) if entry.phase else ""
     limit = entry.limit or ""
     if not limit.isalnum() and limit:
@@ -166,6 +167,8 @@ def lists_file(db, all_ladders) -> str:
         "         v a Premier piece, sold for honor even when the data gives it no source,",
         "         e placed from a close spec's simulation (_build/simulated.py): its score is the one above it, not",
         "           its own; the addon shows none and never makes it a best pick,",
+        "         g ranked by simulation on a score that is no full measure (a random bonus, an effect or a proc rate the",
+        "           simulator lacks): it keeps its rank, and the addon shows no score for it,",
         "         a digit: the content phase the item needs (none: before the raids, 1: Forever's first raids,",
         "         9: a raid known from Classic data only); see _build/phases.py",
         "  limit: only one item of that category can be worn (rings and trinkets)",

@@ -47,7 +47,8 @@ end
 
 -- flags: s seen in Forever, n new in Forever, u no known source, U unique, t two-hander, r random bonus,
 -- p a PvP reward, v a Premier piece (sold for honor, even when the data gives it no source), e placed from a
--- close spec's simulation: its score is a stand-in, never shown, and it is never a best pick (Ladders.Lead); a
+-- close spec's simulation: its score is a stand-in, never shown, and it is never a best pick (Ladders.Lead); g
+-- ranked by simulation on a score that is no full measure: it keeps its rank, and no score is shown for it; a
 -- digit is the content phase the item needs (entry.phase, 0 without one)
 function Ladders.HasFlag(entry, letter)
     return entry.flags:find(letter, 1, true) ~= nil

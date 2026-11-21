@@ -96,6 +96,9 @@ class Entry:
     rank: int = ranks.NO_RANK  # the PvP rank it needs (ranks.required)
     honor: bool = False  # a Premier piece: sold for honor, even when the data gives it no source
     placed: bool = False  # put at its rank from a close spec's measure (simulated.place): no score of its own
+    estimated: bool = False  # ranked by simulation on a score that is no full measure (SlotRanking.measured): the
+    #                          simulator cannot wear it (a random bonus), or lacks its effect or its proc rate. It keeps
+    #                          its rank, and the addon shows no score for it
 
     @property
     def stored(self) -> int:
@@ -229,7 +232,8 @@ def full_ladder(db, cls: str, spec: int, mode: str, slot: str, level: int | None
                 seen="s" in flags, new="n" in flags, unsourced=not sourced, unique="U" in flags,
                 two_hand=gear["inv"] == INV_TWO_HAND, random="r" in flags, limit=item["limit"],
                 phase=phases.item_phase(item), pvp=pvp_reward(item),
-                rank=ranks.required(item, gear), honor=ranks.sold_for_honor(item)))
+                rank=ranks.required(item, gear), honor=ranks.sold_for_honor(item),
+                estimated=ranked is not None and not ranked.measured(item_id)))
 
     # A few twin pairs have both ids in the pool: keep the Alliance one, which names the other as its twin.
     ids = {entry.item_id for entry in entries}

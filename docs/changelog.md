@@ -3,6 +3,7 @@
 ## New
 
 - **What a score is.** Over the scores of each slot, a mark opens a tooltip that says how the list is ranked. For a list ranked by simulation: what is measured, the fight simulated (a raid boss, 3 minutes, one target, raid buffs and debuffs, consumables, the spec's default talents and rotation) and what the % means. For the others: the weighted stats.
+- **No figure for a score that is not a full measure.** In a list ranked by simulation, an alternative the simulator cannot measure in full keeps its place and shows neither a bar nor a %: an item with a random bonus, or one whose effect or proc rate the simulator lacks. That is about one listed item in twelve.
 
 ## Fixed
 

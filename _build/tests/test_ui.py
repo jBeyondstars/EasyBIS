@@ -115,8 +115,8 @@ class WindowTest(unittest.TestCase):
 
         def other_gap(slot, entry) -> int | None:
             """A set against a set: one-hander + off hand against the two-hander, or the reverse. A placed
-            item has no score of its own, so no gap."""
-            if entry.placed:
+            item has no score of its own, so no gap; nor has one whose score is no full measure."""
+            if entry.placed or entry.estimated:
                 return None
             best_main, best_off = lead(visible["main"]), [lead(visible["off"])] if visible["off"] else []
             if two_hand:
@@ -133,7 +133,8 @@ class WindowTest(unittest.TestCase):
                 rows.append(("item", entry.shown(side), slot, True, 0))
             for entry in alternatives if alts else []:
                 rows.append(("item", entry.shown(side), slot, False,
-                             None if entry.placed else self.gap(entry.stored / 10, best[0].stored / 10)))
+                             None if entry.placed or entry.estimated
+                             else self.gap(entry.stored / 10, best[0].stored / 10)))
             if alts and other.get(slot):
                 rows.append(("note", None, slot, None, None))
                 for entry in other[slot]:
@@ -308,6 +309,25 @@ class WindowTest(unittest.TestCase):
         self.assertEqual(rows[ATIESH].sub.text, "Two-Hand - Staves")
         self.assertEqual(neck.sub.text, "")
         self.assertEqual(cloak.sub.text, "", "the armor type Miscellaneous says nothing, whatever the slot")
+
+    def test_a_score_that_is_no_full_measure_shows_nothing(self):
+        """An alternative the simulator could not measure in full keeps its place: no bar, no figure, no word."""
+        game = self.open(saved=ENHANCEMENT)
+        game.ns.SetOption(game.ns, "altCount", 6)
+        tooltip = game.lua.globals().GameTooltip
+        frames = [frame for frame in self.frames(game) if frame.data.kind == "item"]
+        guessed = [frame for frame in frames if frame.data.estimated]
+        self.assertTrue(guessed, "no alternative of the list has an estimated score")
+        for frame in guessed:
+            self.assertEqual((frame.rank.text, frame.bar.shown, frame.barBack.shown), ("", False, False))
+            self.assertFalse(frame.data.bis)
+            self.assertIsNone(frame.data.gap)
+            game.stub.run(frame, "OnEnter")
+            said = [strip_colors(line[1]) for line in tooltip.lines.values()]
+            self.assertFalse(any("Score" in line or "Estimated" in line for line in said), said)
+        measured = next(frame for frame in frames if not frame.data.estimated and not frame.data.bis and not frame.data.tie)
+        self.assertRegex(strip_colors(measured.rank.text), r"^(-\d+%|<1%)$")
+        self.assertTrue(measured.bar.shown)
 
     def test_a_slot_header_says_what_a_score_is(self):
         """Over the scores of each item slot, a mark whose tooltip says how the list is ranked."""

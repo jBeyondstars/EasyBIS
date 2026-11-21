@@ -133,6 +133,7 @@ local function RankText(row)
     if row.kind == "consumable" and row.bis then return GOLD_TEXT .. L.RANK_BEST .. "|r" end
     if row.custom then return ns.COLOR .. L.RANK_CUSTOM .. "|r" end
     if row.placed then return GREY_TEXT .. L.RANK_PLACED .. "|r" end
+    if row.estimated then return "" end   -- its score is no full measure: no figure is shown for it
     if row.bis then return GOLD_TEXT .. L.RANK_BIS .. "|r" end
     if row.tie then return GOLD_TEXT .. L.RANK_TIE .. "|r" end
     if row.gap == nil then return GREY_TEXT .. L.RANK_ALT .. "|r" end
