@@ -57,6 +57,8 @@ import re
 from pathlib import Path
 from dataclasses import dataclass, field
 
+import shockadin
+
 TANK = "Tank"
 EFFECTS_FILE = Path(__file__).resolve().parent / "corrections" / "effects.json"
 CLASSES_FILE = EFFECTS_FILE.with_name("classes.json")
@@ -65,6 +67,7 @@ RANGED_ATTACK_POWER = 39
 STRENGTH, AGILITY, STAMINA, INTELLECT, SPIRIT = 4, 3, 7, 5, 6
 DEFENSE, DODGE, HIT, CRIT, HASTE, EXPERTISE, ATTACK_POWER, RANGED_ATTACK_POWER = 12, 13, 31, 32, 36, 37, 38, 39
 SPELL_DAMAGE, SPELL_POWER, BLOCK_VALUE = 42, 45, 48
+HEALING, MANA_PER_5, HOLY_DAMAGE = 41, 43, 84
 
 ATTACK_POWER_PER_STRENGTH = 2
 BLOCK_VALUE_PER_STRENGTH = 0.05
@@ -98,6 +101,7 @@ class Report:
     completed: dict = field(default_factory=dict)   # (class, spec, profile) -> {stat: the weight it was given}
     bear: tuple | None = None                       # (class, spec) of ForeverDB's Feral Combat
     cat: tuple | None = None                        # (class, spec) of the cat added next to it
+    shockadin: tuple | None = None                  # (class, spec) of the Shockadin added to the Paladin
     ranged: dict = field(default_factory=dict)      # (class, spec, profile) of a Hunter -> the weight its attack
     #                                                 power got, the ranged attack power's added
     unbound: dict = field(default_factory=dict)     # (class, spec) of a tank -> the other classes' enchants its
@@ -222,6 +226,9 @@ def apply(db) -> Report:
                     report.completed[cls, number, profile] = added
     ranged_power(db, report)
     split_feral(db, report)
+    paladin = db.classes.get(shockadin.PALADIN, {}).get("specs", {})
+    if not any(spec.get("slug") == shockadin.SLUG for spec in paladin.values()):   # applying twice adds it once
+        report.shockadin = shockadin.add(db, enchants_for)
     return report
 
 
@@ -236,6 +243,13 @@ def order(db, cls: str) -> list:
 _STAT_WORDS = {"agility": AGILITY, "strength": STRENGTH, "stamina": STAMINA, "intellect": INTELLECT, "spirit": SPIRIT,
                "attack power": ATTACK_POWER, "ranged attack power": RANGED_ATTACK_POWER, "defense": DEFENSE,
                "armor": "armor", "spell power": SPELL_POWER}
+# What a caster's enchants add to those: a school's damage, the damage and the healing of spells written apart or
+# together ("+18 Spell Damage and Healing" is one stat, spell power: named before the sentence is cut at its
+# "and"), and mana regeneration ("5 mana per 5 sec.").
+_SPELL_WORDS = {"holy damage": HOLY_DAMAGE, "damage spells": SPELL_DAMAGE, "healing spells": HEALING,
+                "healing": HEALING, "mana regen": MANA_PER_5}
+_TOGETHER = ("spell damage and healing", "healing and spell damage")
+_MANA = re.compile(r"^(\d+) mana per 5 sec$")
 _PERCENT_WORDS = {"dodge": DODGE, "hit": HIT, "critical strike": CRIT, "critical strike chance": CRIT, "haste": HASTE}
 _ALL_STATS = (STRENGTH, AGILITY, STAMINA, INTELLECT, SPIRIT)
 _AMOUNT_LAST = re.compile(r"^([a-z ]+?) \+(\d+)(%?)$")     # "Agility +15", "Dodge +1%"
@@ -247,8 +261,15 @@ def enchant_stats(effect: str) -> dict | None:
     of it is not a plain stat this module knows (Crusader, Living Stats, weapon damage, attack speed): what such an
     enchant is worth to a spec is not known here, and it is left out rather than guessed."""
     stats = {}
-    for part in re.split(r"/|,| and ", effect.lower()):
+    effect = effect.lower()
+    for words in _TOGETHER:
+        effect = effect.replace(words, "spell power")
+    for part in re.split(r"/|,| and ", effect):
         part = part.strip().rstrip(".")
+        mana = _MANA.match(part)
+        if mana:
+            stats[MANA_PER_5] = stats.get(MANA_PER_5, 0) + int(mana.group(1))
+            continue
         found = _AMOUNT_LAST.match(part)
         if found:
             name, amount, percent = found.group(1), int(found.group(2)), found.group(3)
@@ -263,6 +284,8 @@ def enchant_stats(effect: str) -> dict | None:
             keys, per_point = (_PERCENT_WORDS[name],), RATING_PER_PERCENT[_PERCENT_WORDS[name]]
         elif not percent and name in _STAT_WORDS:
             keys, per_point = (_STAT_WORDS[name],), 1
+        elif not percent and name in _SPELL_WORDS:
+            keys, per_point = (_SPELL_WORDS[name],), 1
         else:
             return None
         for key in keys:
