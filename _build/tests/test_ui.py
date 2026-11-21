@@ -2788,7 +2788,8 @@ class WindowTest(unittest.TestCase):
         for lane in self.lanes(view):
             self.assertEqual(lane.alpha, 1 if lane.run.key == key else 0.35, lane.run.key)
         said = [plain(line[1]) for line in game.lua.globals().GameTooltip.lines.values()]
-        self.assertTrue(any(re.fullmatch(re.escape(name) + r" - .+ \(\d+(\.\d)?%\)", text) for text in said), said)
+        where = r" - (.+ \(\d+(\.\d)?%\)|reward of the quest .+\. One run is enough\.)"   # a boss's drop, or a quest's reward
+        self.assertTrue(any(re.fullmatch(re.escape(name) + where, text) for text in said), said)
         self.assertIn("Click: the pieces of this slot. Shift-click: link it.", said)
         game.stub.run(chip, "OnLeave")
         self.assertEqual([tile.alpha for tile in view.tiles.values()], [tile.rest for tile in view.tiles.values()])

@@ -85,6 +85,7 @@ ns.data.names = [==[
 866|37|Monk's Staff
 867|37|Gloves of Holy Might
 870|35|Fiery War Axe
+871|42|Flurry Axe
 872|18|Rockslicer
 873|35|Staff of Jordan
 876|1|Worn Wooden Buckler

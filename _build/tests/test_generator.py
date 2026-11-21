@@ -653,7 +653,26 @@ class GeneratorTest(unittest.TestCase):
             self.assertIn(self.published.gear[item_id]["inv"], corrections.WEAPONS)
         ranked = {entry.item_id for (_, _, _, slot), ladder in self.full.items() if slot == "main" for entry in ladder}
         read = set(ids) | set(capture.capture_ids(self.published)["unlisted"])   # the weapons added from the game
+        read |= set(corrections.HAND_LISTED)   # ... and the ones written by hand, under the level the capture reads from
         self.assertLessEqual(ranked, read, "a main-hand entry of a ladder is not on the capture's list")
+
+    def test_a_piece_written_by_hand_is_listed(self):
+        """corrections.include: Flurry Axe, which neither ForeverDB's lists nor the capture hold, is in the lists."""
+        self.assertEqual(self.db.included, sorted(corrections.HAND_LISTED))
+        for item_id, (name, sources) in corrections.HAND_LISTED.items():
+            self.assertNotIn(item_id, self.published.items)
+            item = self.db.items[item_id]
+            self.assertEqual((item["name"], item["groups"]), (name, frozenset(source[0] for source in sources)))
+            self.assertTrue(all(source[-1] == corrections.SOURCE_LABEL for source in item["sources"]))
+            self.assertNotIn("added", item)   # listed as ForeverDB lists an item: a source, and the phase it needs
+        default = ("a", False, False, phases.CURRENT, True, None)
+        for slot in ("main", "off"):
+            shown = [entry.item_id for entry in self.full["ROGUE", 2, "pve", slot] if entry.passes(default)]
+            self.assertIn(871, shown, slot)
+        self.assertNotIn(871, [entry.item_id for entry in self.full["MAGE", 2, "pve", "main"]])
+        listed = types.SimpleNamespace(gear={871: self.db.gear[871]}, items={871: {"name": "as the data has it"}}, classes={})
+        self.assertEqual(corrections.include(listed), [])   # a piece the data comes to list is left alone
+        self.assertEqual(listed.items[871], {"name": "as the data has it"})
 
     def test_the_lists_follow_what_the_game_has(self):
         """corrections.align on the real data: with the default options the lists only lose what the game lacks."""
@@ -675,6 +694,7 @@ class GeneratorTest(unittest.TestCase):
 
         before = fdb.load(CACHE, corrected=False)
         corrections.apply(before, corrections.load())   # the weapons' stats, not the game's items
+        corrections.include(before)   # ... and the pieces written by hand, which no capture says anything of
         corrections.fill(before, corrections.load_sources())   # ... and the sources read in QuestieDB
         corrections.confirm(before, corrections.load_drops())  # ... and the bosses counted in Forever, a source too
         corrections.price(before, corrections.load_costs())    # ... and who the neutral vendors sell to

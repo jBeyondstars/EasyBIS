@@ -98,7 +98,7 @@ def _simulated_note(db) -> list:
     names = ", ".join(name(cls, spec) for cls, spec in sorted(reading.specs))
     lines = [f"Ranked by simulation: in the PvE lists of {names}, a score is the damage per second the item adds to a "
              f"reference set,",
-             f"measured with WoWSims Forever {reading.commit} (https://github.com/wowsims/forever, MIT License), not "
+             f"measured with WoWSims Forever {reading.commits} (https://github.com/wowsims/forever, MIT License), not "
              "ForeverDB's weights. See _build/simulated.py."]
     waiting = {key: slots for key, slots in reading.placed.items() if key not in reading.specs and key[0] in db.classes}
     if waiting:
