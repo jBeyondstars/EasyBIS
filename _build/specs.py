@@ -7,8 +7,9 @@ are ranked on them like any other spec's. Nothing else tells an added spec from 
 data files and the addon read it as the class's fourth spec.
 
 Branch tank-lists has a module of the same name with the same apply and enchants_for, which adds the Feral
-Druid's cat and completes the tanks' weights. The enchant functions below are copied from it as they stood on
-2026-11-21, so that the two merge into one: keep that branch's module, add shockadin.add to its apply, and keep
+Druid's cat and completes the tanks' weights. The enchant functions below are copied from it as it was merged
+into next-release (b42c2d0), so that the two merge into one: keep that branch's module, add shockadin.add to its
+apply, and keep
 what this copy reads more than that one, which a caster's enchants need: Holy damage, the damage and the healing
 of spells written apart or together, and mana regeneration (_SPELL_WORDS, _TOGETHER, _MANA).
 """
@@ -23,6 +24,12 @@ STRENGTH, AGILITY, STAMINA, INTELLECT, SPIRIT = 4, 3, 7, 5, 6
 DEFENSE, DODGE, HIT, CRIT, HASTE, EXPERTISE, ATTACK_POWER, RANGED_ATTACK_POWER = 12, 13, 31, 32, 36, 37, 38, 39
 HEALING, SPELL_DAMAGE, MANA_PER_5, SPELL_POWER, HOLY_DAMAGE = 41, 42, 43, 45, 84
 RATING_PER_PERCENT = {DODGE: 12, HIT: 10, CRIT: 14, HASTE: 10}
+
+# The head and leg enchants of Zul'Gurub's class quests, by the item that applies them, and the one class each is
+# for: classAllowlist of the enchants of WoWSims Forever's item database (assets/database/db.json, 21377c070b).
+# As branch tank-lists has it.
+CLASS_ENCHANTS = {"i19782": "WARRIOR", "i19783": "PALADIN", "i19784": "ROGUE", "i19785": "HUNTER", "i19786": "SHAMAN",
+                  "i19787": "MAGE", "i19788": "WARLOCK", "i19789": "PRIEST", "i19790": "DRUID"}
 
 
 @dataclass
@@ -88,10 +95,11 @@ def enchant_stats(effect: str) -> dict | None:
     return stats
 
 
-def enchants_for(db, weights: dict) -> dict:
+def enchants_for(db, cls: str, weights: dict) -> dict:
     """{slot key: [(enchant, level)], best first} for a spec ForeverDB ranks no enchant for: every enchant its lists
-    hold for a slot key, whatever the class (they are the same vocabulary for all), ranked on the spec's weights.
-    One whose effect is not plain stats, or is worth nothing to the spec, is left out."""
+    hold for a slot key, whatever the class (they are one vocabulary for all, but for the enchants of another
+    class, CLASS_ENCHANTS), ranked on the spec's weights. One whose effect is not plain stats, or is worth nothing
+    to the spec, is left out."""
     seen = {}   # slot key -> {enchant: (level, its first place in ForeverDB's lists)}
     for per_spec in db.enchants.values():
         for (_, profile), per_slot in sorted(per_spec.items()):
@@ -100,6 +108,8 @@ def enchants_for(db, weights: dict) -> dict:
             for key, entries in per_slot.items():
                 known = seen.setdefault(key, {})
                 for place, (enchant, level) in enumerate(entries):
+                    if CLASS_ENCHANTS.get(enchant, cls) != cls:
+                        continue
                     old = known.get(enchant)
                     known[enchant] = (min(level, old[0]), min(place, old[1])) if old else (level, place)
     ranked = {}

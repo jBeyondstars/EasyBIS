@@ -94,9 +94,10 @@ PVP = {**PVE, HIT: round((EP[HIT] - EP_HOLY_SPELL_HIT) / REFERENCE, 3), STAMINA:
 def add(db, enchants_for) -> tuple | None:
     """Add the Shockadin as the Paladin's next spec: (class, spec number), or None when the data has no Paladin.
 
-    enchants_for(db, weights) ranks the enchants of a spec ForeverDB has no ranking for (specs.enchants_for): the
-    Shockadin's are the ones ForeverDB lists for the Paladin's three specs, ranked on PVE. One whose effect is not
-    plain stats (Crusader, a weapon's damage, an attack speed) is left out, its worth not being known."""
+    enchants_for(db, class, weights) ranks the enchants of a spec ForeverDB has no ranking for
+    (specs.enchants_for): the Shockadin's are the ones ForeverDB lists for the Paladin's three specs, less the
+    Zul'Gurub enchants of another class's quest, ranked on PVE. One whose effect is not plain stats (Crusader, a
+    weapon's damage, an attack speed) is left out, its worth not being known."""
     data = db.classes.get(PALADIN)
     if not data or not data["specs"]:
         return None
@@ -105,10 +106,12 @@ def add(db, enchants_for) -> tuple | None:
                              "weights": {"lvl": dict(PVE), "raid": dict(PVE), "pvp": dict(PVP)}, "added": True}
     per_spec = db.enchants.get(PALADIN)
     if per_spec is not None:
-        # Only what ForeverDB lists for a Paladin: other classes' lists hold enchants a Paladin cannot get, such as
-        # the Hunter's Falcon's Call.
+        # Only what ForeverDB lists for a Paladin: an enchant it lists for other classes alone is not known to be
+        # one a Paladin can have. enchants_for itself leaves out another class's Zul'Gurub enchant (the Hunter's
+        # Falcon's Call), which ForeverDB does list for the Paladin.
         own = {enchant for per_slot in per_spec.values() for entries in per_slot.values() for enchant, _ in entries}
-        ranked = {key: [pair for pair in entries if pair[0] in own] for key, entries in enchants_for(db, PVE).items()}
+        ranked = {key: [pair for pair in entries if pair[0] in own]
+                  for key, entries in enchants_for(db, PALADIN, PVE).items()}
         for profile in ("lvl", "raid"):
             per_spec[(number, profile)] = {key: list(entries) for key, entries in ranked.items() if entries}
     return PALADIN, number

@@ -134,15 +134,17 @@ class GeneratorTest(unittest.TestCase):
         self.assertEqual(sorted(theirs), [1, 2, 3], "ForeverDB's own")
         self.assertEqual(sorted(ours), [1, 2, 3, 4])
         for number, spec in theirs.items():
-            self.assertEqual(ours[number], spec, f"ForeverDB's spec {number} is left as it is")
+            self.assertEqual((ours[number]["name"], ours[number]["role"], ours[number]["style"]),
+                             (spec["name"], spec["role"], spec["style"]), f"ForeverDB's spec {number} is left as it is")
             self.assertNotIn("added", ours[number])
+        for number in (1, 3):   # Holy and Retribution: the Shockadin's neighbours, weights and all
+            self.assertEqual(ours[number], theirs[number])
         added = ours[4]
         self.assertEqual((added["name"], added["role"], added["style"], added["slug"]),
                          ("Shockadin", "Melee DPS", "2h", "shockadin"))
         self.assertTrue(added["added"])
         self.assertEqual(added["weights"], {"lvl": shockadin.PVE, "raid": shockadin.PVE, "pvp": shockadin.PVP})
-        self.assertEqual([token for token, data in self.db.classes.items()
-                          for spec in data["specs"].values() if spec.get("added")], ["PALADIN"])
+        self.assertEqual([number for number, spec in ours.items() if spec.get("added")], [4])
 
     def test_the_shockadins_weights_are_the_simulators(self):
         """PvE: WoWSims Forever's Holy Shock weights, a point of spell damage counting 1. PvP: the same, with
@@ -165,9 +167,11 @@ class GeneratorTest(unittest.TestCase):
         self.assertAlmostEqual(pvp[31], (ep[31] - shockadin.EP_HOLY_SPELL_HIT) / ep[45], places=3)
 
     def test_the_shockadin_changes_no_other_list(self):
-        with mock.patch.object(specs, "apply", return_value=specs.Report()):
+        with mock.patch.object(shockadin, "add", return_value=None):
             without = fdb.load(CACHE)
-        self.assertEqual(sum(len(data["specs"]) for data in without.classes.values()), 27)
+        count = lambda db: sum(len(data["specs"]) for data in db.classes.values())
+        self.assertEqual(count(without), count(self.db) - 1)
+        self.assertEqual(sorted(without.classes["PALADIN"]["specs"]), [1, 2, 3])
         self.assertEqual(without.enchants["PALADIN"].keys() | {(4, "lvl"), (4, "raid")}, self.db.enchants["PALADIN"].keys())
         for key in without.enchants["PALADIN"]:
             self.assertEqual(without.enchants["PALADIN"][key], self.db.enchants["PALADIN"][key], key)

@@ -566,7 +566,7 @@ class WindowTest(unittest.TestCase):
         open_dropdown(game, window.spec.button)
         menu = game.stub.menu
         self.assertEqual(texts(find(menu, "Paladin")), ["Holy", "Protection", "Retribution", "Shockadin"])
-        for name in ("Warrior", "Shaman", "Druid"):
+        for name in ("Warrior", "Shaman", "Mage"):
             self.assertEqual(len(texts(find(menu, name))), 3, name)
         find(find(menu, "Paladin"), "Shockadin").pick()
         self.assertEqual((state["class"], state.spec), ("PALADIN", 4))
