@@ -328,6 +328,34 @@ class WindowTest(unittest.TestCase):
         self.assertRegex(strip_colors(measured.rank.text), r"^(-\d+%|<1%)$")
         self.assertTrue(measured.bar.shown)
 
+    def test_a_rank_that_may_surprise_has_a_word_behind_a_mark(self):
+        """After the score of an item with a note (Notes.lua), the information mark; its tooltip says the note."""
+        retribution = "EasyBISCharDB = {{ class = 'PALADIN', spec = 3, list = '{}' }}"
+        game = self.open(saved=retribution.format("pve"))
+        tooltip = game.lua.globals().GameTooltip
+        frames = self.all_frames(game)
+        noted = [index for index, frame in enumerate(frames) if frame.data.kind == "item" and frame.data.why]
+        self.assertTrue(noted, "no row of the list has a note")
+        for index, frame in enumerate(frames):
+            self.assertEqual(bool(frame.why.shown), index in noted, "the mark is for the rows with a note, and no other")
+        row = next(frames[index] for index in noted if strip_colors(frames[index].name.text) == "Destiny")
+        mark = row.why
+        self.assertEqual(mark.icon.texture, "Interface\\FriendsFrame\\InformationIcon")
+        self.assertEqual((mark.points[1][1], mark.points[1][3], mark.points[1][4]), ("LEFT", "RIGHT", 6),
+                         "right after the words of the score")
+        game.stub.run(mark, "OnEnter")
+        lines = [line[1] for line in tooltip.lines.values()]
+        self.assertEqual(tooltip.text, "About this rank")
+        self.assertEqual(len(lines), 1)
+        self.assertRegex(lines[0], "^Its proc, 200 Strength for 12 seconds, .* about 50 DPS")
+        game.stub.run(mark, "OnLeave")
+        self.assertFalse(tooltip.shown)
+
+        # the PvP list is on the weights: a note that speaks of the simulation is not for it
+        game = self.open(saved=retribution.format("pvp"))
+        said = [frame.data.why for frame in self.all_frames(game) if frame.data.kind == "item" and frame.data.why]
+        self.assertFalse([text for text in said if "simulat" in text], said)
+
     def test_a_slot_header_says_what_a_score_is(self):
         """Over the scores of each item slot, a mark whose tooltip says how the list is ranked."""
         game = self.open(saved=ENHANCEMENT)

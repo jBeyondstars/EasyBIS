@@ -1,0 +1,108 @@
+{
+ "about": "A few words on rankings that surprise, shown by a mark on the item's row (see _build/notes.py). items: the item ids the note is for. specs: the specs it shows for, as CLASS N (left out: every spec). simulated: true when it speaks of the simulation, and shows only in a list ranked by it. en, fr: the text in each language. Each fact was checked: say in the commit where it comes from.",
+ "notes": [
+  {
+   "items": [
+    647
+   ],
+   "specs": [
+    "WARRIOR 1"
+   ],
+   "simulated": true,
+   "en": "Its proc, 200 Strength for 12 seconds, is up about half of the fight: about 66 DPS.",
+   "fr": "Son proc, 200 de Force pendant 12 secondes, est actif environ la moitié du combat : environ 66 DPS."
+  },
+  {
+   "items": [
+    647
+   ],
+   "specs": [
+    "PALADIN 3"
+   ],
+   "simulated": true,
+   "en": "Its proc, 200 Strength for 12 seconds, is up about half of the fight: about 50 DPS.",
+   "fr": "Son proc, 200 de Force pendant 12 secondes, est actif environ la moitié du combat : environ 50 DPS."
+  },
+  {
+   "items": [
+    11815
+   ],
+   "en": "12 attack power and a 1% chance of an extra attack (20 and 2% in Classic).",
+   "fr": "12 de puissance d'attaque et 1 % de chance d'attaque supplémentaire (20 et 2 % dans Classic)."
+  },
+  {
+   "items": [
+    18538
+   ],
+   "simulated": true,
+   "en": "Its proc, 175 Fire damage, has no known rate and is not counted: about 3 DPS for each proc a minute. Fast for a two-hander (speed 2.7).",
+   "fr": "Son proc, 175 dégâts de Feu, n'a pas de taux connu et n'est pas compté : environ 3 DPS par proc à la minute. Rapide pour une arme à deux mains (vitesse 2,7)."
+  },
+  {
+   "items": [
+    13505
+   ],
+   "simulated": true,
+   "en": "Its aura, movement speed and health regeneration, adds no damage.",
+   "fr": "Son aura, vitesse de déplacement et régénération de vie, n'ajoute aucun dégât."
+  },
+  {
+   "items": [
+    13213
+   ],
+   "simulated": true,
+   "en": "Its score is its 10 hit rating alone: worth very little once you are at the hit cap.",
+   "fr": "Son score vient de ses seuls 10 de toucher : il ne vaut presque plus rien une fois au cap de toucher."
+  },
+  {
+   "items": [
+    279260
+   ],
+   "specs": [
+    "PALADIN 3"
+   ],
+   "simulated": true,
+   "en": "Fast (speed 3.3): Seal of Command and Windfury strike as often with any weapon, and harder with a slow one. Against a weapon of speed 3.8 with 8 less weapon DPS, it loses about 19 DPS there and gains about 6 on white hits.",
+   "fr": "Rapide (vitesse 3,3) : le Sceau d'autorité et Furie-des-vents se déclenchent aussi souvent avec n'importe quelle arme, et frappent plus fort avec une arme lente. Face à une arme de vitesse 3,8 qui a 8 DPS d'arme de moins, elle y perd environ 19 DPS et en gagne environ 6 sur les coups blancs."
+  },
+  {
+   "items": [
+    22385
+   ],
+   "specs": [
+    "PALADIN 3"
+   ],
+   "simulated": true,
+   "en": "Its 20 hit rating counts for little here: the set this list is measured on is at the hit cap without them.",
+   "fr": "Ses 20 de toucher comptent peu ici : le set sur lequel la liste est mesurée est au cap de toucher sans elles."
+  },
+  {
+   "items": [
+    1728,
+    14555,
+    11750
+   ],
+   "simulated": true,
+   "en": "Its proc has no known rate. A supposed rate never makes it the best pick: only the weapon's damage without the proc can.",
+   "fr": "Son proc n'a pas de taux connu. Un taux supposé n'en fait jamais le premier choix : seuls les dégâts de l'arme sans le proc le peuvent."
+  },
+  {
+   "items": [
+    871
+   ],
+   "en": "Added by hand: ForeverDB's data leaves it out. Its source, a world drop, is Classic's and is not confirmed in Forever.",
+   "fr": "Ajoutée à la main : les données de ForeverDB l'omettent. Sa source, un butin mondial, est celle de Classic et n'est pas confirmée dans Forever."
+  },
+  {
+   "items": [
+    22384
+   ],
+   "specs": [
+    "ROGUE 2"
+   ],
+   "simulated": true,
+   "en": "In the simulator, a mace in either hand makes all attacks ignore 15% of armor (Hack and Slash). Not confirmed in game for both hands.",
+   "fr": "Dans le simulateur, une masse dans l'une ou l'autre main fait ignorer 15 % de l'armure à toutes les attaques (Hack and Slash). Non confirmé en jeu pour les deux mains."
+  }
+ ]
+}

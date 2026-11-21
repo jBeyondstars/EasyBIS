@@ -10,7 +10,10 @@ from pathlib import Path
 
 import consumable_lists
 import consumables
+import json
+
 import ladders
+import notes
 import phases
 import reputations
 import ranks
@@ -542,6 +545,29 @@ def consumables_file(db) -> str:
     return "\n".join(lines) + "\n"
 
 
+def notes_file(db, all_ladders) -> str:
+    lines = _header(db, "A few words on rankings that surprise, by item (see _build/notes.py).", (
+        "[item] = { note, ... }; a row shows the first note that fits its list:",
+        "  specs      the specs it is for, as CLASS<n>; none: every spec",
+        "  simulated  true when it speaks of the simulation: shown only in a list ranked by it",
+        "  enUS, frFR the text",
+    ))
+    by_item = {}
+    for note in notes.shown(db, shown_ids(all_ladders)):
+        fields = []
+        if note.get("specs"):
+            fields.append("specs = { " + ", ".join(f"{spec.replace(' ', '')} = true" for spec in note["specs"]) + " }")
+        if note.get("simulated"):
+            fields.append("simulated = true")
+        fields += [f"{code} = {json.dumps(note[key], ensure_ascii=False)}" for key, code in notes.LANGUAGES.items()]
+        for item in note["items"]:
+            by_item.setdefault(item, []).append("{ " + ", ".join(fields) + " }")
+    lines.append("ns.data.notes = {")
+    lines += [f"    [{item}] = {{ {', '.join(by_item[item])} }}," for item in sorted(by_item)]
+    lines.append("}")
+    return "\n".join(lines) + "\n"
+
+
 def meta_file(db) -> str:
     lines = _header(db, "What the data files were built from.")
     lines.append("ns.data.meta = {")
@@ -561,7 +587,7 @@ def meta_file(db) -> str:
 
 
 def write_all(db, all_ladders, out_dir) -> dict[str, int]:
-    """Write the six data files; returns {file name: size in bytes}."""
+    """Write the data files; returns {file name: size in bytes}."""
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     files = {
@@ -572,6 +598,7 @@ def write_all(db, all_ladders, out_dir) -> dict[str, int]:
         "Consumables.lua": consumables_file(db),
         "Names.lua": names_file(db),
         "Reputation.lua": reputation_file(db, all_ladders, reputations.load()),
+        "Notes.lua": notes_file(db, all_ladders),
     }
     sizes = {}
     for name, text in files.items():

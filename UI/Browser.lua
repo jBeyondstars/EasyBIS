@@ -15,6 +15,7 @@ The Easy BIS window: the best gear of a spec, slot by slot.
            type or effect, where it comes from. With the option "compact" off it takes two, as an enchant
            always does. What a reputation stands in front of says so under where it comes from. Over the
            scores of each item slot, a mark says in a tooltip how the list is ranked (Browser.ScoreInfo).
+           After the score of a few items, the same mark says a word on a rank that may surprise (Notes.lua).
            The Character tab shows the best pick of every slot as a character sheet instead
            (UI\Character.lua), the Reputations tab what the spec needs of each faction
            (UI\Reputations.lua): both follow the spec, the list and the phase, and have no other filter.
@@ -613,6 +614,16 @@ local function ScoreTooltip(owner)
     GameTooltip:Show()
 end
 
+-- A word on a rank that may surprise, behind the mark after an item's score.
+local function WhyTooltip(mark)
+    local data = mark.row.data
+    if not data or not data.why then return end
+    PlaceTooltip(mark)
+    GameTooltip:SetText(L.WHY_TITLE, 1, 0.82, 0)
+    GameTooltip:AddLine(data.why, 1, 1, 1, true)
+    GameTooltip:Show()
+end
+
 local function RowTooltip(row)
     local data = row.data
     if not data or data.kind == "note" or data.kind == "header" then return end
@@ -695,6 +706,25 @@ local function CreateRow(parent)
     row.bar:SetHeight(6)
     row.bar:SetPoint("LEFT", row.barBack, "LEFT", 0, 0)
     row.rank = Text(row, FONT_TEXT)
+
+    -- ... and, after the score of a few items, a mark: a word on a rank that may surprise (Notes.lua)
+    row.why = CreateFrame("Button", nil, row)
+    row.why.row = row
+    row.why:SetSize(14, 14)
+    row.why:SetPoint("LEFT", row.rank, "RIGHT", 6, 0)
+    row.why.icon = row.why:CreateTexture(nil, "ARTWORK")
+    row.why.icon:SetAllPoints()
+    row.why.icon:SetTexture(INFO_ICON)
+    row.why.icon:SetAlpha(0.75)
+    row.why:SetScript("OnEnter", function(self)
+        self.icon:SetAlpha(1)
+        WhyTooltip(self)
+    end)
+    row.why:SetScript("OnLeave", function(self)
+        self.icon:SetAlpha(0.75)
+        GameTooltip:Hide()
+    end)
+    row.why:Hide()
 
     -- where it comes from: a picture for the category, then the words
     row.sourceIcon = row:CreateTexture(nil, "ARTWORK")
@@ -915,6 +945,7 @@ local function FillRow(row, data)
     row.name:SetShown(not plain)
     row.sub:SetShown(not plain)
     row.rank:SetShown(not plain)
+    row.why:SetShown(data.kind == "item" and data.why ~= nil)
     row.sourceIcon:SetShown(not plain)
     row.kind:SetShown(not plain and not compact)
     row.detail:SetShown(not plain)

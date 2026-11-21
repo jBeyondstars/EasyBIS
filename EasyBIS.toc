@@ -23,12 +23,14 @@ Data\Names.lua
 Data\Enchants.lua
 Data\Reputation.lua
 Data\Consumables.lua
+Data\Notes.lua
 Ladders.lua
 Items.lua
 Sources.lua
 Enchants.lua
 Reputation.lua
 Consumables.lua
+Notes.lua
 Dungeons.lua
 Custom.lua
 Index.lua

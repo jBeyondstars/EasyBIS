@@ -136,6 +136,7 @@ local enUS = {
     MINIMAP_HINT = "Click to open or close the window.",
     MINIMAP_DRAG_HINT = "Drag to move this button.",
     NOTICE_HIDE = "Hide this notice. It comes back the next time the window is opened.",
+    WHY_TITLE = "About this rank",
     NOTICE_WEAPONS = "I know some weapons are currently ranked wrong. A fix is on its way and will be out shortly.",
 
     -- Where items come from
@@ -520,6 +521,7 @@ local frFR = {
     MINIMAP_HINT = "Cliquez pour ouvrir ou fermer la fenêtre.",
     MINIMAP_DRAG_HINT = "Faites glisser pour déplacer ce bouton.",
     NOTICE_HIDE = "Masquer ce message. Il revient à la prochaine ouverture de la fenêtre.",
+    WHY_TITLE = "À propos de ce rang",
     NOTICE_WEAPONS = "Je suis au courant que certaines armes sont actuellement mal classées. Un correctif est en cours et sera publié d'ici peu.",
 
     SRC_quest = "Quête",
@@ -823,6 +825,7 @@ local active, activeSpecs, activeProfessions
 
 function ns.SetLocale(code)
     active = LOCALES[code] or enUS
+    ns.locale = LOCALES[code] and code or "enUS"   -- the language in use, for the texts the data files hold
     activeSpecs = SPECS[code]
     activeProfessions = PROFESSIONS[code]
 end

@@ -355,6 +355,20 @@ class AddonTest(unittest.TestCase):
         self.assertIsNone(game.ns.Ladders.Measured("SHAMAN", 2, "pvp"))
         self.assertIsNone(game.ns.Ladders.Measured("SHAMAN", 3, "pve"), "Restoration is ranked on the weights")
 
+    def test_a_note_is_for_its_specs_and_its_kind_of_list(self):
+        """Notes.For: the word on a rank that surprises, for the specs the note names, only in a list ranked by
+        simulation when it speaks of one, in the game's language."""
+        note = Game().ns.Notes.For
+        self.assertRegex(note(647, "WARRIOR", 1, "pve"), "^Its proc, 200 Strength .* about 66 DPS")
+        self.assertRegex(note(647, "PALADIN", 3, "pve"), "about 50 DPS", "the same item, another spec's note")
+        self.assertIsNone(note(647, "WARRIOR", 3, "pve"), "Protection is not one of the note's specs")
+        self.assertIsNone(note(647, "WARRIOR", 1, "pvp"), "the PvP list is not ranked by simulation")
+        self.assertRegex(note(11815, "WARRIOR", 3, "pvp"), "^12 attack power", "a fact of the item: everywhere")
+        self.assertIsNone(note(2, "WARRIOR", 1, "pve"), "an item without a note")
+        self.assertRegex(Game(locale="frFR").ns.Notes.For(647, "WARRIOR", 1, "pve"), "^Son proc, 200 de Force")
+        self.assertRegex(Game(locale="deDE").ns.Notes.For(647, "WARRIOR", 1, "pve"), "^Its proc, 200 Strength",
+                         "English where the note has no text in the game's language")
+
     def test_specs_are_listed_in_order(self):
         game = Game()
         specs = [(spec.index, spec.name, spec.style) for spec in game.ns.Ladders.Specs("SHAMAN").values()]

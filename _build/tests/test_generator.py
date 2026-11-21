@@ -34,6 +34,7 @@ import drops  # noqa: E402
 import fdb  # noqa: E402
 import ladders  # noqa: E402
 import luaout  # noqa: E402
+import notes  # noqa: E402
 import phases  # noqa: E402
 import ranks  # noqa: E402
 import questie  # noqa: E402
@@ -765,6 +766,36 @@ class GeneratorTest(unittest.TestCase):
         self.assertEqual(set(corrections.assign_sides(raw)), open_to_both)
         self.assertEqual({raw.items[item_id]["side"] for item_id in sold}, {"a"})
         self.assertEqual(corrections.assign_sides(raw), [], "a second pass finds nothing left to do")
+
+    def test_a_note_is_checked_before_it_is_written(self):
+        """A note the addon could not show as written stops the build: a spec that does not exist, a text that is
+        missing or on two lines, an item no list shows."""
+        shown = luaout.shown_ids(self.kept)
+        good = {"items": [647], "specs": ["WARRIOR 1"], "simulated": True, "en": "A word.", "fr": "Un mot."}
+        self.assertEqual(notes.shown(self.db, shown, [good]), [good])
+        for change in ({"specs": ["WARRIOR 9"]}, {"specs": ["Arms"]}, {"fr": " "}, {"en": "two\nlines"},
+                       {"items": []}, {"items": [1]}, {"comment": "x"}):
+            with self.assertRaises(ValueError, msg=change):
+                notes.shown(self.db, shown, [{**good, **change}])
+        self.assertEqual(notes.shown(self.db, shown, [{**good, "items": [1, 647]}])[0]["items"], [647],
+                         "of several items, the ones the lists show")
+
+    def test_the_notes_file_holds_what_was_written_by_hand(self):
+        """Data/Notes.lua holds corrections/notes.json item by item, in both languages, as the build left it."""
+        written = notes.load()
+        self.assertTrue(written, "corrections/notes.json holds no note")
+        text = luaout.notes_file(self.db, self.kept)
+        self.assertEqual(text, (BUILD.parent / "Data" / "Notes.lua").read_text(encoding="utf-8"),
+                         "Data/Notes.lua is not what the build writes: run _build/build.py")
+        for note in written:
+            for key in notes.LANGUAGES:
+                self.assertIn(json.dumps(note[key], ensure_ascii=False), text)
+        destiny = re.search(r"^    \[647\] = (.*),$", text, re.M).group(1)
+        self.assertIn("specs = { WARRIOR1 = true }", destiny)
+        self.assertIn("specs = { PALADIN3 = true }", destiny, "an item can have a note for each spec")
+        self.assertIn("simulated = true", destiny)
+        self.assertIn('enUS = "Its proc, 200 Strength', destiny)
+        self.assertIn('frFR = "Son proc, 200 de Force', destiny)
 
     def test_reputation_file_matches_the_reading(self):
         """Data/Reputation.lua says what corrections/reputations.json holds, for the items the lists show."""
