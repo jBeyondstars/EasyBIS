@@ -1,3 +1,18 @@
+# Easy BIS 1.8.2
+
+## Fixed
+
+- **Rogue and Fury Warrior weapons.** The PvE lists of Combat Rogue, Assassination Rogue and Fury Warrior are measured again, on the current version of WoWSims Forever. The version used so far did not know that the armor procs of Bashguuder and Annihilator never land while Faerie Fire or Curse of Recklessness is on the target, which Forever's logs show, and it ranked both weapons far too high. Leaving the PvP rewards aside:
+  - Combat Rogue: Flurry Axe is the best off hand, ahead of Bone Slicing Hatchet, Felstriker and Alcor's Sunrazor. Teebu's Blazing Longsword is the best main hand, ahead of Persuader and Sword of Zeal.
+  - Assassination Rogue: daggers again. Its best weapons were Persuader and Bashguuder, two maces Mutilate cannot be used with; they are Felstriker and Distracting Dagger now.
+  - Fury Warrior: Flurry Axe is the best off hand in place of Bashguuder, and Annihilator leaves the picks. Persuader stays the best main hand.
+- **Every item is measured.** The simulation measured the items with an effect or a set and the best ones by ForeverDB's stat weights; the others stayed under them, whatever they were worth. All the items of a slot are measured now: Distracting Dagger, for one, had never been.
+- **Flurry Axe is in the lists.** ForeverDB's data leaves it out. It is the off hand of the Rogue and Warrior sets WoWSims Forever itself starts from. Its source, a world drop, is Classic's: not confirmed in Forever.
+
+## Known issue
+
+- **The other damage specs are next.** Their lists are measured again the same way and follow a few specs at a time, Subtlety Rogue first. Until the last one is out, the notice under the window's filters stays.
+
 # Easy BIS 1.8.1
 
 ## Known issue

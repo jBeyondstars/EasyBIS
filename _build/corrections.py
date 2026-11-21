@@ -33,6 +33,9 @@ The same capture says which items the game has (corrections/game.json, align):
     source, counted only once every phase is: nothing says where they are from.
 A piece ForeverDB comes to list is no longer added: that part retires by itself.
 
+The capture reads the game from level 50 up, so a lower piece players still wear at the cap is in neither
+list. The few known ones are written by hand (HAND_LISTED, include), each with what says players have it.
+
 Where an item comes from is laid over the data the same way (corrections/sources.json, fill):
 ForeverDB's data gives no source for many items, the pieces added above among them, and QuestieDB
 knows the quest, the creature or the vendor of a good part of them. `build.py --import-questie`
@@ -304,6 +307,40 @@ def align(db, game: dict) -> Alignment:
                 "added": True}
             report.added.append(item_id)
     return report
+
+
+# Pieces players wear that ForeverDB's lists leave out and the capture never asks the game for (it reads from level
+# 50 up). Written by hand, each with what says players have it, and where it is from as ForeverDB writes a source;
+# include gives that source the label of one read outside Forever.
+#   871  Flurry Axe, required level 42: the off hand of WoWSims Forever's Fury and Combat sets, whose proc rate was
+#        measured on wearers in Forever's logs (wowsims/forever, docs/evidence/EV-0120). A world drop in Classic.
+HAND_LISTED = {
+    871: ("Flurry Axe", (("w", "0", "0"),)),
+}
+
+
+def include(db) -> list:
+    """Add the pieces written by hand (HAND_LISTED) as ForeverDB lists an item, to every pool that already holds
+    their kind of piece; kept as db.included. One the data comes to list is left as the data has it: this retires
+    by itself. It runs before align, which then finds them listed."""
+    holds = {(cls, pool): {_kind(db.gear[item_id]) for item_id, _ in entries if item_id in db.gear}
+             for cls, data in db.classes.items() for pool, entries in data["pools"].items()}
+    db.included = []
+    for item_id, (name, sources) in sorted(HAND_LISTED.items()):
+        gear = db.gear.get(item_id)
+        if gear is None or item_id in db.items:
+            continue
+        placed = False
+        for (cls, pool), kinds in holds.items():
+            if _kind(gear) in kinds:
+                db.classes[cls]["pools"][pool].append((item_id, gear["req"]))
+                placed = True
+        if placed:
+            db.items[item_id] = {"name": name, "groups": frozenset(source[0] for source in sources), "flags": "",
+                                 "side": "", "twin": None, "limit": None,
+                                 "sources": [[*source, SOURCE_LABEL] for source in sources]}
+            db.included.append(item_id)
+    return db.included
 
 
 # -- where the items come from ----------------------------------------------------------------------------

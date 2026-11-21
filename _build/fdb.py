@@ -101,6 +101,7 @@ class Database:
         self.enchant_info = {}  # enchant id ("s<spell>" or "i<item>") -> [name, effect, where, label]
         self.enchant_raids = {}  # enchant id -> the raid its source needs, for the ones corrections.fill placed
         self.corrected = None   # what corrections.apply changed (a corrections.Report), None for the published data
+        self.included = None    # the pieces corrections.include added (their ids), None for the published data
         self.aligned = None     # what corrections.align changed (a corrections.Alignment), None for the published data
         self.filled = None      # what corrections.fill changed (a corrections.Filled), None for the published data
         self.confirmed = None   # what corrections.confirm changed (a corrections.Confirmed), None for the published data
@@ -123,6 +124,7 @@ def load(data_dir, corrected: bool = True) -> Database:
     db = _read(data_dir)
     if corrected:
         corrections.apply(db, corrections.load())
+        corrections.include(db)
         corrections.align(db, corrections.load_game())
         corrections.fill(db, corrections.load_sources())
         corrections.confirm(db, corrections.load_drops())

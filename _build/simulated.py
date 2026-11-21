@@ -73,6 +73,13 @@ class Reading:
     specs: dict = field(default_factory=dict)    # (class token, spec index) -> SpecRanking
     placed: dict = field(default_factory=dict)   # (class token, spec index) -> {slot: [Placement]}, placed.json
 
+    @property
+    def commits(self) -> str:
+        """The commits that measured the specs, the file's own last: one, or several while the specs are measured
+        again a few at a time. A spec's record names its own ("wowsims"); one that names none has the file's."""
+        found = {ranking.record.get("wowsims") or self.commit for ranking in self.specs.values()}
+        return " and ".join(sorted(found, key=lambda commit: (commit == self.commit, commit))) or self.commit
+
 
 def parse_spec(record: dict) -> SpecRanking:
     slots = {slot: SlotRanking(scores={int(item_id): value for item_id, value in data["scores"].items()},
