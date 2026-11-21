@@ -191,6 +191,36 @@ class GeneratorTest(unittest.TestCase):
             self.assertEqual(off, [], f"{mode}: an off hand")
             self.assertEqual(self.full[*self.SHOCKADIN, mode, "ranged"], [], "ForeverDB's data has no libram")
 
+    def test_the_shockadin_borrows_the_caster_pieces_a_paladin_can_wear(self):
+        """ForeverDB pools for a Paladin what a healer, a tank or a melee fighter wears. WoWSims' own set for the Holy
+        Shock build wears Magister's Leggings and Gauntlets of Elements, which are in other classes' pools only: the
+        Shockadin lists them too. Not another class's own piece, nor one whose classes the data cannot tell (the
+        second dungeon sets, which the simulator's database lacks), and never a weapon."""
+        cls, spec = self.SHOCKADIN
+        leggings, gauntlets, deathmist, bonescythe = 16687, 16672, 22074, 22477
+        pools = self.db.classes[cls]["pools"]
+        self.assertNotIn(leggings, {item for item, _ in pools["legs"]})
+        self.assertIn(leggings, {entry.item_id for entry in self.full[cls, spec, "pve", "legs"]})
+        self.assertIn(gauntlets, {entry.item_id for entry in self.full[cls, spec, "pve", "hands"]})
+        self.assertIn(deathmist, self.db.class_unknown)
+        for slot, _ in ladders.SLOTS:
+            ids = {entry.item_id for entry in self.full[cls, spec, "pve", slot]}
+            self.assertFalse(ids & self.db.class_unknown - {item for pool in pools.values() for item, _ in pool}, slot)
+            self.assertNotIn(bonescythe, ids)
+        borrowed = self.db.classes[cls]["specs"][spec]["pools"]
+        self.assertEqual({pool for pool in borrowed if pool in ("mh", "2h", "oh", "ranged")}, set())
+        for other in (1, 2, 3):   # the Paladin's other lists are ForeverDB's pools, as before
+            self.assertNotIn("pools", self.db.classes[cls]["specs"][other])
+            self.assertNotIn(leggings, {entry.item_id for entry in self.full[cls, other, "pve", "legs"]})
+
+    def test_hand_of_justice_is_not_a_shockadins(self):
+        """Measured on WoWSims' Holy Shock build it adds 5 DPS where the best trinkets add 9: it is listed on its 12
+        attack power or not at all, not level with the best as for the other melee damage dealers."""
+        cls, spec = self.SHOCKADIN
+        self.assertIn("shockadin", self.db.effects_but[11815])
+        for mode in ladders.MODES:
+            self.assertFalse([entry for entry in self.full[cls, spec, mode, "trinket"] if entry.level], mode)
+
     def test_the_shockadins_lists_are_ranked_on_its_weights(self):
         cls, spec = self.SHOCKADIN
         for mode, weights in (("pve", shockadin.PVE), ("pvp", shockadin.PVP)):

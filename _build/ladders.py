@@ -224,7 +224,8 @@ def full_ladder(db, cls: str, spec: int, mode: str, slot: str, level: int | None
 
     entries, seen_ids, weighed = [], set(), {}
     for pool in dict(SLOTS)[slot]:
-        for item_id, item_level in data["pools"].get(pool, ()):
+        # A spec that is not ForeverDB's may have candidates of its own next to the class's (shockadin.borrowed).
+        for item_id, item_level in (*data["pools"].get(pool, ()), *spec_def.get("pools", {}).get(pool, ())):
             if item_level > level or item_id in seen_ids:
                 continue
             seen_ids.add(item_id)

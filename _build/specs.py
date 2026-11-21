@@ -117,6 +117,16 @@ def load_effects(path=EFFECTS_FILE) -> dict:
             for item_id, record in json.loads(path.read_text(encoding="utf-8")).get("items", {}).items()}
 
 
+def load_effects_but(path=EFFECTS_FILE) -> dict:
+    """{item id: the specs of its roles it is not for, by slug} ("but" in corrections/effects.json): Hand of Justice
+    is a melee damage dealer's and adds 5 DPS to a Shockadin, measured, where its best trinkets add 9."""
+    path = Path(path)
+    if not path.exists():
+        return {}
+    return {int(item_id): frozenset(record["but"])
+            for item_id, record in json.loads(path.read_text(encoding="utf-8")).get("items", {}).items() if record.get("but")}
+
+
 def load_placed(path=EFFECTS_FILE) -> dict:
     """{item id: the item it follows}: the items placed by hand in the lists ranked by simulation (the "placed" part of
     corrections/effects.json)."""
@@ -137,6 +147,12 @@ def load_class_only(path=CLASSES_FILE) -> dict:
     return {int(item_id): frozenset(entry["classes"]) for item_id, entry in items.items()}
 
 
+def load_class_unknown(path=CLASSES_FILE) -> frozenset:
+    """The pooled items whose classes are not known: the simulator's database does not have them (classes.json)."""
+    path = Path(path)
+    return frozenset(json.loads(path.read_text(encoding="utf-8")).get("unknown", ())) if path.exists() else frozenset()
+
+
 def ranged_power(db, report: Report) -> None:
     """Count an item's attack power as the ranged attack power it also is, in a Hunter's weights. ForeverDB weighs
     "ranged attack power" and gives "attack power" next to nothing, or nothing: a Drake Fang Talisman's 56 scored 0."""
@@ -152,8 +168,10 @@ def ranged_power(db, report: Report) -> None:
 def unvalued(db, cls: str, spec: int) -> frozenset:
     """The items a spec's weights cannot value: most of their worth to its role is an effect (db.effects). In a list
     ranked on the weights they get no score and stand level with the best picks (ladders.full_ladder)."""
-    role = db.classes[cls]["specs"][spec]["role"]
-    return frozenset(item_id for item_id, roles in (getattr(db, "effects", None) or {}).items() if role in roles)
+    role, slug = db.classes[cls]["specs"][spec]["role"], db.classes[cls]["specs"][spec].get("slug")
+    left_out = getattr(db, "effects_but", None) or {}   # item -> the specs of the role it is not for, by slug
+    return frozenset(item_id for item_id, roles in (getattr(db, "effects", None) or {}).items()
+                     if role in roles and slug not in left_out.get(item_id, ()))
 
 
 def complete(weights: dict, cls: str) -> dict:
@@ -212,8 +230,10 @@ def apply(db) -> Report:
     PvP weights are the completed ones, and its enchants are ranked among the ones a Druid can have."""
     report = Report()
     db.effects = load_effects()
+    db.effects_but = load_effects_but()
     db.placed = load_placed()
     db.class_only = load_class_only()
+    db.class_unknown = load_class_unknown()
     own_enchants(db, report)
     for cls, data in db.classes.items():
         for number, spec in data["specs"].items():

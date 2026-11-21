@@ -404,7 +404,6 @@ ns.data.items = [==[
 12602|Draconian Deflector|d||d^229^General Drakkisath^21.4^0^w
 12603|Nightbrace Tunic|d||d^229^Solakar Flamewreath^18.3^0^w
 12604|Starfire Tiara|d||d^229^Jed Runewatcher^32.9^0^w
-12606|Crystallized Girdle|d||d^229^Solakar Flamewreath^17.1^0^w
 12618|Enchanted Thorium Breastplate|c||c^Blacksmithing^300^16745^f
 12620|Enchanted Thorium Helm|c||c^Blacksmithing^300^16742^f
 12625|Dawnbringer Shoulders|c||c^Blacksmithing^265^16660^f
@@ -606,7 +605,6 @@ ns.data.items = [==[
 14833|Tyrant's Gauntlets|w|s|m^4331^Firemane Ash Tail^0^s
 14921|Jade Epaulets|w|sr|m^9162^Young Diemetradon^0^s
 15047|Red Dragonscale Breastplate|c||c^Leatherworking^290^19054^f
-15048|Blue Dragonscale Breastplate|c||c^Leatherworking^260^19077^f
 15051|Black Dragonscale Shoulders|c||c^Leatherworking^270^19094^f
 15056|Stormshroud Armor|c||c^Leatherworking^260^19079^f
 15057|Stormshroud Pants|c||c^Leatherworking^250^19067^f

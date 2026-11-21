@@ -6,7 +6,10 @@
    "roles": [
     "Melee DPS"
    ],
-   "effect": "Chance on hit of an extra attack; the score counts its 12 attack power alone, which left it out of every PvP list."
+   "effect": "Chance on hit of an extra attack; the score counts its 12 attack power alone, which left it out of every PvP list.",
+   "but": [
+    "shockadin"
+   ]
   },
   "13966": {
    "name": "Mark of Tyranny",

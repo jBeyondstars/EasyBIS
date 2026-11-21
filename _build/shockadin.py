@@ -91,6 +91,35 @@ PVP = {**PVE, HIT: round((EP[HIT] - EP_HOLY_SPELL_HIT) / REFERENCE, 3), STAMINA:
        "armor": FOREVERDB_PVP_ARMOR}
 
 
+# The slots and the kinds of piece borrowed from the other classes' pools: armor and jewelry a Paladin can wear.
+# Weapons stay the Paladin's own pool: which ones a Paladin can use is not in the data.
+BORROWED_POOLS = ("head", "neck", "shoulder", "back", "chest", "wrist", "hands", "waist", "legs", "feet", "finger",
+                  "trinket")
+WEARABLE = frozenset(("4.0", "4.1", "4.2", "4.3", "4.4"))   # item class.subclass: miscellaneous, cloth to plate
+
+
+def borrowed(db, data) -> dict:
+    """{pool: [(item, level)]}: what the other classes' pools hold that the Paladin's lacks and a Paladin can wear.
+
+    ForeverDB pools for a class what one of its three specs would wear, and none of the Paladin's is a caster who
+    deals damage: WoWSims' own set for this build wears Magister's Leggings and Boots and Gauntlets of Elements,
+    which the Paladin's pools do not hold. The class a piece is restricted to (corrections/classes.json) is checked
+    where the list is built (ladders.full_ladder); a piece whose classes are not known (specs.load_class_unknown:
+    the second dungeon sets, each a single class's in Classic) is not borrowed."""
+    out = {}
+    unknown = getattr(db, "class_unknown", None) or ()   # a class's own dungeon set, for all the data says: left out
+    for pool in BORROWED_POOLS:
+        own = {item_id for item_id, _ in data["pools"].get(pool, ())}
+        found = {}
+        for other in db.classes.values():
+            for item_id, level in other["pools"].get(pool, ()):
+                gear = db.gear.get(item_id)
+                if item_id not in own and item_id not in unknown and gear and gear["kind"] in WEARABLE:
+                    found[item_id] = min(level, found.get(item_id, level))
+        out[pool] = sorted(found.items())
+    return out
+
+
 def add(db, enchants_for) -> tuple | None:
     """Add the Shockadin as the Paladin's next spec: (class, spec number), or None when the data has no Paladin.
 
@@ -104,6 +133,7 @@ def add(db, enchants_for) -> tuple | None:
     number = max(data["specs"]) + 1
     data["specs"][number] = {"name": NAME, "role": ROLE, "style": STYLE, "slug": SLUG,
                              "weights": {"lvl": dict(PVE), "raid": dict(PVE), "pvp": dict(PVP)}, "added": True}
+    data["specs"][number]["pools"] = borrowed(db, data)
     per_spec = db.enchants.get(PALADIN)
     if per_spec is not None:
         # Only what ForeverDB lists for a Paladin: an enchant it lists for other classes alone is not known to be
