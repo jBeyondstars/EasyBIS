@@ -149,5 +149,13 @@ https://github.com/jBeyondstars/EasyBIS
    An item's score in those lists is the damage per second it adds to a
    reference set, kept in _build/corrections/simulated.json. Every other list
    (the tanks', the healers', and the PvP lists) stays on ForeverDB's weights.
+   Two things in those other lists come from WoWSims Forever all the same
+   (_build/specs.py): the PvE list of the Druid's Feral (Cat), a spec
+   ForeverDB's data does not have, is ranked on the damage per second a point
+   of each stat adds to a cat, as the simulator's own interface publishes it
+   (ui/specs/druid/feral_ep.ts); and the tanks' weights are completed, where
+   ForeverDB gives a stat none, with the game's conversions as the simulator
+   states them (attack power from Strength, a weapon's damage per second from
+   attack power, dodge and armor from Agility).
    Nothing of the simulator's code is part of Easy BIS, and Easy BIS does not
    need it to run.

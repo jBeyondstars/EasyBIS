@@ -15,6 +15,7 @@ The Easy BIS window: the best gear of a spec, slot by slot.
            type or effect, where it comes from. With the option "compact" off it takes two, as an enchant
            always does. What a reputation stands in front of says so under where it comes from. Over the
            scores of each item slot, a mark says in a tooltip how the list is ranked (Browser.ScoreInfo).
+           After the score of a few items, the same mark says a word on a rank that may surprise (Notes.lua).
            The Character tab shows the best pick of every slot as a character sheet instead
            (UI\Character.lua), the Reputations tab what the spec needs of each faction
            (UI\Reputations.lua): both follow the spec, the list and the phase, and have no other filter.
@@ -61,7 +62,7 @@ local WINDOW_NAME = "EasyBISWindow"
 local WIDTH, HEIGHT = 960, 620
 local MIN_HEIGHT, MAX_HEIGHT = 380, 1400
 -- A notice under the filters while a known problem awaits its fix: the key of its text, nil when there is none.
-local NOTICE = "NOTICE_WEAPONS"
+local NOTICE = "NOTICE_ITEMS"
 local NOTICE_HEIGHT, NOTICE_GAP = 24, 4   -- its band, and the room between it and the list
 local NOTICE_MARK = "|TInterface\\DialogFrame\\UI-Dialog-Icon-AlertNew:16:16:0:0|t "
 local FILTERS, INSET_BOTTOM = 70, 58   -- what the filters and the footer take of the window's height
@@ -246,10 +247,10 @@ end
 local function SpecChoices()
     local choices = {}
     local function AddClass(class)
-        local count = ns.Index.SpecCount(class)
-        if count == 0 then return end
+        local order = ns.Index.SpecOrder(class)
+        if not order[1] then return end
         local children = {}
-        for spec = 1, count do
+        for _, spec in ipairs(order) do
             children[#children + 1] = {
                 text = ns.SpecName(ns.Index.SpecName(class, spec)),
                 value = SpecKey(class, spec),
@@ -562,6 +563,8 @@ local function ItemTooltip(owner, data, side)
         GameTooltip:AddLine(L.TIP_CUSTOM, MUTED[1], MUTED[2], MUTED[3], true)
     elseif data.placed then
         GameTooltip:AddLine(L.TIP_PLACED, MUTED[1], MUTED[2], MUTED[3], true)
+    elseif data.level then
+        GameTooltip:AddLine(L.TIP_LEVEL, MUTED[1], MUTED[2], MUTED[3], true)
     elseif data.ratio and not data.bis and not data.tie then
         local share = math.floor(data.ratio * 100 + 0.5)
         GameTooltip:AddLine((data.other and L.TIP_SCORE_SET or L.TIP_SCORE):format(share),
@@ -610,6 +613,16 @@ local function ScoreTooltip(owner)
             GameTooltip:AddLine(line, MUTED[1], MUTED[2], MUTED[3], true)
         end
     end
+    GameTooltip:Show()
+end
+
+-- A word on a rank that may surprise, behind the mark after an item's score.
+local function WhyTooltip(mark)
+    local data = mark.row.data
+    if not data or not data.why then return end
+    PlaceTooltip(mark)
+    GameTooltip:SetText(L.WHY_TITLE, 1, 0.82, 0)
+    GameTooltip:AddLine(data.why, 1, 1, 1, true)
     GameTooltip:Show()
 end
 
@@ -695,6 +708,25 @@ local function CreateRow(parent)
     row.bar:SetHeight(6)
     row.bar:SetPoint("LEFT", row.barBack, "LEFT", 0, 0)
     row.rank = Text(row, FONT_TEXT)
+
+    -- ... and, after the score of a few items, a mark: a word on a rank that may surprise (Notes.lua)
+    row.why = CreateFrame("Button", nil, row)
+    row.why.row = row
+    row.why:SetSize(14, 14)
+    row.why:SetPoint("LEFT", row.rank, "RIGHT", 6, 0)
+    row.why.icon = row.why:CreateTexture(nil, "ARTWORK")
+    row.why.icon:SetAllPoints()
+    row.why.icon:SetTexture(INFO_ICON)
+    row.why.icon:SetAlpha(0.75)
+    row.why:SetScript("OnEnter", function(self)
+        self.icon:SetAlpha(1)
+        WhyTooltip(self)
+    end)
+    row.why:SetScript("OnLeave", function(self)
+        self.icon:SetAlpha(0.75)
+        GameTooltip:Hide()
+    end)
+    row.why:Hide()
 
     -- where it comes from: a picture for the category, then the words
     row.sourceIcon = row:CreateTexture(nil, "ARTWORK")
@@ -915,6 +947,7 @@ local function FillRow(row, data)
     row.name:SetShown(not plain)
     row.sub:SetShown(not plain)
     row.rank:SetShown(not plain)
+    row.why:SetShown(data.kind == "item" and data.why ~= nil)
     row.sourceIcon:SetShown(not plain)
     row.kind:SetShown(not plain and not compact)
     row.detail:SetShown(not plain)

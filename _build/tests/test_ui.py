@@ -116,7 +116,7 @@ class WindowTest(unittest.TestCase):
         def other_gap(slot, entry) -> int | None:
             """A set against a set: one-hander + off hand against the two-hander, or the reverse. A placed
             item has no score of its own, so no gap; nor has one whose score is no full measure."""
-            if entry.placed or entry.estimated:
+            if entry.unscored or entry.estimated:
                 return None
             best_main, best_off = lead(visible["main"]), [lead(visible["off"])] if visible["off"] else []
             if two_hand:
@@ -133,7 +133,7 @@ class WindowTest(unittest.TestCase):
                 rows.append(("item", entry.shown(side), slot, True, 0))
             for entry in alternatives if alts else []:
                 rows.append(("item", entry.shown(side), slot, False,
-                             None if entry.placed or entry.estimated
+                             None if entry.unscored or entry.estimated
                              else self.gap(entry.stored / 10, best[0].stored / 10)))
             if alts and other.get(slot):
                 rows.append(("note", None, slot, None, None))
@@ -327,6 +327,34 @@ class WindowTest(unittest.TestCase):
         measured = next(frame for frame in frames if not frame.data.estimated and not frame.data.bis and not frame.data.tie)
         self.assertRegex(strip_colors(measured.rank.text), r"^(-\d+%|<1%)$")
         self.assertTrue(measured.bar.shown)
+
+    def test_a_rank_that_may_surprise_has_a_word_behind_a_mark(self):
+        """After the score of an item with a note (Notes.lua), the information mark; its tooltip says the note."""
+        retribution = "EasyBISCharDB = {{ class = 'PALADIN', spec = 3, list = '{}' }}"
+        game = self.open(saved=retribution.format("pve"))
+        tooltip = game.lua.globals().GameTooltip
+        frames = self.all_frames(game)
+        noted = [index for index, frame in enumerate(frames) if frame.data.kind == "item" and frame.data.why]
+        self.assertTrue(noted, "no row of the list has a note")
+        for index, frame in enumerate(frames):
+            self.assertEqual(bool(frame.why.shown), index in noted, "the mark is for the rows with a note, and no other")
+        row = next(frames[index] for index in noted if strip_colors(frames[index].name.text) == "Destiny")
+        mark = row.why
+        self.assertEqual(mark.icon.texture, "Interface\\FriendsFrame\\InformationIcon")
+        self.assertEqual((mark.points[1][1], mark.points[1][3], mark.points[1][4]), ("LEFT", "RIGHT", 6),
+                         "right after the words of the score")
+        game.stub.run(mark, "OnEnter")
+        lines = [line[1] for line in tooltip.lines.values()]
+        self.assertEqual(tooltip.text, "About this rank")
+        self.assertEqual(len(lines), 1)
+        self.assertRegex(lines[0], "^Its proc, 200 Strength for 12 seconds, .* about 49 DPS")
+        game.stub.run(mark, "OnLeave")
+        self.assertFalse(tooltip.shown)
+
+        # the PvP list is on the weights: a note that speaks of the simulation is not for it
+        game = self.open(saved=retribution.format("pvp"))
+        said = [frame.data.why for frame in self.all_frames(game) if frame.data.kind == "item" and frame.data.why]
+        self.assertFalse([text for text in said if "simulat" in text], said)
 
     def test_a_slot_header_says_what_a_score_is(self):
         """Over the scores of each item slot, a mark whose tooltip says how the list is ranked."""
@@ -556,6 +584,29 @@ class WindowTest(unittest.TestCase):
         self.assertEqual(self.shown_rows(game), self.reference_rows("WARRIOR", 2, "pve"))
         saved = game.lua.globals().EasyBISCharDB
         self.assertEqual((saved["class"], saved.spec, saved.list), ("WARRIOR", 2, "pve"))
+
+    def test_spec_menu_of_a_druid(self):
+        """The Druid has four specs: the cat, its fourth, is offered before the bear, its second."""
+        game = self.open(cls="DRUID")
+        window, state = game.ns.Browser.window, game.ns.Browser.state
+        open_dropdown(game, window.spec.button)
+        druid = find(game.stub.menu, "Druid")
+        self.assertEqual(texts(druid), ["Balance", "Feral (Cat)", "Feral (Bear)", "Restoration"])
+        cat = find(druid, "Feral (Cat)")
+        cat.pick()
+        self.assertEqual((state["class"], state.spec), ("DRUID", 4))
+        self.assertTrue(cat.selected())
+        self.assertEqual(label(window.spec), "Druid Feral (Cat)")
+        self.assertEqual(self.shown_rows(game), self.reference_rows("DRUID", 4, "pve"))
+        find(druid, "Feral (Bear)").pick()
+        self.assertEqual((state["class"], state.spec), ("DRUID", 2))
+        self.assertEqual(self.shown_rows(game), self.reference_rows("DRUID", 2, "pve"))
+        self.assertNotEqual(self.reference_rows("DRUID", 2, "pve"), self.reference_rows("DRUID", 4, "pve"))
+        saved = game.lua.globals().EasyBISCharDB
+        self.assertEqual((saved["class"], saved.spec), ("DRUID", 2))
+        french = self.open(cls="DRUID", locale="frFR")
+        open_dropdown(french, french.ns.Browser.window.spec.button)
+        self.assertEqual(texts(find(french.stub.menu, "Druid"))[1:3], ["Farouche (Félin)", "Farouche (Ours)"])
 
     def test_list_buttons(self):
         game = self.open(saved=ENHANCEMENT)
@@ -1185,11 +1236,11 @@ class WindowTest(unittest.TestCase):
 
     def test_notice_under_the_filters(self):
         """A known problem awaits its fix: a band says so between the filters and the list, on every page."""
-        for locale, word in (("enUS", "weapons"), ("frFR", "armes")):
+        for locale, word in (("enUS", "items"), ("frFR", "objets")):
             game = self.open(locale=locale)
             window = game.ns.Browser.window
             notice = window.notice
-            self.assertEqual(plain(notice.text.text), game.ns.L.NOTICE_WEAPONS, locale)
+            self.assertEqual(plain(notice.text.text), game.ns.L.NOTICE_ITEMS, locale)
             self.assertIn(word, notice.text.text, locale)
             self.assertEqual((notice.points[1][1], notice.points[2][1]), ("TOPLEFT", "TOPRIGHT"), "across the window")
             top, list_top = -notice.points[1][3], -window.inset.points[1][3]
@@ -2141,13 +2192,21 @@ class WindowTest(unittest.TestCase):
             best |= {e.shown("a") for e in picks}
         return shown, best
 
+    def timbermaw_formulas(self, token, spec) -> set:
+        """The enchants a spec is shown whose formula Timbermaw sells: an enchanter's reason to earn its standing."""
+        sold = {enchant for enchant, record in reputations.load()["enchants"].items() if record["faction"] == 576}
+        shown = luaout.best_enchants(luaout.enchant_ladders(self.db, token, spec, self.kept[token][spec]), phases.CURRENT)
+        return sold & {enchant for enchants in shown.values() for enchant in enchants}
+
     def timbermaw_spec(self) -> tuple:
         """(class, spec, alternatives): the first PvE list that shows the pieces of Timbermaw's three
-        leatherworking patterns, with the fewest alternatives it takes."""
+        leatherworking patterns, with the fewest alternatives it takes, and no enchant whose formula Timbermaw
+        sells: leatherworking is then the one profession the faction is worth to that list."""
         for count in range(ladders.ALTERNATIVES, ladders.MAX_ALTERNATIVES + 1):
             for token in test_addon.CLASSES:
                 for spec in self.kept[token]:
-                    if set(self.TIMBERMAW_PIECES) <= self.shown_pieces(token, spec, count)[0]:
+                    if (set(self.TIMBERMAW_PIECES) <= self.shown_pieces(token, spec, count)[0]
+                            and not self.timbermaw_formulas(token, spec)):
                         return token, spec, count
         self.fail("no PvE list shows the pieces of Timbermaw's three patterns: these tests need another example")
 

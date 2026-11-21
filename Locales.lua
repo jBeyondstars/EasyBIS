@@ -120,7 +120,8 @@ local enUS = {
     TIP_SCORE = "Score for this slot: %d%% of the best pick's.",
     TIP_SCORE_SET = "Score of both hands together: %d%% of the best choice's.",
     TIP_CUSTOM = "Added by hand to this list.",
-    TIP_PLACED = "Placed here from the simulation of a close spec, until this spec's own: no score yet.",
+    TIP_PLACED = "Placed here by hand, without a score of its own.",
+    TIP_LEVEL = "Its effect is not counted in the scores, so it has none: shown level with the best picks.",
     TIP_REMOVE = "Remove from the list",
     -- What the score is, behind the mark over the scores.
     SCORE_COLUMN = "Score",
@@ -136,7 +137,8 @@ local enUS = {
     MINIMAP_HINT = "Click to open or close the window.",
     MINIMAP_DRAG_HINT = "Drag to move this button.",
     NOTICE_HIDE = "Hide this notice. It comes back the next time the window is opened.",
-    NOTICE_WEAPONS = "I know some weapons are currently ranked wrong. A fix is on its way and will be out shortly.",
+    WHY_TITLE = "About this rank",
+    NOTICE_ITEMS = "I know some items are currently ranked wrong. A fix is on its way and will be out shortly.",
 
     -- Where items come from
     SRC_quest = "Quest",
@@ -232,7 +234,7 @@ local enUS = {
     HELP_PHASE = "/easybis phase [0, 1 or all] - where the lists stop: 0 before the raids, all for everything",
     HELP_FACTION = "/easybis faction [alliance, horde or auto] - the faction the lists are for (auto: my character's)",
     HELP_ITEM = "/easybis item [link or ID] - say who wants an item",
-    HELP_LIST = "/easybis list [1-3] [pvp] - print the list of one of my specs",
+    HELP_LIST = "/easybis list [number] [pvp] - print the list of one of my specs",
     HELP_ADD = "/easybis add [link or ID] [off] - add an item to the list the window shows (off: as an off hand)",
     HELP_REMOVE = "/easybis remove [link or ID] - take a hand-added item out of that list",
     HELP_MINIMAP = "/easybis minimap - show or hide the minimap button",
@@ -241,7 +243,7 @@ local enUS = {
     ITEM_NOBODY = "%s is in nobody's list.",
     ITEM_HEADER = "%s is wanted by:",
     LIST_HEADER = "%s %s, %s:",
-    LIST_NO_SPEC = "Your class has no spec number %s. Use 1, 2 or 3.",
+    LIST_NO_SPEC = "Your class has no spec number %s. Its specs: %s.",
     LIST_EMPTY = "nothing",
     LIST_TWO_HAND = "none, the two-hander wins",
     LIST_OR_ONE_HAND = "Or a one-hander with an off hand",
@@ -505,7 +507,8 @@ local frFR = {
     TIP_SCORE = "Score pour cet emplacement : %d %% de celui du meilleur objet.",
     TIP_SCORE_SET = "Score des deux mains réunies : %d %% de celui du meilleur choix.",
     TIP_CUSTOM = "Ajouté à la main dans cette liste.",
-    TIP_PLACED = "Placé ici d'après la simulation d'une spécialisation proche, en attendant celle-ci : pas encore de score.",
+    TIP_PLACED = "Placé ici à la main, sans score propre.",
+    TIP_LEVEL = "Son effet n'est pas compté dans les scores, il n'en a donc pas : affiché au niveau des meilleurs choix.",
     TIP_REMOVE = "Retirer de la liste",
     SCORE_COLUMN = "Score",
     SCORE_INFO_TITLE = "Comment cette liste est classée",
@@ -520,7 +523,8 @@ local frFR = {
     MINIMAP_HINT = "Cliquez pour ouvrir ou fermer la fenêtre.",
     MINIMAP_DRAG_HINT = "Faites glisser pour déplacer ce bouton.",
     NOTICE_HIDE = "Masquer ce message. Il revient à la prochaine ouverture de la fenêtre.",
-    NOTICE_WEAPONS = "Je suis au courant que certaines armes sont actuellement mal classées. Un correctif est en cours et sera publié d'ici peu.",
+    WHY_TITLE = "À propos de ce rang",
+    NOTICE_ITEMS = "Je suis au courant que certains objets sont actuellement mal classés. Un correctif est en cours et sera publié d'ici peu.",
 
     SRC_quest = "Quête",
     SRC_dungeon = "Donjon",
@@ -614,7 +618,7 @@ local frFR = {
     HELP_PHASE = "/easybis phase [0, 1 ou all] - où les listes s'arrêtent : 0 avant les raids, all pour tout",
     HELP_FACTION = "/easybis faction [alliance, horde ou auto] - la faction des listes (auto : celle de mon personnage)",
     HELP_ITEM = "/easybis item [lien ou ID] - dire qui veut un objet",
-    HELP_LIST = "/easybis list [1-3] [pvp] - afficher la liste d'une de mes spécialisations",
+    HELP_LIST = "/easybis list [numéro] [pvp] - afficher la liste d'une de mes spécialisations",
     HELP_ADD = "/easybis add [lien ou ID] [off] - ajouter un objet à la liste que montre la fenêtre (off : en main gauche)",
     HELP_REMOVE = "/easybis remove [lien ou ID] - retirer de cette liste un objet ajouté à la main",
     HELP_MINIMAP = "/easybis minimap - afficher ou masquer le bouton de minicarte",
@@ -623,7 +627,7 @@ local frFR = {
     ITEM_NOBODY = "%s n'est dans la liste de personne.",
     ITEM_HEADER = "%s est voulu par :",
     LIST_HEADER = "%s %s, %s :",
-    LIST_NO_SPEC = "Votre classe n'a pas de spécialisation numéro %s. Utilisez 1, 2 ou 3.",
+    LIST_NO_SPEC = "Votre classe n'a pas de spécialisation numéro %s. Ses spécialisations : %s.",
     LIST_EMPTY = "rien",
     LIST_TWO_HAND = "rien, l'arme à deux mains l'emporte",
     LIST_OR_ONE_HAND = "Ou une arme à une main avec une main gauche",
@@ -779,7 +783,8 @@ local frFR = {
 -- Spec names as the data files write them (English) -> French
 local SPECS_frFR = {
     ["Balance"] = "Équilibre",
-    ["Feral Combat"] = "Combat farouche",
+    ["Feral (Cat)"] = "Farouche (Félin)",
+    ["Feral (Bear)"] = "Farouche (Ours)",
     ["Restoration"] = "Restauration",
     ["Beast Mastery"] = "Maîtrise des bêtes",
     ["Marksmanship"] = "Précision",
@@ -823,6 +828,7 @@ local active, activeSpecs, activeProfessions
 
 function ns.SetLocale(code)
     active = LOCALES[code] or enUS
+    ns.locale = LOCALES[code] and code or "enUS"   -- the language in use, for the texts the data files hold
     activeSpecs = SPECS[code]
     activeProfessions = PROFESSIONS[code]
 end

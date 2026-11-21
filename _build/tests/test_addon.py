@@ -138,9 +138,10 @@ class AddonTest(unittest.TestCase):
         for slot, entries in visible.items():
             best, alternatives = ladders.picks(slot, entries, count)
             out[slot] = ([e.shown(side) for e in best], [e.shown(side) for e in alternatives])
-            # an alternative that scores exactly as a best pick is its equal; a placed one has no score of its own
+            # an alternative that scores exactly as a best pick is its equal; a placed one has no score of its own;
+            # one whose effect the weights cannot count (level) is shown as the best picks' equal
             out["ties"][slot] = {e.shown(side) for e in alternatives
-                                 if not e.placed and any(e.stored == b.stored for b in best)}
+                                 if e.level or (not e.placed and any(e.stored == b.stored for b in best))}
         shown = 1 + count
         out["other"] = {"main": [e.shown(side) for e in other_main[:shown]],
                         "off": [e.shown(side) for e in other_off[:shown]]}
@@ -231,7 +232,7 @@ class AddonTest(unittest.TestCase):
                             self.assertEqual(other, expected["other"].get(slot, []),
                                              f"{token} {spec} {mode} {slot} {flt}: the other weapon style")
                             checked += 1
-        self.assertEqual(checked, len(ladders.FILTERS) * 27 * 2 * 15)
+        self.assertEqual(checked, len(ladders.FILTERS) * 28 * 2 * 15)   # ForeverDB's 27 specs and the Feral cat
         self.assertEqual(len(ladders.FILTERS), 2 * 2 * 2 * len(phases.PHASES) * 2 * len(ladders.RANK_CAPS))
         # a filter that does not say counts the PvP rewards, as the lists did before the option
         silent = game.lua.table(side="a", unsourced=False, seenOnly=False, phase=phases.CURRENT)
@@ -355,10 +356,95 @@ class AddonTest(unittest.TestCase):
         self.assertIsNone(game.ns.Ladders.Measured("SHAMAN", 2, "pvp"))
         self.assertIsNone(game.ns.Ladders.Measured("SHAMAN", 3, "pve"), "Restoration is ranked on the weights")
 
+    def test_a_note_is_for_its_specs_and_its_kind_of_list(self):
+        """Notes.For: the word on a rank that surprises, for the specs the note names, only in a list ranked by
+        simulation when it speaks of one, in the game's language."""
+        note = Game().ns.Notes.For
+        self.assertRegex(note(647, "WARRIOR", 1, "pve", "main"), "^Its proc, 200 Strength .* about 66 DPS")
+        self.assertRegex(note(647, "PALADIN", 3, "pve", "main"), "about 49 DPS", "the same item, another spec's note")
+        main, off = note(12590, "ROGUE", 3, "pve", "main"), note(12590, "ROGUE", 3, "pve", "off")
+        self.assertRegex(main, "^Its proc makes every attack land and crit")
+        self.assertIsNone(off, "Felstriker's proc was measured in Subtlety's main hand alone")
+        self.assertIsNone(note(647, "WARRIOR", 1, "pve"), "a note for a slot is for a row of that slot")
+        self.assertNotEqual(note(14555, "ROGUE", 3, "pve", "main"), None)
+        self.assertRegex(note(871, "ROGUE", 2, "pve", "off"), "^Its proc, an extra attack", "the spec's own note first")
+        self.assertRegex(note(871, "ROGUE", 2, "pvp", "off"), "^Added by hand", "then the one for every list")
+        self.assertIsNone(note(647, "WARRIOR", 3, "pve", "main"), "Protection is not one of the note's specs")
+        self.assertIsNone(note(647, "WARRIOR", 1, "pvp", "main"), "the PvP list is not ranked by simulation")
+        self.assertRegex(note(11815, "WARRIOR", 3, "pvp", "trinket"), "^12 attack power.* in Classic[)][.]$", "a fact of the item: everywhere")
+        self.assertIsNone(note(2, "WARRIOR", 1, "pve", "main"), "an item without a note")
+        self.assertRegex(Game(locale="frFR").ns.Notes.For(647, "WARRIOR", 1, "pve", "main"), "^Son proc, 200 de Force")
+        self.assertRegex(Game(locale="deDE").ns.Notes.For(647, "WARRIOR", 1, "pve", "main"), "^Its proc, 200 Strength",
+                         "English where the note has no text in the game's language")
+
     def test_specs_are_listed_in_order(self):
         game = Game()
         specs = [(spec.index, spec.name, spec.style) for spec in game.ns.Ladders.Specs("SHAMAN").values()]
         self.assertEqual(specs, [(1, "Elemental", "any"), (2, "Enhancement", "2h"), (3, "Restoration", "any")])
+
+    def test_the_druids_two_feral_specs_stand_together(self):
+        """The cat is the Druid's fourth spec, and is listed before the bear, which is the second."""
+        game = Game(cls="DRUID")
+        specs = [(spec.index, spec.name, spec.role) for spec in game.ns.Ladders.Specs("DRUID").values()]
+        self.assertEqual(specs, [(1, "Balance", "Caster DPS"), (4, "Feral (Cat)", "Melee DPS"),
+                                 (2, "Feral (Bear)", "Tank"), (3, "Restoration", "Healer")])
+        self.assertEqual(list(game.ns.Index.SpecOrder("DRUID").values()), [1, 4, 2, 3])
+        self.assertEqual(list(game.ns.Index.SpecOrder("SHAMAN").values()), [1, 2, 3])
+        self.assertEqual(game.ns.Index.SpecCount("DRUID"), 4)
+        self.assertEqual(game.ns.Index.SpecName("DRUID", 4), "Feral (Cat)")
+        cat, bear = game.ns.Ladders.For("DRUID", 4, "pve"), game.ns.Ladders.For("DRUID", 2, "pve")
+        for slots, number in ((cat, 4), (bear, 2)):
+            for slot, _ in ladders.SLOTS:
+                want = [entry for entry in self.kept["DRUID"][number]["pve"][slot] if entry.passes(default_filter())]
+                if slot not in ("main", "off") and want:
+                    self.assertEqual(slots[slot].best[1].id, ladders.lead(want).shown("a"), f"spec {number} {slot}")
+        self.assertNotEqual(cat.chest.best[1].id, bear.chest.best[1].id)
+        self.assertEqual(game.slash("list 4")[0], "Easy BIS: Druid Feral (Cat), Level 60 PvE:")
+        self.assertEqual(game.slash("list 2")[0], "Easy BIS: Druid Feral (Bear), Level 60 PvE:")
+        self.assertEqual(game.slash("list 7")[0], "Easy BIS: Your class has no spec number 7. Its specs: "
+                         "1 Balance, 4 Feral (Cat), 2 Feral (Bear), 3 Restoration.")
+        french = Game(cls="DRUID", locale="frFR")
+        self.assertEqual(french.ns.SpecName("Feral (Cat)"), "Farouche (Félin)")
+        self.assertEqual(french.ns.SpecName("Feral (Bear)"), "Farouche (Ours)")
+
+    def test_an_item_worth_its_effect_is_the_equal_of_the_best_picks(self):
+        """The Lion Horn of Stormwind in a Protection Paladin's trinkets: flag x, no score, tied, never a best pick."""
+        horn, insignia, stabilizer = 14557, 17904, 272440
+        game = Game(cls="PALADIN")
+        ladders_ = game.ns.Ladders
+        trinkets = ladders_.For("PALADIN", 2, "pve").trinket
+        self.assertEqual([pick.id for pick in trinkets.best.values()], [insignia, stabilizer])
+        first = trinkets.alts[1]
+        self.assertEqual(first.id, horn)
+        self.assertTrue(ladders_.HasFlag(first.entry, "x"))
+        self.assertTrue(ladders_.Unscored(first.entry))
+        self.assertTrue(ladders_.IsTie(trinkets, first))
+        state = game.lua.table_from({"class": "PALADIN", "spec": 2, "list": "pve"})
+        rows = [row for row in game.ns.Rows.Items(state, True)[0].values() if row.kind == "item" and row.id == horn]
+        self.assertEqual(len(rows), 1)
+        self.assertTrue(rows[0].level and rows[0].tie)
+        self.assertIsNone(rows[0].gap)
+        self.assertIsNone(rows[0].ratio)
+        self.assertIn(("<classicon-paladin> Paladin Protection", "BIS PvE"), game.lines(horn), "a best pick's equal")
+
+    def test_a_tooltip_names_the_specs_in_the_order_they_are_listed(self):
+        game = Game(cls="DRUID")
+        game.ns.SetOption(game.ns, "onlyMyClass", False)
+        hits = self.expected_hits(default_filter())
+        found = None
+        for item_id, wanted in hits.items():
+            wants = {spec: {mode for token, number, mode, _, _ in wanted if token == "DRUID" and number == spec}
+                     for spec in (2, 4)}
+            bis = {spec: {mode: any(best for token, number, kind, _, best in wanted
+                                    if token == "DRUID" and number == spec and kind == mode) for mode in wants[spec]}
+                   for spec in (2, 4)}
+            others = {number for token, number, _, _, _ in wanted if token == "DRUID"} - {2, 4}
+            if wants[2] and bis[2] == bis[4] and not others:
+                found = item_id
+                break
+        self.assertIsNotNone(found, "no item is wanted the same way by the cat and the bear alone")
+        lefts = [left for left, _ in game.lines(found) if "Druid" in left]
+        self.assertEqual(lefts, ["<classicon-druid> Druid Feral (Cat), Feral (Bear)"])
 
     def test_a_faction_sees_its_own_items(self):
         alliance = Game(faction="Alliance", saved=WITH_PVP).ns.Ladders.For("SHAMAN", 2, "pve")
@@ -1743,7 +1829,7 @@ class DungeonsTest(unittest.TestCase):
     def test_a_spec_with_no_dungeon(self):
         game = Game()
         game.ns.SetOption(game.ns, "listAlts", False)
-        feral = next(spec for spec, modes in self.kept["DRUID"].items() if self.db.classes["DRUID"]["specs"][spec]["name"] == "Feral Combat")
+        feral = self.db.specs.bear[1]   # ForeverDB's Feral Combat
         model = self.model(game, "DRUID", feral)
         if any(self.expected_runs(cell.id) for cell in model.sheet.values() if cell.id):
             self.skipTest("the data gives the Feral Druid a dungeon piece by now")

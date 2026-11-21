@@ -25,12 +25,13 @@ Hunter. It is the developer's decision, and full_ladder's one line to remove.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from itertools import product
 
 import phases
 import ranks
 import simulated
+import specs
 
 # Easy BIS slot -> the ForeverDB pools it reads. Rings and trinkets fill two slots from one pool.
 SLOTS = (
@@ -96,6 +97,8 @@ class Entry:
     rank: int = ranks.NO_RANK  # the PvP rank it needs (ranks.required)
     honor: bool = False  # a Premier piece: sold for honor, even when the data gives it no source
     placed: bool = False  # put at its rank from a close spec's measure (simulated.place): no score of its own
+    level: bool = False  # most of its worth is an effect the weights cannot count (specs.unvalued): no score of its
+    #                      own, it stands level with the best picks and is never one itself
     estimated: bool = False  # ranked by simulation on a score that is no full measure (SlotRanking.measured): the
     #                          simulator cannot wear it (a random bonus), or lacks its effect or its proc rate. It keeps
     #                          its rank, and the addon shows no score for it
@@ -104,6 +107,11 @@ class Entry:
     def stored(self) -> int:
         """The score as the data files hold it: tenths, rounded."""
         return round(self.score * 10)
+
+    @property
+    def unscored(self) -> bool:
+        """Whether its score is a stand-in, not its own: it keeps the ladder in order and is never a best pick."""
+        return self.placed or self.level
 
     def shown(self, side: str) -> int | None:
         """The item a character of that faction wears for this entry."""
@@ -198,6 +206,7 @@ def full_ladder(db, cls: str, spec: int, mode: str, slot: str, level: int | None
     min_score = data["min"].get(profile, 1)
     # The specs a simulator ranked (simulated.py). The site's rule and other levels stay on the weights.
     ranked = simulated.ranking(db, cls, spec, mode, slot) if rank_rewards and level == db.meta["cap"] else None
+    placed = getattr(db, "placed", None) or {}   # the items put by hand after another one (corrections/effects.json)
 
     entries, seen_ids, weighed = [], set(), {}
     for pool in dict(SLOTS)[slot]:
@@ -222,7 +231,10 @@ def full_ladder(db, cls: str, spec: int, mode: str, slot: str, level: int | None
                 continue
             value = score(db, item_id, weights, cls) or 0.0
             armour_only = gear["armor"] > 0 and not gear["dps"] and not stats
-            if not (value >= min_score or (value > 0 and armour_only)):
+            # A list ranked by simulation also holds what the weights give nothing and the simulator measures: a
+            # trinket that is all proc, a weapon a Hunter only holds. The weights say what to list only where they rank.
+            measured = ranked is not None and (ranked.scores.get(item_id, 0) > 0 or item_id in placed)
+            if not (value >= min_score or (value > 0 and armour_only) or measured):
                 continue
             flags = item["flags"]
             weighed[item_id] = value
@@ -241,12 +253,42 @@ def full_ladder(db, cls: str, spec: int, mode: str, slot: str, level: int | None
     entries.sort(key=lambda entry: (-entry.score, -weighed[entry.item_id], entry.item_id))
     if rank_rewards and level == db.meta["cap"]:
         entries = simulated.place(entries, simulated.placements(db, cls, spec, mode, slot))
+        if ranked is None:
+            entries = level_with_the_best(entries, specs.unvalued(db, cls, spec))
+        else:
+            entries = after_their_anchor(entries, placed)
     return entries
 
 
+def after_their_anchor(entries: list[Entry], placed: dict) -> list[Entry]:
+    """The ladder with each item placed by hand (db.placed) right after the item it follows, with that item's score
+    for the ladder to stay in order, and flagged: no score of its own, never a best pick. Without the item it
+    follows, the ladder does not hold it."""
+    for item_id, anchor in placed.items():
+        entry = next((e for e in entries if e.item_id == item_id), None)
+        if entry is None:
+            continue
+        entries = [e for e in entries if e.item_id != item_id]
+        at = next((i for i, e in enumerate(entries) if e.item_id == anchor), None)
+        if at is not None:
+            entries.insert(at + 1, replace(entry, score=entries[at].score, placed=True, estimated=False))
+    return entries
+
+
+def level_with_the_best(entries: list[Entry], unvalued) -> list[Entry]:
+    """The ladder with the items the weights cannot value (specs.unvalued) moved to its head, in the order they
+    had, each with the first score for the ladder to stay in order, and flagged: that score is not its own."""
+    moved = [entry for entry in entries if entry.item_id in unvalued]
+    if not moved or len(moved) == len(entries):
+        return entries
+    rest = [entry for entry in entries if entry.item_id not in unvalued]
+    return [replace(entry, score=rest[0].score, level=True) for entry in moved] + rest
+
+
 def lead(entries: list[Entry]) -> Entry | None:
-    """The first entry that can be a best pick: a placed one never is, unless the list has nothing else."""
-    return next((entry for entry in entries if not entry.placed), entries[0] if entries else None)
+    """The first entry that can be a best pick: one with no score of its own never is, unless the list has
+    nothing else."""
+    return next((entry for entry in entries if not entry.unscored), entries[0] if entries else None)
 
 
 def picks(slot: str, visible: list[Entry], alternatives: int = ALTERNATIVES) -> tuple[list[Entry], list[Entry]]:
@@ -262,7 +304,7 @@ def picks(slot: str, visible: list[Entry], alternatives: int = ALTERNATIVES) -> 
     first = lead(visible)
     best = [first]
     if slot in PAIRED:
-        second = next((e for e in visible if e is not first and not e.placed
+        second = next((e for e in visible if e is not first and not e.unscored
                        and not (first.limit and e.limit == first.limit)), None)
         if second:
             best.append(second)
@@ -310,7 +352,7 @@ def _needed(slot: str, visible: list[Entry]) -> list[Entry]:
     alternatives as a player can ask for: what he sees with fewer is the start of it."""
     best, alternatives = picks(slot, visible, MAX_ALTERNATIVES)
     needed = best + alternatives
-    placed = sum(1 for e in visible if e.placed)   # a placed item may stand before a weapon list's best pick
+    placed = sum(1 for e in visible if e.unscored)   # such an item may stand before a weapon list's best pick
     if slot == "main":
         needed += [e for e in visible if e.two_hand][:1 + MAX_ALTERNATIVES + placed]
         needed += [e for e in visible if not e.two_hand][:1 + MAX_ALTERNATIVES + placed]

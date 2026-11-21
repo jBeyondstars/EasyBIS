@@ -7,7 +7,7 @@ What the window lists, as plain tables: the frames only draw them.
   Rows.Items(state, withAlts)      rows, facets. Omit withAlts to follow the browser option.
       state    { class, spec, list, slot, source, zone, reputation }   slot, source, zone and reputation are nil
                for "all"; reputation "ok": what is within the player's reach, "todo": what is still to earn
-      a row    { kind = "item", id, slot, bis, tie, gap, ratio, source, other, custom, reputation }
+      a row    { kind = "item", id, slot, bis, tie, gap, ratio, source, other, custom, reputation, why }
                    reputation   what the item asks for (Reputation.Requirement), or nil
                    gap      percent behind the best (0 or less); nil for an item added by hand
                    ratio    its score as a share of the best's (0 to 1), for the score bar; nil likewise
@@ -16,6 +16,8 @@ What the window lists, as plain tables: the frames only draw them.
                    custom   true for an item the player added by hand (Custom.lua): no score
                    estimated  true for an alternative whose score is no full measure (flag g): it keeps its
                             place, and has no gap and no ratio, so the window shows nothing for its score
+                   level    true for an item whose effect the weights cannot count (flag x): no score of its
+                            own, so no gap and no ratio; it is a tie of the best picks
                    placed   true for an item the data placed from a close spec's simulation (flag e): no
                             score of its own, so no gap and no ratio either
                { kind = "note", slot, text }   a line of plain text between rows
@@ -103,6 +105,7 @@ function Rows.Items(state, withAlts)
         if source.zone then facets.zones[source.zone] = true end
         row.kind, row.id, row.slot, row.source = "item", id, slot, source
         row.reputation = ns.Reputation.Requirement(id)
+        row.why = ns.Notes.For(id, state.class, state.spec, state.list, slot)
         all[#all + 1] = row
     end
 
@@ -120,6 +123,8 @@ function Rows.Items(state, withAlts)
                     listed[pick.id] = true
                     if ns.Ladders.HasFlag(pick.entry, "e") then
                         Add(slot, pick.id, { bis = false, placed = true })
+                    elseif ns.Ladders.HasFlag(pick.entry, "x") then
+                        Add(slot, pick.id, { bis = false, tie = true, level = true })
                     elseif ns.Ladders.HasFlag(pick.entry, "g") then
                         Add(slot, pick.id, { bis = false, estimated = true })
                     else
@@ -136,6 +141,8 @@ function Rows.Items(state, withAlts)
                     listed[pick.id] = true
                     if ns.Ladders.HasFlag(pick.entry, "e") then
                         Add(slot, pick.id, { bis = false, other = true, placed = true })
+                    elseif ns.Ladders.HasFlag(pick.entry, "x") then
+                        Add(slot, pick.id, { bis = false, other = true, tie = true, level = true })
                     elseif ns.Ladders.HasFlag(pick.entry, "g") then
                         Add(slot, pick.id, { bis = false, other = true, estimated = true })
                     else

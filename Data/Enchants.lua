@@ -9,6 +9,8 @@
 --   slot keys: head neck shoulder back chest wrist hands legs feet, w1h w2h (weapons), shield, held, rng
 -- An item takes only one of them. The addon shows the first 3 of the character's phase.
 -- A weapon, shield, held or ranged key is listed only for the specs whose PvE list holds such an item.
+-- Changed from ForeverDB's lists: the tanks (Feral (Bear) Druid, Protection Paladin) are not listed the head and leg enchants of another class's Zul'Gurub quest. See _build/specs.py.
+-- Added to ForeverDB's lists: the enchants of Feral (Cat) Druid (spec 4), a spec ForeverDB does not have: its enchants, ranked on that spec's weights.
 local _, ns = ...
 ns.data = ns.data or {}
 ns.data.enchants = {
@@ -28,8 +30,8 @@ E	2	back	s25086:9 s20015 s13746 s13635
 E	2	chest	i279258 i15564 s20026
 E	2	feet	i279258 i15564 i8173
 E	2	hands	i279258 s25080:9 i15564 s20012
-E	2	head	i19784:9 i18331
-E	2	legs	i19784:9 i279258 i18331 i15564
+E	2	head	i18331
+E	2	legs	i279258 i18331 i15564
 E	2	neck	s1249059
 E	2	shoulder	i23549:9 i20077:9
 E	2	w1h	s23800 s20034
@@ -46,6 +48,17 @@ E	3	shoulder	i23547:9 i20078:9
 E	3	w1h	s22750:9 s23803
 E	3	w2h	s1248636 s22750:9 s23803 s7793
 E	3	wrist	s23802 s1248498 i273596
+E	4	back	s1219587 s13419
+E	4	chest	s20025:1 s13941 s13700 i252488
+E	4	feet	s20023 s13935 s13637
+E	4	hands	s25080:9 s1248640 s20012 s20013
+E	4	head	i11647 i11645
+E	4	legs	i11647 i11645 i252488
+E	4	neck	s1249059 s1249019
+E	4	shoulder	i23548:9 i20077:9
+E	4	w1h	s23800 s23799
+E	4	w2h	s27837 s1248668 s23800
+E	4	wrist	s1248599 i273597 s20010
 ]==],
 HUNTER = [==[
 E	1	back	s1219587 s13419
@@ -136,8 +149,8 @@ E	2	back	s25086:9 s20015 s13746 s13635
 E	2	chest	i279258 s20026 i15564
 E	2	feet	i279258 i15564 i8173
 E	2	hands	i279258 s1213622 i15564
-E	2	head	i19782:9 i18331
-E	2	legs	i19782:9 i279258 i18331 i15564
+E	2	head	i18331
+E	2	legs	i279258 i18331 i15564
 E	2	neck	s1249057
 E	2	shield	s1219581 s20017 s13817
 E	2	shoulder	i23549:9 i20076:9
