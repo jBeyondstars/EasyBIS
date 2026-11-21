@@ -87,9 +87,9 @@ function Tooltip.BuildLines(id)
     for _, class in ipairs(ns.CLASSES) do
         local specs = perSpec[class]
         if specs then
-            -- specs with the same status share a line, in spec order
+            -- specs with the same status share a line, in the order the specs are shown
             local groups, byText = {}, {}
-            for spec = 1, ns.Index.SpecCount(class) do
+            for _, spec in ipairs(ns.Index.SpecOrder(class)) do
                 local text = specs[spec] and StatusText(specs[spec], lists)
                 if text then
                     local group = byText[text]

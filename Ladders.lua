@@ -10,13 +10,17 @@ whether only items seen in Forever count, whether the PvP rewards count in the
 list (each list has its own answer), the PvP rank the week's cap allows, the
 content phase the list stops at, and how many alternatives a slot lists.
 
-  Ladders.Specs(class)               { { index, name, role, style }, ... }
+  Ladders.Specs(class)               { { index, name, role, style }, ... } in the order the data lists them,
+                                     which is the order to show them in: the Druid's Feral (Cat), spec 4,
+                                     stands before Feral (Bear), spec 2
   Ladders.For(class, spec, list)     { [slot] = { best = {...}, alts = {...}, other = {...} }, twoHand = bool }
       a pick is { id = item for this faction, score = number, entry = its ladder entry }
       other: for the two weapon slots, the weapons of the style that lost (one-handers and their
       off hands when a two-hander is best, two-handers otherwise), offered as alternatives
   Ladders.IsTie(picks, pick)         whether an alternative of a slot scores as much as a best pick
-  Ladders.Lead(picks)                the first pick that can be a best pick (not a placed one, flag e)
+  Ladders.Lead(picks)                the first pick that can be a best pick (not a placed one, flag e, nor one
+                                     whose effect the weights cannot count, flag x)
+  Ladders.Unscored(entry)            whether an entry's score is a stand-in, not its own (flag e or x)
 
 The rules are the generator's (_build/ladders.py: picks, weapon_lists,
 other_weapons); the tests check both give the same picks.
@@ -48,23 +52,27 @@ end
 -- flags: s seen in Forever, n new in Forever, u no known source, U unique, t two-hander, r random bonus,
 -- p a PvP reward, v a Premier piece (sold for honor, even when the data gives it no source), e placed from a
 -- close spec's simulation: its score is a stand-in, never shown, and it is never a best pick (Ladders.Lead); g
+-- x most of its worth is an effect the stat weights cannot count: no score of its own, it is shown level with the
+-- best picks and is never one itself;
 -- ranked by simulation on a score that is no full measure: it keeps its rank, and no score is shown for it; a
 -- digit is the content phase the item needs (entry.phase, 0 without one)
 function Ladders.HasFlag(entry, letter)
     return entry.flags:find(letter, 1, true) ~= nil
 end
 
--- { specs = { [index] = spec }, lists = { [index] = { [list] = { [slot] = { entries } } } },
---   measured = { [index] = { [list] = "2026-11-21" } } }, or nil. measured: the lists ranked by simulation, with
--- the day they were measured; a list that is not there is ranked on the stat weights.
+-- { specs = { [index] = spec }, order = { index, ... }, lists = { [index] = { [list] = { [slot] = { entries } } } },
+--   measured = { [index] = { [list] = "2026-11-21" } } }, or nil. order: the specs as the data lists them, which is
+-- how they are shown. measured: the lists ranked by simulation, with the day they were measured; a list that is
+-- not there is ranked on the stat weights.
 function Ladders.Decode(class)
     local text = ns.data and ns.data.lists and ns.data.lists[class]
     if not text then return nil end
-    local data = { specs = {}, lists = {}, measured = {} }
+    local data = { specs = {}, order = {}, lists = {}, measured = {} }
     for line in text:gmatch("[^\n]+") do
         local kind, index, first, second, rest = line:match("^(%a)\t(%d+)\t([^\t]*)\t([^\t]*)\t?(.*)$")
         index = tonumber(index)
         if kind == "S" then
+            if not data.specs[index] then data.order[#data.order + 1] = index end
             data.specs[index] = { index = index, name = first, role = second, style = rest }
         elseif kind == "M" then
             data.measured[index] = data.measured[index] or {}
@@ -114,10 +122,16 @@ local function Visible(entries, filter, list)
     return visible
 end
 
--- The first pick that can be a best pick: a placed one (flag e) never is, unless the list has nothing else.
+-- Whether an entry's score is a stand-in that keeps the ladder in order, not its own: placed from a close spec's
+-- simulation (flag e), or worth mostly an effect the weights cannot count (flag x).
+function Ladders.Unscored(entry)
+    return Ladders.HasFlag(entry, "e") or Ladders.HasFlag(entry, "x")
+end
+
+-- The first pick that can be a best pick: one with no score of its own never is, unless the list has nothing else.
 function Ladders.Lead(picks)
     for _, pick in ipairs(picks) do
-        if not Ladders.HasFlag(pick.entry, "e") then return pick end
+        if not Ladders.Unscored(pick.entry) then return pick end
     end
     return picks[1]
 end
@@ -166,7 +180,7 @@ local function Picks(slot, visible, count)
     best[1] = first
     if ns.PAIRED[slot] then
         for _, pick in ipairs(visible) do
-            if pick ~= first and not Ladders.HasFlag(pick.entry, "e")
+            if pick ~= first and not Ladders.Unscored(pick.entry)
                 and not (first.entry.limit and pick.entry.limit == first.entry.limit) then
                 best[2] = pick
                 break
@@ -203,9 +217,11 @@ function Ladders.Compute(data, spec, list, filter)
 end
 
 -- An alternative that scores exactly as one of the best picks is its equal, not a second choice.
--- picks: a slot of Compute's result. A placed item has no score of its own: it is nobody's equal.
+-- picks: a slot of Compute's result. A placed item has no score of its own: it is nobody's equal. One whose effect
+-- the weights cannot count (flag x) is shown level with the best picks: their equal, whatever its stand-in score.
 function Ladders.IsTie(picks, pick)
     if Ladders.HasFlag(pick.entry, "e") then return false end
+    if Ladders.HasFlag(pick.entry, "x") then return true end
     for _, best in ipairs(picks.best) do
         if pick.entry.score10 == best.entry.score10 then return true end
     end
@@ -228,8 +244,7 @@ end
 function Ladders.Specs(class)
     local data = Load(class)
     local specs = {}
-    for _, spec in pairs(data and data.specs or {}) do specs[#specs + 1] = spec end
-    table.sort(specs, function(a, b) return a.index < b.index end)
+    for _, index in ipairs(data and data.order or {}) do specs[#specs + 1] = data.specs[index] end
     return specs
 end
 

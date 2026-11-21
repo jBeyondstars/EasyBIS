@@ -116,7 +116,7 @@ class WindowTest(unittest.TestCase):
         def other_gap(slot, entry) -> int | None:
             """A set against a set: one-hander + off hand against the two-hander, or the reverse. A placed
             item has no score of its own, so no gap; nor has one whose score is no full measure."""
-            if entry.placed or entry.estimated:
+            if entry.unscored or entry.estimated:
                 return None
             best_main, best_off = lead(visible["main"]), [lead(visible["off"])] if visible["off"] else []
             if two_hand:
@@ -133,7 +133,7 @@ class WindowTest(unittest.TestCase):
                 rows.append(("item", entry.shown(side), slot, True, 0))
             for entry in alternatives if alts else []:
                 rows.append(("item", entry.shown(side), slot, False,
-                             None if entry.placed or entry.estimated
+                             None if entry.unscored or entry.estimated
                              else self.gap(entry.stored / 10, best[0].stored / 10)))
             if alts and other.get(slot):
                 rows.append(("note", None, slot, None, None))
@@ -557,6 +557,29 @@ class WindowTest(unittest.TestCase):
         self.assertEqual(self.shown_rows(game), self.reference_rows("WARRIOR", 2, "pve"))
         saved = game.lua.globals().EasyBISCharDB
         self.assertEqual((saved["class"], saved.spec, saved.list), ("WARRIOR", 2, "pve"))
+
+    def test_spec_menu_of_a_druid(self):
+        """The Druid has four specs: the cat, its fourth, is offered before the bear, its second."""
+        game = self.open(cls="DRUID")
+        window, state = game.ns.Browser.window, game.ns.Browser.state
+        open_dropdown(game, window.spec.button)
+        druid = find(game.stub.menu, "Druid")
+        self.assertEqual(texts(druid), ["Balance", "Feral (Cat)", "Feral (Bear)", "Restoration"])
+        cat = find(druid, "Feral (Cat)")
+        cat.pick()
+        self.assertEqual((state["class"], state.spec), ("DRUID", 4))
+        self.assertTrue(cat.selected())
+        self.assertEqual(label(window.spec), "Druid Feral (Cat)")
+        self.assertEqual(self.shown_rows(game), self.reference_rows("DRUID", 4, "pve"))
+        find(druid, "Feral (Bear)").pick()
+        self.assertEqual((state["class"], state.spec), ("DRUID", 2))
+        self.assertEqual(self.shown_rows(game), self.reference_rows("DRUID", 2, "pve"))
+        self.assertNotEqual(self.reference_rows("DRUID", 2, "pve"), self.reference_rows("DRUID", 4, "pve"))
+        saved = game.lua.globals().EasyBISCharDB
+        self.assertEqual((saved["class"], saved.spec), ("DRUID", 2))
+        french = self.open(cls="DRUID", locale="frFR")
+        open_dropdown(french, french.ns.Browser.window.spec.button)
+        self.assertEqual(texts(find(french.stub.menu, "Druid"))[1:3], ["Farouche (Félin)", "Farouche (Ours)"])
 
     def test_list_buttons(self):
         game = self.open(saved=ENHANCEMENT)
@@ -2142,13 +2165,21 @@ class WindowTest(unittest.TestCase):
             best |= {e.shown("a") for e in picks}
         return shown, best
 
+    def timbermaw_formulas(self, token, spec) -> set:
+        """The enchants a spec is shown whose formula Timbermaw sells: an enchanter's reason to earn its standing."""
+        sold = {enchant for enchant, record in reputations.load()["enchants"].items() if record["faction"] == 576}
+        shown = luaout.best_enchants(luaout.enchant_ladders(self.db, token, spec, self.kept[token][spec]), phases.CURRENT)
+        return sold & {enchant for enchants in shown.values() for enchant in enchants}
+
     def timbermaw_spec(self) -> tuple:
         """(class, spec, alternatives): the first PvE list that shows the pieces of Timbermaw's three
-        leatherworking patterns, with the fewest alternatives it takes."""
+        leatherworking patterns, with the fewest alternatives it takes, and no enchant whose formula Timbermaw
+        sells: leatherworking is then the one profession the faction is worth to that list."""
         for count in range(ladders.ALTERNATIVES, ladders.MAX_ALTERNATIVES + 1):
             for token in test_addon.CLASSES:
                 for spec in self.kept[token]:
-                    if set(self.TIMBERMAW_PIECES) <= self.shown_pieces(token, spec, count)[0]:
+                    if (set(self.TIMBERMAW_PIECES) <= self.shown_pieces(token, spec, count)[0]
+                            and not self.timbermaw_formulas(token, spec)):
                         return token, spec, count
         self.fail("no PvE list shows the pieces of Timbermaw's three patterns: these tests need another example")
 

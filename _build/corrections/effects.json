@@ -1,0 +1,40 @@
+{
+ "about": "Items whose worth to a role is mostly an effect the stat weights cannot count (a proc, a use), kept by hand. In the lists of that role that are ranked on the weights, such an item gets no score: it is shown level with the best picks, flag x. See _build/specs.py (unvalued). Add an item only when what its effect is worth is not known; one whose effect is measured belongs to a simulated list.",
+ "items": {
+  "13966": {
+   "name": "Mark of Tyranny",
+   "roles": [
+    "Tank"
+   ],
+   "effect": "Use: +620 health for 15 s, 5 min cooldown; the score counts its 12 dodge alone."
+  },
+  "14557": {
+   "name": "The Lion Horn of Stormwind",
+   "roles": [
+    "Tank"
+   ],
+   "effect": "When struck: 5% chance (doubled in Strongholds and Cities) of +725 armor to the party for 30 s, 60 s cooldown; the score counts its 8 defense alone."
+  },
+  "18168": {
+   "name": "Force Reactive Disk",
+   "roles": [
+    "Tank"
+   ],
+   "effect": "Classic's deals damage to the attackers on a block; WoWSims Forever's database has no effect for it and the game was not read: to check. The score counts its armor and its stamina alone."
+  },
+  "18348": {
+   "name": "Quel'Serrar",
+   "roles": [
+    "Tank"
+   ],
+   "effect": "Chance on hit: +300 armor and +30 defense for 10 s; the score counts its damage and its stamina alone."
+  },
+  "19024": {
+   "name": "Arena Grand Master",
+   "roles": [
+    "Tank"
+   ],
+   "effect": "Use: Aura of Protection, an absorb, for 20 s, 9 min cooldown; the score counts its 12 dodge alone."
+  }
+ }
+}
