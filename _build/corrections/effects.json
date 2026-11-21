@@ -1,5 +1,5 @@
 {
- "about": "Items whose worth to a role is mostly an effect the stat weights cannot count (a proc, a use), kept by hand. In the lists of that role that are ranked on the weights, such an item gets no score: it is shown level with the best picks, flag x. See _build/specs.py (unvalued). Add an item only when what its effect is worth is not known; one whose effect is measured belongs to a simulated list. placed: items the stat weights give nothing (their worth is all effect), so that no list would hold them: in a list ranked by simulation, such an item is put right after the item named in \"after\", with no score, and is never a best pick; a list that does not hold that item does not hold it either. \"dungeon\": true when its drop was counted in Forever, so that it is not kept with the pieces of no known source.",
+ "about": "Items whose worth to a role is mostly an effect the stat weights cannot count (a proc, a use), kept by hand. In the lists of that role that are ranked on the weights, such an item gets no score: it is shown level with the best picks, flag x. See _build/specs.py (unvalued). Add an item only when what its effect is worth is not known; one whose effect is measured belongs to a simulated list. placed: items the stat weights give nothing (their worth is all effect), so that no list would hold them: in a list ranked by simulation, such an item is put right after the item named in \"after\", with no score, and is never a best pick; a list that does not hold that item does not hold it either.",
  "items": {
   "13966": {
    "name": "Mark of Tyranny",
@@ -41,7 +41,6 @@
   "22321": {
    "name": "Heart of Wyrmthalak",
    "after": 11815,
-   "dungeon": true,
    "effect": "Melee and ranged attacks have a chance to deal Fire damage (2 a minute in WoWSims Forever, whose own gear sets wear it); 13 Fire resistance is all the weights see. Placed after Hand of Justice on the user's word (2026-11-21): no score, and not before it."
   }
  }

@@ -12,8 +12,26 @@ Notes.For(item, class, spec, list, slot)   the text for that item in that slot o
 local Notes = {}
 ns.Notes = Notes
 
+-- The data holds a note once, with its items: item -> its notes, in the data's order, made on first use.
+local byItem
+
+local function ByItem()
+    byItem = {}
+    for _, note in ipairs(ns.data.notes or {}) do
+        for _, item in ipairs(note.items) do
+            local notes = byItem[item]
+            if not notes then
+                notes = {}
+                byItem[item] = notes
+            end
+            notes[#notes + 1] = note
+        end
+    end
+    return byItem
+end
+
 function Notes.For(item, class, spec, list, slot)
-    local notes = ns.data.notes and ns.data.notes[item]
+    local notes = (byItem or ByItem())[item]
     if not notes or not class or not spec then return nil end
     local key = class .. spec
     for _, note in ipairs(notes) do

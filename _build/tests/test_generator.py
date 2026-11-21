@@ -722,11 +722,17 @@ class GeneratorTest(unittest.TestCase):
         absent = set(corrections.load_game()["absent"])
         self.assertFalse(pooled & absent, "an item the game does not have is still in a pool")
         self.assertLessEqual(set(game.dropped), absent)
+        settled = set(self.db.confirmed.settled)
+        self.assertTrue(settled and settled <= set(game.added))
+        for item_id in settled:
+            item = self.db.items[item_id]
+            self.assertTrue(any(source[0] == "d" and source[-1] == corrections.DROP_LABEL for source in item["sources"]))
+            self.assertTrue(item["groups"] <= frozenset("dr") and item["phase"] != phases.LATER or "r" in item["groups"], item["name"])
         for item_id in game.added:
             self.assertNotIn(item_id, self.published.items)
             self.assertIn(item_id, pooled)
-            if self.db.placed.get(item_id, (0, False))[1]:
-                continue   # placed by hand, its drop counted in Forever (specs.settle_placed): a dungeon's item
+            if item_id in settled:
+                continue   # its drop was counted in Forever (corrections._settle_added): a dungeon's item, or a raid's
             self.assertEqual((self.db.items[item_id]["groups"], self.db.items[item_id]["phase"]), (frozenset("u"), phases.LATER))
         self.assertFalse(set(game.added) & set(corrections.NOT_FOR_PLAYERS))
         shown = luaout.shown_ids(self.kept)
@@ -759,8 +765,9 @@ class GeneratorTest(unittest.TestCase):
                         own = lambda shown: [[dataclasses.replace(entry, score=0.0) if entry.level else entry
                                               for entry in rows] for rows in shown]
                         for slot in now:
-                            if any(entry.item_id in self.db.placed for rows in now[slot] for entry in rows):
-                                continue   # a piece added from the game and placed by hand takes a row there
+                            if any(entry.item_id in settled or entry.item_id in self.db.placed
+                                   for rows in now[slot] for entry in rows):
+                                continue   # a piece added from the game takes a row there: its drop was counted
                             if own(now[slot]) != own(then[slot]):
                                 lost = {entry.item_id for rows in then[slot] for entry in rows} & gone
                                 self.assertTrue(lost, f"{token} {spec} {mode} {slot} {flt} changed with nothing dropped")
@@ -777,12 +784,29 @@ class GeneratorTest(unittest.TestCase):
         self.assertEqual({raw.items[item_id]["side"] for item_id in sold}, {"a"})
         self.assertEqual(corrections.assign_sides(raw), [], "a second pass finds nothing left to do")
 
+    def test_a_simulated_list_holds_what_the_simulator_measures(self):
+        """A list ranked by simulation holds an item ForeverDB's weights give nothing when the file has a measure for
+        it (a trinket that is all proc): the weights say what to list only where they rank. A list on the weights
+        holds no such item."""
+        held = 0
+        for (token, spec, mode, slot), ladder in self.full.items():
+            weights = self.db.classes[token]["specs"][spec]["weights"][ladders.MODES[mode]]
+            ranking = simulated.ranking(self.db, token, spec, mode, slot)
+            for entry in ladder:
+                if ladders.score(self.db, entry.item_id, weights, token):
+                    continue
+                self.assertIsNotNone(ranking, f"{token} {spec} {mode} {slot}: {entry.item_id} weighs nothing")
+                self.assertTrue(ranking.scores.get(entry.item_id, 0) > 0 or entry.item_id in self.db.placed, entry.item_id)
+                held += 1
+        self.assertGreater(held, 20)
+
     def test_an_item_the_weights_give_nothing_is_placed_after_another(self):
         """Heart of Wyrmthalak is all proc, and ForeverDB's weights give it nothing: by hand (corrections/effects.json)
         it stands right after Hand of Justice in the lists ranked by simulation that hold that one, with its score for
         the ladder to stay in order, flagged as no score of its own, and is never a best pick. No other list holds it."""
         heart, justice = 22321, 11815
-        self.assertEqual(self.db.placed[heart], (justice, True))
+        self.assertEqual(self.db.placed[heart], justice)
+        self.assertIn(heart, self.db.confirmed.settled)
         self.assertEqual((self.db.items[heart]["groups"], self.db.items[heart]["phase"]), (frozenset("d"), phases.PRE_RAID),
                          "its drop was counted in Forever: not kept with the pieces of no known source")
         held = []
@@ -804,9 +828,9 @@ class GeneratorTest(unittest.TestCase):
 
         entry = lambda item_id, score: dataclasses.replace(self.full["ROGUE", 2, "pve", "trinket"][0], item_id=item_id, score=score)
         ladder = [entry(1, 9.0), entry(2, 5.0), entry(3, 0.0)]
-        moved = ladders.after_their_anchor(ladder, {3: (1, False)})
+        moved = ladders.after_their_anchor(ladder, {3: 1})
         self.assertEqual([(e.item_id, e.score, e.placed) for e in moved], [(1, 9.0, False), (3, 9.0, True), (2, 5.0, False)])
-        self.assertEqual([e.item_id for e in ladders.after_their_anchor(ladder, {3: (7, False)})], [1, 2],
+        self.assertEqual([e.item_id for e in ladders.after_their_anchor(ladder, {3: 7})], [1, 2],
                          "without the item it follows, the ladder does not hold it")
 
     def test_a_note_is_checked_before_it_is_written(self):
@@ -823,7 +847,7 @@ class GeneratorTest(unittest.TestCase):
                          "of several items, the ones the lists show")
 
     def test_the_notes_file_holds_what_was_written_by_hand(self):
-        """Data/Notes.lua holds corrections/notes.json item by item, in both languages, as the build left it."""
+        """Data/Notes.lua holds corrections/notes.json note by note, in both languages, as the build left it."""
         written = notes.load()
         self.assertTrue(written, "corrections/notes.json holds no note")
         text = luaout.notes_file(self.db, self.kept)
@@ -832,7 +856,7 @@ class GeneratorTest(unittest.TestCase):
         for note in written:
             for key in notes.LANGUAGES:
                 self.assertIn(json.dumps(note[key], ensure_ascii=False), text)
-        destiny = re.search(r"^    \[647\] = (.*),$", text, re.M).group(1)
+        destiny = "\n".join(line for line in text.splitlines() if line.startswith("    { items = { 647 },"))
         self.assertIn("specs = { WARRIOR1 = true }", destiny)
         self.assertIn("specs = { PALADIN3 = true }", destiny, "an item can have a note for each spec")
         self.assertRegex(text, r'slot = "off", simulated = true', "and one for a slot alone")
@@ -893,7 +917,7 @@ class GeneratorTest(unittest.TestCase):
                                                     for source in item["sources"]), item_id)
             if item_id in filled.added:
                 self.assertIsNone(was)
-                if not self.db.placed.get(item_id, (0, False))[1]:   # but for the ones specs.settle_placed settles
+                if item_id not in self.db.confirmed.settled:   # but for the ones a counted drop settles
                     self.assertEqual((item["groups"], item["phase"]), (frozenset("u"), phases.LATER), item["name"])
             else:
                 self.assertEqual((was["groups"], was["sources"]), (frozenset("u"), []), item["name"])
@@ -2254,7 +2278,8 @@ class DropsTest(unittest.TestCase):
         self.assertEqual(db.items[GEM]["sources"], [["m", "8", "Deep Stinger", "0.02", "k"]], "a tooltip names one creature")
         self.assertEqual(db.items[CHARM]["sources"][0], ["d", "229", "Seen Boss", "4", "0", "s"], "ForeverDB saw it itself")
         self.assertEqual(db.items[RELIC]["sources"], [["d", "230", "Theldren", "31.4", "0", "w"]])
-        self.assertEqual(db.items[RELIC]["groups"], frozenset("u"), "a piece added from the game stays unsourced in the lists")
+        self.assertEqual((db.items[RELIC]["groups"], db.items[RELIC]["phase"], report.settled), (frozenset("d"), phases.PRE_RAID, [RELIC]),
+                         "a piece added from the game whose drop was counted is a dungeon's item: players loot it")
         self.assertEqual((report.items, report.moved, report.disputed),
                          ([], sorted((HOOD, RELIC, SEAL)), sorted((BELT, GEM))))
         # nothing read yet: nothing changes
@@ -2392,8 +2417,9 @@ class RunsTest(unittest.TestCase):
         self.assertEqual(db.items[CHARM]["sources"], [], "two drops may be a stray record")
         relic = db.items[RELIC]
         self.assertEqual((relic["sources"], relic["groups"], relic["phase"]),
-                         ([["d", "2994", "Blazeroar", "28.6", "0", "w"]], frozenset("u"), phases.LATER),
-                         "a piece added from the game gets the source to show, and stays where it showed")
+                         ([["d", "2994", "Blazeroar", "28.6", "0", "w"]], frozenset("d"), phases.PRE_RAID),
+                         "a piece added from the game gets the source counted, and is a dungeon's item from then on")
+        self.assertEqual(report.settled, [RELIC])
         self.assertEqual((report.sourced, report.items, report.moved, report.placed), ([HOOD, BELT, RELIC], [], [], []))
         self.assertTrue(report.changed)
         # in the lists: no longer an item of no known source
@@ -2402,7 +2428,7 @@ class RunsTest(unittest.TestCase):
             db.gear[item_id] = {"inv": 1, "kind": "4.1", "req": 60, "stats": {45: 10}, "dps": 0.0, "armor": 0.0, "wand": False}
         ladder = {entry.item_id: entry for entry in ladders.full_ladder(db, "PRIEST", 1, "pve", "head")}
         self.assertEqual([(ladder[item_id].unsourced, ladder[item_id].phase) for item_id in (HOOD, RELIC)],
-                         [(False, phases.PRE_RAID), (True, phases.LATER)])
+                         [(False, phases.PRE_RAID), (False, phases.PRE_RAID)], "the added piece like the listed one")
         text = luaout.items_file(db, ladders.build_all(db))
         self.assertIn(f"\n{HOOD}|Hood of Tests|d||d^3001^Thunderhoof^32.8^0^w~d^3001^Bolt^4.3^0^w\n", text)
         self.assertIn("3 items it gives no source take the bosses counted for them", text)

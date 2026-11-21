@@ -176,6 +176,9 @@ def _drops_note(db) -> list:
     if confirmed.sourced:
         lines.append(f"Added to ForeverDB's data: {len(confirmed.sourced)} items it gives no source take the bosses "
                      "counted for them, and are no longer flagged u.")
+    if getattr(confirmed, "settled", None):
+        lines.append(f"{len(confirmed.settled)} pieces added from the game are a dungeon's or a raid's for the same reason: "
+                     "no longer flagged u and 9.")
     return lines
 
 
@@ -591,15 +594,16 @@ def consumables_file(db) -> str:
 
 def notes_file(db, all_ladders) -> str:
     lines = _header(db, "A few words on rankings that surprise, by item (see _build/notes.py).", (
-        "[item] = { note, ... }; a row shows the first note that fits its list:",
+        "One note a line, each with the items it is for; of an item's notes, a row shows the first that fits its list:",
+        "  items      the item ids",
         "  specs      the specs it is for, as CLASS<n>; none: every spec",
         "  slot       the slot it is for; none: any",
         "  simulated  true when it speaks of the simulation: shown only in a list ranked by it",
         "  enUS, frFR the text",
     ))
-    by_item = {}
+    lines.append("ns.data.notes = {")
     for note in notes.shown(db, shown_ids(all_ladders)):
-        fields = []
+        fields = ["items = { " + ", ".join(map(str, note["items"])) + " }"]
         if note.get("specs"):
             fields.append("specs = { " + ", ".join(f"{spec.replace(' ', '')} = true" for spec in note["specs"]) + " }")
         if note.get("slot"):
@@ -607,10 +611,7 @@ def notes_file(db, all_ladders) -> str:
         if note.get("simulated"):
             fields.append("simulated = true")
         fields += [f"{code} = {json.dumps(note[key], ensure_ascii=False)}" for key, code in notes.LANGUAGES.items()]
-        for item in note["items"]:
-            by_item.setdefault(item, []).append("{ " + ", ".join(fields) + " }")
-    lines.append("ns.data.notes = {")
-    lines += [f"    [{item}] = {{ {', '.join(by_item[item])} }}," for item in sorted(by_item)]
+        lines.append("    { " + ", ".join(fields) + " },")
     lines.append("}")
     return "\n".join(lines) + "\n"
 

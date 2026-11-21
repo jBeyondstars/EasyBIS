@@ -231,7 +231,10 @@ def full_ladder(db, cls: str, spec: int, mode: str, slot: str, level: int | None
                 continue
             value = score(db, item_id, weights, cls) or 0.0
             armour_only = gear["armor"] > 0 and not gear["dps"] and not stats
-            if not (value >= min_score or (value > 0 and armour_only) or (ranked is not None and item_id in placed)):
+            # A list ranked by simulation also holds what the weights give nothing and the simulator measures: a
+            # trinket that is all proc, a weapon a Hunter only holds. The weights say what to list only where they rank.
+            measured = ranked is not None and (ranked.scores.get(item_id, 0) > 0 or item_id in placed)
+            if not (value >= min_score or (value > 0 and armour_only) or measured):
                 continue
             flags = item["flags"]
             weighed[item_id] = value
@@ -261,7 +264,7 @@ def after_their_anchor(entries: list[Entry], placed: dict) -> list[Entry]:
     """The ladder with each item placed by hand (db.placed) right after the item it follows, with that item's score
     for the ladder to stay in order, and flagged: no score of its own, never a best pick. Without the item it
     follows, the ladder does not hold it."""
-    for item_id, (anchor, _) in placed.items():
+    for item_id, anchor in placed.items():
         entry = next((e for e in entries if e.item_id == item_id), None)
         if entry is None:
             continue

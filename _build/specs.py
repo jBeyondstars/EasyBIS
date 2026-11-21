@@ -54,8 +54,6 @@ from __future__ import annotations
 
 import json
 import re
-
-import phases
 from pathlib import Path
 from dataclasses import dataclass, field
 
@@ -111,23 +109,13 @@ def load_effects(path=EFFECTS_FILE) -> dict:
 
 
 def load_placed(path=EFFECTS_FILE) -> dict:
-    """{item id: (the item it follows, whether its drop was counted in Forever)}: the items the weights give nothing,
-    placed by hand in the lists ranked by simulation (the "placed" part of corrections/effects.json)."""
+    """{item id: the item it follows}: the items placed by hand in the lists ranked by simulation (the "placed" part of
+    corrections/effects.json)."""
     path = Path(path)
     if not path.exists():
         return {}
-    return {int(item_id): (int(record["after"]), bool(record.get("dungeon")))
+    return {int(item_id): int(record["after"])
             for item_id, record in json.loads(path.read_text(encoding="utf-8")).get("placed", {}).items()}
-
-
-def settle_placed(db) -> None:
-    """A placed item whose drop was counted in Forever is a dungeon's item of before the raids: a piece added from
-    the game otherwise stays with the items of no known source, hidden until the last phase."""
-    for item_id, (_, dungeon) in db.placed.items():
-        item = db.items.get(item_id)
-        if item and dungeon and item["sources"]:
-            item["groups"] = frozenset("d")
-            item["phase"] = phases.PRE_RAID
 
 
 def unvalued(db, cls: str, spec: int) -> frozenset:
@@ -194,7 +182,6 @@ def apply(db) -> Report:
     report = Report()
     db.effects = load_effects()
     db.placed = load_placed()
-    settle_placed(db)
     own_enchants(db, report)
     for cls, data in db.classes.items():
         for number, spec in data["specs"].items():

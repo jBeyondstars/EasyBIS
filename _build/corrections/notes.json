@@ -111,6 +111,39 @@
   },
   {
    "items": [
+    2099
+   ],
+   "specs": [
+    "HUNTER 1"
+   ],
+   "simulated": true,
+   "en": "Its proc, a Flaming Cannonball for 49 Fire damage, is worth about 11 DPS.",
+   "fr": "Son proc, un boulet enflammé de 49 dégâts de Feu, vaut environ 11 DPS."
+  },
+  {
+   "items": [
+    2099
+   ],
+   "specs": [
+    "HUNTER 2"
+   ],
+   "simulated": true,
+   "en": "Its proc, a Flaming Cannonball for 49 Fire damage, is worth about 16 DPS.",
+   "fr": "Son proc, un boulet enflammé de 49 dégâts de Feu, vaut environ 16 DPS."
+  },
+  {
+   "items": [
+    2099
+   ],
+   "specs": [
+    "HUNTER 3"
+   ],
+   "simulated": true,
+   "en": "Its proc, a Flaming Cannonball for 49 Fire damage, is worth about 9 DPS.",
+   "fr": "Son proc, un boulet enflammé de 49 dégâts de Feu, vaut environ 9 DPS."
+  },
+  {
+   "items": [
     2163
    ],
    "specs": [
@@ -120,6 +153,44 @@
    "slot": "off",
    "en": "Its proc, 125 Shadow damage, is worth about 4 DPS.",
    "fr": "Son proc, 125 dégâts d'Ombre, vaut environ 4 DPS."
+  },
+  {
+   "items": [
+    2243
+   ],
+   "specs": [
+    "DRUID 1",
+    "PRIEST 3",
+    "SHAMAN 1"
+   ],
+   "simulated": true,
+   "slot": "main",
+   "en": "Its proc needs a melee hit, which a caster does not land: it adds nothing here.",
+   "fr": "Son proc demande un coup de mêlée, qu'un lanceur de sorts ne porte pas : il n'ajoute rien ici."
+  },
+  {
+   "items": [
+    4696
+   ],
+   "specs": [
+    "WARLOCK 1"
+   ],
+   "simulated": true,
+   "slot": "off",
+   "en": "Its Use effect is a drink, which the simulation takes in the middle of the fight: about 14 DPS of its score would not be there in a real one.",
+   "fr": "Son effet Utiliser est une boisson, que la simulation prend en plein combat : environ 14 DPS de son score n'existeraient pas dans un vrai combat."
+  },
+  {
+   "items": [
+    4696
+   ],
+   "specs": [
+    "WARLOCK 3"
+   ],
+   "simulated": true,
+   "slot": "off",
+   "en": "Its Use effect is a drink, which the simulation takes in the middle of the fight: about 13 DPS of its score would not be there in a real one.",
+   "fr": "Son effet Utiliser est une boisson, que la simulation prend en plein combat : environ 13 DPS de son score n'existeraient pas dans un vrai combat."
   },
   {
    "items": [
@@ -147,6 +218,18 @@
   },
   {
    "items": [
+    7515
+   ],
+   "specs": [
+    "MAGE 3"
+   ],
+   "simulated": true,
+   "slot": "off",
+   "en": "Its Use effect restores mana: about 1 DPS.",
+   "fr": "Son effet Utiliser rend du mana : environ 1 DPS."
+  },
+  {
+   "items": [
     8190
    ],
    "specs": [
@@ -156,6 +239,17 @@
    "slot": "off",
    "en": "Its proc, 75 damage, is worth about 2 DPS.",
    "fr": "Son proc, 75 dégâts, vaut environ 2 DPS."
+  },
+  {
+   "items": [
+    9412
+   ],
+   "specs": [
+    "HUNTER 2"
+   ],
+   "simulated": true,
+   "en": "Its proc, a Fire Blast for 28 Fire damage, is worth about 9 DPS.",
+   "fr": "Son proc, un trait de feu de 28 dégâts de Feu, vaut environ 9 DPS."
   },
   {
    "items": [
@@ -180,6 +274,19 @@
    "slot": "off",
    "en": "Its proc summons an Emerald Dragon Whelp: about 15 DPS.",
    "fr": "Son proc invoque un jeune dragon d'émeraude : environ 15 DPS."
+  },
+  {
+   "items": [
+    11302
+   ],
+   "specs": [
+    "MAGE 3",
+    "PRIEST 3",
+    "SHAMAN 1"
+   ],
+   "simulated": true,
+   "en": "Its proc is a shield when struck in melee: it adds no damage.",
+   "fr": "Son proc est un bouclier quand on est frappé en mêlée : il n'ajoute aucun dégât."
   },
   {
    "items": [
@@ -216,6 +323,17 @@
    "slot": "main",
    "en": "Its proc, 2 extra attacks on the next swing, is worth about 39 DPS.",
    "fr": "Son proc, 2 attaques supplémentaires au prochain coup, vaut environ 39 DPS."
+  },
+  {
+   "items": [
+    11815
+   ],
+   "specs": [
+    "HUNTER 3"
+   ],
+   "simulated": true,
+   "en": "12 attack power and a 1% chance of an extra attack (20 and 2% in Classic). The extra attack is worth about 4 DPS.",
+   "fr": "12 de puissance d'attaque et 1 % de chance d'attaque supplémentaire (20 et 2 % dans Classic). L'attaque supplémentaire vaut environ 4 DPS."
   },
   {
    "items": [
@@ -273,6 +391,39 @@
    "simulated": true,
    "en": "12 attack power and a 1% chance of an extra attack (20 and 2% in Classic). The extra attack is worth about 12 DPS.",
    "fr": "12 de puissance d'attaque et 1 % de chance d'attaque supplémentaire (20 et 2 % dans Classic). L'attaque supplémentaire vaut environ 12 DPS."
+  },
+  {
+   "items": [
+    11819
+   ],
+   "specs": [
+    "DRUID 1"
+   ],
+   "simulated": true,
+   "en": "Its Use effect restores mana: about 1 DPS.",
+   "fr": "Son effet Utiliser rend du mana : environ 1 DPS."
+  },
+  {
+   "items": [
+    11819
+   ],
+   "specs": [
+    "WARLOCK 1"
+   ],
+   "simulated": true,
+   "en": "Its Use effect restores mana: about 5 DPS.",
+   "fr": "Son effet Utiliser rend du mana : environ 5 DPS."
+  },
+  {
+   "items": [
+    11819
+   ],
+   "specs": [
+    "WARLOCK 2"
+   ],
+   "simulated": true,
+   "en": "Its Use effect restores mana: about 2 DPS.",
+   "fr": "Son effet Utiliser rend du mana : environ 2 DPS."
   },
   {
    "items": [
@@ -348,16 +499,111 @@
   },
   {
    "items": [
+    13040
+   ],
+   "specs": [
+    "HUNTER 3"
+   ],
+   "simulated": true,
+   "en": "Its proc, a Shadowbolt for 13 to 19 Shadow damage, is worth about 2 DPS.",
+   "fr": "Son proc, un trait de 13 à 19 dégâts d'Ombre, vaut environ 2 DPS."
+  },
+  {
+   "items": [
+    13353
+   ],
+   "specs": [
+    "PRIEST 3",
+    "WARLOCK 1"
+   ],
+   "simulated": true,
+   "slot": "off",
+   "en": "Its Use effect summons a skeleton, which is not simulated: it is ranked without it.",
+   "fr": "Son effet Utiliser invoque un squelette, qui n'est pas simulé : il est classé sans lui."
+  },
+  {
+   "items": [
     13382
    ],
    "specs": [
+    "HUNTER 1",
+    "HUNTER 2",
+    "HUNTER 3",
+    "MAGE 1",
+    "MAGE 2",
+    "MAGE 3",
     "PALADIN 3",
+    "SHAMAN 1",
     "SHAMAN 2",
     "WARRIOR 1"
    ],
    "simulated": true,
    "en": "Its Use effect summons a cannon, which is not simulated: it is ranked without it.",
    "fr": "Son effet Utiliser invoque un canon, qui n'est pas simulé : il est classé sans lui."
+  },
+  {
+   "items": [
+    13937
+   ],
+   "specs": [
+    "DRUID 1",
+    "MAGE 3"
+   ],
+   "simulated": true,
+   "slot": "main",
+   "en": "Its Use effect, Intellect for the party, is worth about 3 DPS.",
+   "fr": "Son effet Utiliser, de l'Intelligence pour le groupe, vaut environ 3 DPS."
+  },
+  {
+   "items": [
+    13937
+   ],
+   "specs": [
+    "MAGE 1"
+   ],
+   "simulated": true,
+   "slot": "main",
+   "en": "Its Use effect, Intellect for the party, is worth about 9 DPS.",
+   "fr": "Son effet Utiliser, de l'Intelligence pour le groupe, vaut environ 9 DPS."
+  },
+  {
+   "items": [
+    13937
+   ],
+   "specs": [
+    "MAGE 2",
+    "SHAMAN 1",
+    "WARLOCK 2",
+    "WARLOCK 3"
+   ],
+   "simulated": true,
+   "slot": "main",
+   "en": "Its Use effect, Intellect for the party, is worth about 4 DPS.",
+   "fr": "Son effet Utiliser, de l'Intelligence pour le groupe, vaut environ 4 DPS."
+  },
+  {
+   "items": [
+    13937
+   ],
+   "specs": [
+    "PRIEST 3"
+   ],
+   "simulated": true,
+   "slot": "main",
+   "en": "Its Use effect, Intellect for the party, is worth about 2 DPS.",
+   "fr": "Son effet Utiliser, de l'Intelligence pour le groupe, vaut environ 2 DPS."
+  },
+  {
+   "items": [
+    13937
+   ],
+   "specs": [
+    "WARLOCK 1"
+   ],
+   "simulated": true,
+   "slot": "main",
+   "en": "Its Use effect, Intellect for the party, is worth about 5 DPS.",
+   "fr": "Son effet Utiliser, de l'Intelligence pour le groupe, vaut environ 5 DPS."
   },
   {
    "items": [
@@ -474,9 +720,49 @@
   },
   {
    "items": [
+    19992
+   ],
+   "specs": [
+    "HUNTER 1",
+    "HUNTER 2",
+    "HUNTER 3"
+   ],
+   "simulated": true,
+   "en": "Its Use effect is not simulated: it is ranked without it.",
+   "fr": "Son effet Utiliser n'est pas simulé : il est classé sans lui."
+  },
+  {
+   "items": [
+    20534
+   ],
+   "specs": [
+    "WARLOCK 1",
+    "WARLOCK 2",
+    "WARLOCK 3"
+   ],
+   "simulated": true,
+   "en": "Its Use effect summons a Voidwalker, which is not simulated: it is ranked without it.",
+   "fr": "Son effet Utiliser invoque un marcheur du Vide, qui n'est pas simulé : il est classé sans lui."
+  },
+  {
+   "items": [
+    22268
+   ],
+   "specs": [
+    "WARLOCK 3"
+   ],
+   "simulated": true,
+   "en": "Its proc, more spell damage when a harmful spell lands, is worth about 9 DPS.",
+   "fr": "Son proc, des dégâts des sorts en plus quand un sort offensif touche, vaut environ 9 DPS."
+  },
+  {
+   "items": [
     249469
    ],
    "specs": [
+    "HUNTER 1",
+    "HUNTER 2",
+    "HUNTER 3",
     "PALADIN 3",
     "ROGUE 1",
     "ROGUE 2",
@@ -487,6 +773,30 @@
    "simulated": true,
    "en": "Its Use effect gives Frost and Shadow spell damage, nothing here: its score is its 9 hit rating, worth very little once you are at the hit cap.",
    "fr": "Son effet Utiliser donne des dégâts des sorts de Givre et d'Ombre, rien ici : son score vient de ses 9 de toucher, qui ne valent presque plus rien une fois au cap de toucher."
+  },
+  {
+   "items": [
+    249469
+   ],
+   "specs": [
+    "MAGE 3",
+    "PRIEST 3",
+    "WARLOCK 3"
+   ],
+   "simulated": true,
+   "en": "Its Use effect, 29 Frost and Shadow spell damage for 15 seconds every 5 minutes, is worth about 1 DPS.",
+   "fr": "Son effet Utiliser, 29 dégâts des sorts de Givre et d'Ombre pendant 15 secondes toutes les 5 minutes, vaut environ 1 DPS."
+  },
+  {
+   "items": [
+    249469
+   ],
+   "specs": [
+    "WARLOCK 1"
+   ],
+   "simulated": true,
+   "en": "Its Use effect, 29 Frost and Shadow spell damage for 15 seconds every 5 minutes, is worth about 2 DPS.",
+   "fr": "Son effet Utiliser, 29 dégâts des sorts de Givre et d'Ombre pendant 15 secondes toutes les 5 minutes, vaut environ 2 DPS."
   },
   {
    "items": [
@@ -508,12 +818,40 @@
     272438
    ],
    "specs": [
+    "DRUID 1",
+    "MAGE 2",
+    "MAGE 3",
     "PALADIN 3",
-    "SHAMAN 2"
+    "SHAMAN 1",
+    "SHAMAN 2",
+    "WARLOCK 2",
+    "WARLOCK 3"
    ],
    "simulated": true,
    "en": "Its Use effect, more critical strikes for 20 seconds every 6 minutes, is worth about 1 DPS.",
    "fr": "Son effet Utiliser, plus de coups critiques pendant 20 secondes toutes les 6 minutes, vaut environ 1 DPS."
+  },
+  {
+   "items": [
+    272438
+   ],
+   "specs": [
+    "PRIEST 3"
+   ],
+   "simulated": true,
+   "en": "Its Use effect, more critical strikes for 20 seconds every 6 minutes, is worth about 2 DPS.",
+   "fr": "Son effet Utiliser, plus de coups critiques pendant 20 secondes toutes les 6 minutes, vaut environ 2 DPS."
+  },
+  {
+   "items": [
+    272438
+   ],
+   "specs": [
+    "WARLOCK 1"
+   ],
+   "simulated": true,
+   "en": "Its Use effect, more critical strikes for 20 seconds every 6 minutes, is worth about 4 DPS.",
+   "fr": "Son effet Utiliser, plus de coups critiques pendant 20 secondes toutes les 6 minutes, vaut environ 4 DPS."
   },
   {
    "items": [
@@ -528,6 +866,25 @@
    "simulated": true,
    "en": "Its Use effect stuns and adds no damage.",
    "fr": "Son effet Utiliser étourdit et n'ajoute aucun dégât."
+  },
+  {
+   "items": [
+    276744
+   ],
+   "specs": [
+    "DRUID 1",
+    "MAGE 1",
+    "MAGE 2",
+    "MAGE 3",
+    "PRIEST 3",
+    "SHAMAN 1",
+    "WARLOCK 1",
+    "WARLOCK 2",
+    "WARLOCK 3"
+   ],
+   "simulated": true,
+   "en": "Its Use effect is not simulated: it is ranked without it.",
+   "fr": "Son effet Utiliser n'est pas simulé : elle est classée sans lui."
   },
   {
    "items": [
@@ -547,6 +904,8 @@
     280065
    ],
    "specs": [
+    "HUNTER 1",
+    "HUNTER 3",
     "PALADIN 3",
     "ROGUE 1",
     "ROGUE 2",
@@ -628,6 +987,14 @@
   },
   {
    "items": [
+    22321
+   ],
+   "simulated": true,
+   "en": "Its worth is all in its proc: melee and ranged attacks have a chance to deal Fire damage. The stat weights see nothing of it, so it is placed by hand right after Hand of Justice, without a score.",
+   "fr": "Toute sa valeur vient de son proc : les attaques de mêlée et à distance ont une chance d'infliger des dégâts de Feu. Les poids de stats n'en voient rien, il est donc placé à la main juste après Hand of Justice, sans score."
+  },
+  {
+   "items": [
     11815
    ],
    "en": "12 attack power and a 1% chance of an extra attack (20 and 2% in Classic).",
@@ -642,11 +1009,2879 @@
   },
   {
    "items": [
-    22321
+    19682,
+    19683,
+    19684
+   ],
+   "specs": [
+    "DRUID 1"
    ],
    "simulated": true,
-   "en": "Its worth is all in its proc: melee and ranged attacks have a chance to deal Fire damage. The stat weights see nothing of it, so it is placed by hand right after Hand of Justice, without a score.",
-   "fr": "Toute sa valeur vient de son proc : les attaques de mêlée et à distance ont une chance d'infliger des dégâts de Feu. Les poids de stats n'en voient rien, il est donc placé à la main juste après Hand of Justice, sans score."
+   "en": "With 3 pieces of Bloodvine Garb, the set's bonus adds about 16 DPS, which this score does not count.",
+   "fr": "Avec 3 pièces de Bloodvine Garb, le bonus du set ajoute environ 16 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    272464,
+    272626,
+    272627,
+    272641,
+    272642
+   ],
+   "specs": [
+    "DRUID 1"
+   ],
+   "simulated": true,
+   "en": "With 2 pieces of Champion's Refuge, the set's bonus adds about 10 DPS, which this score does not count.",
+   "fr": "Avec 2 pièces de Champion's Refuge, le bonus du set ajoute environ 10 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    273382,
+    273383,
+    273384,
+    273385,
+    273386,
+    273387
+   ],
+   "specs": [
+    "DRUID 1"
+   ],
+   "simulated": true,
+   "en": "With 2 pieces of Champion's Wildhide, the set's bonus adds about 15 DPS, which this score does not count.",
+   "fr": "Avec 2 pièces de Champion's Wildhide, le bonus du set ajoute environ 15 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    16701,
+    16703,
+    16704
+   ],
+   "specs": [
+    "DRUID 1"
+   ],
+   "simulated": true,
+   "en": "With 3 pieces of Dreadmist Raiment, the set's bonus adds about 12 DPS, which this score does not count.",
+   "fr": "Avec 3 pièces de Dreadmist Raiment, le bonus du set ajoute environ 12 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    226772,
+    226774,
+    226775,
+    226777,
+    226780,
+    226781,
+    226782,
+    226784,
+    226785,
+    226787,
+    226793,
+    226796,
+    226797,
+    226798,
+    226799,
+    226802,
+    226803
+   ],
+   "specs": [
+    "DRUID 1"
+   ],
+   "simulated": true,
+   "en": "With 6 pieces of Feralheart Raiment, the set's bonus adds about 17 DPS, which this score does not count.",
+   "fr": "Avec 6 pièces de Feralheart Raiment, le bonus du set ajoute environ 17 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    273399,
+    273400,
+    273401,
+    273402,
+    273403,
+    273404
+   ],
+   "specs": [
+    "DRUID 1"
+   ],
+   "simulated": true,
+   "en": "With 6 pieces of Field Marshal's Refuge, the set's bonus adds about 10 DPS, which this score does not count.",
+   "fr": "Avec 6 pièces de Field Marshal's Refuge, le bonus du set ajoute environ 10 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    273391,
+    273392,
+    273393,
+    273394,
+    273395,
+    273396
+   ],
+   "specs": [
+    "DRUID 1"
+   ],
+   "simulated": true,
+   "en": "With 6 pieces of Field Marshal's Wildhide, the set's bonus adds about 16 DPS, which this score does not count.",
+   "fr": "Avec 6 pièces de Field Marshal's Wildhide, le bonus du set ajoute environ 16 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    22496,
+    22497,
+    22498,
+    22499,
+    22500,
+    22501,
+    22502,
+    22503
+   ],
+   "specs": [
+    "DRUID 1"
+   ],
+   "simulated": true,
+   "en": "With 6 pieces of Frostfire Regalia, the set's bonus adds about 36 DPS, which this score does not count.",
+   "fr": "Avec 6 pièces de Frostfire Regalia, le bonus du set ajoute environ 36 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    273373,
+    273374,
+    273375,
+    273380
+   ],
+   "specs": [
+    "DRUID 1"
+   ],
+   "simulated": true,
+   "en": "With 2 pieces of Lieutenant Commander's Refuge, the set's bonus adds about 10 DPS, which this score does not count.",
+   "fr": "Avec 2 pièces de Lieutenant Commander's Refuge, le bonus du set ajoute environ 10 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    272656,
+    272669,
+    272670,
+    273368,
+    273370,
+    273371
+   ],
+   "specs": [
+    "DRUID 1"
+   ],
+   "simulated": true,
+   "en": "With 2 pieces of Lieutenant Commander's Wildhide, the set's bonus adds about 15 DPS, which this score does not count.",
+   "fr": "Avec 2 pièces de Lieutenant Commander's Wildhide, le bonus du set ajoute environ 15 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    16685,
+    16686,
+    16688
+   ],
+   "specs": [
+    "DRUID 1"
+   ],
+   "simulated": true,
+   "en": "With 3 pieces of Magister's Regalia, the set's bonus adds about 13 DPS, which this score does not count.",
+   "fr": "Avec 3 pièces de Magister's Regalia, le bonus du set ajoute environ 13 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    14626,
+    14629,
+    14631,
+    14632,
+    14633
+   ],
+   "specs": [
+    "DRUID 1"
+   ],
+   "simulated": true,
+   "en": "With 5 pieces of Necropile Raiment, the set's bonus adds about 16 DPS, which this score does not count.",
+   "fr": "Avec 5 pièces de Necropile Raiment, le bonus du set ajoute environ 16 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    13388,
+    13389,
+    13390,
+    13391,
+    13392
+   ],
+   "specs": [
+    "DRUID 1"
+   ],
+   "simulated": true,
+   "en": "With 3 pieces of The Postmaster, the set's bonus adds about 16 DPS, which this score does not count.",
+   "fr": "Avec 3 pièces de The Postmaster, le bonus du set ajoute environ 16 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    16690,
+    16693,
+    16697
+   ],
+   "specs": [
+    "DRUID 1"
+   ],
+   "simulated": true,
+   "en": "With 3 pieces of Vestments of the Devout, the set's bonus adds about 12 DPS, which this score does not count.",
+   "fr": "Avec 3 pièces de Vestments of the Devout, le bonus du set ajoute environ 12 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    16714,
+    16718
+   ],
+   "specs": [
+    "DRUID 1"
+   ],
+   "simulated": true,
+   "en": "With 3 pieces of Wildheart Raiment, the set's bonus adds about 12 DPS, which this score does not count.",
+   "fr": "Avec 3 pièces de Wildheart Raiment, le bonus du set ajoute environ 12 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    23278,
+    23279,
+    23292,
+    23293,
+    23306,
+    23307
+   ],
+   "specs": [
+    "HUNTER 1"
+   ],
+   "simulated": true,
+   "en": "With 2 pieces of Champion's Pursuance, the set's bonus adds about 12 DPS, which this score does not count.",
+   "fr": "Avec 2 pièces de Champion's Pursuance, le bonus du set ajoute environ 12 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    272490,
+    272492,
+    272495,
+    272496,
+    272640
+   ],
+   "specs": [
+    "HUNTER 1"
+   ],
+   "simulated": true,
+   "en": "With 2 pieces of Champion's Pursuit, the set's bonus adds about 14 DPS, which this score does not count.",
+   "fr": "Avec 2 pièces de Champion's Pursuit, le bonus du set ajoute environ 14 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    22436,
+    22437,
+    22438,
+    22439,
+    22440,
+    22441,
+    22442,
+    22443,
+    23067
+   ],
+   "specs": [
+    "HUNTER 1"
+   ],
+   "simulated": true,
+   "en": "With 6 pieces of Cryptstalker Armor, the set's bonus adds about 28 DPS, which this score does not count.",
+   "fr": "Avec 6 pièces de Cryptstalker Armor, le bonus du set ajoute environ 28 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    12939,
+    12940
+   ],
+   "specs": [
+    "HUNTER 1"
+   ],
+   "simulated": true,
+   "en": "With 2 pieces of Dal'Rend's Arms, the set's bonus adds about 12 DPS, which this score does not count.",
+   "fr": "Avec 2 pièces de Dal'Rend's Arms, le bonus du set ajoute environ 12 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    272713,
+    272715,
+    272736
+   ],
+   "specs": [
+    "HUNTER 1"
+   ],
+   "simulated": true,
+   "en": "With 2 pieces of Lieutenant Commander's Pursuit, the set's bonus adds about 14 DPS, which this score does not count.",
+   "fr": "Avec 2 pièces de Lieutenant Commander's Pursuit, le bonus du set ajoute environ 14 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    11726,
+    11728,
+    11731,
+    277117
+   ],
+   "specs": [
+    "HUNTER 1"
+   ],
+   "simulated": true,
+   "en": "With 5 pieces of The Gladiator, the set's bonus adds about 12 DPS, which this score does not count.",
+   "fr": "Avec 5 pièces de The Gladiator, le bonus du set ajoute environ 12 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    272771,
+    272772,
+    272774,
+    272775,
+    272776,
+    272777
+   ],
+   "specs": [
+    "HUNTER 1"
+   ],
+   "simulated": true,
+   "en": "With 6 pieces of Warlord's Pursuit, the set's bonus adds about 14 DPS, which this score does not count.",
+   "fr": "Avec 6 pièces de Warlord's Pursuit, le bonus du set ajoute environ 14 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    22476,
+    22477,
+    22478,
+    22479,
+    22480,
+    22481,
+    22482,
+    22483
+   ],
+   "specs": [
+    "HUNTER 2"
+   ],
+   "simulated": true,
+   "en": "With 5 pieces of Bonescythe Armor, the set's bonus adds about 18 DPS, which this score does not count.",
+   "fr": "Avec 5 pièces de Bonescythe Armor, le bonus du set ajoute environ 18 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    23278,
+    23279,
+    23292,
+    23293,
+    23306,
+    23307
+   ],
+   "specs": [
+    "HUNTER 2"
+   ],
+   "simulated": true,
+   "en": "With 2 pieces of Champion's Pursuance, the set's bonus adds about 20 DPS, which this score does not count.",
+   "fr": "Avec 2 pièces de Champion's Pursuance, le bonus du set ajoute environ 20 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    272490,
+    272492,
+    272495,
+    272496,
+    272640
+   ],
+   "specs": [
+    "HUNTER 2"
+   ],
+   "simulated": true,
+   "en": "With 2 pieces of Champion's Pursuit, the set's bonus adds about 17 DPS, which this score does not count.",
+   "fr": "Avec 2 pièces de Champion's Pursuit, le bonus du set ajoute environ 17 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    22436,
+    22437,
+    22438,
+    22439,
+    22440,
+    22441,
+    22442,
+    22443,
+    23067
+   ],
+   "specs": [
+    "HUNTER 2"
+   ],
+   "simulated": true,
+   "en": "With 8 pieces of Cryptstalker Armor, the set's bonus adds about 34 DPS, which this score does not count.",
+   "fr": "Avec 8 pièces de Cryptstalker Armor, le bonus du set ajoute environ 34 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    272713,
+    272715,
+    272736
+   ],
+   "specs": [
+    "HUNTER 2"
+   ],
+   "simulated": true,
+   "en": "With 2 pieces of Lieutenant Commander's Pursuit, the set's bonus adds about 17 DPS, which this score does not count.",
+   "fr": "Avec 2 pièces de Lieutenant Commander's Pursuit, le bonus du set ajoute environ 17 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    21365,
+    21366,
+    21367,
+    21368,
+    21370
+   ],
+   "specs": [
+    "HUNTER 2"
+   ],
+   "simulated": true,
+   "en": "With 5 pieces of Striker's Garb, the set's bonus adds about 44 DPS, which this score does not count.",
+   "fr": "Avec 5 pièces de Striker's Garb, le bonus du set ajoute environ 44 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    11726,
+    11728,
+    11731,
+    277117
+   ],
+   "specs": [
+    "HUNTER 2"
+   ],
+   "simulated": true,
+   "en": "With 5 pieces of The Gladiator, the set's bonus adds about 18 DPS, which this score does not count.",
+   "fr": "Avec 5 pièces de The Gladiator, le bonus du set ajoute environ 18 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    272771,
+    272772,
+    272774,
+    272775,
+    272776,
+    272777
+   ],
+   "specs": [
+    "HUNTER 2"
+   ],
+   "simulated": true,
+   "en": "With 6 pieces of Warlord's Pursuit, the set's bonus adds about 16 DPS, which this score does not count.",
+   "fr": "Avec 6 pièces de Warlord's Pursuit, le bonus du set ajoute environ 16 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    23278,
+    23279,
+    23292,
+    23293,
+    23306,
+    23307
+   ],
+   "specs": [
+    "HUNTER 3"
+   ],
+   "simulated": true,
+   "en": "With 2 pieces of Champion's Pursuance, the set's bonus adds about 18 DPS, which this score does not count.",
+   "fr": "Avec 2 pièces de Champion's Pursuance, le bonus du set ajoute environ 18 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    272490,
+    272492,
+    272495,
+    272496,
+    272640
+   ],
+   "specs": [
+    "HUNTER 3"
+   ],
+   "simulated": true,
+   "en": "With 2 pieces of Champion's Pursuit, the set's bonus adds about 18 DPS, which this score does not count.",
+   "fr": "Avec 2 pièces de Champion's Pursuit, le bonus du set ajoute environ 18 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    272713,
+    272715,
+    272736
+   ],
+   "specs": [
+    "HUNTER 3"
+   ],
+   "simulated": true,
+   "en": "With 2 pieces of Lieutenant Commander's Pursuit, the set's bonus adds about 18 DPS, which this score does not count.",
+   "fr": "Avec 2 pièces de Lieutenant Commander's Pursuit, le bonus du set ajoute environ 18 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    16707,
+    16708,
+    16709,
+    16710,
+    16711,
+    16712,
+    16713,
+    16721
+   ],
+   "specs": [
+    "HUNTER 3"
+   ],
+   "simulated": true,
+   "en": "With 3 pieces of Shadowcraft Armor, the set's bonus adds about 10 DPS, which this score does not count.",
+   "fr": "Avec 3 pièces de Shadowcraft Armor, le bonus du set ajoute environ 10 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    20043,
+    20050,
+    20055
+   ],
+   "specs": [
+    "HUNTER 3"
+   ],
+   "simulated": true,
+   "en": "With 3 pieces of The Defiler's Determination, the set's bonus adds about 10 DPS, which this score does not count.",
+   "fr": "Avec 3 pièces de The Defiler's Determination, le bonus du set ajoute environ 10 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    20044,
+    20051
+   ],
+   "specs": [
+    "HUNTER 3"
+   ],
+   "simulated": true,
+   "en": "With 3 pieces of The Defiler's Fortitude, the set's bonus adds about 11 DPS, which this score does not count.",
+   "fr": "Avec 3 pièces de The Defiler's Fortitude, le bonus du set ajoute environ 11 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    11726,
+    11728,
+    11731,
+    277117
+   ],
+   "specs": [
+    "HUNTER 3"
+   ],
+   "simulated": true,
+   "en": "With 5 pieces of The Gladiator, the set's bonus adds about 18 DPS, which this score does not count.",
+   "fr": "Avec 5 pièces de The Gladiator, le bonus du set ajoute environ 18 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    272771,
+    272772,
+    272774,
+    272775,
+    272776,
+    272777
+   ],
+   "specs": [
+    "HUNTER 3"
+   ],
+   "simulated": true,
+   "en": "With 6 pieces of Warlord's Pursuit, the set's bonus adds about 18 DPS, which this score does not count.",
+   "fr": "Avec 6 pièces de Warlord's Pursuit, le bonus du set ajoute environ 18 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    19682,
+    19683,
+    19684
+   ],
+   "specs": [
+    "MAGE 1"
+   ],
+   "simulated": true,
+   "en": "With 3 pieces of Bloodvine Garb, the set's bonus adds about 10 DPS, which this score does not count.",
+   "fr": "Avec 3 pièces de Bloodvine Garb, le bonus du set ajoute environ 10 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    272453,
+    272455,
+    272457,
+    272458,
+    272459,
+    272680
+   ],
+   "specs": [
+    "MAGE 1"
+   ],
+   "simulated": true,
+   "en": "With 2 pieces of Champion's Regalia, the set's bonus adds about 11 DPS, which this score does not count.",
+   "fr": "Avec 2 pièces de Champion's Regalia, le bonus du set ajoute environ 11 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    16701,
+    16703,
+    16704
+   ],
+   "specs": [
+    "MAGE 1"
+   ],
+   "simulated": true,
+   "en": "With 7 pieces of Dreadmist Raiment, the set's bonus adds about 12 DPS, which this score does not count.",
+   "fr": "Avec 7 pièces de Dreadmist Raiment, le bonus du set ajoute environ 12 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    21343,
+    21344,
+    21345,
+    21346,
+    21347
+   ],
+   "specs": [
+    "MAGE 1"
+   ],
+   "simulated": true,
+   "en": "With 5 pieces of Enigma Vestments, the set's bonus adds about 10 DPS, which this score does not count.",
+   "fr": "Avec 5 pièces de Enigma Vestments, le bonus du set ajoute environ 10 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    272746,
+    272749,
+    272750,
+    272751,
+    272752,
+    272753
+   ],
+   "specs": [
+    "MAGE 1"
+   ],
+   "simulated": true,
+   "en": "With 6 pieces of Field Marshal's Regalia, the set's bonus adds about 11 DPS, which this score does not count.",
+   "fr": "Avec 6 pièces de Field Marshal's Regalia, le bonus du set ajoute environ 11 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    22496,
+    22497,
+    22498,
+    22499,
+    22500,
+    22501,
+    22502,
+    22503,
+    23062
+   ],
+   "specs": [
+    "MAGE 1"
+   ],
+   "simulated": true,
+   "en": "With 6 pieces of Frostfire Regalia, the set's bonus adds about 22 DPS, which this score does not count.",
+   "fr": "Avec 6 pièces de Frostfire Regalia, le bonus du set ajoute environ 22 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    22302,
+    22303,
+    22304,
+    22305,
+    22306,
+    22311,
+    22313
+   ],
+   "specs": [
+    "MAGE 1"
+   ],
+   "simulated": true,
+   "en": "With 5 pieces of Ironweave Battlesuit, the set's bonus adds about 18 DPS, which this score does not count.",
+   "fr": "Avec 5 pièces de Ironweave Battlesuit, le bonus du set ajoute environ 18 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    272701,
+    272703,
+    272722,
+    272723,
+    272724,
+    272725
+   ],
+   "specs": [
+    "MAGE 1"
+   ],
+   "simulated": true,
+   "en": "With 2 pieces of Lieutenant Commander's Regalia, the set's bonus adds about 11 DPS, which this score does not count.",
+   "fr": "Avec 2 pièces de Lieutenant Commander's Regalia, le bonus du set ajoute environ 11 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    14626,
+    14629,
+    14631,
+    14632,
+    14633
+   ],
+   "specs": [
+    "MAGE 1"
+   ],
+   "simulated": true,
+   "en": "With 5 pieces of Necropile Raiment, the set's bonus adds about 12 DPS, which this score does not count.",
+   "fr": "Avec 5 pièces de Necropile Raiment, le bonus du set ajoute environ 12 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    13388,
+    13389,
+    13390,
+    13391,
+    13392
+   ],
+   "specs": [
+    "MAGE 1"
+   ],
+   "simulated": true,
+   "en": "With 3 pieces of The Postmaster, the set's bonus adds about 12 DPS, which this score does not count.",
+   "fr": "Avec 3 pièces de The Postmaster, le bonus du set ajoute environ 12 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    19682,
+    19683,
+    19684
+   ],
+   "specs": [
+    "MAGE 2"
+   ],
+   "simulated": true,
+   "en": "With 3 pieces of Bloodvine Garb, the set's bonus adds about 16 DPS, which this score does not count.",
+   "fr": "Avec 3 pièces de Bloodvine Garb, le bonus du set ajoute environ 16 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    272453,
+    272455,
+    272457,
+    272458,
+    272459,
+    272680
+   ],
+   "specs": [
+    "MAGE 2"
+   ],
+   "simulated": true,
+   "en": "With 2 pieces of Champion's Regalia, the set's bonus adds about 17 DPS, which this score does not count.",
+   "fr": "Avec 2 pièces de Champion's Regalia, le bonus du set ajoute environ 17 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    16701,
+    16703,
+    16704
+   ],
+   "specs": [
+    "MAGE 2"
+   ],
+   "simulated": true,
+   "en": "With 3 pieces of Dreadmist Raiment, the set's bonus adds about 13 DPS, which this score does not count.",
+   "fr": "Avec 3 pièces de Dreadmist Raiment, le bonus du set ajoute environ 13 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    21343,
+    21344,
+    21345,
+    21346,
+    21347
+   ],
+   "specs": [
+    "MAGE 2"
+   ],
+   "simulated": true,
+   "en": "With 5 pieces of Enigma Vestments, the set's bonus adds about 10 DPS, which this score does not count.",
+   "fr": "Avec 5 pièces de Enigma Vestments, le bonus du set ajoute environ 10 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    272746,
+    272749,
+    272750,
+    272751,
+    272752,
+    272753
+   ],
+   "specs": [
+    "MAGE 2"
+   ],
+   "simulated": true,
+   "en": "With 6 pieces of Field Marshal's Regalia, the set's bonus adds about 12 DPS, which this score does not count.",
+   "fr": "Avec 6 pièces de Field Marshal's Regalia, le bonus du set ajoute environ 12 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    22496,
+    22497,
+    22498,
+    22499,
+    22500,
+    22501,
+    22502,
+    22503,
+    23062
+   ],
+   "specs": [
+    "MAGE 2"
+   ],
+   "simulated": true,
+   "en": "With 6 pieces of Frostfire Regalia, the set's bonus adds about 35 DPS, which this score does not count.",
+   "fr": "Avec 6 pièces de Frostfire Regalia, le bonus du set ajoute environ 35 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    22302,
+    22303,
+    22304,
+    22305,
+    22306,
+    22311,
+    22313
+   ],
+   "specs": [
+    "MAGE 2"
+   ],
+   "simulated": true,
+   "en": "With 5 pieces of Ironweave Battlesuit, the set's bonus adds about 26 DPS, which this score does not count.",
+   "fr": "Avec 5 pièces de Ironweave Battlesuit, le bonus du set ajoute environ 26 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    272701,
+    272703,
+    272722,
+    272723,
+    272724,
+    272725
+   ],
+   "specs": [
+    "MAGE 2"
+   ],
+   "simulated": true,
+   "en": "With 2 pieces of Lieutenant Commander's Regalia, the set's bonus adds about 17 DPS, which this score does not count.",
+   "fr": "Avec 2 pièces de Lieutenant Commander's Regalia, le bonus du set ajoute environ 17 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    16685,
+    16686,
+    16687,
+    16688
+   ],
+   "specs": [
+    "MAGE 2"
+   ],
+   "simulated": true,
+   "en": "With 3 pieces of Magister's Regalia, the set's bonus adds about 14 DPS, which this score does not count.",
+   "fr": "Avec 3 pièces de Magister's Regalia, le bonus du set ajoute environ 14 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    14626,
+    14629,
+    14631,
+    14632,
+    14633
+   ],
+   "specs": [
+    "MAGE 2"
+   ],
+   "simulated": true,
+   "en": "With 5 pieces of Necropile Raiment, the set's bonus adds about 14 DPS, which this score does not count.",
+   "fr": "Avec 5 pièces de Necropile Raiment, le bonus du set ajoute environ 14 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    13388,
+    13389,
+    13390,
+    13391,
+    13392
+   ],
+   "specs": [
+    "MAGE 2"
+   ],
+   "simulated": true,
+   "en": "With 3 pieces of The Postmaster, the set's bonus adds about 18 DPS, which this score does not count.",
+   "fr": "Avec 3 pièces de The Postmaster, le bonus du set ajoute environ 18 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    16697
+   ],
+   "specs": [
+    "MAGE 2"
+   ],
+   "simulated": true,
+   "en": "With 3 pieces of Vestments of the Devout, the set's bonus adds about 12 DPS, which this score does not count.",
+   "fr": "Avec 3 pièces de Vestments of the Devout, le bonus du set ajoute environ 12 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    19682,
+    19683,
+    19684
+   ],
+   "specs": [
+    "MAGE 3"
+   ],
+   "simulated": true,
+   "en": "With 3 pieces of Bloodvine Garb, the set's bonus adds about 10 DPS, which this score does not count.",
+   "fr": "Avec 3 pièces de Bloodvine Garb, le bonus du set ajoute environ 10 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    272453,
+    272455,
+    272457,
+    272458,
+    272459,
+    272680
+   ],
+   "specs": [
+    "MAGE 3"
+   ],
+   "simulated": true,
+   "en": "With 2 pieces of Champion's Regalia, the set's bonus adds about 15 DPS, which this score does not count.",
+   "fr": "Avec 2 pièces de Champion's Regalia, le bonus du set ajoute environ 15 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    16701,
+    16703,
+    16704
+   ],
+   "specs": [
+    "MAGE 3"
+   ],
+   "simulated": true,
+   "en": "With 5 pieces of Dreadmist Raiment, the set's bonus adds about 16 DPS, which this score does not count.",
+   "fr": "Avec 5 pièces de Dreadmist Raiment, le bonus du set ajoute environ 16 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    272746,
+    272749,
+    272750,
+    272751,
+    272752,
+    272753
+   ],
+   "specs": [
+    "MAGE 3"
+   ],
+   "simulated": true,
+   "en": "With 6 pieces of Field Marshal's Regalia, the set's bonus adds about 15 DPS, which this score does not count.",
+   "fr": "Avec 6 pièces de Field Marshal's Regalia, le bonus du set ajoute environ 15 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    22496,
+    22497,
+    22498,
+    22499,
+    22500,
+    22501,
+    22502,
+    22503,
+    23062
+   ],
+   "specs": [
+    "MAGE 3"
+   ],
+   "simulated": true,
+   "en": "With 6 pieces of Frostfire Regalia, the set's bonus adds about 20 DPS, which this score does not count.",
+   "fr": "Avec 6 pièces de Frostfire Regalia, le bonus du set ajoute environ 20 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    22302,
+    22303,
+    22304,
+    22305,
+    22306,
+    22311,
+    22313
+   ],
+   "specs": [
+    "MAGE 3"
+   ],
+   "simulated": true,
+   "en": "With 5 pieces of Ironweave Battlesuit, the set's bonus adds about 12 DPS, which this score does not count.",
+   "fr": "Avec 5 pièces de Ironweave Battlesuit, le bonus du set ajoute environ 12 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    272701,
+    272703,
+    272722,
+    272723,
+    272724,
+    272725
+   ],
+   "specs": [
+    "MAGE 3"
+   ],
+   "simulated": true,
+   "en": "With 2 pieces of Lieutenant Commander's Regalia, the set's bonus adds about 15 DPS, which this score does not count.",
+   "fr": "Avec 2 pièces de Lieutenant Commander's Regalia, le bonus du set ajoute environ 15 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    16685,
+    16686,
+    16687,
+    16688
+   ],
+   "specs": [
+    "MAGE 3"
+   ],
+   "simulated": true,
+   "en": "With 3 pieces of Magister's Regalia, the set's bonus adds about 10 DPS, which this score does not count.",
+   "fr": "Avec 3 pièces de Magister's Regalia, le bonus du set ajoute environ 10 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    14626,
+    14629,
+    14631,
+    14632,
+    14633
+   ],
+   "specs": [
+    "MAGE 3"
+   ],
+   "simulated": true,
+   "en": "With 5 pieces of Necropile Raiment, the set's bonus adds about 16 DPS, which this score does not count.",
+   "fr": "Avec 5 pièces de Necropile Raiment, le bonus du set ajoute environ 16 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    13388,
+    13389,
+    13390,
+    13391,
+    13392
+   ],
+   "specs": [
+    "MAGE 3"
+   ],
+   "simulated": true,
+   "en": "With 3 pieces of The Postmaster, the set's bonus adds about 14 DPS, which this score does not count.",
+   "fr": "Avec 3 pièces de The Postmaster, le bonus du set ajoute environ 14 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    16697
+   ],
+   "specs": [
+    "MAGE 3"
+   ],
+   "simulated": true,
+   "en": "With 3 pieces of Vestments of the Devout, the set's bonus adds about 12 DPS, which this score does not count.",
+   "fr": "Avec 3 pièces de Vestments of the Devout, le bonus du set ajoute environ 12 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    21387,
+    21388,
+    21389,
+    21390,
+    21391
+   ],
+   "specs": [
+    "PALADIN 3"
+   ],
+   "simulated": true,
+   "en": "With 5 pieces of Avenger's Battlegear, the set's bonus adds about 27 DPS, which this score does not count.",
+   "fr": "Avec 5 pièces de Avenger's Battlegear, le bonus du set ajoute environ 27 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    22496,
+    22497,
+    22498,
+    22499,
+    22500,
+    22501,
+    22502,
+    22503
+   ],
+   "specs": [
+    "PALADIN 3"
+   ],
+   "simulated": true,
+   "en": "With 6 pieces of Frostfire Regalia, the set's bonus adds about 38 DPS, which this score does not count.",
+   "fr": "Avec 6 pièces de Frostfire Regalia, le bonus du set ajoute environ 38 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    16723,
+    16726,
+    16727,
+    16729
+   ],
+   "specs": [
+    "PALADIN 3"
+   ],
+   "simulated": true,
+   "en": "With 5 pieces of Lightforge Armor, the set's bonus adds about 13 DPS, which this score does not count.",
+   "fr": "Avec 5 pièces de Lightforge Armor, le bonus du set ajoute environ 13 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    226974,
+    226977,
+    226979,
+    226980,
+    226982,
+    226983,
+    226985,
+    226986,
+    226987,
+    226988,
+    226990,
+    226991
+   ],
+   "specs": [
+    "PALADIN 3"
+   ],
+   "simulated": true,
+   "en": "With 6 pieces of Soulforge Armor, the set's bonus adds about 16 DPS, which this score does not count.",
+   "fr": "Avec 6 pièces de Soulforge Armor, le bonus du set ajoute environ 16 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    16666,
+    16671
+   ],
+   "specs": [
+    "PALADIN 3"
+   ],
+   "simulated": true,
+   "en": "With 5 pieces of The Elements, the set's bonus adds about 12 DPS, which this score does not count.",
+   "fr": "Avec 5 pièces de The Elements, le bonus du set ajoute environ 12 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    11726,
+    11728,
+    11731,
+    277117
+   ],
+   "specs": [
+    "PALADIN 3"
+   ],
+   "simulated": true,
+   "en": "With 5 pieces of The Gladiator, the set's bonus adds about 10 DPS, which this score does not count.",
+   "fr": "Avec 5 pièces de The Gladiator, le bonus du set ajoute environ 10 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    16714,
+    16718
+   ],
+   "specs": [
+    "PALADIN 3"
+   ],
+   "simulated": true,
+   "en": "With 3 pieces of Wildheart Raiment, the set's bonus adds about 12 DPS, which this score does not count.",
+   "fr": "Avec 3 pièces de Wildheart Raiment, le bonus du set ajoute environ 12 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    19682,
+    19683,
+    19684
+   ],
+   "specs": [
+    "PRIEST 3"
+   ],
+   "simulated": true,
+   "en": "With 3 pieces of Bloodvine Garb, the set's bonus adds about 12 DPS, which this score does not count.",
+   "fr": "Avec 3 pièces de Bloodvine Garb, le bonus du set ajoute environ 12 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    272562,
+    272563,
+    272564,
+    272565,
+    272568,
+    272569
+   ],
+   "specs": [
+    "PRIEST 3"
+   ],
+   "simulated": true,
+   "en": "With 2 pieces of Champion's Raiment, the set's bonus adds about 12 DPS, which this score does not count.",
+   "fr": "Avec 2 pièces de Champion's Raiment, le bonus du set ajoute environ 12 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    22496,
+    22497,
+    22498,
+    22499,
+    22500,
+    22501,
+    22502,
+    22503
+   ],
+   "specs": [
+    "PRIEST 3"
+   ],
+   "simulated": true,
+   "en": "With 6 pieces of Frostfire Regalia, the set's bonus adds about 34 DPS, which this score does not count.",
+   "fr": "Avec 6 pièces de Frostfire Regalia, le bonus du set ajoute environ 34 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    22302,
+    22303,
+    22304,
+    22305,
+    22306,
+    22311,
+    22313
+   ],
+   "specs": [
+    "PRIEST 3"
+   ],
+   "simulated": true,
+   "en": "With 5 pieces of Ironweave Battlesuit, the set's bonus adds about 12 DPS, which this score does not count.",
+   "fr": "Avec 5 pièces de Ironweave Battlesuit, le bonus du set ajoute environ 12 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    272810,
+    272812,
+    272814,
+    272815,
+    272816,
+    272817
+   ],
+   "specs": [
+    "PRIEST 3"
+   ],
+   "simulated": true,
+   "en": "With 2 pieces of Lieutenant Commander's Raiment, the set's bonus adds about 12 DPS, which this score does not count.",
+   "fr": "Avec 2 pièces de Lieutenant Commander's Raiment, le bonus du set ajoute environ 12 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    14626,
+    14629,
+    14631,
+    14632,
+    14633
+   ],
+   "specs": [
+    "PRIEST 3"
+   ],
+   "simulated": true,
+   "en": "With 5 pieces of Necropile Raiment, the set's bonus adds about 12 DPS, which this score does not count.",
+   "fr": "Avec 5 pièces de Necropile Raiment, le bonus du set ajoute environ 12 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    13388,
+    13389,
+    13390,
+    13391,
+    13392
+   ],
+   "specs": [
+    "PRIEST 3"
+   ],
+   "simulated": true,
+   "en": "With 3 pieces of The Postmaster, the set's bonus adds about 12 DPS, which this score does not count.",
+   "fr": "Avec 3 pièces de The Postmaster, le bonus du set ajoute environ 12 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    226950,
+    226953,
+    226954,
+    226955,
+    226956,
+    226958,
+    226959
+   ],
+   "specs": [
+    "PRIEST 3"
+   ],
+   "simulated": true,
+   "en": "With 6 pieces of Vestments of the Virtuous, the set's bonus adds about 11 DPS, which this score does not count.",
+   "fr": "Avec 6 pièces de Vestments of the Virtuous, le bonus du set ajoute environ 11 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    22476,
+    22477,
+    22478,
+    22479,
+    22480,
+    22481,
+    22482,
+    22483,
+    23060
+   ],
+   "specs": [
+    "ROGUE 1"
+   ],
+   "simulated": true,
+   "en": "With 9 pieces of Bonescythe Armor, the set's bonus adds about 74 DPS, which this score does not count.",
+   "fr": "Avec 9 pièces de Bonescythe Armor, le bonus du set ajoute environ 74 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    272467,
+    272473,
+    272474,
+    272475,
+    272476,
+    272608
+   ],
+   "specs": [
+    "ROGUE 1"
+   ],
+   "simulated": true,
+   "en": "With 2 pieces of Champion's Vestments, the set's bonus adds about 10 DPS, which this score does not count.",
+   "fr": "Avec 2 pièces de Champion's Vestments, le bonus du set ajoute environ 10 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    12939,
+    12940
+   ],
+   "specs": [
+    "ROGUE 1"
+   ],
+   "simulated": true,
+   "en": "With 2 pieces of Dal'Rend's Arms, the set's bonus adds about 10 DPS, which this score does not count.",
+   "fr": "Avec 2 pièces de Dal'Rend's Arms, le bonus du set ajoute environ 10 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    21359,
+    21360,
+    21361,
+    21362,
+    21364
+   ],
+   "specs": [
+    "ROGUE 1"
+   ],
+   "simulated": true,
+   "en": "With 5 pieces of Deathdealer's Embrace, the set's bonus adds about 49 DPS, which this score does not count.",
+   "fr": "Avec 5 pièces de Deathdealer's Embrace, le bonus du set ajoute environ 49 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    21404,
+    21406
+   ],
+   "specs": [
+    "ROGUE 1"
+   ],
+   "simulated": true,
+   "en": "With 3 pieces of Emblems of Veiled Shadows, the set's bonus adds about 32 DPS, which this score does not count.",
+   "fr": "Avec 3 pièces de Emblems of Veiled Shadows, le bonus du set ajoute environ 32 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    272755,
+    272762,
+    272763,
+    272764,
+    272765,
+    272766
+   ],
+   "specs": [
+    "ROGUE 1"
+   ],
+   "simulated": true,
+   "en": "With 6 pieces of Field Marshal's Vestments, the set's bonus adds about 12 DPS, which this score does not count.",
+   "fr": "Avec 6 pièces de Field Marshal's Vestments, le bonus du set ajoute environ 12 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    23284,
+    23285,
+    23298,
+    23299,
+    23312,
+    23313
+   ],
+   "specs": [
+    "ROGUE 1"
+   ],
+   "simulated": true,
+   "en": "With 5 pieces of Lieutenant Commander's Guard, the set's bonus adds about 20 DPS, which this score does not count.",
+   "fr": "Avec 5 pièces de Lieutenant Commander's Guard, le bonus du set ajoute environ 20 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    16707,
+    16708,
+    16709,
+    16710,
+    16711,
+    16712,
+    16713,
+    16721
+   ],
+   "specs": [
+    "ROGUE 1"
+   ],
+   "simulated": true,
+   "en": "With 5 pieces of Shadowcraft Armor, the set's bonus adds about 34 DPS, which this score does not count.",
+   "fr": "Avec 5 pièces de Shadowcraft Armor, le bonus du set ajoute environ 34 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    22476,
+    22477,
+    22478,
+    22479,
+    22480,
+    22481,
+    22482,
+    22483,
+    23060
+   ],
+   "specs": [
+    "ROGUE 2"
+   ],
+   "simulated": true,
+   "en": "With 9 pieces of Bonescythe Armor, the set's bonus adds about 57 DPS, which this score does not count.",
+   "fr": "Avec 9 pièces de Bonescythe Armor, le bonus du set ajoute environ 57 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    272467,
+    272473,
+    272474,
+    272475,
+    272476,
+    272608
+   ],
+   "specs": [
+    "ROGUE 2"
+   ],
+   "simulated": true,
+   "en": "With 2 pieces of Champion's Vestments, the set's bonus adds about 11 DPS, which this score does not count.",
+   "fr": "Avec 2 pièces de Champion's Vestments, le bonus du set ajoute environ 11 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    12939,
+    12940
+   ],
+   "specs": [
+    "ROGUE 2"
+   ],
+   "simulated": true,
+   "en": "With 2 pieces of Dal'Rend's Arms, the set's bonus adds about 16 DPS, which this score does not count.",
+   "fr": "Avec 2 pièces de Dal'Rend's Arms, le bonus du set ajoute environ 16 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    21359,
+    21360,
+    21361,
+    21362,
+    21364
+   ],
+   "specs": [
+    "ROGUE 2"
+   ],
+   "simulated": true,
+   "en": "With 5 pieces of Deathdealer's Embrace, the set's bonus adds about 39 DPS, which this score does not count.",
+   "fr": "Avec 5 pièces de Deathdealer's Embrace, le bonus du set ajoute environ 39 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    21404,
+    21406
+   ],
+   "specs": [
+    "ROGUE 2"
+   ],
+   "simulated": true,
+   "en": "With 3 pieces of Emblems of Veiled Shadows, the set's bonus adds about 23 DPS, which this score does not count.",
+   "fr": "Avec 3 pièces de Emblems of Veiled Shadows, le bonus du set ajoute environ 23 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    272755,
+    272762,
+    272763,
+    272764,
+    272765,
+    272766
+   ],
+   "specs": [
+    "ROGUE 2"
+   ],
+   "simulated": true,
+   "en": "With 6 pieces of Field Marshal's Vestments, the set's bonus adds about 10 DPS, which this score does not count.",
+   "fr": "Avec 6 pièces de Field Marshal's Vestments, le bonus du set ajoute environ 10 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    23284,
+    23285,
+    23298,
+    23299,
+    23312,
+    23313
+   ],
+   "specs": [
+    "ROGUE 2"
+   ],
+   "simulated": true,
+   "en": "With 5 pieces of Lieutenant Commander's Guard, the set's bonus adds about 19 DPS, which this score does not count.",
+   "fr": "Avec 5 pièces de Lieutenant Commander's Guard, le bonus du set ajoute environ 19 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    272704,
+    272708,
+    272726,
+    272727,
+    272728,
+    272729
+   ],
+   "specs": [
+    "ROGUE 2"
+   ],
+   "simulated": true,
+   "en": "With 2 pieces of Lieutenant Commander's Vestments, the set's bonus adds about 11 DPS, which this score does not count.",
+   "fr": "Avec 2 pièces de Lieutenant Commander's Vestments, le bonus du set ajoute environ 11 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    16707,
+    16708,
+    16709,
+    16710,
+    16711,
+    16712,
+    16713,
+    16721
+   ],
+   "specs": [
+    "ROGUE 2"
+   ],
+   "simulated": true,
+   "en": "With 5 pieces of Shadowcraft Armor, the set's bonus adds about 28 DPS, which this score does not count.",
+   "fr": "Avec 5 pièces de Shadowcraft Armor, le bonus du set ajoute environ 28 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    22476,
+    22477,
+    22478,
+    22479,
+    22480,
+    22481,
+    22482,
+    22483,
+    23060
+   ],
+   "specs": [
+    "ROGUE 3"
+   ],
+   "simulated": true,
+   "en": "With 9 pieces of Bonescythe Armor, the set's bonus adds about 60 DPS, which this score does not count.",
+   "fr": "Avec 9 pièces de Bonescythe Armor, le bonus du set ajoute environ 60 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    272467,
+    272473,
+    272474,
+    272475,
+    272476,
+    272608
+   ],
+   "specs": [
+    "ROGUE 3"
+   ],
+   "simulated": true,
+   "en": "With 2 pieces of Champion's Vestments, the set's bonus adds about 12 DPS, which this score does not count.",
+   "fr": "Avec 2 pièces de Champion's Vestments, le bonus du set ajoute environ 12 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    12939,
+    12940
+   ],
+   "specs": [
+    "ROGUE 3"
+   ],
+   "simulated": true,
+   "en": "With 2 pieces of Dal'Rend's Arms, the set's bonus adds about 16 DPS, which this score does not count.",
+   "fr": "Avec 2 pièces de Dal'Rend's Arms, le bonus du set ajoute environ 16 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    21359,
+    21360,
+    21361,
+    21362,
+    21364
+   ],
+   "specs": [
+    "ROGUE 3"
+   ],
+   "simulated": true,
+   "en": "With 5 pieces of Deathdealer's Embrace, the set's bonus adds about 22 DPS, which this score does not count.",
+   "fr": "Avec 5 pièces de Deathdealer's Embrace, le bonus du set ajoute environ 22 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    21404,
+    21406
+   ],
+   "specs": [
+    "ROGUE 3"
+   ],
+   "simulated": true,
+   "en": "With 3 pieces of Emblems of Veiled Shadows, the set's bonus adds about 23 DPS, which this score does not count.",
+   "fr": "Avec 3 pièces de Emblems of Veiled Shadows, le bonus du set ajoute environ 23 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    23284,
+    23285,
+    23298,
+    23299,
+    23312,
+    23313
+   ],
+   "specs": [
+    "ROGUE 3"
+   ],
+   "simulated": true,
+   "en": "With 5 pieces of Lieutenant Commander's Guard, the set's bonus adds about 20 DPS, which this score does not count.",
+   "fr": "Avec 5 pièces de Lieutenant Commander's Guard, le bonus du set ajoute environ 20 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    272704,
+    272708,
+    272726,
+    272727,
+    272728,
+    272729
+   ],
+   "specs": [
+    "ROGUE 3"
+   ],
+   "simulated": true,
+   "en": "With 2 pieces of Lieutenant Commander's Vestments, the set's bonus adds about 11 DPS, which this score does not count.",
+   "fr": "Avec 2 pièces de Lieutenant Commander's Vestments, le bonus du set ajoute environ 11 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    16707,
+    16708,
+    16709,
+    16710,
+    16711,
+    16712,
+    16713,
+    16721
+   ],
+   "specs": [
+    "ROGUE 3"
+   ],
+   "simulated": true,
+   "en": "With 7 pieces of Shadowcraft Armor, the set's bonus adds about 29 DPS, which this score does not count.",
+   "fr": "Avec 7 pièces de Shadowcraft Armor, le bonus du set ajoute environ 29 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    20295
+   ],
+   "specs": [
+    "SHAMAN 1"
+   ],
+   "simulated": true,
+   "en": "With 3 pieces of Blue Dragon Mail, the set's bonus adds about 18 DPS, which this score does not count.",
+   "fr": "Avec 3 pièces de Blue Dragon Mail, le bonus du set ajoute environ 18 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    272484,
+    272486,
+    272487,
+    272617,
+    272636,
+    272648
+   ],
+   "specs": [
+    "SHAMAN 1"
+   ],
+   "simulated": true,
+   "en": "With 2 pieces of Champion's Thunderfist, the set's bonus adds about 14 DPS, which this score does not count.",
+   "fr": "Avec 2 pièces de Champion's Thunderfist, le bonus du set ajoute environ 14 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    273356,
+    273357,
+    273359,
+    273360
+   ],
+   "specs": [
+    "SHAMAN 1"
+   ],
+   "simulated": true,
+   "en": "With 2 pieces of Champion's Wartide, the set's bonus adds about 10 DPS, which this score does not count.",
+   "fr": "Avec 2 pièces de Champion's Wartide, le bonus du set ajoute environ 10 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    16701,
+    16703,
+    16704
+   ],
+   "specs": [
+    "SHAMAN 1"
+   ],
+   "simulated": true,
+   "en": "With 6 pieces of Dreadmist Raiment, the set's bonus adds about 13 DPS, which this score does not count.",
+   "fr": "Avec 6 pièces de Dreadmist Raiment, le bonus du set ajoute environ 13 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    22496,
+    22497,
+    22498,
+    22499,
+    22500,
+    22501,
+    22502,
+    22503
+   ],
+   "specs": [
+    "SHAMAN 1"
+   ],
+   "simulated": true,
+   "en": "With 6 pieces of Frostfire Regalia, the set's bonus adds about 28 DPS, which this score does not count.",
+   "fr": "Avec 6 pièces de Frostfire Regalia, le bonus du set ajoute environ 28 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    274176,
+    274178,
+    274179,
+    274193,
+    274195,
+    274197
+   ],
+   "specs": [
+    "SHAMAN 1"
+   ],
+   "simulated": true,
+   "en": "With 2 pieces of Lieutenant Commander's Thunderfist, the set's bonus adds about 14 DPS, which this score does not count.",
+   "fr": "Avec 2 pièces de Lieutenant Commander's Thunderfist, le bonus du set ajoute environ 14 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    274217,
+    274218,
+    274219,
+    274220,
+    274221,
+    274222
+   ],
+   "specs": [
+    "SHAMAN 1"
+   ],
+   "simulated": true,
+   "en": "With 2 pieces of Lieutenant Commander's Wartide, the set's bonus adds about 10 DPS, which this score does not count.",
+   "fr": "Avec 2 pièces de Lieutenant Commander's Wartide, le bonus du set ajoute environ 10 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    16685,
+    16686,
+    16688
+   ],
+   "specs": [
+    "SHAMAN 1"
+   ],
+   "simulated": true,
+   "en": "With 3 pieces of Magister's Regalia, the set's bonus adds about 11 DPS, which this score does not count.",
+   "fr": "Avec 3 pièces de Magister's Regalia, le bonus du set ajoute environ 11 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    14626,
+    14629,
+    14631,
+    14632,
+    14633
+   ],
+   "specs": [
+    "SHAMAN 1"
+   ],
+   "simulated": true,
+   "en": "With 5 pieces of Necropile Raiment, the set's bonus adds about 13 DPS, which this score does not count.",
+   "fr": "Avec 5 pièces de Necropile Raiment, le bonus du set ajoute environ 13 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    16666,
+    16671,
+    16672
+   ],
+   "specs": [
+    "SHAMAN 1"
+   ],
+   "simulated": true,
+   "en": "With 5 pieces of The Elements, the set's bonus adds about 16 DPS, which this score does not count.",
+   "fr": "Avec 5 pièces de The Elements, le bonus du set ajoute environ 16 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    227007,
+    227009,
+    227010,
+    227011,
+    227012,
+    227015,
+    227017,
+    227018,
+    227020,
+    227022,
+    227023
+   ],
+   "specs": [
+    "SHAMAN 1"
+   ],
+   "simulated": true,
+   "en": "With 6 pieces of The Five Thunders, the set's bonus adds about 22 DPS, which this score does not count.",
+   "fr": "Avec 6 pièces de The Five Thunders, le bonus du set ajoute environ 22 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    13388,
+    13390,
+    13391,
+    13392
+   ],
+   "specs": [
+    "SHAMAN 1"
+   ],
+   "simulated": true,
+   "en": "With 3 pieces of The Postmaster, the set's bonus adds about 12 DPS, which this score does not count.",
+   "fr": "Avec 3 pièces de The Postmaster, le bonus du set ajoute environ 12 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    16690,
+    16693,
+    16697
+   ],
+   "specs": [
+    "SHAMAN 1"
+   ],
+   "simulated": true,
+   "en": "With 5 pieces of Vestments of the Devout, the set's bonus adds about 12 DPS, which this score does not count.",
+   "fr": "Avec 5 pièces de Vestments of the Devout, le bonus du set ajoute environ 12 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    274198,
+    274199,
+    274202,
+    274203,
+    274204,
+    274205
+   ],
+   "specs": [
+    "SHAMAN 1"
+   ],
+   "simulated": true,
+   "en": "With 6 pieces of Warlord's Thunderfist, the set's bonus adds about 11 DPS, which this score does not count.",
+   "fr": "Avec 6 pièces de Warlord's Thunderfist, le bonus du set ajoute environ 11 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    16714,
+    16718
+   ],
+   "specs": [
+    "SHAMAN 1"
+   ],
+   "simulated": true,
+   "en": "With 6 pieces of Wildheart Raiment, the set's bonus adds about 12 DPS, which this score does not count.",
+   "fr": "Avec 6 pièces de Wildheart Raiment, le bonus du set ajoute environ 12 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    14612,
+    14614,
+    14615,
+    14616
+   ],
+   "specs": [
+    "SHAMAN 2"
+   ],
+   "simulated": true,
+   "en": "With 5 pieces of Bloodmail Regalia, the set's bonus adds about 11 DPS, which this score does not count.",
+   "fr": "Avec 5 pièces de Bloodmail Regalia, le bonus du set ajoute environ 11 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    22496,
+    22497,
+    22498,
+    22499,
+    22500,
+    22501,
+    22502,
+    22503
+   ],
+   "specs": [
+    "SHAMAN 2"
+   ],
+   "simulated": true,
+   "en": "With 6 pieces of Frostfire Regalia, the set's bonus adds about 16 DPS, which this score does not count.",
+   "fr": "Avec 6 pièces de Frostfire Regalia, le bonus du set ajoute environ 16 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    274176,
+    274178,
+    274179,
+    274193,
+    274195,
+    274197
+   ],
+   "specs": [
+    "SHAMAN 2"
+   ],
+   "simulated": true,
+   "en": "With 5 pieces of Lieutenant Commander's Thunderfist, the set's bonus adds about 10 DPS, which this score does not count.",
+   "fr": "Avec 5 pièces de Lieutenant Commander's Thunderfist, le bonus du set ajoute environ 10 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    16666,
+    16671,
+    16672
+   ],
+   "specs": [
+    "SHAMAN 2"
+   ],
+   "simulated": true,
+   "en": "With 5 pieces of The Elements, the set's bonus adds about 14 DPS, which this score does not count.",
+   "fr": "Avec 5 pièces de The Elements, le bonus du set ajoute environ 14 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    11726,
+    11728,
+    11731,
+    277117
+   ],
+   "specs": [
+    "SHAMAN 2"
+   ],
+   "simulated": true,
+   "en": "With 5 pieces of The Gladiator, the set's bonus adds about 10 DPS, which this score does not count.",
+   "fr": "Avec 5 pièces de The Gladiator, le bonus du set ajoute environ 10 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    16714,
+    16718
+   ],
+   "specs": [
+    "SHAMAN 2"
+   ],
+   "simulated": true,
+   "en": "With 3 pieces of Wildheart Raiment, the set's bonus adds about 10 DPS, which this score does not count.",
+   "fr": "Avec 3 pièces de Wildheart Raiment, le bonus du set ajoute environ 10 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    19682,
+    19683,
+    19684
+   ],
+   "specs": [
+    "WARLOCK 1"
+   ],
+   "simulated": true,
+   "en": "With 3 pieces of Bloodvine Garb, the set's bonus adds about 17 DPS, which this score does not count.",
+   "fr": "Avec 3 pièces de Bloodvine Garb, le bonus du set ajoute environ 17 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    23282,
+    23283,
+    23296,
+    23297,
+    23310,
+    23311
+   ],
+   "specs": [
+    "WARLOCK 1"
+   ],
+   "simulated": true,
+   "en": "With 2 pieces of Champion's Dreadgear, the set's bonus adds about 19 DPS, which this score does not count.",
+   "fr": "Avec 2 pièces de Champion's Dreadgear, le bonus du set ajoute environ 19 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    272548,
+    272549,
+    272552,
+    272553,
+    272630,
+    272643
+   ],
+   "specs": [
+    "WARLOCK 1"
+   ],
+   "simulated": true,
+   "en": "With 2 pieces of Champion's Threads, the set's bonus adds about 18 DPS, which this score does not count.",
+   "fr": "Avec 2 pièces de Champion's Threads, le bonus du set ajoute environ 18 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    19605,
+    19848,
+    19849,
+    20033
+   ],
+   "specs": [
+    "WARLOCK 1"
+   ],
+   "simulated": true,
+   "en": "With 3 pieces of Demoniac's Threads, the set's bonus adds about 15 DPS, which this score does not count.",
+   "fr": "Avec 3 pièces de Demoniac's Threads, le bonus du set ajoute environ 15 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    16698,
+    16701,
+    16703,
+    16704
+   ],
+   "specs": [
+    "WARLOCK 1"
+   ],
+   "simulated": true,
+   "en": "With 3 pieces of Dreadmist Raiment, the set's bonus adds about 14 DPS, which this score does not count.",
+   "fr": "Avec 3 pièces de Dreadmist Raiment, le bonus du set ajoute environ 14 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    22496,
+    22497,
+    22498,
+    22499,
+    22500,
+    22501,
+    22502,
+    22503
+   ],
+   "specs": [
+    "WARLOCK 1"
+   ],
+   "simulated": true,
+   "en": "With 6 pieces of Frostfire Regalia, the set's bonus adds about 84 DPS, which this score does not count.",
+   "fr": "Avec 6 pièces de Frostfire Regalia, le bonus du set ajoute environ 84 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    22302,
+    22303,
+    22304,
+    22305,
+    22306,
+    22311,
+    22313
+   ],
+   "specs": [
+    "WARLOCK 1"
+   ],
+   "simulated": true,
+   "en": "With 5 pieces of Ironweave Battlesuit, the set's bonus adds about 18 DPS, which this score does not count.",
+   "fr": "Avec 5 pièces de Ironweave Battlesuit, le bonus du set ajoute environ 18 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    272657,
+    272671,
+    272794,
+    272796,
+    272800,
+    272801
+   ],
+   "specs": [
+    "WARLOCK 1"
+   ],
+   "simulated": true,
+   "en": "With 2 pieces of Lieutenant Commander's Threads, the set's bonus adds about 18 DPS, which this score does not count.",
+   "fr": "Avec 2 pièces de Lieutenant Commander's Threads, le bonus du set ajoute environ 18 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    16685,
+    16686,
+    16687,
+    16688
+   ],
+   "specs": [
+    "WARLOCK 1"
+   ],
+   "simulated": true,
+   "en": "With 6 pieces of Magister's Regalia, the set's bonus adds about 16 DPS, which this score does not count.",
+   "fr": "Avec 6 pièces de Magister's Regalia, le bonus du set ajoute environ 16 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    14626,
+    14629,
+    14631,
+    14632,
+    14633
+   ],
+   "specs": [
+    "WARLOCK 1"
+   ],
+   "simulated": true,
+   "en": "With 5 pieces of Necropile Raiment, the set's bonus adds about 18 DPS, which this score does not count.",
+   "fr": "Avec 5 pièces de Necropile Raiment, le bonus du set ajoute environ 18 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    22504,
+    22505,
+    22506,
+    22507,
+    22508,
+    22509,
+    22510,
+    22511,
+    23063
+   ],
+   "specs": [
+    "WARLOCK 1"
+   ],
+   "simulated": true,
+   "en": "With 8 pieces of Plagueheart Raiment, the set's bonus adds about 34 DPS, which this score does not count.",
+   "fr": "Avec 8 pièces de Plagueheart Raiment, le bonus du set ajoute environ 34 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    13388,
+    13389,
+    13390,
+    13391,
+    13392
+   ],
+   "specs": [
+    "WARLOCK 1"
+   ],
+   "simulated": true,
+   "en": "With 3 pieces of The Postmaster, the set's bonus adds about 18 DPS, which this score does not count.",
+   "fr": "Avec 3 pièces de The Postmaster, le bonus du set ajoute environ 18 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    16697
+   ],
+   "specs": [
+    "WARLOCK 1"
+   ],
+   "simulated": true,
+   "en": "With 3 pieces of Vestments of the Devout, the set's bonus adds about 14 DPS, which this score does not count.",
+   "fr": "Avec 3 pièces de Vestments of the Devout, le bonus du set ajoute environ 14 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    272802,
+    272803,
+    272804,
+    272805,
+    272807,
+    272808
+   ],
+   "specs": [
+    "WARLOCK 1"
+   ],
+   "simulated": true,
+   "en": "With 6 pieces of Warlord's Threads, the set's bonus adds about 18 DPS, which this score does not count.",
+   "fr": "Avec 6 pièces de Warlord's Threads, le bonus du set ajoute environ 18 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    19682,
+    19683,
+    19684
+   ],
+   "specs": [
+    "WARLOCK 2"
+   ],
+   "simulated": true,
+   "en": "With 3 pieces of Bloodvine Garb, the set's bonus adds about 12 DPS, which this score does not count.",
+   "fr": "Avec 3 pièces de Bloodvine Garb, le bonus du set ajoute environ 12 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    23282,
+    23283,
+    23296,
+    23297,
+    23310,
+    23311
+   ],
+   "specs": [
+    "WARLOCK 2"
+   ],
+   "simulated": true,
+   "en": "With 4 pieces of Champion's Dreadgear, the set's bonus adds about 22 DPS, which this score does not count.",
+   "fr": "Avec 4 pièces de Champion's Dreadgear, le bonus du set ajoute environ 22 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    272548,
+    272549,
+    272552,
+    272553,
+    272630,
+    272643
+   ],
+   "specs": [
+    "WARLOCK 2"
+   ],
+   "simulated": true,
+   "en": "With 4 pieces of Champion's Threads, the set's bonus adds about 22 DPS, which this score does not count.",
+   "fr": "Avec 4 pièces de Champion's Threads, le bonus du set ajoute environ 22 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    16698,
+    16701,
+    16703,
+    16704
+   ],
+   "specs": [
+    "WARLOCK 2"
+   ],
+   "simulated": true,
+   "en": "With 3 pieces of Dreadmist Raiment, the set's bonus adds about 14 DPS, which this score does not count.",
+   "fr": "Avec 3 pièces de Dreadmist Raiment, le bonus du set ajoute environ 14 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    22496,
+    22497,
+    22498,
+    22499,
+    22500,
+    22501,
+    22502,
+    22503
+   ],
+   "specs": [
+    "WARLOCK 2"
+   ],
+   "simulated": true,
+   "en": "With 8 pieces of Frostfire Regalia, the set's bonus adds about 16 DPS, which this score does not count.",
+   "fr": "Avec 8 pièces de Frostfire Regalia, le bonus du set ajoute environ 16 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    22302,
+    22303,
+    22304,
+    22305,
+    22306,
+    22311,
+    22313
+   ],
+   "specs": [
+    "WARLOCK 2"
+   ],
+   "simulated": true,
+   "en": "With 5 pieces of Ironweave Battlesuit, the set's bonus adds about 20 DPS, which this score does not count.",
+   "fr": "Avec 5 pièces de Ironweave Battlesuit, le bonus du set ajoute environ 20 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    272657,
+    272671,
+    272794,
+    272796,
+    272800,
+    272801
+   ],
+   "specs": [
+    "WARLOCK 2"
+   ],
+   "simulated": true,
+   "en": "With 4 pieces of Lieutenant Commander's Threads, the set's bonus adds about 22 DPS, which this score does not count.",
+   "fr": "Avec 4 pièces de Lieutenant Commander's Threads, le bonus du set ajoute environ 22 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    16685,
+    16686,
+    16687,
+    16688
+   ],
+   "specs": [
+    "WARLOCK 2"
+   ],
+   "simulated": true,
+   "en": "With 5 pieces of Magister's Regalia, the set's bonus adds about 17 DPS, which this score does not count.",
+   "fr": "Avec 5 pièces de Magister's Regalia, le bonus du set ajoute environ 17 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    14626,
+    14629,
+    14631,
+    14632,
+    14633
+   ],
+   "specs": [
+    "WARLOCK 2"
+   ],
+   "simulated": true,
+   "en": "With 5 pieces of Necropile Raiment, the set's bonus adds about 16 DPS, which this score does not count.",
+   "fr": "Avec 5 pièces de Necropile Raiment, le bonus du set ajoute environ 16 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    22504,
+    22505,
+    22506,
+    22507,
+    22508,
+    22509,
+    22510,
+    22511,
+    23063
+   ],
+   "specs": [
+    "WARLOCK 2"
+   ],
+   "simulated": true,
+   "en": "With 8 pieces of Plagueheart Raiment, the set's bonus adds about 13 DPS, which this score does not count.",
+   "fr": "Avec 8 pièces de Plagueheart Raiment, le bonus du set ajoute environ 13 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    13388,
+    13389,
+    13390,
+    13391,
+    13392
+   ],
+   "specs": [
+    "WARLOCK 2"
+   ],
+   "simulated": true,
+   "en": "With 3 pieces of The Postmaster, the set's bonus adds about 18 DPS, which this score does not count.",
+   "fr": "Avec 3 pièces de The Postmaster, le bonus du set ajoute environ 18 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    16697
+   ],
+   "specs": [
+    "WARLOCK 2"
+   ],
+   "simulated": true,
+   "en": "With 3 pieces of Vestments of the Devout, the set's bonus adds about 12 DPS, which this score does not count.",
+   "fr": "Avec 3 pièces de Vestments of the Devout, le bonus du set ajoute environ 12 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    272802,
+    272803,
+    272804,
+    272805,
+    272807,
+    272808
+   ],
+   "specs": [
+    "WARLOCK 2"
+   ],
+   "simulated": true,
+   "en": "With 6 pieces of Warlord's Threads, the set's bonus adds about 22 DPS, which this score does not count.",
+   "fr": "Avec 6 pièces de Warlord's Threads, le bonus du set ajoute environ 22 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    19682,
+    19683,
+    19684
+   ],
+   "specs": [
+    "WARLOCK 3"
+   ],
+   "simulated": true,
+   "en": "With 3 pieces of Bloodvine Garb, the set's bonus adds about 16 DPS, which this score does not count.",
+   "fr": "Avec 3 pièces de Bloodvine Garb, le bonus du set ajoute environ 16 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    23282,
+    23283,
+    23296,
+    23297,
+    23310,
+    23311
+   ],
+   "specs": [
+    "WARLOCK 3"
+   ],
+   "simulated": true,
+   "en": "With 4 pieces of Champion's Dreadgear, the set's bonus adds about 22 DPS, which this score does not count.",
+   "fr": "Avec 4 pièces de Champion's Dreadgear, le bonus du set ajoute environ 22 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    272548,
+    272549,
+    272552,
+    272553,
+    272630,
+    272643
+   ],
+   "specs": [
+    "WARLOCK 3"
+   ],
+   "simulated": true,
+   "en": "With 4 pieces of Champion's Threads, the set's bonus adds about 22 DPS, which this score does not count.",
+   "fr": "Avec 4 pièces de Champion's Threads, le bonus du set ajoute environ 22 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    19605,
+    19848,
+    19849,
+    20033
+   ],
+   "specs": [
+    "WARLOCK 3"
+   ],
+   "simulated": true,
+   "en": "With 2 pieces of Demoniac's Threads, the set's bonus adds about 10 DPS, which this score does not count.",
+   "fr": "Avec 2 pièces de Demoniac's Threads, le bonus du set ajoute environ 10 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    16698,
+    16701,
+    16703,
+    16704
+   ],
+   "specs": [
+    "WARLOCK 3"
+   ],
+   "simulated": true,
+   "en": "With 3 pieces of Dreadmist Raiment, the set's bonus adds about 16 DPS, which this score does not count.",
+   "fr": "Avec 3 pièces de Dreadmist Raiment, le bonus du set ajoute environ 16 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    22496,
+    22497,
+    22498,
+    22499,
+    22500,
+    22501,
+    22502,
+    22503
+   ],
+   "specs": [
+    "WARLOCK 3"
+   ],
+   "simulated": true,
+   "en": "With 6 pieces of Frostfire Regalia, the set's bonus adds about 28 DPS, which this score does not count.",
+   "fr": "Avec 6 pièces de Frostfire Regalia, le bonus du set ajoute environ 28 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    22302,
+    22303,
+    22304,
+    22305,
+    22306,
+    22311,
+    22313
+   ],
+   "specs": [
+    "WARLOCK 3"
+   ],
+   "simulated": true,
+   "en": "With 5 pieces of Ironweave Battlesuit, the set's bonus adds about 19 DPS, which this score does not count.",
+   "fr": "Avec 5 pièces de Ironweave Battlesuit, le bonus du set ajoute environ 19 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    272657,
+    272671,
+    272794,
+    272796,
+    272800,
+    272801
+   ],
+   "specs": [
+    "WARLOCK 3"
+   ],
+   "simulated": true,
+   "en": "With 4 pieces of Lieutenant Commander's Threads, the set's bonus adds about 22 DPS, which this score does not count.",
+   "fr": "Avec 4 pièces de Lieutenant Commander's Threads, le bonus du set ajoute environ 22 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    16685,
+    16686,
+    16687,
+    16688
+   ],
+   "specs": [
+    "WARLOCK 3"
+   ],
+   "simulated": true,
+   "en": "With 5 pieces of Magister's Regalia, the set's bonus adds about 19 DPS, which this score does not count.",
+   "fr": "Avec 5 pièces de Magister's Regalia, le bonus du set ajoute environ 19 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    14626,
+    14629,
+    14631,
+    14632,
+    14633
+   ],
+   "specs": [
+    "WARLOCK 3"
+   ],
+   "simulated": true,
+   "en": "With 5 pieces of Necropile Raiment, the set's bonus adds about 18 DPS, which this score does not count.",
+   "fr": "Avec 5 pièces de Necropile Raiment, le bonus du set ajoute environ 18 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    22504,
+    22505,
+    22506,
+    22507,
+    22508,
+    22509,
+    22510,
+    22511,
+    23063
+   ],
+   "specs": [
+    "WARLOCK 3"
+   ],
+   "simulated": true,
+   "en": "With 7 pieces of Plagueheart Raiment, the set's bonus adds about 20 DPS, which this score does not count.",
+   "fr": "Avec 7 pièces de Plagueheart Raiment, le bonus du set ajoute environ 20 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    13388,
+    13389,
+    13390,
+    13391,
+    13392
+   ],
+   "specs": [
+    "WARLOCK 3"
+   ],
+   "simulated": true,
+   "en": "With 3 pieces of The Postmaster, the set's bonus adds about 18 DPS, which this score does not count.",
+   "fr": "Avec 3 pièces de The Postmaster, le bonus du set ajoute environ 18 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    16697
+   ],
+   "specs": [
+    "WARLOCK 3"
+   ],
+   "simulated": true,
+   "en": "With 3 pieces of Vestments of the Devout, the set's bonus adds about 13 DPS, which this score does not count.",
+   "fr": "Avec 3 pièces de Vestments of the Devout, le bonus du set ajoute environ 13 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    272802,
+    272803,
+    272804,
+    272805,
+    272807,
+    272808
+   ],
+   "specs": [
+    "WARLOCK 3"
+   ],
+   "simulated": true,
+   "en": "With 6 pieces of Warlord's Threads, the set's bonus adds about 21 DPS, which this score does not count.",
+   "fr": "Avec 6 pièces de Warlord's Threads, le bonus du set ajoute environ 21 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    226857,
+    226860,
+    226865,
+    226866,
+    226867,
+    226868,
+    226869,
+    226870,
+    226871,
+    226872
+   ],
+   "specs": [
+    "WARRIOR 1"
+   ],
+   "simulated": true,
+   "en": "With 6 pieces of Battlegear of Heroism, the set's bonus adds about 10 DPS, which this score does not count.",
+   "fr": "Avec 6 pièces de Battlegear of Heroism, le bonus du set ajoute environ 10 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    23286,
+    23287,
+    23300,
+    23301,
+    23314,
+    23315
+   ],
+   "specs": [
+    "WARRIOR 1"
+   ],
+   "simulated": true,
+   "en": "With 2 pieces of Champion's Battlearmor, the set's bonus adds about 10 DPS, which this score does not count.",
+   "fr": "Avec 2 pièces de Champion's Battlearmor, le bonus du set ajoute environ 10 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    272477,
+    272478,
+    272479,
+    272480,
+    272481,
+    272637
+   ],
+   "specs": [
+    "WARRIOR 1"
+   ],
+   "simulated": true,
+   "en": "With 2 pieces of Champion's Battlegear, the set's bonus adds about 10 DPS, which this score does not count.",
+   "fr": "Avec 2 pièces de Champion's Battlegear, le bonus du set ajoute environ 10 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    272716,
+    272717,
+    272738,
+    272739,
+    272740,
+    272741
+   ],
+   "specs": [
+    "WARRIOR 1"
+   ],
+   "simulated": true,
+   "en": "With 2 pieces of Lieutenant Commander's Battlegear, the set's bonus adds about 10 DPS, which this score does not count.",
+   "fr": "Avec 2 pièces de Lieutenant Commander's Battlegear, le bonus du set ajoute environ 10 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    11726,
+    11728,
+    11731,
+    277117
+   ],
+   "specs": [
+    "WARRIOR 1"
+   ],
+   "simulated": true,
+   "en": "With 5 pieces of The Gladiator, the set's bonus adds about 13 DPS, which this score does not count.",
+   "fr": "Avec 5 pièces de The Gladiator, le bonus du set ajoute environ 13 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    272786,
+    272787,
+    272788,
+    272789,
+    272792,
+    272793
+   ],
+   "specs": [
+    "WARRIOR 1"
+   ],
+   "simulated": true,
+   "en": "With 6 pieces of Warlord's Battlegear, the set's bonus adds about 11 DPS, which this score does not count.",
+   "fr": "Avec 6 pièces de Warlord's Battlegear, le bonus du set ajoute environ 11 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    226857,
+    226860,
+    226865,
+    226866,
+    226867,
+    226868,
+    226869,
+    226870,
+    226871,
+    226872
+   ],
+   "specs": [
+    "WARRIOR 2"
+   ],
+   "simulated": true,
+   "en": "With 6 pieces of Battlegear of Heroism, the set's bonus adds about 18 DPS, which this score does not count.",
+   "fr": "Avec 6 pièces de Battlegear of Heroism, le bonus du set ajoute environ 18 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    16730,
+    16731,
+    16732,
+    16733,
+    16734,
+    16735,
+    16736
+   ],
+   "specs": [
+    "WARRIOR 2"
+   ],
+   "simulated": true,
+   "en": "With 5 pieces of Battlegear of Valor, the set's bonus adds about 14 DPS, which this score does not count.",
+   "fr": "Avec 5 pièces de Battlegear of Valor, le bonus du set ajoute environ 14 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    23286,
+    23287,
+    23300,
+    23301,
+    23314,
+    23315
+   ],
+   "specs": [
+    "WARRIOR 2"
+   ],
+   "simulated": true,
+   "en": "With 3 pieces of Champion's Battlearmor, the set's bonus adds about 16 DPS, which this score does not count.",
+   "fr": "Avec 3 pièces de Champion's Battlearmor, le bonus du set ajoute environ 16 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    272477,
+    272478,
+    272479,
+    272480,
+    272481,
+    272637
+   ],
+   "specs": [
+    "WARRIOR 2"
+   ],
+   "simulated": true,
+   "en": "With 2 pieces of Champion's Battlegear, the set's bonus adds about 15 DPS, which this score does not count.",
+   "fr": "Avec 2 pièces de Champion's Battlegear, le bonus du set ajoute environ 15 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    12939,
+    12940
+   ],
+   "specs": [
+    "WARRIOR 2"
+   ],
+   "simulated": true,
+   "en": "With 2 pieces of Dal'Rend's Arms, the set's bonus adds about 16 DPS, which this score does not count.",
+   "fr": "Avec 2 pièces de Dal'Rend's Arms, le bonus du set ajoute environ 16 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    272716,
+    272717,
+    272738,
+    272739,
+    272740,
+    272741
+   ],
+   "specs": [
+    "WARRIOR 2"
+   ],
+   "simulated": true,
+   "en": "With 2 pieces of Lieutenant Commander's Battlegear, the set's bonus adds about 13 DPS, which this score does not count.",
+   "fr": "Avec 2 pièces de Lieutenant Commander's Battlegear, le bonus du set ajoute environ 13 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    20041,
+    20048,
+    20057
+   ],
+   "specs": [
+    "WARRIOR 2"
+   ],
+   "simulated": true,
+   "en": "With 3 pieces of The Defiler's Resolution, the set's bonus adds about 12 DPS, which this score does not count.",
+   "fr": "Avec 3 pièces de The Defiler's Resolution, le bonus du set ajoute environ 12 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    11726,
+    11728,
+    11731,
+    277117
+   ],
+   "specs": [
+    "WARRIOR 2"
+   ],
+   "simulated": true,
+   "en": "With 6 pieces of The Gladiator, the set's bonus adds about 15 DPS, which this score does not count.",
+   "fr": "Avec 6 pièces de The Gladiator, le bonus du set ajoute environ 15 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    272786,
+    272787,
+    272788,
+    272789,
+    272792,
+    272793
+   ],
+   "specs": [
+    "WARRIOR 2"
+   ],
+   "simulated": true,
+   "en": "With 6 pieces of Warlord's Battlegear, the set's bonus adds about 14 DPS, which this score does not count.",
+   "fr": "Avec 6 pièces de Warlord's Battlegear, le bonus du set ajoute environ 14 DPS, que ce score ne compte pas."
   }
  ]
 }

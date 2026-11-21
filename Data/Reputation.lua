@@ -1182,7 +1182,6 @@ items = [==[
 17909|h|729|7|q|||The Eye of Command|||
 19044||576|5|r|11557||Pattern: Might of the Timbermaw|Leatherworking|265|19326
 19047||576|5|r|11557||Pattern: Wisdom of the Timbermaw|Tailoring|255|19215
-19048||576|6|r|11557||Pattern: Heavy Timbermaw Boots|Leatherworking|295|19204
 19049||576|6|r|11557||Pattern: Timbermaw Brawlers|Leatherworking|295|19327
 19050||576|6|r|11557||Pattern: Mantle of the Timbermaw|Tailoring|290|19218
 19052||529|5|r|10856||Pattern: Dawn Treaders|Leatherworking|265|19328

@@ -614,6 +614,7 @@ class Confirmed:
     placed: list = field(default_factory=list)      # ids whose creature became a boss of the dungeon it is counted in
     sourced: list = field(default_factory=list)     # ids the data gave no source at all, given the bosses counted
     dungeons: list = field(default_factory=list)    # the instances added for the dungeons the data lacks (runs.py)
+    settled: list = field(default_factory=list)     # pieces added from the game that a counted drop makes a dungeon's
 
     @property
     def changed(self) -> bool:
@@ -835,4 +836,25 @@ def confirm(db, reading: dict) -> Confirmed:
         item["sources"] = [counted, *rest]
         _dungeon_groups(item, rest)
         report.moved.append(item_id)
+    report.settled = _settle_added(db)
     return report
+
+
+def _settle_added(db) -> list:
+    """A piece added from the game (align) whose drop the journal counted in Forever is a dungeon's item, or a raid's,
+    of the phase that source needs: players loot it. It used to stay with the items of no known source, hidden until
+    the last phase, whatever was counted: The Blackrock Slicer, the best melee weapon the simulator measures for a
+    Survival Hunter, and Heart of Wyrmthalak were in no list a player sees. A source read in QuestieDB alone settles
+    nothing: it is Classic's. Returns the ids settled."""
+    settled = []
+    for item_id, item in db.items.items():
+        if not item.get("added"):
+            continue
+        counted = [source for source in item["sources"] if source[0] == "d" and source[-1] == DROP_LABEL]
+        if not counted:
+            continue
+        raids = [phases.source_raid(source, item["name"]) for source in counted]
+        item["groups"] = frozenset("r" if raid else "d" for raid in raids)
+        item["phase"] = min(phases.raid_phase(raid) if raid else phases.PRE_RAID for raid in raids)
+        settled.append(item_id)
+    return sorted(settled)
