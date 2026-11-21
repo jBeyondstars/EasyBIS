@@ -8,7 +8,8 @@ The Easy BIS window: the best gear of a spec, slot by slot.
   top      filters: spec, list (PvE, PvP), phase, slot, source, zone, reputation. A filter that narrows
            the list down is gold; the others stay quiet. On the Consumables tab the slot filter is a category
            filter.
-  notice   a band under the filters while a known problem awaits its fix (NOTICE); none otherwise, and the
+  notice   a band under the filters while a known problem awaits its fix (NOTICE), with a cross that puts it
+           away until the window is opened again and gives its room to the list; none otherwise, and the
            middle takes its room.
   middle   the rows (UI\Rows.lua). An item or a consumable takes one line: icon, name, score bar and rank,
            type or effect, where it comes from. With the option "compact" off it takes two, as an enchant
@@ -64,7 +65,13 @@ local NOTICE = "NOTICE_WEAPONS"
 local NOTICE_HEIGHT, NOTICE_GAP = 24, 4   -- its band, and the room between it and the list
 local NOTICE_MARK = "|TInterface\\DialogFrame\\UI-Dialog-Icon-AlertNew:16:16:0:0|t "
 local FILTERS, INSET_BOTTOM = 70, 58   -- what the filters and the footer take of the window's height
-local INSET_TOP = FILTERS + (NOTICE and NOTICE_HEIGHT + NOTICE_GAP or 0)   -- where the list starts
+local NOTICE_CLOSE = "Interface\\Buttons\\UI-StopButton"   -- the cross that puts the notice away
+local noticeShown = NOTICE ~= nil   -- false once its cross is clicked, until the window is opened again
+
+-- Where the list starts: under the filters, and under the notice while it shows.
+local function InsetTop()
+    return FILTERS + (noticeShown and NOTICE_HEIGHT + NOTICE_GAP or 0)
+end
 local ROW_HEIGHT = 54      -- a row on two lines
 local COMPACT_HEIGHT = 36  -- an item or a consumable on one line
 local REPUTATION_LINE = 16 -- what a reputation adds to a row on two lines; a row on one keeps its height
@@ -436,12 +443,31 @@ local function CreateNotice(parent, text)
     notice:SetBackdropBorderColor(1, 0.72, 0.10, 0.9)
     notice:SetHeight(NOTICE_HEIGHT)
     notice.text = notice:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-    notice.text:SetPoint("LEFT", 10, 0)
-    notice.text:SetPoint("RIGHT", -10, 0)
+    notice.text:SetPoint("LEFT", 26, 0)
+    notice.text:SetPoint("RIGHT", -26, 0)   -- clear of the cross, and as far from the left edge: the text stays centered
     notice.text:SetJustifyH("CENTER")
     notice.text:SetWordWrap(false)
     notice.text:SetText(NOTICE_MARK .. text)
+    notice.close = CreateFrame("Button", nil, notice)
+    notice.close:SetSize(14, 14)
+    notice.close:SetPoint("RIGHT", -6, 0)
+    notice.close:SetNormalTexture(NOTICE_CLOSE)
+    notice.close:SetHighlightTexture(NOTICE_CLOSE, "ADD")
+    notice.close:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:SetText(L.NOTICE_HIDE, 1, 1, 1, 1, true)
+        GameTooltip:Show()
+    end)
+    notice.close:SetScript("OnLeave", function() GameTooltip:Hide() end)
     return notice
+end
+
+-- Shows the notice or puts it away, and starts the list under what shows.
+local function PlaceNotice()
+    if window.notice then window.notice:SetShown(noticeShown) end
+    window.inset:ClearAllPoints()
+    window.inset:SetPoint("TOPLEFT", 6, -InsetTop())
+    window.inset:SetPoint("BOTTOMRIGHT", -6, INSET_BOTTOM)
 end
 
 ---------------------------------------------------------------------------
@@ -1161,13 +1187,19 @@ local function Build()
         window.notice = CreateNotice(window, L[NOTICE])
         window.notice:SetPoint("TOPLEFT", 8, -FILTERS)
         window.notice:SetPoint("TOPRIGHT", -8, -FILTERS)
+        window.notice.close:SetScript("OnClick", function()
+            Widgets.Click()
+            noticeShown = false
+            GameTooltip:Hide()
+            PlaceNotice()
+            Refresh()
+        end)
     end
 
     -- Rows
     local inset = CreateInset(window)
     window.inset = inset
-    inset:SetPoint("TOPLEFT", 6, -INSET_TOP)
-    inset:SetPoint("BOTTOMRIGHT", -6, INSET_BOTTOM)
+    PlaceNotice()
     local template = HasTemplate("ScrollFrameTemplate") and "ScrollFrameTemplate" or "UIPanelScrollFrameTemplate"
     window.scroll = CreateFrame("ScrollFrame", nil, inset, template)
     window.scroll:SetPoint("TOPLEFT", 6, -6)
@@ -1245,6 +1277,10 @@ local function Build()
     window:SetScript("OnHide", function(self)
         self:UnregisterEvent("GET_ITEM_INFO_RECEIVED")
         ns.AddItem.Close()
+        if NOTICE and not noticeShown then   -- put away with its cross: back for the next time the window opens
+            noticeShown = true
+            PlaceNotice()
+        end
     end)
     window:SetScript("OnEvent", function(self)
         if self.refreshQueued then return end
@@ -1322,7 +1358,7 @@ Refresh = function()
     if not listed then window.empty:Hide() end
     if character then
         if not window.character then window.character = ns.Character.Create(window.inset) end
-        ns.Character.Update(state, window:GetHeight() - INSET_TOP - INSET_BOTTOM)
+        ns.Character.Update(state, window:GetHeight() - InsetTop() - INSET_BOTTOM)
     else
         ns.Character.Hide()
     end
