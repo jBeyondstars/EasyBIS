@@ -656,6 +656,22 @@ class GeneratorTest(unittest.TestCase):
         read |= set(corrections.HAND_LISTED)   # ... and the ones written by hand, under the level the capture reads from
         self.assertLessEqual(ranked, read, "a main-hand entry of a ladder is not on the capture's list")
 
+    def test_the_data_says_which_lists_the_simulator_ranked(self):
+        """An M line for each PvE list ranked by simulation, with the day of its measure; none for any other list."""
+        found, token = {}, None
+        for line in luaout.lists_file(self.db, self.kept).splitlines():
+            block = re.match(r"^(\w+) = \[==\[$", line)
+            if block:
+                token = block.group(1)
+            elif line.startswith("M\t"):
+                kind, spec, mode, day = line.split("\t")
+                found[token, int(spec), mode] = day
+        reading = self.db.simulated
+        self.assertTrue(reading.specs, "no list is ranked by simulation")
+        self.assertEqual(found, {(token, spec, "pve"): ranking.record.get("date") or reading.date
+                                 for (token, spec), ranking in reading.specs.items()})
+        self.assertTrue(all(re.fullmatch(r"\d{4}-\d\d-\d\d", day) for day in found.values()), found)
+
     def test_a_piece_written_by_hand_is_listed(self):
         """corrections.include: Flurry Axe, which neither ForeverDB's lists nor the capture hold, is in the lists."""
         self.assertEqual(self.db.included, sorted(corrections.HAND_LISTED))

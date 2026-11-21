@@ -122,6 +122,18 @@ local enUS = {
     TIP_CUSTOM = "Added by hand to this list.",
     TIP_PLACED = "Placed here from the simulation of a close spec, until this spec's own: no score yet.",
     TIP_REMOVE = "Remove from the list",
+    -- What the score is, behind the mark over the scores. {spec}, {class} and {date} are filled in.
+    SCORE_COLUMN = "Score",
+    SCORE_INFO_TITLE = "How this list is ranked",
+    SCORE_INFO_SIM = "Score: the damage per second the item adds, measured with the Forever simulator.",
+    SCORE_INFO_FIGHT = "Simulated fight: a level 63 raid boss, 3 minutes, one target, with raid buffs and debuffs, "
+        .. "consumables, and the spec's default talents and rotation.",
+    SCORE_INFO_GAP_SIM = "The % is the gap to the best item of the slot, not a gap in total damage. Less than 1% apart, "
+        .. "two items are as good as each other.",
+    SCORE_INFO_MEASURED = "{spec} {class}, measured on {date}.",
+    SCORE_INFO_WEIGHTS = "Score: the item's stats, each weighted for this spec. Effects (procs, on-use) are not counted.",
+    SCORE_INFO_GAP = "The % is the gap to the best item of the slot.",
+    DATE_YMD = "{y}-{m}-{d}",
     DATA_VERSION = "Data from ForeverDB.net, game build %s",
     MINIMAP_HINT = "Click to open or close the window.",
     MINIMAP_DRAG_HINT = "Drag to move this button.",
@@ -496,6 +508,18 @@ local frFR = {
     TIP_CUSTOM = "Ajouté à la main dans cette liste.",
     TIP_PLACED = "Placé ici d'après la simulation d'une spécialisation proche, en attendant celle-ci : pas encore de score.",
     TIP_REMOVE = "Retirer de la liste",
+    SCORE_COLUMN = "Score",
+    SCORE_INFO_TITLE = "Comment cette liste est classée",
+    SCORE_INFO_SIM = "Score : les dégâts par seconde que l'objet ajoute, mesurés avec le simulateur Forever.",
+    SCORE_INFO_FIGHT = "Combat simulé : un boss de raid de niveau 63, 3 minutes, une cible, avec les buffs et debuffs "
+        .. "de raid, les consommables, et les talents et la rotation par défaut de la spécialisation.",
+    SCORE_INFO_GAP_SIM = "Le % est l'écart avec le meilleur objet de l'emplacement, pas un écart de dégâts totaux. "
+        .. "À moins de 1 % d'écart, deux objets se valent.",
+    SCORE_INFO_MEASURED = "{class} {spec}, mesuré le {date}.",
+    SCORE_INFO_WEIGHTS = "Score : les stats de l'objet, chacune pondérée pour cette spécialisation. Les effets "
+        .. "(procs, « Utiliser ») ne sont pas comptés.",
+    SCORE_INFO_GAP = "Le % est l'écart avec le meilleur objet de l'emplacement.",
+    DATE_YMD = "{d}/{m}/{y}",
     DATA_VERSION = "Données de ForeverDB.net, version du jeu %s",
     MINIMAP_HINT = "Cliquez pour ouvrir ou fermer la fenêtre.",
     MINIMAP_DRAG_HINT = "Faites glisser pour déplacer ce bouton.",

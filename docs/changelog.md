@@ -1,5 +1,9 @@
 # Easy BIS 1.8.2
 
+## New
+
+- **What a score is.** Over the scores of each slot, a mark opens a tooltip that says how the list is ranked. For a list ranked by simulation: what is measured, the fight simulated (a level 63 raid boss, 3 minutes, one target, raid buffs and debuffs, consumables, the spec's default talents and rotation), what the % means, and the day the spec was measured. For the others: the weighted stats.
+
 ## Fixed
 
 - **Rogue and Fury Warrior weapons.** The PvE lists of Combat Rogue, Assassination Rogue and Fury Warrior are measured again, on the current version of WoWSims Forever. The version used so far did not know that the armor procs of Bashguuder and Annihilator never land while Faerie Fire or Curse of Recklessness is on the target, which Forever's logs show, and it ranked both weapons far too high. Leaving the PvP rewards aside:

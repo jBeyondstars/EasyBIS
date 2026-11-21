@@ -348,6 +348,13 @@ class AddonTest(unittest.TestCase):
         game.ns.db.altCount = "many"
         self.assertEqual(game.ns.Alternatives(), 2)
 
+    def test_a_list_says_when_the_simulator_measured_it(self):
+        """Ladders.Measured: the day of the measure for a list ranked by simulation, nothing for one on the weights."""
+        game = Game()
+        self.assertRegex(game.ns.Ladders.Measured("SHAMAN", 2, "pve"), r"^\d{4}-\d\d-\d\d$")
+        self.assertIsNone(game.ns.Ladders.Measured("SHAMAN", 2, "pvp"))
+        self.assertIsNone(game.ns.Ladders.Measured("SHAMAN", 3, "pve"), "Restoration is ranked on the weights")
+
     def test_specs_are_listed_in_order(self):
         game = Game()
         specs = [(spec.index, spec.name, spec.style) for spec in game.ns.Ladders.Specs("SHAMAN").values()]

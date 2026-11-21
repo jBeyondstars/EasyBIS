@@ -309,6 +309,54 @@ class WindowTest(unittest.TestCase):
         self.assertEqual(neck.sub.text, "")
         self.assertEqual(cloak.sub.text, "", "the armor type Miscellaneous says nothing, whatever the slot")
 
+    def test_a_slot_header_says_what_a_score_is(self):
+        """Over the scores of each item slot, a mark whose tooltip says how the list is ranked."""
+        game = self.open(saved=ENHANCEMENT)
+        window, tooltip, state = game.ns.Browser.window, game.lua.globals().GameTooltip, game.ns.Browser.state
+        headers = [frame for frame in self.all_frames(game) if frame.data.kind == "header"]
+        self.assertTrue(headers and all(frame.info.shown for frame in headers), "a slot's header has no mark")
+        self.assertFalse(any(frame.info.shown for frame in self.frames(game)), "the mark is the headers' own")
+        mark = headers[0].info
+        self.assertEqual((mark.text.text, mark.icon.texture), ("Score", "Interface\\FriendsFrame\\InformationIcon"))
+        self.assertEqual(mark.points[1][4], 318, "over the bars of the rows on one line")
+
+        def said():
+            game.stub.run(mark, "OnEnter")
+            return tooltip.text, [line[1] for line in tooltip.lines.values() if line[1] != " "]
+
+        day = game.ns.Ladders.Measured("SHAMAN", 2, "pve")
+        title, lines = said()
+        self.assertEqual(title, "How this list is ranked")
+        self.assertEqual(lines, [
+            "Score: the damage per second the item adds, measured with the Forever simulator.",
+            "Simulated fight: a level 63 raid boss, 3 minutes, one target, with raid buffs and debuffs, consumables, "
+            "and the spec's default talents and rotation.",
+            "The % is the gap to the best item of the slot, not a gap in total damage. Less than 1% apart, two items "
+            "are as good as each other.",
+            f"Enhancement Shaman, measured on {day}."])
+        self.assertEqual((tooltip.points[1][1], tooltip.points[1][2].name), ("TOPLEFT", "EasyBISWindow"))
+        game.stub.run(mark, "OnLeave")
+        self.assertFalse(tooltip.shown)
+
+        weights = ["Score: the item's stats, each weighted for this spec. Effects (procs, on-use) are not counted.",
+                   "The % is the gap to the best item of the slot."]
+        state.list = "pvp"   # the PvP list is ranked on the weights
+        self.assertEqual(said()[1], weights)
+        state.list, state.spec = "pve", 3   # ... and so is a healer's PvE list
+        self.assertEqual(said()[1], weights)
+
+        game.ns.SetOption(game.ns, "compact", False)   # on two lines the bars sit further right, and the mark with them
+        headers = [frame for frame in self.all_frames(game) if frame.data.kind == "header"]
+        self.assertEqual(headers[0].info.points[1][4], 392)
+
+    def test_the_marks_date_reads_as_the_language_writes_it(self):
+        game = self.open(saved=ENHANCEMENT, locale="frFR")
+        year, month, day = game.ns.Ladders.Measured("SHAMAN", 2, "pve").split("-")
+        lines = game.ns.Browser.ScoreInfo("SHAMAN", 2, "pve")
+        shaman = game.ns.ClassName("SHAMAN")   # the game's own word for the class
+        self.assertEqual(lines[4], f"{shaman} Amélioration, mesuré le {day}/{month}/{year}.")
+        self.assertEqual(len(game.ns.Browser.ScoreInfo("SHAMAN", 2, "pvp")), 2)
+
     def test_rows_are_grouped_by_slot(self):
         """A header before each slot's rows, taller rows after it, nothing overlapping."""
         game = self.open(saved=ENHANCEMENT)
