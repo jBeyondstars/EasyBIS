@@ -46,8 +46,8 @@
    ],
    "simulated": true,
    "slot": "off",
-   "en": "Its proc, an extra attack on the next swing, is worth about 18 DPS. Added by hand: its source, a world drop, is Classic's and is not confirmed.",
-   "fr": "Son proc, une attaque supplémentaire au prochain coup, vaut environ 18 DPS. Ajoutée à la main : sa source, un butin mondial, est celle de Classic et n'est pas confirmée."
+   "en": "Its proc, an extra attack on the next swing, is worth about 18 DPS.",
+   "fr": "Son proc, une attaque supplémentaire au prochain coup, vaut environ 18 DPS."
   },
   {
    "items": [
@@ -58,8 +58,8 @@
    ],
    "simulated": true,
    "slot": "off",
-   "en": "Its proc, an extra attack on the next swing, is worth about 10 DPS. Added by hand: its source, a world drop, is Classic's and is not confirmed.",
-   "fr": "Son proc, une attaque supplémentaire au prochain coup, vaut environ 10 DPS. Ajoutée à la main : sa source, un butin mondial, est celle de Classic et n'est pas confirmée."
+   "en": "Its proc, an extra attack on the next swing, is worth about 10 DPS.",
+   "fr": "Son proc, une attaque supplémentaire au prochain coup, vaut environ 10 DPS."
   },
   {
    "items": [
@@ -70,8 +70,8 @@
    ],
    "simulated": true,
    "slot": "off",
-   "en": "Its proc, an extra attack on the next swing, is worth about 24 DPS. Added by hand: its source, a world drop, is Classic's and is not confirmed.",
-   "fr": "Son proc, une attaque supplémentaire au prochain coup, vaut environ 24 DPS. Ajoutée à la main : sa source, un butin mondial, est celle de Classic et n'est pas confirmée."
+   "en": "Its proc, an extra attack on the next swing, is worth about 24 DPS.",
+   "fr": "Son proc, une attaque supplémentaire au prochain coup, vaut environ 24 DPS."
   },
   {
    "items": [
@@ -177,8 +177,8 @@
    ],
    "simulated": true,
    "slot": "off",
-   "en": "Its Use effect is a drink, which the simulation takes in the middle of the fight: about 14 DPS of its score would not be there in a real one.",
-   "fr": "Son effet Utiliser est une boisson, que la simulation prend en plein combat : environ 14 DPS de son score n'existeraient pas dans un vrai combat."
+   "en": "Its Use effect is a drink the simulation takes in combat: about 14 DPS too many.",
+   "fr": "Son effet Utiliser est une boisson que la simulation prend en combat : environ 14 DPS de trop."
   },
   {
    "items": [
@@ -189,8 +189,8 @@
    ],
    "simulated": true,
    "slot": "off",
-   "en": "Its Use effect is a drink, which the simulation takes in the middle of the fight: about 13 DPS of its score would not be there in a real one.",
-   "fr": "Son effet Utiliser est une boisson, que la simulation prend en plein combat : environ 13 DPS de son score n'existeraient pas dans un vrai combat."
+   "en": "Its Use effect is a drink the simulation takes in combat: about 13 DPS too many.",
+   "fr": "Son effet Utiliser est une boisson que la simulation prend en combat : environ 13 DPS de trop."
   },
   {
    "items": [
@@ -201,8 +201,8 @@
    ],
    "simulated": true,
    "slot": "main",
-   "en": "Its proc, 10 more damage a hit for 15 seconds, is worth about 18 DPS, at Classic's rate, which is not confirmed.",
-   "fr": "Son proc, 10 dégâts de plus par coup pendant 15 secondes, vaut environ 18 DPS, au taux de Classic, qui n'est pas confirmé."
+   "en": "Its proc, 10 more damage a hit for 15 seconds, is worth about 18 DPS (Classic's rate, not confirmed).",
+   "fr": "Son proc, 10 dégâts de plus par coup pendant 15 secondes, vaut environ 18 DPS (taux de Classic, non confirmé)."
   },
   {
    "items": [
@@ -213,8 +213,8 @@
    ],
    "simulated": true,
    "slot": "main",
-   "en": "Its proc, 10 more damage a hit for 15 seconds, is worth about 19 DPS, at Classic's rate, which is not confirmed.",
-   "fr": "Son proc, 10 dégâts de plus par coup pendant 15 secondes, vaut environ 19 DPS, au taux de Classic, qui n'est pas confirmé."
+   "en": "Its proc, 10 more damage a hit for 15 seconds, is worth about 19 DPS (Classic's rate, not confirmed).",
+   "fr": "Son proc, 10 dégâts de plus par coup pendant 15 secondes, vaut environ 19 DPS (taux de Classic, non confirmé)."
   },
   {
    "items": [
@@ -665,8 +665,8 @@
     "ROGUE 1"
    ],
    "simulated": true,
-   "en": "Its score counts the set's 3-piece bonus (4% chance of 30 energy on a melee attack). Shoulders, gloves and pants together do about 86 DPS more than the best pieces outside the set; one or two of them alone do less.",
-   "fr": "Son score compte le bonus 3 pièces du set (4 % de chance de rendre 30 énergie sur une attaque de mêlée). Épaules, gants et pantalon ensemble font environ 86 DPS de plus que les meilleures pièces hors set ; une ou deux pièces seules font moins bien."
+   "en": "Its score counts the 3-piece set bonus (4% chance of 30 energy on a melee attack): about 86 DPS with the three pieces. One or two alone do worse than none.",
+   "fr": "Son score compte le bonus 3 pièces du set (4 % de chance de rendre 30 énergie sur une attaque de mêlée) : environ 86 DPS avec les trois pièces. Une ou deux seules font moins bien qu'aucune."
   },
   {
    "items": [
@@ -678,8 +678,8 @@
     "ROGUE 2"
    ],
    "simulated": true,
-   "en": "Its score counts the set's 3-piece bonus (4% chance of 30 energy on a melee attack). Shoulders, gloves and pants together do about 30 DPS more than the best pieces outside the set; one or two of them alone do less.",
-   "fr": "Son score compte le bonus 3 pièces du set (4 % de chance de rendre 30 énergie sur une attaque de mêlée). Épaules, gants et pantalon ensemble font environ 30 DPS de plus que les meilleures pièces hors set ; une ou deux pièces seules font moins bien."
+   "en": "Its score counts the 3-piece set bonus (4% chance of 30 energy on a melee attack): about 30 DPS with the three pieces. One or two alone do worse than none.",
+   "fr": "Son score compte le bonus 3 pièces du set (4 % de chance de rendre 30 énergie sur une attaque de mêlée) : environ 30 DPS avec les trois pièces. Une ou deux seules font moins bien qu'aucune."
   },
   {
    "items": [
@@ -691,8 +691,8 @@
     "ROGUE 3"
    ],
    "simulated": true,
-   "en": "Its score counts the set's 3-piece bonus (4% chance of 30 energy on a melee attack). Shoulders, gloves and pants together do about 39 DPS more than the best pieces outside the set; one or two of them alone do less.",
-   "fr": "Son score compte le bonus 3 pièces du set (4 % de chance de rendre 30 énergie sur une attaque de mêlée). Épaules, gants et pantalon ensemble font environ 39 DPS de plus que les meilleures pièces hors set ; une ou deux pièces seules font moins bien."
+   "en": "Its score counts the 3-piece set bonus (4% chance of 30 energy on a melee attack): about 39 DPS with the three pieces. One or two alone do worse than none.",
+   "fr": "Son score compte le bonus 3 pièces du set (4 % de chance de rendre 30 énergie sur une attaque de mêlée) : environ 39 DPS avec les trois pièces. Une ou deux seules font moins bien qu'aucune."
   },
   {
    "items": [
@@ -703,8 +703,8 @@
    ],
    "simulated": true,
    "slot": "main",
-   "en": "First for its weapon damage: its proc, 92 Fire damage, is worth only about 5 DPS, at Classic's rate, which is not confirmed.",
-   "fr": "Première pour ses dégâts d'arme : son proc, 92 dégâts de Feu, ne vaut qu'environ 5 DPS, au taux de Classic, qui n'est pas confirmé."
+   "en": "Its proc, 92 Fire damage, is worth about 5 DPS (Classic's rate, not confirmed).",
+   "fr": "Son proc, 92 dégâts de Feu, vaut environ 5 DPS (taux de Classic, non confirmé)."
   },
   {
    "items": [
@@ -771,8 +771,8 @@
     "WARRIOR 1"
    ],
    "simulated": true,
-   "en": "Its Use effect gives Frost and Shadow spell damage, nothing here: its score is its 9 hit rating, worth very little once you are at the hit cap.",
-   "fr": "Son effet Utiliser donne des dégâts des sorts de Givre et d'Ombre, rien ici : son score vient de ses 9 de toucher, qui ne valent presque plus rien une fois au cap de toucher."
+   "en": "Its Use effect adds nothing here: its score is its 9 hit rating.",
+   "fr": "Son effet Utiliser n'ajoute rien ici : son score vient de ses 9 de toucher."
   },
   {
    "items": [
@@ -923,24 +923,24 @@
     18538
    ],
    "simulated": true,
-   "en": "Its proc, 175 Fire damage, has no known rate and is not counted: about 3 DPS for each proc a minute. Fast for a two-hander (speed 2.7).",
-   "fr": "Son proc, 175 dégâts de Feu, n'a pas de taux connu et n'est pas compté : environ 3 DPS par proc à la minute. Rapide pour une arme à deux mains (vitesse 2,7)."
+   "en": "Its proc, 175 Fire damage, has no known rate and is not counted.",
+   "fr": "Son proc, 175 dégâts de Feu, n'a pas de taux connu et n'est pas compté."
   },
   {
    "items": [
     13505
    ],
    "simulated": true,
-   "en": "Its aura, movement speed and health regeneration, adds no damage.",
-   "fr": "Son aura, vitesse de déplacement et régénération de vie, n'ajoute aucun dégât."
+   "en": "Its aura adds no damage.",
+   "fr": "Son aura n'ajoute aucun dégât."
   },
   {
    "items": [
     13213
    ],
    "simulated": true,
-   "en": "Its score is its 10 hit rating alone: worth very little once you are at the hit cap.",
-   "fr": "Son score vient de ses seuls 10 de toucher : il ne vaut presque plus rien une fois au cap de toucher."
+   "en": "Its score is its 10 hit rating alone: worth very little at the hit cap.",
+   "fr": "Son score vient de ses seuls 10 de toucher : presque rien une fois au cap."
   },
   {
    "items": [
@@ -950,8 +950,8 @@
     "PALADIN 3"
    ],
    "simulated": true,
-   "en": "Fast (speed 3.3): Seal of Command and Windfury strike as often with any weapon, and harder with a slow one. Against a weapon of speed 3.8 with 8 less weapon DPS, it loses about 19 DPS there and gains about 6 on white hits.",
-   "fr": "Rapide (vitesse 3,3) : le Sceau d'autorité et Furie-des-vents se déclenchent aussi souvent avec n'importe quelle arme, et frappent plus fort avec une arme lente. Face à une arme de vitesse 3,8 qui a 8 DPS d'arme de moins, elle y perd environ 19 DPS et en gagne environ 6 sur les coups blancs."
+   "en": "Fast (speed 3.3): Seal of Command and Windfury hit harder with a slow weapon.",
+   "fr": "Rapide (vitesse 3,3) : le Sceau d'autorité et Furie-des-vents frappent plus fort avec une arme lente."
   },
   {
    "items": [
@@ -961,8 +961,8 @@
     "PALADIN 3"
    ],
    "simulated": true,
-   "en": "Its 20 hit rating counts for little here: the set this list is measured on is at the hit cap without them.",
-   "fr": "Ses 20 de toucher comptent peu ici : le set sur lequel la liste est mesurée est au cap de toucher sans elles."
+   "en": "Its 20 hit rating counts for little here: the reference set is at the hit cap without it.",
+   "fr": "Ses 20 de toucher comptent peu ici : le set de référence est au cap de toucher sans elles."
   },
   {
    "items": [
@@ -971,8 +971,8 @@
     11750
    ],
    "simulated": true,
-   "en": "Its proc has no known rate. A supposed rate never makes it the best pick: only the weapon's damage without the proc can.",
-   "fr": "Son proc n'a pas de taux connu. Un taux supposé n'en fait jamais le premier choix : seuls les dégâts de l'arme sans le proc le peuvent."
+   "en": "Its proc has no known rate: a supposed one never makes it the best pick.",
+   "fr": "Son proc n'a pas de taux connu : un taux supposé n'en fait jamais le premier choix."
   },
   {
    "items": [
@@ -982,16 +982,16 @@
     "ROGUE 2"
    ],
    "simulated": true,
-   "en": "In the simulator, a mace in either hand makes all attacks ignore 15% of armor (Hack and Slash). Not confirmed in game for both hands.",
-   "fr": "Dans le simulateur, une masse dans l'une ou l'autre main fait ignorer 15 % de l'armure à toutes les attaques (Hack and Slash). Non confirmé en jeu pour les deux mains."
+   "en": "In the simulator a mace makes all attacks ignore 15% of armor (Hack and Slash). Not confirmed in game for both hands.",
+   "fr": "Dans le simulateur, une masse fait ignorer 15 % de l'armure à toutes les attaques (Hack and Slash). Non confirmé en jeu pour les deux mains."
   },
   {
    "items": [
     22321
    ],
    "simulated": true,
-   "en": "Its worth is all in its proc: melee and ranged attacks have a chance to deal Fire damage. The stat weights see nothing of it, so it is placed by hand right after Hand of Justice, without a score.",
-   "fr": "Toute sa valeur vient de son proc : les attaques de mêlée et à distance ont une chance d'infliger des dégâts de Feu. Les poids de stats n'en voient rien, il est donc placé à la main juste après Hand of Justice, sans score."
+   "en": "Proc rate uncertain: no score.",
+   "fr": "Taux de proc incertain : pas de score."
   },
   {
    "items": [
@@ -1004,8 +1004,8 @@
    "items": [
     871
    ],
-   "en": "Added by hand: ForeverDB's data leaves it out. Its source, a world drop, is Classic's and is not confirmed in Forever.",
-   "fr": "Ajoutée à la main : les données de ForeverDB l'omettent. Sa source, un butin mondial, est celle de Classic et n'est pas confirmée dans Forever."
+   "en": "Added by hand, absent from ForeverDB. Its source, a world drop, is Classic's: not confirmed.",
+   "fr": "Ajoutée à la main, absente de ForeverDB. Sa source, un butin mondial, est celle de Classic : non confirmée."
   },
   {
    "items": [
