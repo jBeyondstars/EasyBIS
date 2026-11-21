@@ -3,7 +3,9 @@
 A list ranked by simulation puts Destiny before weapons with more damage per second, and Treant's Bane far under
 what its stats promise. The reason is a fact the row does not show: a proc that is up half of the fight, a weapon
 speed, an effect the simulator lacks. corrections/notes.json holds those facts, in English and French; each one is
-checked against the game data or the simulator before it is written down.
+checked against the game data or the simulator before it is written down. A note is for every spec or the ones it
+names, for any slot or one (a weapon's proc is not worth the same in each hand), and the first of an item's notes
+that fits a row is the one shown.
 """
 
 from __future__ import annotations
@@ -11,8 +13,11 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import ladders
+
 FILE = Path(__file__).resolve().parent / "corrections" / "notes.json"
 LANGUAGES = {"en": "enUS", "fr": "frFR"}   # the file's key -> the game's locale code
+SLOTS = frozenset(slot for slot, _ in ladders.SLOTS)
 
 
 def load(path=FILE) -> list[dict]:
@@ -34,7 +39,9 @@ def check(db, notes: list[dict]) -> None:
             cls, _, index = spec.partition(" ")
             if not index.isdigit() or int(index) not in db.classes.get(cls, {}).get("specs", {}):
                 raise ValueError(f"{where}: no spec {spec!r}")
-        unknown = set(note) - {"items", "specs", "simulated", *LANGUAGES}
+        if note.get("slot") is not None and note["slot"] not in SLOTS:
+            raise ValueError(f"{where}: no slot {note['slot']!r}")
+        unknown = set(note) - {"items", "specs", "slot", "simulated", *LANGUAGES}
         if unknown:
             raise ValueError(f"{where}: unknown field {sorted(unknown)}")
 

@@ -774,7 +774,7 @@ class GeneratorTest(unittest.TestCase):
         good = {"items": [647], "specs": ["WARRIOR 1"], "simulated": True, "en": "A word.", "fr": "Un mot."}
         self.assertEqual(notes.shown(self.db, shown, [good]), [good])
         for change in ({"specs": ["WARRIOR 9"]}, {"specs": ["Arms"]}, {"fr": " "}, {"en": "two\nlines"},
-                       {"items": []}, {"items": [1]}, {"comment": "x"}):
+                       {"items": []}, {"items": [1]}, {"comment": "x"}, {"slot": "left hand"}):
             with self.assertRaises(ValueError, msg=change):
                 notes.shown(self.db, shown, [{**good, **change}])
         self.assertEqual(notes.shown(self.db, shown, [{**good, "items": [1, 647]}])[0]["items"], [647],
@@ -793,6 +793,7 @@ class GeneratorTest(unittest.TestCase):
         destiny = re.search(r"^    \[647\] = (.*),$", text, re.M).group(1)
         self.assertIn("specs = { WARRIOR1 = true }", destiny)
         self.assertIn("specs = { PALADIN3 = true }", destiny, "an item can have a note for each spec")
+        self.assertRegex(text, r'slot = "off", simulated = true', "and one for a slot alone")
         self.assertIn("simulated = true", destiny)
         self.assertIn('enUS = "Its proc, 200 Strength', destiny)
         self.assertIn('frFR = "Son proc, 200 de Force', destiny)

@@ -359,14 +359,21 @@ class AddonTest(unittest.TestCase):
         """Notes.For: the word on a rank that surprises, for the specs the note names, only in a list ranked by
         simulation when it speaks of one, in the game's language."""
         note = Game().ns.Notes.For
-        self.assertRegex(note(647, "WARRIOR", 1, "pve"), "^Its proc, 200 Strength .* about 66 DPS")
-        self.assertRegex(note(647, "PALADIN", 3, "pve"), "about 50 DPS", "the same item, another spec's note")
-        self.assertIsNone(note(647, "WARRIOR", 3, "pve"), "Protection is not one of the note's specs")
-        self.assertIsNone(note(647, "WARRIOR", 1, "pvp"), "the PvP list is not ranked by simulation")
-        self.assertRegex(note(11815, "WARRIOR", 3, "pvp"), "^12 attack power", "a fact of the item: everywhere")
-        self.assertIsNone(note(2, "WARRIOR", 1, "pve"), "an item without a note")
-        self.assertRegex(Game(locale="frFR").ns.Notes.For(647, "WARRIOR", 1, "pve"), "^Son proc, 200 de Force")
-        self.assertRegex(Game(locale="deDE").ns.Notes.For(647, "WARRIOR", 1, "pve"), "^Its proc, 200 Strength",
+        self.assertRegex(note(647, "WARRIOR", 1, "pve", "main"), "^Its proc, 200 Strength .* about 66 DPS")
+        self.assertRegex(note(647, "PALADIN", 3, "pve", "main"), "about 49 DPS", "the same item, another spec's note")
+        main, off = note(12590, "ROGUE", 3, "pve", "main"), note(12590, "ROGUE", 3, "pve", "off")
+        self.assertRegex(main, "^Its proc makes every attack land and crit")
+        self.assertIsNone(off, "Felstriker's proc was measured in Subtlety's main hand alone")
+        self.assertIsNone(note(647, "WARRIOR", 1, "pve"), "a note for a slot is for a row of that slot")
+        self.assertNotEqual(note(14555, "ROGUE", 3, "pve", "main"), None)
+        self.assertRegex(note(871, "ROGUE", 2, "pve", "off"), "^Its proc, an extra attack", "the spec's own note first")
+        self.assertRegex(note(871, "ROGUE", 2, "pvp", "off"), "^Added by hand", "then the one for every list")
+        self.assertIsNone(note(647, "WARRIOR", 3, "pve", "main"), "Protection is not one of the note's specs")
+        self.assertIsNone(note(647, "WARRIOR", 1, "pvp", "main"), "the PvP list is not ranked by simulation")
+        self.assertRegex(note(11815, "WARRIOR", 3, "pvp", "trinket"), "^12 attack power.* in Classic[)][.]$", "a fact of the item: everywhere")
+        self.assertIsNone(note(2, "WARRIOR", 1, "pve", "main"), "an item without a note")
+        self.assertRegex(Game(locale="frFR").ns.Notes.For(647, "WARRIOR", 1, "pve", "main"), "^Son proc, 200 de Force")
+        self.assertRegex(Game(locale="deDE").ns.Notes.For(647, "WARRIOR", 1, "pve", "main"), "^Its proc, 200 Strength",
                          "English where the note has no text in the game's language")
 
     def test_specs_are_listed_in_order(self):

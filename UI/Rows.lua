@@ -103,7 +103,7 @@ function Rows.Items(state, withAlts)
         if source.zone then facets.zones[source.zone] = true end
         row.kind, row.id, row.slot, row.source = "item", id, slot, source
         row.reputation = ns.Reputation.Requirement(id)
-        row.why = ns.Notes.For(id, state.class, state.spec, state.list)
+        row.why = ns.Notes.For(id, state.class, state.spec, state.list, slot)
         all[#all + 1] = row
     end
 

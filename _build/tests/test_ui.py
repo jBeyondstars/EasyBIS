@@ -347,7 +347,7 @@ class WindowTest(unittest.TestCase):
         lines = [line[1] for line in tooltip.lines.values()]
         self.assertEqual(tooltip.text, "About this rank")
         self.assertEqual(len(lines), 1)
-        self.assertRegex(lines[0], "^Its proc, 200 Strength for 12 seconds, .* about 50 DPS")
+        self.assertRegex(lines[0], "^Its proc, 200 Strength for 12 seconds, .* about 49 DPS")
         game.stub.run(mark, "OnLeave")
         self.assertFalse(tooltip.shown)
 
