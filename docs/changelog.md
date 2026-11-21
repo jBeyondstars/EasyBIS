@@ -2,7 +2,7 @@
 
 ## New
 
-- **What a score is.** Over the scores of each slot, a mark opens a tooltip that says how the list is ranked. For a list ranked by simulation: what is measured, the fight simulated (a level 63 raid boss, 3 minutes, one target, raid buffs and debuffs, consumables, the spec's default talents and rotation), what the % means, and the day the spec was measured. For the others: the weighted stats.
+- **What a score is.** Over the scores of each slot, a mark opens a tooltip that says how the list is ranked. For a list ranked by simulation: what is measured, the fight simulated (a raid boss, 3 minutes, one target, raid buffs and debuffs, consumables, the spec's default talents and rotation) and what the % means. For the others: the weighted stats.
 
 ## Fixed
 

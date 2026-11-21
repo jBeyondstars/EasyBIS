@@ -324,22 +324,19 @@ class WindowTest(unittest.TestCase):
             game.stub.run(mark, "OnEnter")
             return tooltip.text, [line[1] for line in tooltip.lines.values() if line[1] != " "]
 
-        day = game.ns.Ladders.Measured("SHAMAN", 2, "pve")
         title, lines = said()
         self.assertEqual(title, "How this list is ranked")
         self.assertEqual(lines, [
             "Score: the damage per second the item adds, measured with the Forever simulator.",
-            "Simulated fight: a level 63 raid boss, 3 minutes, one target, with raid buffs and debuffs, consumables, "
+            "Simulated fight: a raid boss, 3 minutes, one target, with raid buffs and debuffs, consumables, "
             "and the spec's default talents and rotation.",
             "The % is the gap to the best item of the slot, not a gap in total damage. Less than 1% apart, two items "
-            "are as good as each other.",
-            f"Enhancement Shaman, measured on {day}."])
+            "are as good as each other."])
         self.assertEqual((tooltip.points[1][1], tooltip.points[1][2].name), ("TOPLEFT", "EasyBISWindow"))
         game.stub.run(mark, "OnLeave")
         self.assertFalse(tooltip.shown)
 
-        weights = ["Score: the item's stats, each weighted for this spec. Effects (procs, on-use) are not counted.",
-                   "The % is the gap to the best item of the slot."]
+        weights = ["Score: the item's stats, each weighted for this spec.", "The % is the gap to the best item of the slot."]
         state.list = "pvp"   # the PvP list is ranked on the weights
         self.assertEqual(said()[1], weights)
         state.list, state.spec = "pve", 3   # ... and so is a healer's PvE list
@@ -349,13 +346,14 @@ class WindowTest(unittest.TestCase):
         headers = [frame for frame in self.all_frames(game) if frame.data.kind == "header"]
         self.assertEqual(headers[0].info.points[1][4], 392)
 
-    def test_the_marks_date_reads_as_the_language_writes_it(self):
+    def test_the_mark_speaks_french(self):
         game = self.open(saved=ENHANCEMENT, locale="frFR")
-        year, month, day = game.ns.Ladders.Measured("SHAMAN", 2, "pve").split("-")
         lines = game.ns.Browser.ScoreInfo("SHAMAN", 2, "pve")
-        shaman = game.ns.ClassName("SHAMAN")   # the game's own word for the class
-        self.assertEqual(lines[4], f"{shaman} Amélioration, mesuré le {day}/{month}/{year}.")
-        self.assertEqual(len(game.ns.Browser.ScoreInfo("SHAMAN", 2, "pvp")), 2)
+        self.assertEqual(len(lines), 3)
+        self.assertEqual(lines[2], "Combat simulé : un boss de raid, 3 minutes, une cible, avec les buffs et debuffs de "
+                                   "raid, les consommables, et les talents et la rotation par défaut de la spécialisation.")
+        pvp = game.ns.Browser.ScoreInfo("SHAMAN", 2, "pvp")
+        self.assertEqual((len(pvp), pvp[1]), (2, "Score : les stats de l'objet, chacune pondérée pour cette spécialisation."))
 
     def test_rows_are_grouped_by_slot(self):
         """A header before each slot's rows, taller rows after it, nothing overlapping."""

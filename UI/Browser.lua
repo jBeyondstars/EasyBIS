@@ -564,16 +564,12 @@ local function EnchantTooltip(owner, enchant, requirement)
 end
 
 -- What a score is in that list, a line each: measured by the simulator for the lists the data says so of
--- (Ladders.Measured), with the fight simulated and the day of the measure; the weighted stats for the others.
+-- (Ladders.Measured), with the fight simulated; the weighted stats for the others.
 function Browser.ScoreInfo(class, spec, list)
-    local day = ns.Ladders.Measured(class, spec, list)
-    if not day then return { L.SCORE_INFO_WEIGHTS, L.SCORE_INFO_GAP } end
-    local y, m, d = day:match("^(%d+)-(%d+)-(%d+)$")
-    local date = y and L.DATE_YMD:gsub("{(%a)}", { y = y, m = m, d = d }) or day
-    local measured = L.SCORE_INFO_MEASURED:gsub("{(%a+)}", {
-        spec = ns.SpecName(ns.Index.SpecName(class, spec) or ""), class = ns.ClassName(class), date = date,
-    })
-    return { L.SCORE_INFO_SIM, L.SCORE_INFO_FIGHT, L.SCORE_INFO_GAP_SIM, measured }
+    if ns.Ladders.Measured(class, spec, list) then
+        return { L.SCORE_INFO_SIM, L.SCORE_INFO_FIGHT, L.SCORE_INFO_GAP_SIM }
+    end
+    return { L.SCORE_INFO_WEIGHTS, L.SCORE_INFO_GAP }
 end
 
 local function ScoreTooltip(owner)
