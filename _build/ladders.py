@@ -206,6 +206,7 @@ def full_ladder(db, cls: str, spec: int, mode: str, slot: str, level: int | None
     min_score = data["min"].get(profile, 1)
     # The specs a simulator ranked (simulated.py). The site's rule and other levels stay on the weights.
     ranked = simulated.ranking(db, cls, spec, mode, slot) if rank_rewards and level == db.meta["cap"] else None
+    placed = getattr(db, "placed", None) or {}   # the items put by hand after another one (corrections/effects.json)
 
     entries, seen_ids, weighed = [], set(), {}
     for pool in dict(SLOTS)[slot]:
@@ -230,7 +231,7 @@ def full_ladder(db, cls: str, spec: int, mode: str, slot: str, level: int | None
                 continue
             value = score(db, item_id, weights, cls) or 0.0
             armour_only = gear["armor"] > 0 and not gear["dps"] and not stats
-            if not (value >= min_score or (value > 0 and armour_only)):
+            if not (value >= min_score or (value > 0 and armour_only) or (ranked is not None and item_id in placed)):
                 continue
             flags = item["flags"]
             weighed[item_id] = value
@@ -251,6 +252,23 @@ def full_ladder(db, cls: str, spec: int, mode: str, slot: str, level: int | None
         entries = simulated.place(entries, simulated.placements(db, cls, spec, mode, slot))
         if ranked is None:
             entries = level_with_the_best(entries, specs.unvalued(db, cls, spec))
+        else:
+            entries = after_their_anchor(entries, placed)
+    return entries
+
+
+def after_their_anchor(entries: list[Entry], placed: dict) -> list[Entry]:
+    """The ladder with each item placed by hand (db.placed) right after the item it follows, with that item's score
+    for the ladder to stay in order, and flagged: no score of its own, never a best pick. Without the item it
+    follows, the ladder does not hold it."""
+    for item_id, (anchor, _) in placed.items():
+        entry = next((e for e in entries if e.item_id == item_id), None)
+        if entry is None:
+            continue
+        entries = [e for e in entries if e.item_id != item_id]
+        at = next((i for i, e in enumerate(entries) if e.item_id == anchor), None)
+        if at is not None:
+            entries.insert(at + 1, replace(entry, score=entries[at].score, placed=True, estimated=False))
     return entries
 
 

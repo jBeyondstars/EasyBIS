@@ -120,7 +120,7 @@ local enUS = {
     TIP_SCORE = "Score for this slot: %d%% of the best pick's.",
     TIP_SCORE_SET = "Score of both hands together: %d%% of the best choice's.",
     TIP_CUSTOM = "Added by hand to this list.",
-    TIP_PLACED = "Placed here from the simulation of a close spec, until this spec's own: no score yet.",
+    TIP_PLACED = "Placed here by hand, without a score of its own.",
     TIP_LEVEL = "Its effect is not counted in the scores, so it has none: shown level with the best picks.",
     TIP_REMOVE = "Remove from the list",
     -- What the score is, behind the mark over the scores.
@@ -507,7 +507,7 @@ local frFR = {
     TIP_SCORE = "Score pour cet emplacement : %d %% de celui du meilleur objet.",
     TIP_SCORE_SET = "Score des deux mains réunies : %d %% de celui du meilleur choix.",
     TIP_CUSTOM = "Ajouté à la main dans cette liste.",
-    TIP_PLACED = "Placé ici d'après la simulation d'une spécialisation proche, en attendant celle-ci : pas encore de score.",
+    TIP_PLACED = "Placé ici à la main, sans score propre.",
     TIP_LEVEL = "Son effet n'est pas compté dans les scores, il n'en a donc pas : affiché au niveau des meilleurs choix.",
     TIP_REMOVE = "Retirer de la liste",
     SCORE_COLUMN = "Score",

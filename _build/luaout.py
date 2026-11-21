@@ -208,7 +208,7 @@ def lists_file(db, all_ladders) -> str:
         "         p a PvP reward (a PvP rank, the honor quartermasters, a battleground, a Premier set): the addon",
         "           leaves those out of the PvE list, and counts them in the PvP list, until its option says otherwise,",
         "         v a Premier piece, sold for honor even when the data gives it no source,",
-        "         e placed from a close spec's simulation (_build/simulated.py): its score is the one above it, not",
+        "         e placed by hand after another item (corrections/effects.json): its score is the one above it, not",
         "           its own; the addon shows none and never makes it a best pick,",
         "         x most of its worth is an effect the stat weights cannot count (_build/corrections/effects.json): it has",
         "           no score of its own, the addon shows it level with the best picks, never as one, and prints no figure,",

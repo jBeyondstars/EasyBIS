@@ -639,6 +639,14 @@
    ],
    "en": "Added by hand: ForeverDB's data leaves it out. Its source, a world drop, is Classic's and is not confirmed in Forever.",
    "fr": "Ajoutée à la main : les données de ForeverDB l'omettent. Sa source, un butin mondial, est celle de Classic et n'est pas confirmée dans Forever."
+  },
+  {
+   "items": [
+    22321
+   ],
+   "simulated": true,
+   "en": "Its worth is all in its proc: melee and ranged attacks have a chance to deal Fire damage. The stat weights see nothing of it, so it is placed by hand right after Hand of Justice, without a score.",
+   "fr": "Toute sa valeur vient de son proc : les attaques de mêlée et à distance ont une chance d'infliger des dégâts de Feu. Les poids de stats n'en voient rien, il est donc placé à la main juste après Hand of Justice, sans score."
   }
  ]
 }

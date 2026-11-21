@@ -683,7 +683,7 @@ class GeneratorTest(unittest.TestCase):
             ranking = reading.specs.get((token, spec)) if mode == "pve" else None
             slot_ranking = ranking.slots.get(slot) if ranking else None
             for entry in ladder:
-                expected = slot_ranking is not None and not slot_ranking.measured(entry.item_id)
+                expected = slot_ranking is not None and not slot_ranking.measured(entry.item_id) and not entry.placed
                 self.assertEqual(entry.estimated, expected, (token, spec, mode, slot, entry.item_id))
                 self.assertEqual("g" in luaout.encode_entry(entry).split(":")[2:3][0] if entry.estimated else False,
                                  entry.estimated)
@@ -725,6 +725,8 @@ class GeneratorTest(unittest.TestCase):
         for item_id in game.added:
             self.assertNotIn(item_id, self.published.items)
             self.assertIn(item_id, pooled)
+            if self.db.placed.get(item_id, (0, False))[1]:
+                continue   # placed by hand, its drop counted in Forever (specs.settle_placed): a dungeon's item
             self.assertEqual((self.db.items[item_id]["groups"], self.db.items[item_id]["phase"]), (frozenset("u"), phases.LATER))
         self.assertFalse(set(game.added) & set(corrections.NOT_FOR_PLAYERS))
         shown = luaout.shown_ids(self.kept)
@@ -757,6 +759,8 @@ class GeneratorTest(unittest.TestCase):
                         own = lambda shown: [[dataclasses.replace(entry, score=0.0) if entry.level else entry
                                               for entry in rows] for rows in shown]
                         for slot in now:
+                            if any(entry.item_id in self.db.placed for rows in now[slot] for entry in rows):
+                                continue   # a piece added from the game and placed by hand takes a row there
                             if own(now[slot]) != own(then[slot]):
                                 lost = {entry.item_id for rows in then[slot] for entry in rows} & gone
                                 self.assertTrue(lost, f"{token} {spec} {mode} {slot} {flt} changed with nothing dropped")
@@ -772,6 +776,38 @@ class GeneratorTest(unittest.TestCase):
         self.assertEqual(set(corrections.assign_sides(raw)), open_to_both)
         self.assertEqual({raw.items[item_id]["side"] for item_id in sold}, {"a"})
         self.assertEqual(corrections.assign_sides(raw), [], "a second pass finds nothing left to do")
+
+    def test_an_item_the_weights_give_nothing_is_placed_after_another(self):
+        """Heart of Wyrmthalak is all proc, and ForeverDB's weights give it nothing: by hand (corrections/effects.json)
+        it stands right after Hand of Justice in the lists ranked by simulation that hold that one, with its score for
+        the ladder to stay in order, flagged as no score of its own, and is never a best pick. No other list holds it."""
+        heart, justice = 22321, 11815
+        self.assertEqual(self.db.placed[heart], (justice, True))
+        self.assertEqual((self.db.items[heart]["groups"], self.db.items[heart]["phase"]), (frozenset("d"), phases.PRE_RAID),
+                         "its drop was counted in Forever: not kept with the pieces of no known source")
+        held = []
+        for (token, spec, mode, slot), ladder in self.full.items():
+            ids = [entry.item_id for entry in ladder]
+            if heart not in ids:
+                continue
+            held.append((token, spec, mode, slot))
+            at = ids.index(heart)
+            self.assertEqual((mode, slot), ("pve", "trinket"))
+            self.assertIsNotNone(simulated.ranking(self.db, token, spec, mode, slot), "a list on the weights does not hold it")
+            self.assertEqual(ids[at - 1], justice)
+            self.assertTrue(ladder[at].placed and not ladder[at].estimated)
+            self.assertEqual(ladder[at].score, ladder[at - 1].score)
+            best, _ = ladders.picks(slot, ladder)
+            self.assertNotIn(heart, [entry.item_id for entry in best])
+        self.assertIn(("ROGUE", 2, "pve", "trinket"), held)
+        self.assertGreaterEqual(len(held), 6)
+
+        entry = lambda item_id, score: dataclasses.replace(self.full["ROGUE", 2, "pve", "trinket"][0], item_id=item_id, score=score)
+        ladder = [entry(1, 9.0), entry(2, 5.0), entry(3, 0.0)]
+        moved = ladders.after_their_anchor(ladder, {3: (1, False)})
+        self.assertEqual([(e.item_id, e.score, e.placed) for e in moved], [(1, 9.0, False), (3, 9.0, True), (2, 5.0, False)])
+        self.assertEqual([e.item_id for e in ladders.after_their_anchor(ladder, {3: (7, False)})], [1, 2],
+                         "without the item it follows, the ladder does not hold it")
 
     def test_a_note_is_checked_before_it_is_written(self):
         """A note the addon could not show as written stops the build: a spec that does not exist, a text that is
@@ -857,7 +893,8 @@ class GeneratorTest(unittest.TestCase):
                                                     for source in item["sources"]), item_id)
             if item_id in filled.added:
                 self.assertIsNone(was)
-                self.assertEqual((item["groups"], item["phase"]), (frozenset("u"), phases.LATER), item["name"])
+                if not self.db.placed.get(item_id, (0, False))[1]:   # but for the ones specs.settle_placed settles
+                    self.assertEqual((item["groups"], item["phase"]), (frozenset("u"), phases.LATER), item["name"])
             else:
                 self.assertEqual((was["groups"], was["sources"]), (frozenset("u"), []), item["name"])
                 self.assertTrue(item["groups"] and item["groups"] <= ladders.SOURCE_GROUPS, item["name"])
