@@ -12,7 +12,8 @@ The Easy BIS window: the best gear of a spec, slot by slot.
            middle takes its room.
   middle   the rows (UI\Rows.lua). An item or a consumable takes one line: icon, name, score bar and rank,
            type or effect, where it comes from. With the option "compact" off it takes two, as an enchant
-           always does. What a reputation stands in front of says so under where it comes from.
+           always does. What a reputation stands in front of says so under where it comes from. Over the
+           scores of each item slot, a mark says in a tooltip how the list is ranked (Browser.ScoreInfo).
            The Character tab shows the best pick of every slot as a character sheet instead
            (UI\Character.lua), the Reputations tab what the spec needs of each faction
            (UI\Reputations.lua): both follow the spec, the list and the phase, and have no other filter.
@@ -79,6 +80,7 @@ local TOOLTIP_ROOM = 340 + Widgets.SIDE_ROOM   -- room a tooltip needs on the wi
 local DUNGEON_ICON = "Interface\\Icons\\INV_Misc_Bone_HumanSkull_01"   -- the side tab of the dungeons
 local ALL = "*"            -- the "all" choice of a filter
 local UNKNOWN_ICON = "Interface\\Icons\\INV_Misc_QuestionMark"
+local INFO_ICON = "Interface\\FriendsFrame\\InformationIcon"   -- over the scores: what a score is
 
 -- Where a row's parts start, from its left edge.
 local WIDE = { rank = 392, source = 512 }                -- name and type | where it comes from, on two lines
@@ -561,6 +563,33 @@ local function EnchantTooltip(owner, enchant, requirement)
     end
 end
 
+-- What a score is in that list, a line each: measured by the simulator for the lists the data says so of
+-- (Ladders.Measured), with the fight simulated and the day of the measure; the weighted stats for the others.
+function Browser.ScoreInfo(class, spec, list)
+    local day = ns.Ladders.Measured(class, spec, list)
+    if not day then return { L.SCORE_INFO_WEIGHTS, L.SCORE_INFO_GAP } end
+    local y, m, d = day:match("^(%d+)-(%d+)-(%d+)$")
+    local date = y and L.DATE_YMD:gsub("{(%a)}", { y = y, m = m, d = d }) or day
+    local measured = L.SCORE_INFO_MEASURED:gsub("{(%a+)}", {
+        spec = ns.SpecName(ns.Index.SpecName(class, spec) or ""), class = ns.ClassName(class), date = date,
+    })
+    return { L.SCORE_INFO_SIM, L.SCORE_INFO_FIGHT, L.SCORE_INFO_GAP_SIM, measured }
+end
+
+local function ScoreTooltip(owner)
+    PlaceTooltip(owner)
+    GameTooltip:SetText(L.SCORE_INFO_TITLE, 1, 0.82, 0)
+    for index, line in ipairs(Browser.ScoreInfo(state.class, state.spec, state.list)) do
+        if index > 1 then GameTooltip:AddLine(" ") end
+        if index == 1 then
+            GameTooltip:AddLine(line, 1, 1, 1, true)
+        else
+            GameTooltip:AddLine(line, MUTED[1], MUTED[2], MUTED[3], true)
+        end
+    end
+    GameTooltip:Show()
+end
+
 local function RowTooltip(row)
     local data = row.data
     if not data or data.kind == "note" or data.kind == "header" then return end
@@ -662,6 +691,28 @@ local function CreateRow(parent)
     row.header:SetPoint("BOTTOMLEFT", 6, 5)
     row.header:SetTextColor(1, 0.82, 0)
     row.header:Hide()
+
+    -- ... and, over the scores of an item slot, what a score is: a word and the game's information mark
+    row.info = CreateFrame("Button", nil, row)
+    row.info:SetHeight(16)
+    row.info.text = Text(row.info, FONT_TEXT)
+    row.info.text:SetPoint("LEFT", 0, 0)
+    row.info.text:SetTextColor(MUTED[1], MUTED[2], MUTED[3])
+    row.info.text:SetText(L.SCORE_COLUMN)
+    row.info.icon = row.info:CreateTexture(nil, "ARTWORK")
+    row.info.icon:SetSize(14, 14)
+    row.info.icon:SetPoint("LEFT", row.info.text, "RIGHT", 4, 0)
+    row.info.icon:SetTexture(INFO_ICON)
+    row.info.icon:SetAlpha(0.75)
+    row.info:SetScript("OnEnter", function(self)
+        self.icon:SetAlpha(1)
+        ScoreTooltip(self)
+    end)
+    row.info:SetScript("OnLeave", function(self)
+        self.icon:SetAlpha(0.75)
+        GameTooltip:Hide()
+    end)
+    row.info:Hide()
 
     -- a note row shows this alone
     row.note = row:CreateFontString(nil, "OVERLAY", FONT_TEXT)
@@ -830,6 +881,12 @@ local function FillRow(row, data)
     local plain = header or note
     local compact = OnOneLine(data)
     row.header:SetShown(header)
+    row.info:SetShown(header and data.scored == true)
+    if header and data.scored then   -- over the bars, wherever the option "compact" puts them
+        row.info:ClearAllPoints()
+        row.info:SetPoint("BOTTOMLEFT", row, "BOTTOMLEFT", (ns:GetOption("compact") and COMPACT or WIDE).rank, 3)
+        row.info:SetWidth((row.info.text:GetStringWidth() or 0) + 4 + 14)
+    end
     row.note:SetShown(note)
     row.icon:SetShown(not plain)
     row.name:SetShown(not plain)

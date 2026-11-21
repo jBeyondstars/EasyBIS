@@ -156,6 +156,8 @@ def lists_file(db, all_ladders) -> str:
         *_corrections_note(db),
         "  S <spec> <name> <role> <style>      style: any, 2h, dw (dual wield), shield",
         "  L <spec> <list> <slot> <entries>    list: pve, pvp; entries best first, separated by spaces",
+        "  M <spec> <list> <date>              that list is ranked by simulation, measured on that day; the others are",
+        "                                      ranked on the stat weights",
         "An entry is id:score*10:flags:twin:limit:rank, empty fields at the end left out.",
         "  flags: a Alliance only, h Horde only (with a twin: the other faction wears the twin id),",
         "         s seen in Forever, n new in Forever, u no known source, U unique, t two-hander, r random bonus,",
@@ -176,6 +178,9 @@ def lists_file(db, all_ladders) -> str:
         for spec, modes in sorted(all_ladders[cls].items()):
             spec_def = db.classes[cls]["specs"][spec]
             block.append("\t".join(("S", str(spec), spec_def["name"], spec_def["role"], spec_def["style"])))
+            measured = _measured(db, cls, spec)
+            if measured:
+                block.append("\t".join(("M", str(spec), "pve", measured)))
             for mode in ladders.MODES:
                 for slot, _ in ladders.SLOTS:
                     entries = modes[mode][slot]
@@ -184,6 +189,13 @@ def lists_file(db, all_ladders) -> str:
         lines.append(f"{cls} = {_block(block)},")
     lines.append("}")
     return "\n".join(lines) + "\n"
+
+
+def _measured(db, cls: str, spec: int) -> str:
+    """The day the simulator measured a spec's PvE list, "" for a list ranked on the weights."""
+    reading = getattr(db, "simulated", None)
+    ranking = reading.specs.get((cls, spec)) if reading else None
+    return (ranking.record.get("date") or reading.date) if ranking else ""
 
 
 def shown_ids(all_ladders) -> set[int]:

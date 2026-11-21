@@ -53,16 +53,21 @@ function Ladders.HasFlag(entry, letter)
     return entry.flags:find(letter, 1, true) ~= nil
 end
 
--- { specs = { [index] = spec }, lists = { [index] = { [list] = { [slot] = { entries } } } } }, or nil
+-- { specs = { [index] = spec }, lists = { [index] = { [list] = { [slot] = { entries } } } },
+--   measured = { [index] = { [list] = "2026-11-21" } } }, or nil. measured: the lists ranked by simulation, with
+-- the day they were measured; a list that is not there is ranked on the stat weights.
 function Ladders.Decode(class)
     local text = ns.data and ns.data.lists and ns.data.lists[class]
     if not text then return nil end
-    local data = { specs = {}, lists = {} }
+    local data = { specs = {}, lists = {}, measured = {} }
     for line in text:gmatch("[^\n]+") do
         local kind, index, first, second, rest = line:match("^(%a)\t(%d+)\t([^\t]*)\t([^\t]*)\t?(.*)$")
         index = tonumber(index)
         if kind == "S" then
             data.specs[index] = { index = index, name = first, role = second, style = rest }
+        elseif kind == "M" then
+            data.measured[index] = data.measured[index] or {}
+            data.measured[index][first] = second
         elseif kind == "L" then
             local entries = {}
             for token in rest:gmatch("%S+") do
@@ -225,6 +230,13 @@ function Ladders.Specs(class)
     for _, spec in pairs(data and data.specs or {}) do specs[#specs + 1] = spec end
     table.sort(specs, function(a, b) return a.index < b.index end)
     return specs
+end
+
+-- The day the simulator measured that list ("2026-11-21"), nil for a list ranked on the stat weights.
+function Ladders.Measured(class, spec, list)
+    local data = Load(class)
+    local lists = data and data.measured[spec]
+    return lists and lists[list] or nil
 end
 
 function Ladders.For(class, spec, list)

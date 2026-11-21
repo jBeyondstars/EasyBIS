@@ -27,7 +27,7 @@ What the window lists, as plain tables: the frames only draw them.
                    gap, ratio  as for an item, against the best of the category
                    unranked    true for what is listed without a rank
                    twin        true for the sharp or blunt version of the row before it; of the best, it is the best too
-  Rows.Grouped(rows)     the same rows with a { kind = "header", group, text } row before each slot's
+  Rows.Grouped(rows)     the same rows with a { kind = "header", group, text, scored } row before each slot's
                          rows, so the window can set the slots apart
   Rows.Character(state)  cells: the best pick of every slot, in the order of the game's character sheet
       a cell   { place = "left"|"right"|"bottom", slot, rank, id, source, ties, enchant, twoHand, reputation }
@@ -173,7 +173,7 @@ function Rows.Grouped(rows)
         if group ~= last then
             last = group
             grouped[#grouped + 1] = {
-                kind = "header", group = group,
+                kind = "header", group = group, scored = not (enchant or consumable) or nil,
                 text = (consumable and ns.Consumables.KeyName(group))
                     or (enchant and ns.Enchants.KeyName(group)) or ns.SlotName(group),
             }
