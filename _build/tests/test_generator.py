@@ -792,9 +792,10 @@ class GeneratorTest(unittest.TestCase):
         for (token, spec, mode, slot), ladder in self.full.items():
             weights = self.db.classes[token]["specs"][spec]["weights"][ladders.MODES[mode]]
             ranking = simulated.ranking(self.db, token, spec, mode, slot)
+            melee = (token, mode) == ("HUNTER", "pvp") and self.db.classes[token]["specs"][spec]["role"] == ladders.MELEE
             for entry in ladder:
-                if ladders.score(self.db, entry.item_id, weights, token):
-                    continue
+                if ladders.score(self.db, entry.item_id, weights, token, melee) or entry.level:
+                    continue   # entry.level: what the weights cannot value, listed by hand (specs.unvalued)
                 self.assertIsNotNone(ranking, f"{token} {spec} {mode} {slot}: {entry.item_id} weighs nothing")
                 self.assertTrue(ranking.scores.get(entry.item_id, 0) > 0 or entry.item_id in self.db.placed, entry.item_id)
                 held += 1
@@ -1103,6 +1104,45 @@ class SpecsTest(unittest.TestCase):
                             self.assertIn(token, self.db.class_only.get(entry.item_id, (token,)),
                                           f"{token} {spec} {mode} {slot}: {entry.item_id}")
 
+    def test_a_survival_hunter_s_melee_weapon_counts_its_damage_in_pvp(self):
+        """ForeverDB counts a Hunter's ranged weapon only, so a caster's staff led a Survival Hunter's PvP main hands
+        on its critical strike. That spec fights in melee: its weapon's damage per second counts there. The other
+        Hunters' main hands stay on their stats."""
+        sunderer, staff = 18830, 20069   # Grand Marshal's Sunderer, 77.4 a second; Ironbark Staff, 42.1 and 88 spell power
+        survival = {entry.item_id: entry.score for entry in self.ladder("HUNTER", 3, "pvp")}
+        self.assertEqual(self.db.classes["HUNTER"]["specs"][3]["role"], "Melee DPS")
+        self.assertGreater(survival[sunderer], survival[staff] + 100)
+        marksman = {entry.item_id: entry.score for entry in self.ladder("HUNTER", 2, "pvp")}
+        self.assertLess(marksman[sunderer], 100)
+
+    def test_an_assassination_rogue_s_pvp_weapons_are_daggers(self):
+        """Mutilate asks for a dagger in each hand: the Assassination PvP list holds no sword, mace or fist weapon.
+        Subtlety has Hemorrhage, which any weapon deals: its list keeps them."""
+        for slot in ("main", "off"):
+            kinds = {self.db.gear[entry.item_id]["kind"] for entry in self.ladder("ROGUE", 1, "pvp", slot)}
+            self.assertEqual(kinds, {ladders.DAGGER}, slot)
+        self.assertEqual(self.db.classes["ROGUE"]["specs"][1]["slug"], "assassination")
+        others = {self.db.gear[entry.item_id]["kind"] for entry in self.ladder("ROGUE", 3, "pvp")}
+        self.assertGreater(len(others), 1)
+
+    def test_hand_of_justice_is_in_the_melee_pvp_lists(self):
+        """Its 12 attack power left it out of every list ranked on the weights. Its extra attacks are what it is worn
+        for (corrections/effects.json): there it stands level with the best picks, without a score, never the pick."""
+        justice = 11815
+        self.assertIn("Melee DPS", self.db.effects[justice])
+        for token, spec in (("ROGUE", 2), ("WARRIOR", 1), ("PALADIN", 3)):
+            ladder = self.ladder(token, spec, "pvp", "trinket")
+            entry = next((e for e in ladder if e.item_id == justice), None)
+            self.assertIsNotNone(entry, f"{token} {spec}")
+            self.assertTrue(entry.level and entry.unscored)
+            self.assertNotEqual(ladders.lead(ladder).item_id, justice)
+        self.assertNotIn(justice, {e.item_id for e in self.ladder("MAGE", 2, "pvp", "trinket")})
+
+    def test_valthalak_s_staff_has_its_spell_power(self):
+        """ForeverDB gives Lord Valthalak's Staff of Command no spell power; the game's tooltip shows 72."""
+        self.assertNotIn(45, self.published.gear[22335]["stats"])
+        self.assertEqual(self.db.gear[22335]["stats"][45], 72)
+
     def test_a_hunter_s_attack_power_is_ranged_too(self):
         """An item's attack power is ranged attack power as well: a Hunter's weights count it at least as much
         (specs.ranged_power). ForeverDB's Marksmanship PvP weights gave it nothing, and Drake Fang Talisman's 56
@@ -1238,12 +1278,14 @@ class SpecsTest(unittest.TestCase):
 
     LION_HORN, INSIGNIA, STABILIZER = 14557, 17904, 272440
     MARK_OF_TYRANNY, ARENA_GRAND_MASTER, QUEL_SERRAR, FORCE_REACTIVE_DISK = 13966, 19024, 18348, 18168
+    HAND_OF_JUSTICE = 11815   # a melee damage dealer's, where the others are a tank's
 
     def test_an_item_worth_its_effect_has_no_score_and_stands_with_the_best(self):
         """The Lion Horn of Stormwind: 8 defense, half of the best trinket's score, and an armor proc worth nothing."""
         tank = frozenset({"Tank"})
         self.assertEqual(self.db.effects, {self.LION_HORN: tank, self.MARK_OF_TYRANNY: tank, self.ARENA_GRAND_MASTER: tank,
-                                           self.QUEL_SERRAR: tank, self.FORCE_REACTIVE_DISK: tank})
+                                           self.QUEL_SERRAR: tank, self.FORCE_REACTIVE_DISK: tank,
+                                           self.HAND_OF_JUSTICE: frozenset({"Melee DPS"})})
         trinkets = {self.LION_HORN, self.MARK_OF_TYRANNY, self.ARENA_GRAND_MASTER}
         for token, number in self.TANKS:
             for mode in ladders.MODES:
@@ -1275,9 +1317,10 @@ class SpecsTest(unittest.TestCase):
         for token, number in (("DRUID", 4), ("WARRIOR", 2), ("PALADIN", 1)):   # the cat, Fury (simulated), Holy
             for mode in ladders.MODES:
                 ladder = self.ladder(token, number, mode, "trinket")
-                self.assertFalse([entry for entry in ladder if entry.level], f"{token} {number} {mode}")
-        self.assertEqual(specs.unvalued(self.db, "WARRIOR", 3), frozenset(self.db.effects))
-        self.assertEqual(specs.unvalued(self.db, "WARRIOR", 2), frozenset())
+                self.assertFalse([entry for entry in ladder if entry.level and entry.item_id != self.HAND_OF_JUSTICE],
+                                 f"{token} {number} {mode}")
+        self.assertEqual(specs.unvalued(self.db, "WARRIOR", 3), frozenset(self.db.effects) - {self.HAND_OF_JUSTICE})
+        self.assertEqual(specs.unvalued(self.db, "WARRIOR", 2), frozenset({self.HAND_OF_JUSTICE}))
         entries = self.ladder("WARRIOR", 3, slot="neck")
         self.assertIs(ladders.level_with_the_best(entries, frozenset({self.LION_HORN})), entries, "not in that slot")
 

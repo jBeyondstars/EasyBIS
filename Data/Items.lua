@@ -61,6 +61,7 @@ ns.data.items = [==[
 2276|Swampwalker Boots|wx|s|x^6827^Box of Supplies^k~w^0^0^k
 2280|Kam's Walking Stick|d|s|d^34^Kam Deepfury^29.41^0^s
 2451|Crested Heater Shield|v|s|v^8129^Wrinkle Goodsteel^1446^50.8^27.7^43629^^s
+2534|Rondel|v|s|v^12024^Meliri^1450^51.2^42.3^45431^^s
 2801|Blade of Hanna|w||w^0^0^k
 2805|Yeti Fur Cloak|q|s|q^565^Bartolo's Yeti Fur Cloak^29^a^s
 2816|Death Speaker Scepter|d|s|d^47^Death Speaker Jargba^40^0^s
@@ -70,6 +71,7 @@ ns.data.items = [==[
 2943|Eye of Paleth|q|s|q^293^Cleansing the Eye^25^a^s
 2954|Night Watch Pantaloons|q|s|q^55^Morbent Fel^27^a^s
 3021|Ranger Bow|w|s|m^1034^Dragonmaw Raider^0^s
+3187|Sacrificial Kris|wx|sr|o^Ancient Treasure^1.4^k~x^4637^Steel Lockbox^k
 3230|Black Wolf Bracers|d|s|d^33^Fenrus the Devourer^44.44^0^s
 3413|Doomspike|dw|s|d^48^^0^0^s~m^4798^Fallenroot Shadowstalker^0^s
 3415|Staff of the Friar|dw|s|d^48^^0^0^s~m^4813^Twilight Shadowmage^0^s
@@ -616,6 +618,7 @@ ns.data.items = [==[
 15092|Runic Leather Bracers|c||c^Leatherworking^250^19065^f
 15109|Staff of Soran'ruk|Q|s|q^1740^The Orb of Soran'ruk^20^^s
 15141|Onyxia Scale Breastplate|c||c^Leatherworking^320^19106^f
+15244|Razor Blade|wx|sr|m^257900^NPC 257900^0^s~m^258042^NPC 258042^0^s
 15287|Crusader Bow|wx|sr|o^Ancient Treasure^2.4^k~o^Large Solid Chest^0.75^k
 15411|Mark of Fordring|q||q^5944^In Dreams^55^^k
 15413|Ornate Adamantium Breastplate|q||q^5944^In Dreams^55^^k
@@ -815,7 +818,6 @@ ns.data.items = [==[
 16996|Gorewood Bow|q||q^6148^The Scarlet Oracle, Demetria^56^h^k~q^6187^Order Must Be Restored^56^a^k
 16997|Stormrager|q||q^6148^The Scarlet Oracle, Demetria^56^h^k~q^6187^Order Must Be Restored^56^a^k
 16998|Sacred Protector|q||q^6148^The Scarlet Oracle, Demetria^56^h^k~q^6187^Order Must Be Restored^56^a^k
-17004|Sarah's Guide|q||q^6136^The Corpulent One^56^h^k
 17007|Stonerender Gauntlets|u||
 17039|Skullbreaker|Q|s|q^6521^An Unholy Alliance^31^h^s
 17042|Nail Spitter|Q|s|q^6521^An Unholy Alliance^31^h^s
@@ -1056,6 +1058,7 @@ ns.data.items = [==[
 18754|Fel Hardened Bracers|d||d^429^Lord Hel'nurath^23.57^0^w
 18756|Dreadguard's Protector|d||d^429^Lord Hel'nurath^23.95^0^w
 18757|Diabolic Mantle|d||d^429^Lord Hel'nurath^22.94^0^w
+18758|Specter's Blade|d||d^289^Death Knight Darkreaver^25.7^0^w
 18759|Malicious Axe|d||d^289^Death Knight Darkreaver^20^0^w
 18761|Oblivion's Touch|d||d^289^Death Knight Darkreaver^37.1^0^w
 18814|Choker of the Fire Lord|u||
