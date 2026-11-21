@@ -207,6 +207,7 @@ def full_ladder(db, cls: str, spec: int, mode: str, slot: str, level: int | None
     # The specs a simulator ranked (simulated.py). The site's rule and other levels stay on the weights.
     ranked = simulated.ranking(db, cls, spec, mode, slot) if rank_rewards and level == db.meta["cap"] else None
     placed = getattr(db, "placed", None) or {}   # the items put by hand after another one (corrections/effects.json)
+    class_only = getattr(db, "class_only", None) or {}   # the classes of an item the game restricts (corrections/classes.json)
 
     entries, seen_ids, weighed = [], set(), {}
     for pool in dict(SLOTS)[slot]:
@@ -217,6 +218,8 @@ def full_ladder(db, cls: str, spec: int, mode: str, slot: str, level: int | None
             gear, item = db.gear.get(item_id), db.items.get(item_id)
             if gear is None or item is None:
                 continue
+            if cls not in class_only.get(item_id, (cls,)):
+                continue   # another class's piece: ForeverDB pools by armor type
             stats = gear["stats"]
             if not _fits_style(pool, gear["inv"], spec_def["style"], dual_wields):
                 continue

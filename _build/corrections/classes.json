@@ -1,0 +1,7642 @@
+{
+ "about": "The classes that can wear an item, for the items of ForeverDB's pools the game restricts to some: ForeverDB sorts its pools by armor type, so a Rogue's tier piece is in every leather wearer's. Read from WoWSims Forever's item database (classAllowlist, the game files' own class mask). ladders.full_ladder leaves an item out of the lists of a class that is not named here.",
+ "wowsims": "21377c070b",
+ "date": "2026-11-21",
+ "items": {
+  "6898": {
+   "name": "Orb of Soran'ruk",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "6900": {
+   "name": "Enchanted Gold Bloodrobe",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "6953": {
+   "name": "Verigan's Fist",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "6972": {
+   "name": "Fire Hardened Hauberk",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "6975": {
+   "name": "Whirlwind Axe",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "6976": {
+   "name": "Whirlwind Warhammer",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "6977": {
+   "name": "Whirlwind Sword",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "7133": {
+   "name": "Brutal Hauberk",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "7513": {
+   "name": "Ragefire Wand",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "7514": {
+   "name": "Icefury Wand",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "7515": {
+   "name": "Celestial Orb",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "9391": {
+   "name": "The Shoveler",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "9517": {
+   "name": "Celestial Stave",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "10572": {
+   "name": "Freezing Shard",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "11263": {
+   "name": "Nether Force Wand",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "14146": {
+   "name": "Gloves of Spell Mastery",
+   "classes": [
+    "MAGE",
+    "PRIEST",
+    "WARLOCK"
+   ]
+  },
+  "14152": {
+   "name": "Robe of the Archmage",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "14153": {
+   "name": "Robe of the Void",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "14154": {
+   "name": "Truefaith Vestments",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "15105": {
+   "name": "Staff of Noh'Orahil",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "15106": {
+   "name": "Staff of Dar'Orahil",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "15107": {
+   "name": "Orb of Noh'Orahil",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "15108": {
+   "name": "Orb of Dar'Orahil",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "15109": {
+   "name": "Staff of Soran'ruk",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "16367": {
+   "name": "Knight-Captain's Silk Sash",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "16369": {
+   "name": "Knight-Lieutenant's Silk Boots",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "16370": {
+   "name": "Knight-Captain's Silk Cuffs",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "16391": {
+   "name": "Knight-Lieutenant's Silk Gloves",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "16392": {
+   "name": "Knight-Lieutenant's Leather Boots",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "16393": {
+   "name": "Knight-Lieutenant's Dragonhide Footwraps",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "16394": {
+   "name": "Knight-Captain's Leather Bracers",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "16395": {
+   "name": "Knight-Captain's Dragonhide Armsplints",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "16396": {
+   "name": "Knight-Lieutenant's Leather Gauntlets",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "16397": {
+   "name": "Knight-Lieutenant's Dragonhide Gloves",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "16398": {
+   "name": "Knight-Captain's Leather Belt",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "16399": {
+   "name": "Knight-Captain's Dragonhide Girdle",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "16400": {
+   "name": "Knight-Captain's Chain Girdle",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "16401": {
+   "name": "Knight-Lieutenant's Chain Boots",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "16402": {
+   "name": "Knight-Captain's Chain Armguards",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "16403": {
+   "name": "Knight-Lieutenant's Chain Gauntlets",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "16405": {
+   "name": "Knight-Lieutenant's Plate Boots",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "16406": {
+   "name": "Knight-Lieutenant's Plate Gauntlets",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "16409": {
+   "name": "Knight-Lieutenant's Lamellar Sabatons",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "16410": {
+   "name": "Knight-Lieutenant's Lamellar Gauntlets",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "16411": {
+   "name": "Knight-Captain's Lamellar Cinch",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "16412": {
+   "name": "Knight-Captain's Lamellar Armsplints",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "16413": {
+   "name": "Knight-Captain's Silk Raiment",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "16414": {
+   "name": "Knight-Captain's Silk Leggings",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "16415": {
+   "name": "Lieutenant Commander's Silk Spaulders",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "16416": {
+   "name": "Lieutenant Commander's Crown",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "16417": {
+   "name": "Knight-Captain's Leather Armor",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "16418": {
+   "name": "Lieutenant Commander's Leather Veil",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "16419": {
+   "name": "Knight-Captain's Leather Legguards",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "16420": {
+   "name": "Lieutenant Commander's Leather Spaulders",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "16421": {
+   "name": "Knight-Captain's Dragonhide Tunic",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "16422": {
+   "name": "Knight-Captain's Dragonhide Leggings",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "16423": {
+   "name": "Lieutenant Commander's Dragonhide Epaulets",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "16424": {
+   "name": "Lieutenant Commander's Dragonhide Shroud",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "16425": {
+   "name": "Knight-Captain's Chain Hauberk",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "16426": {
+   "name": "Knight-Captain's Chain Leggings",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "16427": {
+   "name": "Lieutenant Commander's Chain Pauldrons",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "16428": {
+   "name": "Lieutenant Commander's Chain Helmet",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "16429": {
+   "name": "Lieutenant Commander's Plate Helm",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "16430": {
+   "name": "Knight-Captain's Plate Chestguard",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "16431": {
+   "name": "Knight-Captain's Plate Leggings",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "16432": {
+   "name": "Lieutenant Commander's Plate Pauldrons",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "16433": {
+   "name": "Knight-Captain's Lamellar Breastplate",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "16434": {
+   "name": "Lieutenant Commander's Lamellar Headguard",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "16435": {
+   "name": "Knight-Captain's Lamellar Leggings",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "16436": {
+   "name": "Lieutenant Commander's Lamellar Shoulders",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "16437": {
+   "name": "Marshal's Silk Footwraps",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "16438": {
+   "name": "Marshal's Silk Bracers",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "16439": {
+   "name": "Marshal's Silk Sash",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "16440": {
+   "name": "Marshal's Silk Gloves",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "16441": {
+   "name": "Field Marshal's Coronet",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "16442": {
+   "name": "Marshal's Silk Leggings",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "16443": {
+   "name": "Field Marshal's Silk Vestments",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "16444": {
+   "name": "Field Marshal's Silk Spaulders",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "16445": {
+   "name": "Marshal's Dragonhide Bracers",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "16446": {
+   "name": "Marshal's Leather Footguards",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "16447": {
+   "name": "Marshal's Dragonhide Waistguard",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "16448": {
+   "name": "Marshal's Dragonhide Gauntlets",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "16449": {
+   "name": "Field Marshal's Dragonhide Spaulders",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "16450": {
+   "name": "Marshal's Dragonhide Legguards",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "16451": {
+   "name": "Field Marshal's Dragonhide Helmet",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "16452": {
+   "name": "Field Marshal's Dragonhide Breastplate",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "16453": {
+   "name": "Field Marshal's Leather Chestpiece",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "16454": {
+   "name": "Marshal's Leather Handgrips",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "16455": {
+   "name": "Field Marshal's Leather Mask",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "16456": {
+   "name": "Marshal's Leather Leggings",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "16457": {
+   "name": "Field Marshal's Leather Epaulets",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "16458": {
+   "name": "Marshal's Leather Cinch",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "16459": {
+   "name": "Marshal's Dragonhide Boots",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "16460": {
+   "name": "Marshal's Leather Armsplints",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "16461": {
+   "name": "Marshal's Chain Bracers",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "16462": {
+   "name": "Marshal's Chain Boots",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "16463": {
+   "name": "Marshal's Chain Grips",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "16464": {
+   "name": "Marshal's Chain Girdle",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "16465": {
+   "name": "Field Marshal's Chain Helm",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "16466": {
+   "name": "Field Marshal's Chain Breastplate",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "16467": {
+   "name": "Marshal's Chain Legguards",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "16468": {
+   "name": "Field Marshal's Chain Spaulders",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "16469": {
+   "name": "Marshal's Lamellar Armguards",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "16470": {
+   "name": "Marshal's Lamellar Belt",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "16471": {
+   "name": "Marshal's Lamellar Gloves",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "16472": {
+   "name": "Marshal's Lamellar Boots",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "16473": {
+   "name": "Field Marshal's Lamellar Chestplate",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "16474": {
+   "name": "Field Marshal's Lamellar Faceguard",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "16475": {
+   "name": "Marshal's Lamellar Legplates",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "16476": {
+   "name": "Field Marshal's Lamellar Pauldrons",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "16477": {
+   "name": "Field Marshal's Plate Armor",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "16478": {
+   "name": "Field Marshal's Plate Helm",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "16479": {
+   "name": "Marshal's Plate Legguards",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "16480": {
+   "name": "Field Marshal's Plate Shoulderguards",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "16481": {
+   "name": "Marshal's Plate Bracers",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "16482": {
+   "name": "Marshal's Plate Girdle",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "16483": {
+   "name": "Marshal's Plate Boots",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "16484": {
+   "name": "Marshal's Plate Gauntlets",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "16486": {
+   "name": "First Sergeant's Silk Cuffs",
+   "classes": [
+    "MAGE",
+    "PRIEST",
+    "WARLOCK"
+   ]
+  },
+  "16488": {
+   "name": "Legionnaire's Silk Belt",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "16493": {
+   "name": "Legionnaire's Dragonhide Armguards",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "16494": {
+   "name": "Blood Guard's Dragonhide Boots",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "16495": {
+   "name": "Legionnaire's Dragonhide Waistband",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "16496": {
+   "name": "Blood Guard's Dragonhide Gauntlets",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "16497": {
+   "name": "First Sergeant's Leather Armguards",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "16500": {
+   "name": "Legionnaire's Leather Girdle",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "16501": {
+   "name": "Champion's Dragonhide Spaulders",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "16502": {
+   "name": "Legionnaire's Dragonhide Trousers",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "16503": {
+   "name": "Champion's Dragonhide Helm",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "16504": {
+   "name": "Legionnaire's Dragonhide Breastplate",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "16509": {
+   "name": "Blood Guard's Plate Boots",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "16510": {
+   "name": "Blood Guard's Plate Gloves",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "16513": {
+   "name": "Legionnaire's Plate Armor",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "16514": {
+   "name": "Champion's Plate Headguard",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "16515": {
+   "name": "Legionnaire's Plate Legguards",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "16516": {
+   "name": "Champion's Plate Pauldrons",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "16517": {
+   "name": "Legionnaire's Chain Bracers",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "16518": {
+   "name": "Blood Guard's Mail Walkers",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "16519": {
+   "name": "Blood Guard's Mail Grips",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "16521": {
+   "name": "Champion's Mail Helm",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "16522": {
+   "name": "Legionnaire's Mail Chestpiece",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "16523": {
+   "name": "Legionnaire's Mail Leggings",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "16524": {
+   "name": "Champion's Mail Shoulders",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "16525": {
+   "name": "Legionnaire's Chain Breastplate",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "16527": {
+   "name": "Legionnaire's Chain Leggings",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "16528": {
+   "name": "Champion's Chain Pauldrons",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "16529": {
+   "name": "Legionnaire's Chain Girdle",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "16530": {
+   "name": "Blood Guard's Chain Gauntlets",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "16531": {
+   "name": "Blood Guard's Chain Boots",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "16532": {
+   "name": "First Sergeant's Mail Wristguards",
+   "classes": [
+    "HUNTER",
+    "SHAMAN"
+   ]
+  },
+  "16533": {
+   "name": "Warlord's Silk Cowl",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "16534": {
+   "name": "General's Silk Trousers",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "16535": {
+   "name": "Warlord's Silk Raiment",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "16536": {
+   "name": "Warlord's Silk Amice",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "16537": {
+   "name": "General's Silk Sash",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "16538": {
+   "name": "General's Silk Cuffs",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "16539": {
+   "name": "General's Silk Boots",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "16540": {
+   "name": "General's Silk Handguards",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "16541": {
+   "name": "Warlord's Plate Armor",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "16542": {
+   "name": "Warlord's Plate Headpiece",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "16543": {
+   "name": "General's Plate Leggings",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "16544": {
+   "name": "Warlord's Plate Shoulders",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "16545": {
+   "name": "General's Plate Boots",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "16546": {
+   "name": "General's Plate Armguards",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "16547": {
+   "name": "General's Plate Girdle",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "16548": {
+   "name": "General's Plate Gauntlets",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "16549": {
+   "name": "Warlord's Dragonhide Hauberk",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "16550": {
+   "name": "Warlord's Dragonhide Helmet",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "16551": {
+   "name": "Warlord's Dragonhide Epaulets",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "16552": {
+   "name": "General's Dragonhide Leggings",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "16553": {
+   "name": "General's Dragonhide Bracers",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "16554": {
+   "name": "General's Dragonhide Boots",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "16555": {
+   "name": "General's Dragonhide Gloves",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "16556": {
+   "name": "General's Dragonhide Belt",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "16557": {
+   "name": "General's Leather Girdle",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "16558": {
+   "name": "General's Leather Treads",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "16559": {
+   "name": "General's Leather Armsplints",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "16560": {
+   "name": "General's Leather Mitts",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "16561": {
+   "name": "Warlord's Leather Helm",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "16562": {
+   "name": "Warlord's Leather Spaulders",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "16563": {
+   "name": "Warlord's Leather Breastplate",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "16564": {
+   "name": "General's Leather Legguards",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "16565": {
+   "name": "Warlord's Chain Chestpiece",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "16566": {
+   "name": "Warlord's Chain Helmet",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "16567": {
+   "name": "General's Chain Legguards",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "16568": {
+   "name": "Warlord's Chain Shoulders",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "16569": {
+   "name": "General's Chain Sabatons",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "16570": {
+   "name": "General's Chain Wristguards",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "16571": {
+   "name": "General's Chain Gloves",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "16572": {
+   "name": "General's Chain Girdle",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "16573": {
+   "name": "General's Mail Boots",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "16574": {
+   "name": "General's Mail Gauntlets",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "16575": {
+   "name": "General's Mail Waistband",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "16576": {
+   "name": "General's Mail Bracers",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "16577": {
+   "name": "Warlord's Mail Armor",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "16578": {
+   "name": "Warlord's Mail Helm",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "16579": {
+   "name": "General's Mail Leggings",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "16580": {
+   "name": "Warlord's Mail Spaulders",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "16979": {
+   "name": "Flarecore Gloves",
+   "classes": [
+    "MAGE",
+    "PRIEST",
+    "WARLOCK"
+   ]
+  },
+  "17562": {
+   "name": "Knight-Lieutenant's Dreadweave Boots",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "17563": {
+   "name": "Knight-Captain's Dreadweave Bracers",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "17564": {
+   "name": "Knight-Lieutenant's Dreadweave Gloves",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "17565": {
+   "name": "Knight-Captain's Dreadweave Belt",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "17566": {
+   "name": "Lieutenant Commander's Headguard",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "17567": {
+   "name": "Knight-Captain's Dreadweave Leggings",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "17568": {
+   "name": "Knight-Captain's Dreadweave Robe",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "17569": {
+   "name": "Lieutenant Commander's Dreadweave Mantle",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "17570": {
+   "name": "Champion's Dreadweave Hood",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "17571": {
+   "name": "Legionnaire's Dreadweave Leggings",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "17572": {
+   "name": "Legionnaire's Dreadweave Robe",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "17573": {
+   "name": "Champion's Dreadweave Shoulders",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "17574": {
+   "name": "Legionnaire's Dreadweave Belt",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "17575": {
+   "name": "Legionnaire's Dreadweave Bracers",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "17576": {
+   "name": "Blood Guard's Dreadweave Boots",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "17577": {
+   "name": "Blood Guard's Dreadweave Gloves",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "17578": {
+   "name": "Field Marshal's Coronal",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "17579": {
+   "name": "Marshal's Dreadweave Leggings",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "17580": {
+   "name": "Field Marshal's Dreadweave Shoulders",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "17581": {
+   "name": "Field Marshal's Dreadweave Robe",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "17582": {
+   "name": "Marshal's Dreadweave Cuffs",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "17583": {
+   "name": "Marshal's Dreadweave Boots",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "17584": {
+   "name": "Marshal's Dreadweave Gloves",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "17585": {
+   "name": "Marshal's Dreadweave Sash",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "17586": {
+   "name": "General's Dreadweave Boots",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "17587": {
+   "name": "General's Dreadweave Bracers",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "17588": {
+   "name": "General's Dreadweave Gloves",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "17589": {
+   "name": "General's Dreadweave Belt",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "17590": {
+   "name": "Warlord's Dreadweave Mantle",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "17591": {
+   "name": "Warlord's Dreadweave Hood",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "17592": {
+   "name": "Warlord's Dreadweave Robe",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "17593": {
+   "name": "General's Dreadweave Pants",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "17594": {
+   "name": "Knight-Lieutenant's Satin Boots",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "17595": {
+   "name": "Knight-Captain's Satin Cuffs",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "17596": {
+   "name": "Knight-Lieutenant's Satin Gloves",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "17597": {
+   "name": "Knight-Captain's Satin Cord",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "17598": {
+   "name": "Lieutenant Commander's Diadem",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "17599": {
+   "name": "Knight-Captain's Satin Leggings",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "17600": {
+   "name": "Knight-Captain's Satin Robes",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "17601": {
+   "name": "Lieutenant Commander's Satin Amice",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "17602": {
+   "name": "Field Marshal's Headdress",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "17603": {
+   "name": "Marshal's Satin Pants",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "17604": {
+   "name": "Field Marshal's Satin Mantle",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "17605": {
+   "name": "Field Marshal's Satin Vestments",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "17606": {
+   "name": "Marshal's Satin Bracers",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "17607": {
+   "name": "Marshal's Satin Sandals",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "17608": {
+   "name": "Marshal's Satin Gloves",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "17609": {
+   "name": "Marshal's Satin Sash",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "17614": {
+   "name": "Legionnaire's Satin Sash",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "17615": {
+   "name": "Legionnaire's Satin Cuffs",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "17618": {
+   "name": "General's Satin Boots",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "17619": {
+   "name": "General's Satin Bracers",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "17620": {
+   "name": "General's Satin Gloves",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "17621": {
+   "name": "General's Satin Cinch",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "17622": {
+   "name": "Warlord's Satin Mantle",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "17623": {
+   "name": "Warlord's Satin Cowl",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "17624": {
+   "name": "Warlord's Satin Robes",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "17625": {
+   "name": "General's Satin Leggings",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "18348": {
+   "name": "Quel'Serrar",
+   "classes": [
+    "PALADIN",
+    "WARRIOR"
+   ]
+  },
+  "18354": {
+   "name": "Pimgib's Collar",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "18429": {
+   "name": "First Sergeant's Plate Bracers",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "18430": {
+   "name": "First Sergeant's Plate Bracers",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "18432": {
+   "name": "First Sergeant's Mail Wristguards",
+   "classes": [
+    "HUNTER",
+    "SHAMAN"
+   ]
+  },
+  "18434": {
+   "name": "First Sergeant's Dragonhide Armguards",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "18435": {
+   "name": "First Sergeant's Leather Armguards",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "18436": {
+   "name": "First Sergeant's Dragonhide Armguards",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "18437": {
+   "name": "First Sergeant's Silk Cuffs",
+   "classes": [
+    "MAGE",
+    "PRIEST",
+    "WARLOCK"
+   ]
+  },
+  "18445": {
+   "name": "Sergeant Major's Plate Wristguards",
+   "classes": [
+    "PALADIN",
+    "WARRIOR"
+   ]
+  },
+  "18447": {
+   "name": "Sergeant Major's Plate Wristguards",
+   "classes": [
+    "PALADIN",
+    "WARRIOR"
+   ]
+  },
+  "18448": {
+   "name": "Sergeant Major's Chain Armguards",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "18449": {
+   "name": "Sergeant Major's Chain Armguards",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "18452": {
+   "name": "Sergeant Major's Leather Armsplints",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "18453": {
+   "name": "Sergeant Major's Leather Armsplints",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "18454": {
+   "name": "Sergeant Major's Dragonhide Armsplints",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "18455": {
+   "name": "Sergeant Major's Dragonhide Armsplints",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "18456": {
+   "name": "Sergeant Major's Silk Cuffs",
+   "classes": [
+    "MAGE",
+    "PRIEST",
+    "WARLOCK"
+   ]
+  },
+  "18457": {
+   "name": "Sergeant Major's Silk Cuffs",
+   "classes": [
+    "MAGE",
+    "PRIEST",
+    "WARLOCK"
+   ]
+  },
+  "18465": {
+   "name": "Royal Seal of Eldre'Thalas",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "18466": {
+   "name": "Royal Seal of Eldre'Thalas",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "18468": {
+   "name": "Royal Seal of Eldre'Thalas",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "18469": {
+   "name": "Royal Seal of Eldre'Thalas",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "18470": {
+   "name": "Royal Seal of Eldre'Thalas",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "18472": {
+   "name": "Royal Seal of Eldre'Thalas",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "18473": {
+   "name": "Royal Seal of Eldre'Thalas",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "18602": {
+   "name": "Tome of Sacrifice",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "18608": {
+   "name": "Benediction",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "18609": {
+   "name": "Anathema",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "18713": {
+   "name": "Rhok'delar, Longbow of the Ancient Keepers",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "18715": {
+   "name": "Lok'delar, Stave of the Ancient Keepers",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "18762": {
+   "name": "Shard of the Green Flame",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "19576": {
+   "name": "Strength of Mugamba",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "19577": {
+   "name": "Rage of Mugamba",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "19600": {
+   "name": "Pebble of Kajaro",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "19604": {
+   "name": "Kezan's Taint",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "19605": {
+   "name": "Kezan's Unstoppable Taint",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "19616": {
+   "name": "Zandalarian Shadow Talisman",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "19619": {
+   "name": "Maelstrom's Tendril",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "19620": {
+   "name": "Maelstrom's Tendril",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "19621": {
+   "name": "Maelstrom's Wrath",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "19822": {
+   "name": "Zandalar Vindicator's Breastplate",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "19823": {
+   "name": "Zandalar Vindicator's Belt",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "19824": {
+   "name": "Zandalar Vindicator's Armguards",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "19825": {
+   "name": "Zandalar Freethinker's Breastplate",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "19826": {
+   "name": "Zandalar Freethinker's Belt",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "19827": {
+   "name": "Zandalar Freethinker's Armguards",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "19828": {
+   "name": "Zandalar Augur's Hauberk",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "19829": {
+   "name": "Zandalar Augur's Belt",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "19830": {
+   "name": "Zandalar Augur's Bracers",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "19831": {
+   "name": "Zandalar Predator's Mantle",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "19832": {
+   "name": "Zandalar Predator's Belt",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "19833": {
+   "name": "Zandalar Predator's Bracers",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "19834": {
+   "name": "Zandalar Madcap's Tunic",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "19835": {
+   "name": "Zandalar Madcap's Mantle",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "19836": {
+   "name": "Zandalar Madcap's Bracers",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "19838": {
+   "name": "Zandalar Haruspex's Tunic",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "19839": {
+   "name": "Zandalar Haruspex's Belt",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "19840": {
+   "name": "Zandalar Haruspex's Bracers",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "19841": {
+   "name": "Zandalar Confessor's Mantle",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "19842": {
+   "name": "Zandalar Confessor's Bindings",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "19843": {
+   "name": "Zandalar Confessor's Wraps",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "19845": {
+   "name": "Zandalar Illusionist's Mantle",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "19846": {
+   "name": "Zandalar Illusionist's Wraps",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "19848": {
+   "name": "Zandalar Demoniac's Wraps",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "19849": {
+   "name": "Zandalar Demoniac's Mantle",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "19982": {
+   "name": "Duskbat Drape",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "19984": {
+   "name": "Ebon Mask",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "19990": {
+   "name": "Blessed Prayer Beads",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "19991": {
+   "name": "Devilsaur Eye",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "19992": {
+   "name": "Devilsaur Tooth",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "20033": {
+   "name": "Zandalar Demoniac's Robe",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "20034": {
+   "name": "Zandalar Illusionist's Robe",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "20035": {
+   "name": "Glacial Spike",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "20036": {
+   "name": "Fire Ruby",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "20037": {
+   "name": "Arcane Crystal Pendant",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "20082": {
+   "name": "Woestave",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "20083": {
+   "name": "Hunting Spear",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "20134": {
+   "name": "Skyfury Helm",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "20255": {
+   "name": "Whisperwalk Boots",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "20369": {
+   "name": "Azurite Fists",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "20503": {
+   "name": "Enamored Water Spirit",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "20504": {
+   "name": "Lightforged Blade",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "20505": {
+   "name": "Chivalrous Signet",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "20512": {
+   "name": "Sanctified Orb",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "20517": {
+   "name": "Razorsteel Shoulders",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "20521": {
+   "name": "Fury Visor",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "20530": {
+   "name": "Robes of Servitude",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "20534": {
+   "name": "Abyss Shard",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "20536": {
+   "name": "Soul Harvester",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "20556": {
+   "name": "Wildstaff",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "20699": {
+   "name": "Cenarion Reservist's Legplates",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "20700": {
+   "name": "Cenarion Reservist's Legplates",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "20701": {
+   "name": "Cenarion Reservist's Legguards",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "20702": {
+   "name": "Cenarion Reservist's Legguards",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "20703": {
+   "name": "Cenarion Reservist's Leggings",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "20704": {
+   "name": "Cenarion Reservist's Leggings",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "20705": {
+   "name": "Cenarion Reservist's Pants",
+   "classes": [
+    "MAGE",
+    "WARLOCK"
+   ]
+  },
+  "20707": {
+   "name": "Cenarion Reservist's Pants",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "20710": {
+   "name": "Crystal Encrusted Greaves",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "20711": {
+   "name": "Crystal Lined Greaves",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "20712": {
+   "name": "Wastewalker's Gauntlets",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "20713": {
+   "name": "Desertstalkers's Gauntlets",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "20714": {
+   "name": "Sandstorm Boots",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "20715": {
+   "name": "Dunestalker's Boots",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "20716": {
+   "name": "Sandworm Skin Gloves",
+   "classes": [
+    "MAGE",
+    "WARLOCK"
+   ]
+  },
+  "20717": {
+   "name": "Desert Bloom Gloves",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "21329": {
+   "name": "Conqueror's Crown",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "21330": {
+   "name": "Conqueror's Spaulders",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "21331": {
+   "name": "Conqueror's Breastplate",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "21332": {
+   "name": "Conqueror's Legguards",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "21333": {
+   "name": "Conqueror's Greaves",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "21334": {
+   "name": "Doomcaller's Robes",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "21335": {
+   "name": "Doomcaller's Mantle",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "21336": {
+   "name": "Doomcaller's Trousers",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "21337": {
+   "name": "Doomcaller's Circlet",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "21338": {
+   "name": "Doomcaller's Footwraps",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "21343": {
+   "name": "Enigma Robes",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "21344": {
+   "name": "Enigma Boots",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "21345": {
+   "name": "Enigma Shoulderpads",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "21346": {
+   "name": "Enigma Leggings",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "21347": {
+   "name": "Enigma Circlet",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "21348": {
+   "name": "Tiara of the Oracle",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "21349": {
+   "name": "Footwraps of the Oracle",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "21350": {
+   "name": "Mantle of the Oracle",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "21351": {
+   "name": "Vestments of the Oracle",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "21352": {
+   "name": "Trousers of the Oracle",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "21353": {
+   "name": "Genesis Helm",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "21354": {
+   "name": "Genesis Shoulderpads",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "21355": {
+   "name": "Genesis Boots",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "21356": {
+   "name": "Genesis Trousers",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "21357": {
+   "name": "Genesis Vest",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "21359": {
+   "name": "Deathdealer's Boots",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "21360": {
+   "name": "Deathdealer's Helm",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "21361": {
+   "name": "Deathdealer's Spaulders",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "21362": {
+   "name": "Deathdealer's Leggings",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "21364": {
+   "name": "Deathdealer's Vest",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "21365": {
+   "name": "Striker's Footguards",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "21366": {
+   "name": "Striker's Diadem",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "21367": {
+   "name": "Striker's Pauldrons",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "21368": {
+   "name": "Striker's Leggings",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "21370": {
+   "name": "Striker's Hauberk",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "21372": {
+   "name": "Stormcaller's Diadem",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "21373": {
+   "name": "Stormcaller's Footguards",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "21374": {
+   "name": "Stormcaller's Hauberk",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "21375": {
+   "name": "Stormcaller's Leggings",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "21376": {
+   "name": "Stormcaller's Pauldrons",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "21387": {
+   "name": "Avenger's Crown",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "21388": {
+   "name": "Avenger's Greaves",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "21389": {
+   "name": "Avenger's Breastplate",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "21390": {
+   "name": "Avenger's Legguards",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "21391": {
+   "name": "Avenger's Pauldrons",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "21392": {
+   "name": "Sickle of Unyielding Strength",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "21393": {
+   "name": "Signet of Unyielding Strength",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "21394": {
+   "name": "Drape of Unyielding Strength",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "21395": {
+   "name": "Blade of Eternal Justice",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "21396": {
+   "name": "Ring of Eternal Justice",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "21397": {
+   "name": "Cape of Eternal Justice",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "21398": {
+   "name": "Hammer of the Gathering Storm",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "21399": {
+   "name": "Ring of the Gathering Storm",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "21400": {
+   "name": "Cloak of the Gathering Storm",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "21401": {
+   "name": "Scythe of the Unseen Path",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "21402": {
+   "name": "Signet of the Unseen Path",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "21403": {
+   "name": "Cloak of the Unseen Path",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "21404": {
+   "name": "Dagger of Veiled Shadows",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "21405": {
+   "name": "Band of Veiled Shadows",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "21406": {
+   "name": "Cloak of Veiled Shadows",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "21407": {
+   "name": "Mace of Unending Life",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "21408": {
+   "name": "Band of Unending Life",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "21409": {
+   "name": "Cloak of Unending Life",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "21410": {
+   "name": "Gavel of Infinite Wisdom",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "21411": {
+   "name": "Ring of Infinite Wisdom",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "21412": {
+   "name": "Shroud of Infinite Wisdom",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "21413": {
+   "name": "Blade of Vaulted Secrets",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "21414": {
+   "name": "Band of Vaulted Secrets",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "21415": {
+   "name": "Drape of Vaulted Secrets",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "21416": {
+   "name": "Kris of Unspoken Names",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "21417": {
+   "name": "Ring of Unspoken Names",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "21418": {
+   "name": "Shroud of Unspoken Names",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "21563": {
+   "name": "Don Rodrigo's Band",
+   "classes": [
+    "MAGE",
+    "PRIEST",
+    "WARLOCK"
+   ]
+  },
+  "21890": {
+   "name": "Gloves of the Fallen Prophet",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "22272": {
+   "name": "Forest's Embrace",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "22274": {
+   "name": "Grizzled Pelt",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "22301": {
+   "name": "Ironweave Robe",
+   "classes": [
+    "MAGE",
+    "PRIEST",
+    "WARLOCK"
+   ]
+  },
+  "22302": {
+   "name": "Ironweave Cowl",
+   "classes": [
+    "MAGE",
+    "PRIEST",
+    "WARLOCK"
+   ]
+  },
+  "22303": {
+   "name": "Ironweave Pants",
+   "classes": [
+    "MAGE",
+    "PRIEST",
+    "WARLOCK"
+   ]
+  },
+  "22304": {
+   "name": "Ironweave Gloves",
+   "classes": [
+    "MAGE",
+    "PRIEST",
+    "WARLOCK"
+   ]
+  },
+  "22305": {
+   "name": "Ironweave Mantle",
+   "classes": [
+    "MAGE",
+    "PRIEST",
+    "WARLOCK"
+   ]
+  },
+  "22306": {
+   "name": "Ironweave Belt",
+   "classes": [
+    "MAGE",
+    "PRIEST",
+    "WARLOCK"
+   ]
+  },
+  "22311": {
+   "name": "Ironweave Boots",
+   "classes": [
+    "MAGE",
+    "PRIEST",
+    "WARLOCK"
+   ]
+  },
+  "22313": {
+   "name": "Ironweave Bracers",
+   "classes": [
+    "MAGE",
+    "PRIEST",
+    "WARLOCK"
+   ]
+  },
+  "22416": {
+   "name": "Dreadnaught Breastplate",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "22417": {
+   "name": "Dreadnaught Legplates",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "22418": {
+   "name": "Dreadnaught Helmet",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "22419": {
+   "name": "Dreadnaught Pauldrons",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "22420": {
+   "name": "Dreadnaught Sabatons",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "22421": {
+   "name": "Dreadnaught Gauntlets",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "22422": {
+   "name": "Dreadnaught Waistguard",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "22423": {
+   "name": "Dreadnaught Bracers",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "22424": {
+   "name": "Redemption Wristguards",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "22425": {
+   "name": "Redemption Tunic",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "22426": {
+   "name": "Redemption Handguards",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "22427": {
+   "name": "Redemption Legguards",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "22428": {
+   "name": "Redemption Headpiece",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "22429": {
+   "name": "Redemption Spaulders",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "22430": {
+   "name": "Redemption Boots",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "22431": {
+   "name": "Redemption Girdle",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "22436": {
+   "name": "Cryptstalker Tunic",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "22437": {
+   "name": "Cryptstalker Legguards",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "22438": {
+   "name": "Cryptstalker Headpiece",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "22439": {
+   "name": "Cryptstalker Spaulders",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "22440": {
+   "name": "Cryptstalker Boots",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "22441": {
+   "name": "Cryptstalker Handguards",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "22442": {
+   "name": "Cryptstalker Girdle",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "22443": {
+   "name": "Cryptstalker Wristguards",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "22458": {
+   "name": "Moonshadow Stave",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "22464": {
+   "name": "Earthshatter Tunic",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "22465": {
+   "name": "Earthshatter Legguards",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "22466": {
+   "name": "Earthshatter Headpiece",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "22467": {
+   "name": "Earthshatter Spaulders",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "22468": {
+   "name": "Earthshatter Boots",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "22469": {
+   "name": "Earthshatter Handguards",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "22470": {
+   "name": "Earthshatter Girdle",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "22471": {
+   "name": "Earthshatter Wristguards",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "22476": {
+   "name": "Bonescythe Breastplate",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "22477": {
+   "name": "Bonescythe Legplates",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "22478": {
+   "name": "Bonescythe Helmet",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "22479": {
+   "name": "Bonescythe Pauldrons",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "22480": {
+   "name": "Bonescythe Sabatons",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "22481": {
+   "name": "Bonescythe Gauntlets",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "22482": {
+   "name": "Bonescythe Waistguard",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "22483": {
+   "name": "Bonescythe Bracers",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "22488": {
+   "name": "Dreamwalker Tunic",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "22489": {
+   "name": "Dreamwalker Legguards",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "22490": {
+   "name": "Dreamwalker Headpiece",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "22491": {
+   "name": "Dreamwalker Spaulders",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "22492": {
+   "name": "Dreamwalker Boots",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "22493": {
+   "name": "Dreamwalker Handguards",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "22494": {
+   "name": "Dreamwalker Girdle",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "22495": {
+   "name": "Dreamwalker Wristguards",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "22496": {
+   "name": "Frostfire Robe",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "22497": {
+   "name": "Frostfire Leggings",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "22498": {
+   "name": "Frostfire Circlet",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "22499": {
+   "name": "Frostfire Shoulderpads",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "22500": {
+   "name": "Frostfire Sandals",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "22501": {
+   "name": "Frostfire Gloves",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "22502": {
+   "name": "Frostfire Belt",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "22503": {
+   "name": "Frostfire Bindings",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "22504": {
+   "name": "Plagueheart Robe",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "22505": {
+   "name": "Plagueheart Leggings",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "22506": {
+   "name": "Plagueheart Circlet",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "22507": {
+   "name": "Plagueheart Shoulderpads",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "22508": {
+   "name": "Plagueheart Sandals",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "22509": {
+   "name": "Plagueheart Gloves",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "22510": {
+   "name": "Plagueheart Belt",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "22511": {
+   "name": "Plagueheart Bindings",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "22512": {
+   "name": "Robe of Faith",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "22513": {
+   "name": "Leggings of Faith",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "22514": {
+   "name": "Circlet of Faith",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "22515": {
+   "name": "Shoulderpads of Faith",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "22516": {
+   "name": "Sandals of Faith",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "22517": {
+   "name": "Gloves of Faith",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "22518": {
+   "name": "Belt of Faith",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "22519": {
+   "name": "Bindings of Faith",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "22589": {
+   "name": "Atiesh, Greatstaff of the Guardian",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "22630": {
+   "name": "Atiesh, Greatstaff of the Guardian",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "22631": {
+   "name": "Atiesh, Greatstaff of the Guardian",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "22632": {
+   "name": "Atiesh, Greatstaff of the Guardian",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "22843": {
+   "name": "Blood Guard's Chain Greaves",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "22852": {
+   "name": "Blood Guard's Dragonhide Treads",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "22855": {
+   "name": "Blood Guard's Dreadweave Walkers",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "22856": {
+   "name": "Blood Guard's Leather Walkers",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "22857": {
+   "name": "Blood Guard's Mail Greaves",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "22858": {
+   "name": "Blood Guard's Plate Greaves",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "22860": {
+   "name": "Blood Guard's Silk Walkers",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "22862": {
+   "name": "Blood Guard's Chain Vices",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "22863": {
+   "name": "Blood Guard's Dragonhide Grips",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "22864": {
+   "name": "Blood Guard's Leather Grips",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "22865": {
+   "name": "Blood Guard's Dreadweave Handwraps",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "22867": {
+   "name": "Blood Guard's Mail Vices",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "22868": {
+   "name": "Blood Guard's Plate Gauntlets",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "22870": {
+   "name": "Blood Guard's Silk Handwraps",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "22872": {
+   "name": "Legionnaire's Plate Hauberk",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "22873": {
+   "name": "Legionnaire's Plate Leggings",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "22874": {
+   "name": "Legionnaire's Chain Hauberk",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "22875": {
+   "name": "Legionnaire's Chain Legguards",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "22876": {
+   "name": "Legionnaire's Mail Hauberk",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "22877": {
+   "name": "Legionnaire's Dragonhide Chestpiece",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "22878": {
+   "name": "Legionnaire's Dragonhide Leggings",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "22879": {
+   "name": "Legionnaire's Leather Chestpiece",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "22880": {
+   "name": "Legionnaire's Leather Legguards",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "22881": {
+   "name": "Legionnaire's Dreadweave Legguards",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "22883": {
+   "name": "Legionnaire's Silk Legguards",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "22884": {
+   "name": "Legionnaire's Dreadweave Tunic",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "22886": {
+   "name": "Legionnaire's Silk Tunic",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "22887": {
+   "name": "Legionnaire's Mail Legguards",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "23059": {
+   "name": "Ring of the Dreadnaught",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "23060": {
+   "name": "Bonescythe Ring",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "23061": {
+   "name": "Ring of Faith",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "23062": {
+   "name": "Frostfire Ring",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "23063": {
+   "name": "Plagueheart Ring",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "23064": {
+   "name": "Ring of the Dreamwalker",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "23065": {
+   "name": "Ring of the Earthshatterer",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "23066": {
+   "name": "Ring of Redemption",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "23067": {
+   "name": "Ring of the Cryptstalker",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "23243": {
+   "name": "Champion's Plate Shoulders",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "23244": {
+   "name": "Champion's Plate Helm",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "23251": {
+   "name": "Champion's Chain Helm",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "23252": {
+   "name": "Champion's Chain Shoulders",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "23253": {
+   "name": "Champion's Dragonhide Headguard",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "23254": {
+   "name": "Champion's Dragonhide Shoulders",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "23255": {
+   "name": "Champion's Dreadweave Cowl",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "23256": {
+   "name": "Champion's Dreadweave Spaulders",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "23257": {
+   "name": "Champion's Leather Helm",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "23258": {
+   "name": "Champion's Leather Shoulders",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "23259": {
+   "name": "Champion's Mail Headguard",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "23260": {
+   "name": "Champion's Mail Pauldrons",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "23263": {
+   "name": "Champion's Silk Cowl",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "23264": {
+   "name": "Champion's Silk Mantle",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "23272": {
+   "name": "Knight-Captain's Lamellar Breastplate",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "23273": {
+   "name": "Knight-Captain's Lamellar Leggings",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "23274": {
+   "name": "Knight-Lieutenant's Lamellar Gauntlets",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "23275": {
+   "name": "Knight-Lieutenant's Lamellar Sabatons",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "23276": {
+   "name": "Lieutenant Commander's Lamellar Headguard",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "23277": {
+   "name": "Lieutenant Commander's Lamellar Shoulders",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "23278": {
+   "name": "Knight-Lieutenant's Chain Greaves",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "23279": {
+   "name": "Knight-Lieutenant's Chain Vices",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "23280": {
+   "name": "Knight-Lieutenant's Dragonhide Grips",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "23281": {
+   "name": "Knight-Lieutenant's Dragonhide Treads",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "23282": {
+   "name": "Knight-Lieutenant's Dreadweave Handwraps",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "23283": {
+   "name": "Knight-Lieutenant's Dreadweave Walkers",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "23284": {
+   "name": "Knight-Lieutenant's Leather Grips",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "23285": {
+   "name": "Knight-Lieutenant's Leather Walkers",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "23286": {
+   "name": "Knight-Lieutenant's Plate Gauntlets",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "23287": {
+   "name": "Knight-Lieutenant's Plate Greaves",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "23288": {
+   "name": "Knight-Lieutenant's Satin Handwraps",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "23289": {
+   "name": "Knight-Lieutenant's Satin Walkers",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "23290": {
+   "name": "Knight-Lieutenant's Silk Handwraps",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "23291": {
+   "name": "Knight-Lieutenant's Silk Walkers",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "23292": {
+   "name": "Knight-Captain's Chain Hauberk",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "23293": {
+   "name": "Knight-Captain's Chain Legguards",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "23294": {
+   "name": "Knight-Captain's Dragonhide Chestpiece",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "23295": {
+   "name": "Knight-Captain's Dragonhide Leggings",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "23296": {
+   "name": "Knight-Captain's Dreadweave Legguards",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "23297": {
+   "name": "Knight-Captain's Dreadweave Tunic",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "23298": {
+   "name": "Knight-Captain's Leather Chestpiece",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "23299": {
+   "name": "Knight-Captain's Leather Legguards",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "23300": {
+   "name": "Knight-Captain's Plate Hauberk",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "23301": {
+   "name": "Knight-Captain's Plate Leggings",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "23302": {
+   "name": "Knight-Captain's Satin Legguards",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "23303": {
+   "name": "Knight-Captain's Satin Tunic",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "23304": {
+   "name": "Knight-Captain's Silk Legguards",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "23305": {
+   "name": "Knight-Captain's Silk Tunic",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "23306": {
+   "name": "Lieutenant Commander's Chain Helm",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "23307": {
+   "name": "Lieutenant Commander's Chain Shoulders",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "23308": {
+   "name": "Lieutenant Commander's Dragonhide Headguard",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "23309": {
+   "name": "Lieutenant Commander's Dragonhide Shoulders",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "23310": {
+   "name": "Lieutenant Commander's Dreadweave Cowl",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "23311": {
+   "name": "Lieutenant Commander's Dreadweave Spaulders",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "23312": {
+   "name": "Lieutenant Commander's Leather Helm",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "23313": {
+   "name": "Lieutenant Commander's Leather Shoulders",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "23314": {
+   "name": "Lieutenant Commander's Plate Helm",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "23315": {
+   "name": "Lieutenant Commander's Plate Shoulders",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "23316": {
+   "name": "Lieutenant Commander's Satin Hood",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "23317": {
+   "name": "Lieutenant Commander's Satin Mantle",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "23318": {
+   "name": "Lieutenant Commander's Silk Cowl",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "23319": {
+   "name": "Lieutenant Commander's Silk Mantle",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "221344": {
+   "name": "Personal Spellbook",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "226772": {
+   "name": "Feralheart Sash",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "226774": {
+   "name": "Feralheart Galoshes",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "226775": {
+   "name": "Feralheart Wraps",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "226777": {
+   "name": "Feralheart Hands",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "226780": {
+   "name": "Feralheart Cord",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "226781": {
+   "name": "Feralheart Sandals",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "226782": {
+   "name": "Feralheart Bindings",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "226784": {
+   "name": "Feralheart Gauntlets",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "226785": {
+   "name": "Feralheart Mantle",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "226787": {
+   "name": "Feralheart Pants",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "226793": {
+   "name": "Feralheart Fists",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "226796": {
+   "name": "Feralheart Wristguards",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "226797": {
+   "name": "Feralheart Waistguard",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "226798": {
+   "name": "Feralheart Pauldrons",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "226799": {
+   "name": "Feralheart Legguards",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "226802": {
+   "name": "Feralheart Grips",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "226803": {
+   "name": "Feralheart Treads",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "226828": {
+   "name": "Darkmantle Grips",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "226831": {
+   "name": "Darkmantle Footpads",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "226857": {
+   "name": "Battleboots of Heroism",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "226860": {
+   "name": "Crown of Heroism",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "226865": {
+   "name": "Wristguards of Heroism",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "226866": {
+   "name": "Waistguard of Heroism",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "226867": {
+   "name": "Pauldrons of Heroism",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "226868": {
+   "name": "Legguards of Heroism",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "226869": {
+   "name": "Faceguard of Heroism",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "226870": {
+   "name": "Handguards of Heroism",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "226871": {
+   "name": "Sabatons of Heroism",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "226872": {
+   "name": "Chestguard of Heroism",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "226881": {
+   "name": "Beastmaster's Treads",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "226883": {
+   "name": "Beastmaster's Gauntlets",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "226930": {
+   "name": "Sorcerer's Gauntlets",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "226931": {
+   "name": "Sorcerer's Sandals",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "226950": {
+   "name": "Virtuous Mitts",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "226953": {
+   "name": "Virtuous Wraps",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "226954": {
+   "name": "Virtuous Cord",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "226955": {
+   "name": "Virtuous Epaulets",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "226956": {
+   "name": "Virtuous Leggings",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "226958": {
+   "name": "Virtuous Hands",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "226959": {
+   "name": "Virtuous Slippers",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "226974": {
+   "name": "Soulforge Warboots",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "226977": {
+   "name": "Soulforge Bindings",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "226978": {
+   "name": "Soulforge Cord",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "226979": {
+   "name": "Soulforge Epaulets",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "226980": {
+   "name": "Soulforge Leggings",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "226982": {
+   "name": "Soulforge Fists",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "226983": {
+   "name": "Soulforge Treads",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "226985": {
+   "name": "Soulforge Wristguards",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "226986": {
+   "name": "Soulforge Waistguard",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "226987": {
+   "name": "Soulforge Pauldrons",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "226988": {
+   "name": "Soulforge Legguards",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "226990": {
+   "name": "Soulforge Handguards",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "226991": {
+   "name": "Soulforge Sabatons",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "227007": {
+   "name": "Slippers of The Five Thunders",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "227009": {
+   "name": "Bracers of The Five Thunders",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "227010": {
+   "name": "Sash of The Five Thunders",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "227011": {
+   "name": "Mantle of The Five Thunders",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "227012": {
+   "name": "Leggings of The Five Thunders",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "227014": {
+   "name": "Grasp of The Five Thunders",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "227015": {
+   "name": "Greaves of The Five Thunders",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "227017": {
+   "name": "Bands of The Five Thunders",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "227018": {
+   "name": "Girdle of The Five Thunders",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "227020": {
+   "name": "Legplates of The Five Thunders",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "227022": {
+   "name": "Fists of The Five Thunders",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "227023": {
+   "name": "Treads of The Five Thunders",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "267369": {
+   "name": "Wolfsbane",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "272393": {
+   "name": "Magician's Cord",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "272394": {
+   "name": "Penitent's Cinch",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "272395": {
+   "name": "Assassin's Waistguard",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "272396": {
+   "name": "Shifter's Belt",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "272397": {
+   "name": "Ranger's Belt",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "272398": {
+   "name": "Caretaker's Cord",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "272399": {
+   "name": "Stormseeker's Girdle",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "272401": {
+   "name": "Elunite Cord",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "272402": {
+   "name": "Prophet's Waistcord",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "272403": {
+   "name": "Valiant's Waistguard",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "272404": {
+   "name": "Vindicator's Belt",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "272405": {
+   "name": "Redeemer's Waistcord",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "272410": {
+   "name": "Windseeker's Belt",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "272453": {
+   "name": "Premier Magus Footwraps",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "272454": {
+   "name": "Premier Magus Cuffs",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "272455": {
+   "name": "Premier Magus Gloves",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "272456": {
+   "name": "Premier Magus Belt",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "272457": {
+   "name": "Premier Magus Hood",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "272458": {
+   "name": "Premier Magus Pants",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "272459": {
+   "name": "Premier Magus Robes",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "272461": {
+   "name": "Premier Kodohide Armguards",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "272462": {
+   "name": "Premier Dragonhide Boots",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "272463": {
+   "name": "Premier Dragonhide Waistband",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "272464": {
+   "name": "Premier Kodohide Gauntlets",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "272465": {
+   "name": "Premier Shadowhide Armguards",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "272467": {
+   "name": "Premier Shadowhide Vices",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "272468": {
+   "name": "Premier Shadowhide Girdle",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "272469": {
+   "name": "Premier Dragonhide Spaulders",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "272470": {
+   "name": "Premier Dragonhide Trousers",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "272471": {
+   "name": "Premier Dragonhide Helm",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "272472": {
+   "name": "Premier Dragonhide Breastplate",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "272473": {
+   "name": "Premier Shadowhide Hauberk",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "272474": {
+   "name": "Premier Shadowhide Headguard",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "272475": {
+   "name": "Premier Shadowhide Mantle",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "272476": {
+   "name": "Premier Shadowhide Leggings",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "272477": {
+   "name": "Premier Mortarplate Boots",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "272478": {
+   "name": "Premier Mortarplate Gloves",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "272479": {
+   "name": "Premier Mortarplate Armor",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "272480": {
+   "name": "Premier Mortarplate Headguard",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "272481": {
+   "name": "Premier Mortarplate Legguards",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "272483": {
+   "name": "Premier Chain Bracers",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "272484": {
+   "name": "Premier Mail Walkers",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "272485": {
+   "name": "Premier Linked Grips",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "272486": {
+   "name": "Premier Mail Helm",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "272487": {
+   "name": "Premier Mail Chestpiece",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "272488": {
+   "name": "Premier Linked Leggings",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "272489": {
+   "name": "Premier Linked Shoulders",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "272490": {
+   "name": "Premier Chain Breastplate",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "272491": {
+   "name": "Premier Chain Headguard",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "272492": {
+   "name": "Premier Chain Leggings",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "272494": {
+   "name": "Premier Chain Girdle",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "272495": {
+   "name": "Premier Chain Gauntlets",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "272496": {
+   "name": "Premier Chain Boots",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "272497": {
+   "name": "Premier Linked Wristguards",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "272498": {
+   "name": "Premier Warlord's Magus Cowl",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "272499": {
+   "name": "Premier General's Magus Trousers",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "272500": {
+   "name": "Premier Warlord's Magus Raiment",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "272501": {
+   "name": "Premier General's Magus Amice",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "272502": {
+   "name": "Premier Legionnaire's Magus Sash",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "272503": {
+   "name": "Premier Legionnaire's Magus Cuffs",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "272504": {
+   "name": "Premier Centurion's Magus Boots",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "272505": {
+   "name": "Premier Champion's Magus Handguards",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "272506": {
+   "name": "Premier Warlord's Mortarplate Armor",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "272507": {
+   "name": "Premier Warlord's Mortarplate Headpiece",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "272508": {
+   "name": "Premier General's Mortarplate Leggings",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "272509": {
+   "name": "Premier General's Mortarplate Shoulders",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "272510": {
+   "name": "Premier Centurion's Mortarplate Boots",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "272511": {
+   "name": "Premier Legionnaire's Mortarplate Armguards",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "272512": {
+   "name": "Premier Legionnaire's Mortarplate Girdle",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "272513": {
+   "name": "Premier Champion's Mortarplate Gauntlets",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "272514": {
+   "name": "Premier Warlord's Dragonhide Hauberk",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "272515": {
+   "name": "Premier Warlord's Dragonhide Helmet",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "272516": {
+   "name": "Premier General's Dragonhide Epaulets",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "272517": {
+   "name": "Premier General's Dragonhide Leggings",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "272518": {
+   "name": "Premier Legionnaire's Dragonhide Bracers",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "272519": {
+   "name": "Premier Centurion's Dragonhide Boots",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "272520": {
+   "name": "Premier Champion's Dragonhide Gloves",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "272521": {
+   "name": "Premier Legionnaire's Dragonhide Belt",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "272522": {
+   "name": "Premier Legionnaire's Shadowhide Girdle",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "272523": {
+   "name": "Premier Centurion's Shadowhide Treads",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "272524": {
+   "name": "Premier Legionnaire's Shadowhide Armsplints",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "272525": {
+   "name": "Premier Champion's Shadowhide Mitts",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "272526": {
+   "name": "Premier Warlord's Shadowhide Helm",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "272527": {
+   "name": "Premier General's Shadowhide Spaulders",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "272528": {
+   "name": "Premier Warlord's Shadowhide Breastplate",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "272529": {
+   "name": "Premier General's Shadowhide Legguards",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "272530": {
+   "name": "Premier Warlord's Chain Chestpiece",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "272531": {
+   "name": "Premier Warlord's Chain Helmet",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "272532": {
+   "name": "Premier General's Chain Legguards",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "272533": {
+   "name": "Premier General's Chain Shoulders",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "272534": {
+   "name": "Premier Centurion's Chain Sabatons",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "272535": {
+   "name": "Premier Legionnaire's Chain Wristguards",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "272536": {
+   "name": "Premier Champion's Chain Gloves",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "272537": {
+   "name": "Premier Legionnaire's Chain Girdle",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "272538": {
+   "name": "Premier Centurion's Linked Boots",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "272539": {
+   "name": "Premier Champion's Linked Gauntlets",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "272540": {
+   "name": "Premier Legionnaire's Linked Waistband",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "272541": {
+   "name": "Premier Legionnaire's Linked Bracers",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "272542": {
+   "name": "Premier Warlord's Linked Armor",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "272543": {
+   "name": "Premier Warlord's Linked Helm",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "272544": {
+   "name": "Premier General's Linked Leggings",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "272545": {
+   "name": "Premier General's Linked Spaulders",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "272548": {
+   "name": "Premier Felweave Robe",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "272549": {
+   "name": "Premier Felweave Shoulders",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "272550": {
+   "name": "Premier Felweave Belt",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "272551": {
+   "name": "Premier Felweave Bracers",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "272552": {
+   "name": "Premier Felweave Boots",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "272553": {
+   "name": "Premier Felweave Gloves",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "272554": {
+   "name": "Premier Centurion's Felweave Boots",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "272555": {
+   "name": "Premier Legionnaire's Felweave Bracers",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "272556": {
+   "name": "Premier Champion's Felweave Gloves",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "272557": {
+   "name": "Premier Legionnaire's Felweave Belt",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "272558": {
+   "name": "Premier General's Felweave Mantle",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "272559": {
+   "name": "Premier Warlord's Felweave Hood",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "272560": {
+   "name": "Premier Warlord's Felweave Robe",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "272561": {
+   "name": "Premier General's Felweave Pants",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "272562": {
+   "name": "Premier Satin Cowl",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "272563": {
+   "name": "Premier Satin Trousers",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "272564": {
+   "name": "Premier Satin Vestments",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "272565": {
+   "name": "Premier Satin Shoulderpads",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "272566": {
+   "name": "Premier Satin Sash",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "272567": {
+   "name": "Premier Satin Cuffs",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "272568": {
+   "name": "Premier Satin Boots",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "272569": {
+   "name": "Premier Satin Gloves",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "272570": {
+   "name": "Premier Centurion's Satin Boots",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "272571": {
+   "name": "Premier Legionnaire's Satin Bracers",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "272572": {
+   "name": "Premier Champion's Satin Gloves",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "272573": {
+   "name": "Premier Legionnaire's Satin Cinch",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "272574": {
+   "name": "Premier General's Satin Mantle",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "272575": {
+   "name": "Premier Warlord's Satin Cowl",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "272576": {
+   "name": "Premier Warlord's Satin Robes",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "272577": {
+   "name": "Premier General's Satin Leggings",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "272579": {
+   "name": "Premier Mortarplate Bracers",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "272580": {
+   "name": "First Sergeant's Plate Bracers",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "272581": {
+   "name": "First Sergeant's Mail Wristguards",
+   "classes": [
+    "HUNTER",
+    "SHAMAN"
+   ]
+  },
+  "272582": {
+   "name": "Premier Dragonhide Armguards",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "272606": {
+   "name": "Premier Kodohide Treads",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "272608": {
+   "name": "Premier Shadowhide Walkers",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "272609": {
+   "name": "Premier Linked Greaves",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "272611": {
+   "name": "Premier Silken Walkers",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "272614": {
+   "name": "Premier Dragonhide Grips",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "272617": {
+   "name": "Premier Mail Vices",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "272619": {
+   "name": "Premier Silken Handwraps",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "272625": {
+   "name": "Premier Linked Hauberk",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "272626": {
+   "name": "Premier Kodohide Chestpiece",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "272627": {
+   "name": "Premier Kodohide Leggings",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "272630": {
+   "name": "Premier Felweave Legguards",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "272634": {
+   "name": "Premier Silken Tunic",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "272636": {
+   "name": "Premier Mail Legguards",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "272637": {
+   "name": "Premier Mortarplate Shoulders",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "272640": {
+   "name": "Premier Chain Shoulders",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "272641": {
+   "name": "Premier Kodohide Headguard",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "272642": {
+   "name": "Premier Kodohide Shoulders",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "272643": {
+   "name": "Premier Felweave Cowl",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "272647": {
+   "name": "Premier Linked Headguard",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "272648": {
+   "name": "Premier Mail Pauldrons",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "272649": {
+   "name": "Premier Silken Hood",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "272650": {
+   "name": "Premier Silken Mantle",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "272656": {
+   "name": "Premier Lunarhide Leggings",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "272657": {
+   "name": "Premier Dreadweave Legguards",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "272663": {
+   "name": "Premier Silken Legguards",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "272669": {
+   "name": "Premier Lunarhide Headguard",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "272670": {
+   "name": "Premier Lunarhide Shoulders",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "272671": {
+   "name": "Premier Dreadweave Cowl",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "272677": {
+   "name": "Premier Mooncloth Hood",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "272678": {
+   "name": "Premier Mooncloth Mantle",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "272680": {
+   "name": "Premier Magus Mantle",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "272700": {
+   "name": "Premier Silk Sash",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "272701": {
+   "name": "Premier Silk Boots",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "272702": {
+   "name": "Premier Silk Cuffs",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "272703": {
+   "name": "Premier Silk Gloves",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "272704": {
+   "name": "Premier Leather Boots",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "272705": {
+   "name": "Premier Beasthide Footwraps",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "272706": {
+   "name": "Premier Leather Bracers",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "272707": {
+   "name": "Premier Beasthide Armsplints",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "272708": {
+   "name": "Premier Leather Gauntlets",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "272709": {
+   "name": "Premier Beasthide Gloves",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "272710": {
+   "name": "Premier Leather Belt",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "272711": {
+   "name": "Premier Beasthide Girdle",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "272712": {
+   "name": "Premier Chainmail Girdle",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "272713": {
+   "name": "Premier Chainmail Boots",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "272715": {
+   "name": "Premier Chainmail Gauntlets",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "272716": {
+   "name": "Premier Plate Boots",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "272717": {
+   "name": "Premier Plate Gauntlets",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "272718": {
+   "name": "Premier Chevalier Sabatons",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "272719": {
+   "name": "Premier Chevalier Gauntlets",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "272720": {
+   "name": "Premier Chevalier Cinch",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "272721": {
+   "name": "Premier Chevalier Armsplints",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "272722": {
+   "name": "Premier Silk Raiment",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "272723": {
+   "name": "Premier Silk Leggings",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "272724": {
+   "name": "Premier Silk Spaulders",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "272725": {
+   "name": "Premier Silk Crown",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "272726": {
+   "name": "Premier Leather Armor",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "272727": {
+   "name": "Premier Leather Veil",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "272728": {
+   "name": "Premier Leather Legguards",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "272729": {
+   "name": "Premier Leather Spaulders",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "272730": {
+   "name": "Premier Beasthide Tunic",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "272731": {
+   "name": "Premier Beasthide Leggings",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "272732": {
+   "name": "Premier Beasthide Epaulets",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "272733": {
+   "name": "Premier Beasthide Shroud",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "272734": {
+   "name": "Premier Chainmail Hauberk",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "272735": {
+   "name": "Premier Chainmail Leggings",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "272736": {
+   "name": "Premier Chainmail Pauldrons",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "272737": {
+   "name": "Premier Chainmail Helmet",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "272738": {
+   "name": "Premier Plate Helm",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "272739": {
+   "name": "Premier Plate Chestguard",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "272740": {
+   "name": "Premier Plate Leggings",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "272741": {
+   "name": "Premier Plate Pauldrons",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "272742": {
+   "name": "Premier Chevalier Breastplate",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "272743": {
+   "name": "Premier Chevalier Headguard",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "272744": {
+   "name": "Premier Chevalier Leggings",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "272745": {
+   "name": "Premier Chevalier Shoulders",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "272746": {
+   "name": "Premier Knight-Champion's Silk Footwraps",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "272747": {
+   "name": "Premier Knight-Captain's Silk Bracers",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "272748": {
+   "name": "Premier Knight-Captain's Silk Sash",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "272749": {
+   "name": "Premier Lieutenant Commander's Silk Gloves",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "272750": {
+   "name": "Premier Field Marshal's Silk Coronet",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "272751": {
+   "name": "Premier Marshal's Silk Leggings",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "272752": {
+   "name": "Premier Field Marshal's Silk Vestments",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "272753": {
+   "name": "Premier Marshal's Silk Spaulders",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "272754": {
+   "name": "Premier Knight-Captain's Beasthide Bracers",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "272755": {
+   "name": "Premier Knight-Champion's Leather Footguards",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "272756": {
+   "name": "Premier Knight-Captain's Beasthide Waistguard",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "272757": {
+   "name": "Premier Lieutenant Commander's Beasthide Gauntlets",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "272758": {
+   "name": "Premier Marshal's Beasthide Spaulders",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "272759": {
+   "name": "Premier Marshal's Beasthide Legguards",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "272760": {
+   "name": "Premier Field Marshal's Beasthide Helmet",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "272761": {
+   "name": "Premier Field Marshal's Beasthide Breastplate",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "272762": {
+   "name": "Premier Field Marshal's Leather Chestpiece",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "272763": {
+   "name": "Premier Lieutenant Commander's Leather Handgrips",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "272764": {
+   "name": "Premier Field Marshal's Leather Mask",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "272765": {
+   "name": "Premier Marshal's Leather Leggings",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "272766": {
+   "name": "Premier Marshal's Leather Epaulets",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "272767": {
+   "name": "Premier Knight-Captain's Leather Cinch",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "272768": {
+   "name": "Premier Knight-Champion's Beasthide Boots",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "272769": {
+   "name": "Premier Knight-Captain's Leather Armsplints",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "272770": {
+   "name": "Premier Knight-Captain's Chainmail Bracers",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "272771": {
+   "name": "Premier Knight-Champion's Chainmail Boots",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "272772": {
+   "name": "Premier Lieutenant Commander's Chainmail Grips",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "272773": {
+   "name": "Premier Knight-Captain's Chainmail Girdle",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "272774": {
+   "name": "Premier Field Marshal's Chainmail Helm",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "272775": {
+   "name": "Premier Field Marshal's Chainmail Breastplate",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "272776": {
+   "name": "Premier Marshal's Chainmail Legguards",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "272777": {
+   "name": "Premier Marshal's Chainmail Spaulders",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "272778": {
+   "name": "Premier Knight-Captain's Chevalier Armguards",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "272779": {
+   "name": "Premier Knight-Captain's Chevalier Belt",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "272780": {
+   "name": "Premier Lieutenant Commander's Chevalier Gloves",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "272781": {
+   "name": "Premier Knight-Champion's Chevalier Boots",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "272782": {
+   "name": "Premier Field Marshal's Chevalier Chestplate",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "272783": {
+   "name": "Premier Field Marshal's Chevalier Faceguard",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "272784": {
+   "name": "Premier Marshal's Chevalier Legplates",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "272785": {
+   "name": "Premier Marshal's Chevalier Pauldrons",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "272786": {
+   "name": "Premier Field Marshal's Plate Armor",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "272787": {
+   "name": "Premier Field Marshal's Plate Helm",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "272788": {
+   "name": "Premier Marshal's Plate Legguards",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "272789": {
+   "name": "Premier Marshal's Plate Shoulderguards",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "272790": {
+   "name": "Premier Knight-Captain's Plate Bracers",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "272791": {
+   "name": "Premier Knight-Captain's Plate Girdle",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "272792": {
+   "name": "Premier Knight-Champion's Plate Boots",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "272793": {
+   "name": "Premier Lieutenant Commander's Plate Gauntlets",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "272794": {
+   "name": "Premier Dreadweave Boots",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "272795": {
+   "name": "Premier Dreadweave Bracers",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "272796": {
+   "name": "Premier Dreadweave Gloves",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "272797": {
+   "name": "Premier Dreadweave Belt",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "272800": {
+   "name": "Premier Dreadweave Robe",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "272801": {
+   "name": "Premier Dreadweave Mantle",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "272802": {
+   "name": "Premier Field Marshal's Dreadweave Coronal",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "272803": {
+   "name": "Premier Marshal's Dreadweave Leggings",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "272804": {
+   "name": "Premier Marshal's Dreadweave Shoulders",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "272805": {
+   "name": "Premier Field Marshal's Dreadweave Robe",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "272806": {
+   "name": "Premier Knight-Captain's Dreadweave Cuffs",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "272807": {
+   "name": "Premier Knight-Champion's Dreadweave Boots",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "272808": {
+   "name": "Premier Lieutenant Commander's Dreadweave Gloves",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "272809": {
+   "name": "Premier Knight-Captain's Dreadweave Sash",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "272810": {
+   "name": "Premier Voidcloth Boots",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "272811": {
+   "name": "Premier Voidcloth Cuffs",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "272812": {
+   "name": "Premier Voidcloth Gloves",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "272813": {
+   "name": "Premier Voidcloth Cord",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "272814": {
+   "name": "Premier Voidcloth Diadem",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "272815": {
+   "name": "Premier Voidcloth Leggings",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "272816": {
+   "name": "Premier Voidcloth Robes",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "272817": {
+   "name": "Premier Voidcloth Amice",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "272818": {
+   "name": "Premier Field Marshal's Voidcloth Headdress",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "272819": {
+   "name": "Premier Marshal's Voidcloth Pants",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "272820": {
+   "name": "Premier Marshal's Voidcloth Mantle",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "272821": {
+   "name": "Premier Field Marshal's Voidcloth Vestments",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "272822": {
+   "name": "Premier Knight-Captain's Voidcloth Bracers",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "272823": {
+   "name": "Premier Knight-Champion's Voidcloth Sandals",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "272824": {
+   "name": "Premier Lieutenant Commander's Voidcloth Gloves",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "272825": {
+   "name": "Premier Knight-Captain's Voidcloth Sash",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "272828": {
+   "name": "Premier Plate Wristguards",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "272830": {
+   "name": "Premier Chainmail Armguards",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "272834": {
+   "name": "Premier Dreamhide Armsplints",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "272835": {
+   "name": "Premier Lunarhide Armsplints",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "272852": {
+   "name": "Premier Luminous Breastplate",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "272853": {
+   "name": "Premier Luminous Leggings",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "272854": {
+   "name": "Premier Luminous Headguard",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "272855": {
+   "name": "Premier Luminous Shoulders",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "273324": {
+   "name": "Premier Mortarplate Girdle",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "273325": {
+   "name": "Premier Plate Girdle",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "273327": {
+   "name": "Premier Knight-Captain's Luminous Armguards",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "273328": {
+   "name": "Premier Knight-Captain's Luminous Belt",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "273329": {
+   "name": "Premier Lieutenant Commander's Luminous Gloves",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "273330": {
+   "name": "Premier Knight-Champion's Luminous Boots",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "273331": {
+   "name": "Premier Field Marshal's Luminous Chestplate",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "273332": {
+   "name": "Premier Field Marshal's Luminous Faceguard",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "273333": {
+   "name": "Premier Marshal's Luminous Legplates",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "273334": {
+   "name": "Premier Marshal's Luminous Pauldrons",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "273336": {
+   "name": "Premier Centurion's Mail Boots",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "273337": {
+   "name": "Premier Champion's Mail Gauntlets",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "273338": {
+   "name": "Premier Legionnaire's Mail Waistband",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "273339": {
+   "name": "Premier Legionnaire's Mail Bracers",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "273340": {
+   "name": "Premier Warlord's Mail Armor",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "273341": {
+   "name": "Premier Warlord's Mail Helm",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "273342": {
+   "name": "Premier General's Mail Leggings",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "273343": {
+   "name": "Premier General's Mail Spaulders",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "273344": {
+   "name": "Premier Centurion's Ringmail Boots",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "273345": {
+   "name": "Premier Champion's Ringmail Gauntlets",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "273346": {
+   "name": "Premier Legionnaire's Ringmail Waistband",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "273347": {
+   "name": "Premier Legionnaire's Ringmail Bracers",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "273348": {
+   "name": "Premier Warlord's Ringmail Armor",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "273349": {
+   "name": "Premier Warlord's Ringmail Helm",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "273350": {
+   "name": "Premier General's Ringmail Leggings",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "273351": {
+   "name": "Premier General's Ringmail Spaulders",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "273352": {
+   "name": "Premier Linked Girdle",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "273353": {
+   "name": "Premier Mail Wristguards",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "273355": {
+   "name": "Premier Ringmail Walkers",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "273356": {
+   "name": "Premier Ringmail Helm",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "273357": {
+   "name": "Premier Ringmail Chestpiece",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "273358": {
+   "name": "Premier Ringmail Vices",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "273359": {
+   "name": "Premier Ringmail Legguards",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "273360": {
+   "name": "Premier Ringmail Pauldrons",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "273361": {
+   "name": "Premier Ringmail Wristguards",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "273362": {
+   "name": "Premier Ringmail Girdle",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "273363": {
+   "name": "Premier Luminous Gauntlets",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "273364": {
+   "name": "Premier Luminous Armsplints",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "273365": {
+   "name": "Premier Luminous Sabatons",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "273366": {
+   "name": "Premier Luminous Cinch",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "273367": {
+   "name": "Premier Kodohide Waistband",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "273368": {
+   "name": "Premier Lunarhide Gloves",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "273369": {
+   "name": "Premier Lunarhide Girdle",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "273370": {
+   "name": "Premier Lunarhide Footwraps",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "273371": {
+   "name": "Premier Lunarhide Tunic",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "273372": {
+   "name": "Premier Mail Girdle",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "273373": {
+   "name": "Premier Dreamhide Leggings",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "273374": {
+   "name": "Premier Dreamhide Headguard",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "273375": {
+   "name": "Premier Dreamhide Shoulders",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "273377": {
+   "name": "Premier Dreamhide Gloves",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "273378": {
+   "name": "Premier Dreamhide Girdle",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "273379": {
+   "name": "Premier Dreamhide Footwraps",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "273380": {
+   "name": "Premier Dreamhide Tunic",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "273381": {
+   "name": "Premier Wyrmhide Armguards",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "273382": {
+   "name": "Premier Wyrmhide Gauntlets",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "273383": {
+   "name": "Premier Wyrmhide Treads",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "273384": {
+   "name": "Premier Wyrmhide Chestpiece",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "273385": {
+   "name": "Premier Wyrmhide Leggings",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "273386": {
+   "name": "Premier Wyrmhide Headguard",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "273387": {
+   "name": "Premier Wyrmhide Shoulders",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "273388": {
+   "name": "Premier Wyrmhide Waistband",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "273389": {
+   "name": "Premier Knight-Captain's Lunarhide Bracers",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "273390": {
+   "name": "Premier Knight-Captain's Lunarhide Waistguard",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "273391": {
+   "name": "Premier Lieutenant Commander's Lunarhide Gauntlets",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "273392": {
+   "name": "Premier Marshal's Lunarhide Spaulders",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "273393": {
+   "name": "Premier Marshal's Lunarhide Legguards",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "273394": {
+   "name": "Premier Field Marshal's Lunarhide Helmet",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "273395": {
+   "name": "Premier Field Marshal's Lunarhide Breastplate",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "273396": {
+   "name": "Premier Knight-Champion's Lunarhide Boots",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "273397": {
+   "name": "Premier Knight-Captain's Dreamhide Bracers",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "273398": {
+   "name": "Premier Knight-Captain's Dreamhide Waistguard",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "273399": {
+   "name": "Premier Lieutenant Commander's Dreamhide Gauntlets",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "273400": {
+   "name": "Premier Marshal's Dreamhide Spaulders",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "273401": {
+   "name": "Premier Marshal's Dreamhide Legguards",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "273402": {
+   "name": "Premier Field Marshal's Dreamhide Helmet",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "273403": {
+   "name": "Premier Field Marshal's Dreamhide Breastplate",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "273404": {
+   "name": "Premier Knight-Champion's Dreamhide Boots",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "273405": {
+   "name": "Premier Warlord's Wyrmhide Hauberk",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "273406": {
+   "name": "Premier Warlord's Wyrmhide Helmet",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "273407": {
+   "name": "Premier General's Wyrmhide Epaulets",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "273408": {
+   "name": "Premier General's Wyrmhide Leggings",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "273409": {
+   "name": "Premier Legionnaire's Wyrmhide Bracers",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "273410": {
+   "name": "Premier Centurion's Wyrmhide Boots",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "273411": {
+   "name": "Premier Champion's Wyrmhide Gloves",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "273412": {
+   "name": "Premier Legionnaire's Wyrmhide Belt",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "273413": {
+   "name": "Premier Warlord's Kodohide Hauberk",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "273414": {
+   "name": "Premier Warlord's Kodohide Helmet",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "273415": {
+   "name": "Premier General's Kodohide Epaulets",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "273416": {
+   "name": "Premier General's Kodohide Leggings",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "273417": {
+   "name": "Premier Legionnaire's Kodohide Bracers",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "273418": {
+   "name": "Premier Centurion's Kodohide Boots",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "273419": {
+   "name": "Premier Champion's Kodohide Gloves",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "273420": {
+   "name": "Premier Legionnaire's Kodohide Belt",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "273421": {
+   "name": "Premier Field Marshal's Mooncloth Headdress",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "273422": {
+   "name": "Premier Marshal's Mooncloth Pants",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "273423": {
+   "name": "Premier Marshal's Mooncloth Mantle",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "273424": {
+   "name": "Premier Field Marshal's Mooncloth Vestments",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "273425": {
+   "name": "Premier Knight-Captain's Mooncloth Bracers",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "273426": {
+   "name": "Premier Knight-Champion's Mooncloth Sandals",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "273427": {
+   "name": "Premier Lieutenant Commander's Mooncloth Gloves",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "273428": {
+   "name": "Premier Knight-Captain's Mooncloth Sash",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "273429": {
+   "name": "Premier Centurion's Silken Boots",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "273430": {
+   "name": "Premier Legionnaire's Silken Bracers",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "273431": {
+   "name": "Premier Champion's Silken Gloves",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "273432": {
+   "name": "Premier Legionnaire's Silken Cinch",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "273433": {
+   "name": "Premier General's Silken Mantle",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "273434": {
+   "name": "Premier Warlord's Silken Cowl",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "273435": {
+   "name": "Premier Warlord's Silken Robes",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "273436": {
+   "name": "Premier General's Silken Leggings",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "273443": {
+   "name": "Premier Mooncloth Boots",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "273444": {
+   "name": "Premier Mooncloth Cuffs",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "273445": {
+   "name": "Premier Mooncloth Gloves",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "273447": {
+   "name": "Premier Mooncloth Leggings",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "273448": {
+   "name": "Premier Mooncloth Robes",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "273449": {
+   "name": "Premier Mooncloth Cord",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "273450": {
+   "name": "Premier Silken Cuffs",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "273884": {
+   "name": "Grovekeeper Trousers",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "273885": {
+   "name": "Grovekeeper Grips",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "273886": {
+   "name": "Grovekeeper Shoulderpads",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "273887": {
+   "name": "Grovekeeper Stompers",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "273888": {
+   "name": "Grovekeeper Kilt",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "273889": {
+   "name": "Grovekeeper Mitts",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "273890": {
+   "name": "Grovekeeper Mantle",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "273891": {
+   "name": "Grovekeeper Sandals",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "273892": {
+   "name": "Grovekeeper Legguards",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "273893": {
+   "name": "Grovekeeper Handguards",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "273894": {
+   "name": "Grovekeeper Pauldrons",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "273895": {
+   "name": "Grovekeeper Boots",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "273896": {
+   "name": "Grovekeeper Leggings",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "273897": {
+   "name": "Grovekeeper Gauntlets",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "273898": {
+   "name": "Grovekeeper Spaulders",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "273899": {
+   "name": "Grovekeeper Treads",
+   "classes": [
+    "DRUID"
+   ]
+  },
+  "273900": {
+   "name": "Wildstalker's Legguards",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "273901": {
+   "name": "Wildstalker's Gauntlets",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "273902": {
+   "name": "Wildstalker's Spaulders",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "273903": {
+   "name": "Wildstalker's Greaves",
+   "classes": [
+    "HUNTER"
+   ]
+  },
+  "273904": {
+   "name": "Manaflare Pants",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "273905": {
+   "name": "Manaflare Gloves",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "273906": {
+   "name": "Manaflare Mantle",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "273907": {
+   "name": "Manaflare Boots",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "273908": {
+   "name": "Justice Leggings",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "273909": {
+   "name": "Justice Gauntlets",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "273910": {
+   "name": "Justice Spaulders",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "273911": {
+   "name": "Justice Greaves",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "273912": {
+   "name": "Justice Legplates",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "273913": {
+   "name": "Justice Gloves",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "273914": {
+   "name": "Justice Epaulets",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "273915": {
+   "name": "Justice Treads",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "273916": {
+   "name": "Justice Legguards",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "273917": {
+   "name": "Justice Handguards",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "273918": {
+   "name": "Justice Pauldrons",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "273919": {
+   "name": "Justice Sabatons",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "273920": {
+   "name": "Pants of Conviction",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "273921": {
+   "name": "Gloves of Conviction",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "273922": {
+   "name": "Mantle of Conviction",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "273923": {
+   "name": "Treads of Conviction",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "273924": {
+   "name": "Leggings of Conviction",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "273925": {
+   "name": "Handguards of Conviction",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "273926": {
+   "name": "Pauldrons of Conviction",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "273927": {
+   "name": "Boots of Conviction",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "273928": {
+   "name": "Grimstitch Pants",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "273929": {
+   "name": "Grimstitch Gloves",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "273930": {
+   "name": "Grimstitch Spaulders",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "273931": {
+   "name": "Grimstitch Boots",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "273932": {
+   "name": "Spiritcaller Leggings",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "273933": {
+   "name": "Spiritcaller Grips",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "273934": {
+   "name": "Spiritcaller Spaulders",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "273935": {
+   "name": "Spiritcaller Treads",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "273936": {
+   "name": "Spiritcaller Pants",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "273937": {
+   "name": "Spiritcaller Gauntlets",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "273938": {
+   "name": "Spiritcaller Epaulets",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "273939": {
+   "name": "Spiritcaller Greaves",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "273940": {
+   "name": "Demonheart Leggings",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "273941": {
+   "name": "Demonheart Gloves",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "273942": {
+   "name": "Demonheart Spaulders",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "273943": {
+   "name": "Demonheart Boots",
+   "classes": [
+    "WARLOCK"
+   ]
+  },
+  "273944": {
+   "name": "Legplates of Glory",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "273945": {
+   "name": "Gauntlets of Glory",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "273946": {
+   "name": "Shoulders of Glory",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "273947": {
+   "name": "Greaves of Glory",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "273948": {
+   "name": "Legguards of Glory",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "273949": {
+   "name": "Handguards of Glory",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "273950": {
+   "name": "Pauldrons of Glory",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "273951": {
+   "name": "Sabatons of Glory",
+   "classes": [
+    "WARRIOR"
+   ]
+  },
+  "274176": {
+   "name": "Premier Scalemail Walkers",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "274177": {
+   "name": "Premier Flatmail Grips",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "274178": {
+   "name": "Premier Scalemail Helm",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "274179": {
+   "name": "Premier Scalemail Chestpiece",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "274180": {
+   "name": "Premier Flatmail Leggings",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "274181": {
+   "name": "Premier Flatmail Shoulders",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "274182": {
+   "name": "Premier Flatmail Wristguards",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "274183": {
+   "name": "Premier Knight-Champion's Flatmail Boots",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "274184": {
+   "name": "Premier Lieutenant Commander's Flatmail Gauntlets",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "274185": {
+   "name": "Premier Knight-Captain's Flatmail Waistband",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "274186": {
+   "name": "Premier Knight-Captain's Flatmail Bracers",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "274187": {
+   "name": "Premier Field Marshal's Flatmail Armor",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "274188": {
+   "name": "Premier Field Marshal's Flatmail Helm",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "274189": {
+   "name": "Premier Marshal's Flatmail Leggings",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "274190": {
+   "name": "Premier Marshal's Flatmail Spaulders",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "274192": {
+   "name": "Premier Flatmail Greaves",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "274193": {
+   "name": "Premier Scalemail Vices",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "274194": {
+   "name": "Premier Flatmail Hauberk",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "274195": {
+   "name": "Premier Scalemail Legguards",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "274196": {
+   "name": "Premier Flatmail Headguard",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "274197": {
+   "name": "Premier Scalemail Pauldrons",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "274198": {
+   "name": "Premier Knight-Champion's Scalemail Boots",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "274199": {
+   "name": "Premier Lieutenant Commander's Scalemail Gauntlets",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "274200": {
+   "name": "Premier Knight-Captain's Scalemail Waistband",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "274201": {
+   "name": "Premier Knight-Captain's Scalemail Bracers",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "274202": {
+   "name": "Premier Field Marshal's Scalemail Armor",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "274203": {
+   "name": "Premier Field Marshal's Scalemail Helm",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "274204": {
+   "name": "Premier Marshal's Scalemail Leggings",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "274205": {
+   "name": "Premier Marshal's Scalemail Spaulders",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "274206": {
+   "name": "Premier Knight-Champion's Linkmail Boots",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "274207": {
+   "name": "Premier Lieutenant Commander's Linkmail Gauntlets",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "274208": {
+   "name": "Premier Knight-Captain's Linkmail Waistband",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "274209": {
+   "name": "Premier Knight-Captain's Linkmail Bracers",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "274210": {
+   "name": "Premier Field Marshal's Linkmail Armor",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "274211": {
+   "name": "Premier Field Marshal's Linkmail Helm",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "274212": {
+   "name": "Premier Marshal's Linkmail Leggings",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "274213": {
+   "name": "Premier Marshal's Linkmail Spaulders",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "274214": {
+   "name": "Premier Flatmail Girdle",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "274215": {
+   "name": "Premier Scalemail Wristguards",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "274217": {
+   "name": "Premier Linkmail Walkers",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "274218": {
+   "name": "Premier Linkmail Helm",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "274219": {
+   "name": "Premier Linkmail Chestpiece",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "274220": {
+   "name": "Premier Linkmail Vices",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "274221": {
+   "name": "Premier Linkmail Legguards",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "274222": {
+   "name": "Premier Linkmail Pauldrons",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "274223": {
+   "name": "Premier Linkmail Wristguards",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "274224": {
+   "name": "Premier Linkmail Girdle",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "274225": {
+   "name": "Premier Scalemail Girdle",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "274226": {
+   "name": "Premier Scaled Sabatons",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "274227": {
+   "name": "Premier Scaled Gauntlets",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "274228": {
+   "name": "Premier Scaled Cinch",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "274229": {
+   "name": "Premier Scaled Armsplints",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "274230": {
+   "name": "Premier Scaled Breastplate",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "274231": {
+   "name": "Premier Scaled Headguard",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "274232": {
+   "name": "Premier Scaled Leggings",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "274233": {
+   "name": "Premier Scaled Shoulders",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "274234": {
+   "name": "Premier Legionnaire's Scaled Armguards",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "274235": {
+   "name": "Premier Legionnaire's Scaled Belt",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "274236": {
+   "name": "Premier Champion's Scaled Gloves",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "274237": {
+   "name": "Premier Centurion's Scaled Boots",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "274238": {
+   "name": "Premier Warlord's Scaled Chestplate",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "274239": {
+   "name": "Premier Warlord's Scaled Faceguard",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "274240": {
+   "name": "Premier General's Scaled Legplates",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "274241": {
+   "name": "Premier General's Scaled Pauldrons",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "274244": {
+   "name": "Premier Lamellar Breastplate",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "274245": {
+   "name": "Premier Lamellar Leggings",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "274246": {
+   "name": "Premier Lamellar Headguard",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "274247": {
+   "name": "Premier Lamellar Shoulders",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "274248": {
+   "name": "Premier Legionnaire's Lamellar Armguards",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "274249": {
+   "name": "Premier Legionnaire's Lamellar Belt",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "274250": {
+   "name": "Premier Champion's Lamellar Gloves",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "274251": {
+   "name": "Premier Centurion's Lamellar Boots",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "274252": {
+   "name": "Premier Warlord's Lamellar Chestplate",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "274253": {
+   "name": "Premier Warlord's Lamellar Faceguard",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "274254": {
+   "name": "Premier General's Lamellar Legplates",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "274255": {
+   "name": "Premier General's Lamellar Pauldrons",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "274256": {
+   "name": "Premier Lamellar Gauntlets",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "274257": {
+   "name": "Premier Lamellar Armsplints",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "274258": {
+   "name": "Premier Lamellar Sabatons",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "274259": {
+   "name": "Premier Lamellar Cinch",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "275437": {
+   "name": "Premier Silken Sash",
+   "classes": [
+    "PRIEST"
+   ]
+  },
+  "276538": {
+   "name": "Spiritcaller Kilt",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "276539": {
+   "name": "Spiritcaller Gloves",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "276540": {
+   "name": "Spiritcaller Mantle",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "276541": {
+   "name": "Spiritcaller Boots",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "276631": {
+   "name": "Coldflame Saber",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "276632": {
+   "name": "Wit's Edge",
+   "classes": [
+    "MAGE"
+   ]
+  },
+  "277205": {
+   "name": "Cloak of the Divine Storm",
+   "classes": [
+    "PALADIN"
+   ]
+  },
+  "277210": {
+   "name": "Pyrewood Signet Ring",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "277246": {
+   "name": "Ruby-Adorned Blade",
+   "classes": [
+    "ROGUE"
+   ]
+  },
+  "279270": {
+   "name": "Cloak of Earth and Sky",
+   "classes": [
+    "DRUID",
+    "SHAMAN"
+   ]
+  },
+  "280604": {
+   "name": "Rage of the Storm",
+   "classes": [
+    "SHAMAN"
+   ]
+  },
+  "281628": {
+   "name": "Blade of Bandarion",
+   "classes": [
+    "PALADIN"
+   ]
+  }
+ }
+}

@@ -1085,6 +1085,38 @@ class SpecsTest(unittest.TestCase):
     def ladder(self, token, spec, mode="pve", slot="main", db=None):
         return ladders.full_ladder(db or self.db, token, spec, mode, slot)
 
+    def test_another_class_s_piece_is_not_listed(self):
+        """ForeverDB pools by armor type, so a Rogue's Bonescythe was first in a Druid's and a Warrior's lists and a
+        Mage's Frostfire in a Priest's. The game restricts those pieces (corrections/classes.json): only their class
+        lists them. Most are pieces added from the game (corrections.align), which go to every pool of their armor type."""
+        helmet, circlet = 22478, 22498   # Bonescythe Helmet (Rogue), Frostfire Circlet (Mage)
+        self.assertEqual(self.db.class_only[helmet], frozenset(("ROGUE",)))
+        self.assertEqual(self.db.class_only[circlet], frozenset(("MAGE",)))
+        ids = lambda token, spec, mode: {entry.item_id for entry in self.ladder(token, spec, mode, "head")}   # noqa: E731
+        self.assertIn(helmet, ids("ROGUE", 2, "pve"))
+        self.assertIn(circlet, ids("MAGE", 2, "pve"))
+        for token, data in self.db.classes.items():
+            for spec in data["specs"]:
+                for mode in ladders.MODES:
+                    for slot, _ in ladders.SLOTS:
+                        for entry in self.ladder(token, spec, mode, slot):
+                            self.assertIn(token, self.db.class_only.get(entry.item_id, (token,)),
+                                          f"{token} {spec} {mode} {slot}: {entry.item_id}")
+
+    def test_a_hunter_s_attack_power_is_ranged_too(self):
+        """An item's attack power is ranged attack power as well: a Hunter's weights count it at least as much
+        (specs.ranged_power). ForeverDB's Marksmanship PvP weights gave it nothing, and Drake Fang Talisman's 56
+        scored 0."""
+        power, ranged, talisman = 38, 39, 19406
+        for spec, data in self.db.classes["HUNTER"]["specs"].items():
+            for profile, weights in data["weights"].items():
+                if weights.get(ranged):
+                    self.assertGreaterEqual(weights[power], weights[ranged], f"HUNTER {spec} {profile}")
+                    self.assertEqual(self.db.specs.ranged["HUNTER", spec, profile], weights[power])
+        self.assertNotIn(power, self.published.classes["HUNTER"]["specs"][2]["weights"]["pvp"])
+        trinkets = [entry.item_id for entry in self.ladder("HUNTER", 2, "pvp", "trinket")]
+        self.assertEqual(trinkets[0], talisman)
+
     def shown(self, token, spec, slot="main", count=7):
         return [entry.item_id for entry in self.ladder(token, spec, slot=slot) if entry.passes(self.DEFAULT)][:count]
 
@@ -1126,7 +1158,12 @@ class SpecsTest(unittest.TestCase):
         for token, data in self.published.classes.items():
             for number, spec in data["specs"].items():
                 if (token, number) not in self.TANKS:
-                    self.assertEqual(self.db.classes[token]["specs"][number]["weights"], spec["weights"],
+                    expected = copy.deepcopy(spec["weights"])
+                    if token == "HUNTER":   # its attack power is ranged attack power too (specs.ranged_power)
+                        for weights in expected.values():
+                            if weights.get(39):
+                                weights[38] = round(weights.get(38, 0) + weights[39], 3)
+                    self.assertEqual(self.db.classes[token]["specs"][number]["weights"], expected,
                                      f"{token} {spec['name']}")
 
     # -- what the user saw: caster weapons among a Protection Warrior's main hands ------------------

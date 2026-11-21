@@ -59,6 +59,9 @@ from dataclasses import dataclass, field
 
 TANK = "Tank"
 EFFECTS_FILE = Path(__file__).resolve().parent / "corrections" / "effects.json"
+CLASSES_FILE = EFFECTS_FILE.with_name("classes.json")
+HUNTER = "HUNTER"
+RANGED_ATTACK_POWER = 39
 STRENGTH, AGILITY, STAMINA, INTELLECT, SPIRIT = 4, 3, 7, 5, 6
 DEFENSE, DODGE, HIT, CRIT, HASTE, EXPERTISE, ATTACK_POWER, RANGED_ATTACK_POWER = 12, 13, 31, 32, 36, 37, 38, 39
 SPELL_DAMAGE, SPELL_POWER, BLOCK_VALUE = 42, 45, 48
@@ -95,6 +98,8 @@ class Report:
     completed: dict = field(default_factory=dict)   # (class, spec, profile) -> {stat: the weight it was given}
     bear: tuple | None = None                       # (class, spec) of ForeverDB's Feral Combat
     cat: tuple | None = None                        # (class, spec) of the cat added next to it
+    ranged: dict = field(default_factory=dict)      # (class, spec, profile) of a Hunter -> the weight its attack
+    #                                                 power got, the ranged attack power's added
     unbound: dict = field(default_factory=dict)     # (class, spec) of a tank -> the other classes' enchants its
     #                                                 lists no longer hold
 
@@ -116,6 +121,28 @@ def load_placed(path=EFFECTS_FILE) -> dict:
         return {}
     return {int(item_id): int(record["after"])
             for item_id, record in json.loads(path.read_text(encoding="utf-8")).get("placed", {}).items()}
+
+
+def load_class_only(path=CLASSES_FILE) -> dict:
+    """item -> the classes that can wear it, for the pooled items the game restricts to some (corrections/classes.json).
+    ForeverDB sorts its pools by armor type: without this a Rogue's tier piece is listed for a Druid."""
+    path = Path(path)
+    if not path.exists():
+        return {}
+    items = json.loads(path.read_text(encoding="utf-8"))["items"]
+    return {int(item_id): frozenset(entry["classes"]) for item_id, entry in items.items()}
+
+
+def ranged_power(db, report: Report) -> None:
+    """Count an item's attack power as the ranged attack power it also is, in a Hunter's weights. ForeverDB weighs
+    "ranged attack power" and gives "attack power" next to nothing, or nothing: a Drake Fang Talisman's 56 scored 0."""
+    for number, spec in db.classes.get(HUNTER, {}).get("specs", {}).items():
+        for profile, weights in spec["weights"].items():
+            if weights.get(RANGED_ATTACK_POWER):
+                melee = spec.setdefault("melee_power", {})   # ForeverDB's own weight, kept: applying twice adds once
+                melee.setdefault(profile, weights.get(ATTACK_POWER, 0))
+                weights[ATTACK_POWER] = round(melee[profile] + weights[RANGED_ATTACK_POWER], 3)
+                report.ranged[HUNTER, number, profile] = weights[ATTACK_POWER]
 
 
 def unvalued(db, cls: str, spec: int) -> frozenset:
@@ -182,6 +209,7 @@ def apply(db) -> Report:
     report = Report()
     db.effects = load_effects()
     db.placed = load_placed()
+    db.class_only = load_class_only()
     own_enchants(db, report)
     for cls, data in db.classes.items():
         for number, spec in data["specs"].items():
@@ -192,6 +220,7 @@ def apply(db) -> Report:
                 if added:
                     weights.update(added)
                     report.completed[cls, number, profile] = added
+    ranged_power(db, report)
     split_feral(db, report)
     return report
 
