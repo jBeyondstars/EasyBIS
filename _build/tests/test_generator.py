@@ -39,7 +39,9 @@ import ranks  # noqa: E402
 import questie  # noqa: E402
 import reputations  # noqa: E402
 import runs  # noqa: E402
+import shockadin  # noqa: E402
 import simulated  # noqa: E402
+import specs  # noqa: E402
 
 try:
     import lupa
@@ -112,11 +114,148 @@ class GeneratorTest(unittest.TestCase):
 
     def test_reads_every_class_and_spec(self):
         self.assertEqual(len(self.db.classes), 9)
-        self.assertEqual(sum(len(data["specs"]) for data in self.db.classes.values()), 27)
+        self.assertEqual(sum(len(data["specs"]) for data in self.published.classes.values()), 27)
+        self.assertEqual(sum(len(data["specs"]) for data in self.db.classes.values()), 28, "ForeverDB's and the Shockadin")
         for token, data in self.db.classes.items():
             for spec in data["specs"].values():
                 self.assertEqual(set(spec["weights"]), {"lvl", "raid", "pvp"}, f"{token} {spec['name']}")
         self.assertEqual(self.db.meta["cap"], 60)
+
+    # -- a spec ForeverDB's data does not have: the Paladin's Shockadin (specs.py, shockadin.py) --------------
+
+    SHOCKADIN = ("PALADIN", 4)
+    STALWART_HELM = 250599        # Strength, 2% hit and 38 spell power: the Shockadin's best head before the raids
+    SPELLBLASTING = "s1219580"    # Enchant 2H Weapon - Spellblasting, +65 spell power
+    HOLY_POWER_GLOVES = "Enchant Gloves - Holy Power"
+
+    def test_the_shockadin_is_the_paladins_fourth_spec(self):
+        self.assertEqual(self.db.specs.shockadin, self.SHOCKADIN)
+        ours, theirs = self.db.classes["PALADIN"]["specs"], self.published.classes["PALADIN"]["specs"]
+        self.assertEqual(sorted(theirs), [1, 2, 3], "ForeverDB's own")
+        self.assertEqual(sorted(ours), [1, 2, 3, 4])
+        for number, spec in theirs.items():
+            self.assertEqual(ours[number], spec, f"ForeverDB's spec {number} is left as it is")
+            self.assertNotIn("added", ours[number])
+        added = ours[4]
+        self.assertEqual((added["name"], added["role"], added["style"], added["slug"]),
+                         ("Shockadin", "Melee DPS", "2h", "shockadin"))
+        self.assertTrue(added["added"])
+        self.assertEqual(added["weights"], {"lvl": shockadin.PVE, "raid": shockadin.PVE, "pvp": shockadin.PVP})
+        self.assertEqual([token for token, data in self.db.classes.items()
+                          for spec in data["specs"].values() if spec.get("added")], ["PALADIN"])
+
+    def test_the_shockadins_weights_are_the_simulators(self):
+        """PvE: WoWSims Forever's Holy Shock weights, a point of spell damage counting 1. PvP: the same, with
+        ForeverDB's stamina and armor for a Paladin and without the Holy spells' share of hit."""
+        pve, pvp, ep = shockadin.PVE, shockadin.PVP, shockadin.EP
+        self.assertEqual((pve[42], pve[45]), (1, 1))
+        for stat, value in ep.items():
+            self.assertAlmostEqual(pve[stat], value / ep[45], places=3, msg=f"stat {stat}")
+        self.assertEqual(set(pve) - set(ep), {7}, "stamina is ForeverDB's, the rest is the simulator's")
+        paladin = self.published.classes["PALADIN"]["specs"]
+        for number in (1, 3):   # Holy and Retribution
+            self.assertEqual(paladin[number]["weights"]["raid"][7], pve[7], "ForeverDB's PvE stamina for a Paladin")
+        self.assertGreater(pve[31], pve[45], "a point of hit rating is worth more than one of spell damage")
+        self.assertGreater(pve[45], pve[84])
+        self.assertLess(pve[43], 0.01, "mana per 5 seconds is worth nothing to it in a raid")
+        self.assertEqual({stat for stat in set(pve) | set(pvp) if pve.get(stat) != pvp.get(stat)}, {7, 31, "armor"})
+        for number in (1, 3):
+            self.assertEqual((paladin[number]["weights"]["pvp"][7], paladin[number]["weights"]["pvp"]["armor"]),
+                             (pvp[7], pvp["armor"]))
+        self.assertAlmostEqual(pvp[31], (ep[31] - shockadin.EP_HOLY_SPELL_HIT) / ep[45], places=3)
+
+    def test_the_shockadin_changes_no_other_list(self):
+        with mock.patch.object(specs, "apply", return_value=specs.Report()):
+            without = fdb.load(CACHE)
+        self.assertEqual(sum(len(data["specs"]) for data in without.classes.values()), 27)
+        self.assertEqual(without.enchants["PALADIN"].keys() | {(4, "lvl"), (4, "raid")}, self.db.enchants["PALADIN"].keys())
+        for key in without.enchants["PALADIN"]:
+            self.assertEqual(without.enchants["PALADIN"][key], self.db.enchants["PALADIN"][key], key)
+        for spec in (1, 2, 3):
+            for mode in ladders.MODES:
+                for slot, _ in ladders.SLOTS:
+                    self.assertEqual(ladders.full_ladder(without, "PALADIN", spec, mode, slot),
+                                     self.full["PALADIN", spec, mode, slot], f"PALADIN {spec} {mode} {slot}")
+
+    def test_the_shockadin_holds_a_two_hander(self):
+        for mode in ladders.MODES:
+            main, off = self.full[*self.SHOCKADIN, mode, "main"], self.full[*self.SHOCKADIN, mode, "off"]
+            self.assertTrue(main)
+            self.assertTrue(all(entry.two_hand for entry in main), f"{mode}: a one-hander in the main hand")
+            self.assertEqual(off, [], f"{mode}: an off hand")
+            self.assertEqual(self.full[*self.SHOCKADIN, mode, "ranged"], [], "ForeverDB's data has no libram")
+
+    def test_the_shockadins_lists_are_ranked_on_its_weights(self):
+        cls, spec = self.SHOCKADIN
+        for mode, weights in (("pve", shockadin.PVE), ("pvp", shockadin.PVP)):
+            for slot, _ in ladders.SLOTS:
+                for entry in self.full[cls, spec, mode, slot]:
+                    self.assertAlmostEqual(entry.score, ladders.score(self.db, entry.item_id, weights, cls),
+                                           msg=f"{mode} {slot} {entry.item_id}")
+                    self.assertFalse(entry.estimated or entry.placed, "no simulation ranks it")
+                    stats = self.db.gear[entry.item_id]["stats"]
+                    self.assertFalse(ladders.HEALING in stats and not any(s in stats for s in ladders.SPELL_DAMAGE),
+                                     f"{entry.item_id} only heals")
+        self.assertNotIn(self.SHOCKADIN, self.db.simulated.specs)
+        flt = (*("a", False, False, phases.CURRENT), False, None)
+        head = [entry for entry in self.full[cls, spec, "pve", "head"] if entry.passes(flt)]
+        self.assertEqual(head[0].item_id, self.STALWART_HELM)
+        # a PvP reward is ranked on its stats in both lists, as everywhere
+        self.assertTrue(any(entry.pvp for entry in self.full[cls, spec, "pve", "main"]))
+
+    def test_the_shockadins_enchants_are_a_paladins(self):
+        cls, spec = self.SHOCKADIN
+        ladder = self.enchant_ladder(cls, spec)
+        self.assertEqual(ladder["w2h"][0][0], self.SPELLBLASTING)
+        self.assertEqual(self.db.enchant_info[ladder["hands"][0][0]][0], self.HOLY_POWER_GLOVES)
+        self.assertFalse({"w1h", "shield", "held", "rng"} & set(ladder), "it holds a two-hander and nothing else")
+        own = {enchant for (number, _), per_slot in self.db.enchants[cls].items() if number != spec
+               for entries in per_slot.values() for enchant, _ in entries}
+        listed = {enchant for entries in self.db.enchants[cls][spec, "raid"].values() for enchant, _ in entries}
+        self.assertTrue(listed)
+        self.assertLessEqual(listed, own, "an enchant ForeverDB lists for no Paladin")
+        for key, entries in self.db.enchants[cls][spec, "raid"].items():
+            worth = [sum(shockadin.PVE.get(stat, 0) * amount
+                         for stat, amount in specs.enchant_stats(self.db.enchant_info[enchant][1]).items())
+                     for enchant, _ in entries]
+            self.assertEqual(worth, sorted(worth, reverse=True), key)
+            self.assertGreater(worth[-1], 0, key)
+
+    def test_an_enchants_sentence_is_read_as_stats(self):
+        read = specs.enchant_stats
+        self.assertEqual(read("Agility +15"), {3: 15})
+        self.assertEqual(read("+65 Spell Power"), {45: 65})
+        self.assertEqual(read("Attack Power +28/Dodge +1%"), {38: 28, 13: 12})
+        self.assertEqual(read("Attack Power +26 and +1% Critical Strike"), {38: 26, 32: 14})
+        self.assertEqual(read("All Stats +4"), {3: 4, 4: 4, 5: 4, 6: 4, 7: 4})
+        self.assertEqual(read("Holy Damage +20"), {84: 20})
+        self.assertEqual(read("Healing Spells +100, Damage Spells +34"), {41: 100, 42: 34})
+        self.assertEqual(read("+18 Spell Damage and Healing"), {45: 18})
+        self.assertEqual(read("Healing and Spell Damage +8"), {45: 8})
+        self.assertEqual(read("Healing +31 and 5 mana per 5 sec."), {41: 31, 43: 5})
+        for unknown in ("Crusader", "Weapon Damage +9", "Counterweight +3% Attack Speed", "Living Stats"):
+            self.assertIsNone(read(unknown), unknown)
+
+    def test_the_data_files_hold_the_shockadin(self):
+        text = luaout.lists_file(self.db, self.kept)
+        block = text.split("PALADIN = [==[\n", 1)[1].split("]==]", 1)[0]
+        specs_written = [line.split("\t") for line in block.split("\n") if line.startswith("S\t")]
+        self.assertEqual(specs_written, [["S", "1", "Holy", "Healer", "any"], ["S", "2", "Protection", "Tank", "shield"],
+                                         ["S", "3", "Retribution", "Melee DPS", "2h"],
+                                         ["S", "4", "Shockadin", "Melee DPS", "2h"]])
+        slots = {(fields[2], fields[3]) for fields in (line.split("\t") for line in block.split("\n"))
+                 if fields[0] == "L" and fields[1] == "4"}
+        core = [slot for slot, _ in ladders.SLOTS if slot not in ("off", "ranged")]
+        self.assertEqual(slots, {(mode, slot) for mode in ladders.MODES for slot in core})
+        self.assertNotIn("M\t4\t", block, "no simulation ranked it")
+        self.assertIn("-- Added to ForeverDB's specs: Shockadin Paladin, spec 4", text)
+        self.assertIn(shockadin.SOURCE, text)
+        enchants = luaout.enchants_file(self.db, self.kept).split("PALADIN = [==[\n", 1)[1].split("]==]", 1)[0]
+        self.assertIn(f"E\t4\tw2h\t{self.SPELLBLASTING}", enchants)
+        lists = consumable_lists.build(self.db)["PALADIN"]
+        self.assertEqual(sorted(lists), [1, 2, 3, 4])
+        for mode in consumable_lists.MODES:
+            self.assertTrue(lists[4][mode]["flask"].ranked, f"{mode}: no flask")
 
     def test_every_pool_item_is_described(self):
         for token, data in self.db.classes.items():
@@ -738,6 +877,7 @@ class GeneratorTest(unittest.TestCase):
         unplaced = dataclasses.replace(self.db.simulated, placed={})
         before.simulated = unplaced
         corrections.assign_sides(before)   # ... and the side of Theramore's pieces
+        fdb.specs.apply(before)   # ... and the specs ForeverDB's data does not have (`specs` is a local below)
         was = ladders.build_all(before)
         after = copy.copy(self.db)
         after.simulated = unplaced

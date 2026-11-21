@@ -15,6 +15,7 @@ import phases
 import reputations
 import ranks
 import runs
+import shockadin
 
 CREDIT = "Data from ForeverDB.net (https://foreverdb.net)"
 ENCHANTS_PER_SLOT = 3
@@ -87,7 +88,21 @@ def _corrections_note(db) -> tuple:
     lines += _sources_note(db)
     lines += _costs_note(db)
     lines += _simulated_note(db)
+    lines += _shockadin_note(db)
     return tuple(lines)
+
+
+def _shockadin_note(db) -> list:
+    """Says which list is a spec ForeverDB's data does not have, and what it is ranked on (shockadin.py)."""
+    added = getattr(getattr(db, "specs", None), "shockadin", None)
+    if not added:
+        return []
+    cls, spec = added
+    return [f"Added to ForeverDB's specs: {db.classes[cls]['specs'][spec]['name']} {cls.title()}, spec {spec}, the "
+            "Paladin who deals damage with Holy Shock in spell damage gear.",
+            f"Its PvE list is ranked on the stat weights of {shockadin.SOURCE},",
+            "MIT License; its PvP list on the same with ForeverDB's stamina and armor for a Paladin in PvP, which is a "
+            "guess. See _build/shockadin.py."]
 
 
 def _simulated_note(db) -> list:

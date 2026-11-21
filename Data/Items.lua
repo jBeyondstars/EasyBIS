@@ -399,6 +399,7 @@ ns.data.items = [==[
 12602|Draconian Deflector|d||d^229^General Drakkisath^21.4^0^w
 12603|Nightbrace Tunic|d||d^229^Solakar Flamewreath^18.3^0^w
 12604|Starfire Tiara|d||d^229^Jed Runewatcher^32.9^0^w
+12606|Crystallized Girdle|d||d^229^Solakar Flamewreath^17.1^0^w
 12618|Enchanted Thorium Breastplate|c||c^Blacksmithing^300^16745^f
 12620|Enchanted Thorium Helm|c||c^Blacksmithing^300^16742^f
 12625|Dawnbringer Shoulders|c||c^Blacksmithing^265^16660^f
@@ -462,6 +463,7 @@ ns.data.items = [==[
 13161|Trindlehaven Staff|d||d^229^Overlord Wyrmthalak^16.2^0^w
 13162|Reiver Claws|d||d^229^Overlord Wyrmthalak^12.8^0^w
 13166|Slamshot Shoulders|d||d^229^Highlord Omokk^11^0^w
+13168|Plate of the Shaman King|d||d^229^Highlord Omokk^14.5^0^w
 13170|Skyshroud Leggings|d||d^229^Highlord Omokk^15.7^0^w
 13177|Talisman of Evasion|d||d^229^War Master Voone^16.8^0^w
 13178|Rosewine Circle|d||d^229^Urok Doomhowl^24.5^0^w
@@ -593,6 +595,7 @@ ns.data.items = [==[
 14833|Tyrant's Gauntlets|w|s|m^4331^Firemane Ash Tail^0^s
 14921|Jade Epaulets|w|sr|m^9162^Young Diemetradon^0^s
 15047|Red Dragonscale Breastplate|c||c^Leatherworking^290^19054^f
+15048|Blue Dragonscale Breastplate|c||c^Leatherworking^260^19077^f
 15056|Stormshroud Armor|c||c^Leatherworking^260^19079^f
 15057|Stormshroud Pants|c||c^Leatherworking^250^19067^f
 15058|Stormshroud Shoulders|c||c^Leatherworking^270^19090^f
@@ -1012,6 +1015,7 @@ ns.data.items = [==[
 18689|Phantasmal Cloak|d||d^289^Jandice Barov^11.5^0^w
 18690|Wraithplate Leggings|d||d^289^Jandice Barov^10^0^w
 18691|Dark Advisor's Pendant|d||d^289^Vectus^4.3^0^w
+18692|Death Knight Sabatons|d||d^289^Marduk Blackpool^4.4^0^w
 18693|Shivery Handwraps|d||d^289^Ras Frostwhisperer^15.8^0^w
 18696|Intricately Runed Shield|d||d^289^Ras Frostwhisperer^16.8^0^w
 18698|Tattered Leather Hood|w||w^0^0^k
@@ -1629,6 +1633,7 @@ ns.data.items = [==[
 22089|Soulforge Breastplate|q||q^9002^Saving the Best for Last^58^a^k
 22090|Soulforge Gauntlets|q||q^8933^Just Compensation^58^a^k
 22091|Soulforge Helm|q||q^9002^Saving the Best for Last^58^a^k
+22092|Soulforge Legplates|q||q^8954^Anthion's Parting Words^58^a^k
 22093|Soulforge Spaulders|q||q^8954^Anthion's Parting Words^58^a^k
 22095|Bindings of The Five Thunders|q||q^8918^An Earnest Proposition^58^h^k
 22096|Boots of The Five Thunders|q||q^8957^Anthion's Parting Words^58^h^k
@@ -1679,6 +1684,7 @@ ns.data.items = [==[
 22327|Amulet of the Redeemed|w||m^16101^Jarien^20^k~m^16102^Sothos^20^k
 22328|Legplates of Vigilance|w||m^16101^Jarien^20^k~m^16102^Sothos^20^k
 22329|Scepter of Interminable Focus|w||m^16101^Jarien^20^k~m^16102^Sothos^20^k
+22333|Hammer of Divine Might|d||d^289^Kormok^20^0^k
 22334|Band of Mending|w||m^16101^Jarien^20^k~m^16102^Sothos^20^k
 22335|Lord Valthalak's Staff of Command|d||d^229^Lord Valthalak^34.67^0^k
 22339|Rune Band of Wizardry|d||d^229^Lord Valthalak^35.3^0^k
@@ -2754,6 +2760,7 @@ ns.data.items = [==[
 273646|Half-Eaten Boots|d|sn|d^33^Fenrus the Devourer^11.11^0^s
 273647|Worgpelt Leggings|d|sn|d^33^Wolf Master Nandos^33.33^0^s
 273805|Blackrock Harness|d|sn|d^34^Targorr the Dread^50^0^s
+273807|Demolition Girdle|d|sn|d^34^Kam Deepfury^17.65^0^s
 273808|Bridgebreaker Bindings|d|sn|d^34^Kam Deepfury^52.94^0^s
 273824|Defias Jailbreakers|d|sn|d^34^Bazil Thredd^50^0^s
 273825|Red Wool Cloak|d|sn|d^34^Bazil Thredd^12.5^0^s
@@ -3062,6 +3069,7 @@ ns.data.items = [==[
 280024|Legplates of Reinforced Crystal|d|n|d^3001^Nanaya^26.9^0^w
 280025|Leggings of Curation|d|n|d^3001^Nanaya^29.2^0^w
 280027|Crownroar Chestplate|d|n|d^3001^Snowtalon^53.6^0^w
+280028|Heartflame Gauntlets|d|n|d^3001^Cinder^57.8^0^w~d^3001^Vitrix^13^0^w
 280029|Cinderedge Crescent|d|n|d^3001^Cinder^40.7^0^w
 280031|Sparklance Wand|d|n|d^3001^Bolt^49.2^0^w~d^3001^Vitrix^16^0^w
 280045|Regal Direhorn Drape|d|n|d^3001^Direhorn Matriarch^27.3^0^w

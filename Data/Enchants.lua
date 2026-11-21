@@ -153,6 +153,16 @@ E	3	neck	s1249019
 E	3	shoulder	i23548:9 i20077:9
 E	3	w2h	s1248668 s20030 s20034
 E	3	wrist	s20010 s13939 s13661
+E	4	back	s1219587 s13419
+E	4	chest	s20028 s20025:1 s13917 i252487
+E	4	feet	i252487 i252462 i252452
+E	4	hands	s1213622 s25079:9 s13948 s1248640
+E	4	head	i19785:9 i18330 i19784:9 i11645
+E	4	legs	i19785:9 i18330 i252487 i252462
+E	4	neck	s1249057 s1249058 s1249019
+E	4	shoulder	i20076:9 i23548:9 i20077:9
+E	4	w2h	s1219580 s1248636 s22749:9 s23804
+E	4	wrist	s1220624 i273596 s1248498
 ]==],
 PRIEST = [==[
 E	1	chest	i252487 s20028 i252462
@@ -399,6 +409,7 @@ s13746|Enchant Cloak - Greater Defense|Armor +60|Enchanting 205: from a trainer;
 s13815|Enchant Gloves - Agility|Agility +7|Enchanting 210: from a trainer; or Forever's scroll Enchant Gloves - Agility|k
 s13817|Enchant Shield - Stamina|Stamina +7|Enchanting 210: recipe Formula: Enchant Shield - Stamina; or Forever's scroll Enchant Shield - Stamina|s
 s13887|Enchant Gloves - Strength|Strength +7|Enchanting 225: from a trainer; or Forever's scroll Enchant Gloves - Strength|s
+s13917|Enchant Chest - Superior Intellect|Intellect +8|Enchanting 230: from a trainer; or Forever's scroll Enchant Chest - Superior Intellect|k
 s13931|Enchant Bracer - Deflection|Defense +7|Enchanting 235: recipe Formula: Enchant Bracer - Deflection, sold by Mythrin'dir (Darnassus); or Forever's scroll Enchant Bracer - Deflection|s
 s13935|Enchant Boots - Agility|Agility +5|Enchanting 235: from a trainer; or Forever's scroll Enchant Boots - Agility|k
 s13939|Enchant Bracer - Greater Strength|Strength +7|Enchanting 240: from a trainer; or Forever's scroll Enchant Bracer - Greater Strength|k
