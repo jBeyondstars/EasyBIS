@@ -246,7 +246,7 @@ class WindowTest(unittest.TestCase):
         self.assertEqual(strip_colors(second.detail.text), "Warchief Rend Blackhand - Blackrock Spire (15%)",
                          "a drop counted in Forever wears no sign")
         third = self.frames(game)[2]
-        self.assertEqual(strip_colors(third.name.text), "Mask of the Unforgiven")
+        self.assertEqual(strip_colors(third.name.text), "Backwood Helm")
         self.assertEqual(third.sub.text, "", "the item type is not known before the game loads the item")
 
         # what was seen or counted in Forever or read in its files wears no sign
