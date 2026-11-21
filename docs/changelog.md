@@ -1,3 +1,17 @@
+# Easy BIS 1.8.3
+
+## Fixed
+
+- **Four more specs measured again.** The PvE lists of Subtlety Rogue, Enhancement Shaman, Retribution Paladin and Arms Warrior are measured again on the current version of WoWSims Forever, every item of each slot. Leaving the PvP rewards aside:
+  - Subtlety Rogue: Distracting Dagger is the best off hand, ahead of Felstriker and Alcor's Sunrazor. Felstriker stays the best main hand.
+  - Enhancement Shaman: measured with the setup WoWSims Forever's site starts from. Sulfuron Hammer is the best weapon, ahead of Forest Defender's Axe. Bloodmail Gauntlets and Tranquil Wristguards are the best hands and wrists.
+  - Retribution Paladin: Lionheart Helm is the best head in place of Black Dragonscale Helm, and Tranquil Wristguards the best wrists in place of Battleborn Armbraces. Titanic Leggings leave the first place to Champion's Legplates and Pristine Scorpid Leggings. Smolderweb's Eye and Frozen Heart of the Mountain are the best trinkets. Destiny stays the best weapon.
+  - Arms Warrior: no best pick changes.
+
+## Known issue
+
+- **Twelve damage specs are next.** Elemental Shaman, the Mages, the Hunters, Shadow Priest, Balance Druid and the Warlocks keep the earlier measure. Their lists follow a few specs at a time. Until the last one is out, the notice under the window's filters stays.
+
 # Easy BIS 1.8.2
 
 ## New
