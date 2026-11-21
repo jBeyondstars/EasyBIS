@@ -1202,6 +1202,30 @@ class WindowTest(unittest.TestCase):
             game.stub.run(window.pages.buttons[2], "OnClick")
             self.assertTrue(notice.shown, "on the dungeons too")
 
+    def test_the_notices_cross_puts_it_away_until_the_window_opens_again(self):
+        game = self.open(saved=ENHANCEMENT)
+        window, tooltip = game.ns.Browser.window, game.lua.globals().GameTooltip
+        notice, cross = window.notice, window.notice.close
+        list_top = lambda: -window.inset.points[1][3]
+        self.assertEqual((notice.shown, list_top()), (True, 98))
+        rows_before = len(window.rowData)
+        game.stub.run(cross, "OnEnter")
+        self.assertEqual(tooltip.text, "Hide this notice. It comes back the next time the window is opened.")
+        game.stub.run(cross, "OnClick")
+        self.assertEqual((notice.shown, list_top()), (False, 70), "the list takes the room of the notice")
+        self.assertEqual(len(window.inset.points), 2, "the list is anchored once")
+        self.assertEqual(len(window.rowData), rows_before)
+        for tab in window.tabs.buttons.values():   # it stays away from tab to tab
+            game.stub.run(tab, "OnClick")
+            self.assertFalse(notice.shown)
+        game.ns.Browser.Close()
+        game.ns.Browser.Open()
+        self.assertEqual((notice.shown, list_top()), (True, 98), "back when the window opens again")
+        game.stub.run(cross, "OnClick")
+        game.ns.Browser.Toggle()
+        game.ns.Browser.Toggle()
+        self.assertTrue(notice.shown)
+
     # -- items added by hand --------------------------------------------------------------------
 
     def test_add_an_item_by_hand(self):
