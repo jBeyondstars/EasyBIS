@@ -499,6 +499,18 @@
   },
   {
    "items": [
+    13023
+   ],
+   "specs": [
+    "HUNTER 1",
+    "HUNTER 2"
+   ],
+   "simulated": true,
+   "en": "Quick Shots rolls on each Auto Shot: at 1.80 speed it is worth about 14 DPS more than at 2.50.",
+   "fr": "Quick Shots se déclenche par tir automatique : à 1,80 de vitesse il vaut environ 14 DPS de plus qu'à 2,50."
+  },
+  {
+   "items": [
     13040
    ],
    "specs": [
