@@ -93,7 +93,7 @@ The lists follow the game's progress. **Pre-raid** (the default) only counts gea
 |---|---|
 | `/easybis` | open or close the window |
 | `/easybis item [link or ID]` | say who wants an item |
-| `/easybis list [1-3] [pvp]` | print the list of one of your specs in chat |
+| `/easybis list [number] [pvp]` | print the list of one of your specs in chat |
 | `/easybis phase [0, 1 or all]` | choose where the lists stop |
 | `/easybis add [link or ID] [off]` | add an item to the list the window shows |
 | `/easybis remove [link or ID]` | take a hand-added item out again |

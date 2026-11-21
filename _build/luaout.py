@@ -18,6 +18,7 @@ import phases
 import reputations
 import ranks
 import runs
+import specs
 
 CREDIT = "Data from ForeverDB.net (https://foreverdb.net)"
 ENCHANTS_PER_SLOT = 3
@@ -61,6 +62,7 @@ def encode_entry(entry: ladders.Entry) -> str:
     flags += "p" if entry.pvp else ""
     flags += "v" if entry.honor else ""
     flags += "e" if entry.placed else ""
+    flags += "x" if entry.level else ""
     flags += "g" if entry.estimated else ""
     flags += str(entry.phase) if entry.phase else ""
     limit = entry.limit or ""
@@ -90,7 +92,29 @@ def _corrections_note(db) -> tuple:
     lines += _sources_note(db)
     lines += _costs_note(db)
     lines += _simulated_note(db)
+    lines += _specs_note(db)
     return tuple(lines)
+
+
+def _specs_note(db) -> list:
+    """Says what the lists change in ForeverDB's specs (specs.py): the tanks' weights and the Feral Druid's cat."""
+    changed = getattr(db, "specs", None)
+    if not changed or not (changed.completed or changed.cat):
+        return []
+    name = lambda cls, spec: f"{db.classes[cls]['specs'][spec]['name']} {cls.title()}"
+    lines = []
+    if changed.completed:
+        tanks = ", ".join(name(cls, spec) for cls, spec in sorted({key[:2] for key in changed.completed}))
+        lines += [f"Changed from ForeverDB's weights: the tanks ({tanks}) weigh a weapon's damage per second, which",
+                  "ForeverDB's PvE weights leave out, and the attack power and the agility a profile gives no weight, "
+                  "at what the game's",
+                  "conversions make them worth by the profile's other weights. See _build/specs.py."]
+    if changed.cat:
+        lines += [f"Added to ForeverDB's specs: {name(*changed.cat)}, next to its Feral Combat, which is the bear "
+                  f"({name(*changed.bear)}).",
+                  f"The cat's PvE list is ranked on the damage per second a point of each stat adds ({specs.CAT_SOURCE},",
+                  "MIT License), its PvP list on ForeverDB's Feral weights. See _build/specs.py."]
+    return lines
 
 
 def _simulated_note(db) -> list:
@@ -155,10 +179,26 @@ def _drops_note(db) -> list:
     return lines
 
 
+def _enchants_note(db) -> list:
+    """Says what the enchant lists change in ForeverDB's (specs.py)."""
+    changed = getattr(db, "specs", None)
+    lines = []
+    if changed and changed.unbound:
+        tanks = ", ".join(f"{db.classes[cls]['specs'][spec]['name']} {cls.title()}" for cls, spec in sorted(changed.unbound))
+        lines += [f"Changed from ForeverDB's lists: the tanks ({tanks}) are not listed the head and leg enchants of "
+                  "another class's Zul'Gurub quest. See _build/specs.py."]
+    if changed and changed.cat:
+        cls, spec = changed.cat
+        lines += [f"Added to ForeverDB's lists: the enchants of {db.classes[cls]['specs'][spec]['name']} {cls.title()} "
+                  f"(spec {spec}), a spec ForeverDB does not have: its enchants, ranked on that spec's weights."]
+    return lines
+
+
 def lists_file(db, all_ladders) -> str:
     lines = _header(db, f"Best-in-slot ladders at level {db.meta['cap']}, one text block per class.", (
         *_corrections_note(db),
-        "  S <spec> <name> <role> <style>      style: any, 2h, dw (dual wield), shield",
+        "  S <spec> <name> <role> <style>      style: any, 2h, dw (dual wield), shield; the S lines of a class are in",
+        "                                      the order the addon lists its specs, which is not always the numbers'",
         "  L <spec> <list> <slot> <entries>    list: pve, pvp; entries best first, separated by spaces",
         "  M <spec> <list> <date>              that list is ranked by simulation, measured on that day; the others are",
         "                                      ranked on the stat weights",
@@ -170,6 +210,8 @@ def lists_file(db, all_ladders) -> str:
         "         v a Premier piece, sold for honor even when the data gives it no source,",
         "         e placed from a close spec's simulation (_build/simulated.py): its score is the one above it, not",
         "           its own; the addon shows none and never makes it a best pick,",
+        "         x most of its worth is an effect the stat weights cannot count (_build/corrections/effects.json): it has",
+        "           no score of its own, the addon shows it level with the best picks, never as one, and prints no figure,",
         "         g ranked by simulation on a score that is no full measure (a random bonus, an effect or a proc rate the",
         "           simulator lacks): it keeps its rank, and the addon shows no score for it,",
         "         a digit: the content phase the item needs (none: before the raids, 1: Forever's first raids,",
@@ -181,7 +223,8 @@ def lists_file(db, all_ladders) -> str:
     lines.append("ns.data.lists = {")
     for cls in sorted(all_ladders):
         block = []
-        for spec, modes in sorted(all_ladders[cls].items()):
+        for spec in specs.order(db, cls):
+            modes = all_ladders[cls][spec]
             spec_def = db.classes[cls]["specs"][spec]
             block.append("\t".join(("S", str(spec), spec_def["name"], spec_def["role"], spec_def["style"])))
             measured = _measured(db, cls, spec)
@@ -395,6 +438,7 @@ def enchants_file(db, all_ladders) -> str:
         "  slot keys: head neck shoulder back chest wrist hands legs feet, w1h w2h (weapons), shield, held, rng",
         f"An item takes only one of them. The addon shows the first {ENCHANTS_PER_SLOT} of the character's phase.",
         "A weapon, shield, held or ranged key is listed only for the specs whose PvE list holds such an item.",
+        *_enchants_note(db),
     ))
     lines.append("ns.data.enchants = {")
     for cls in sorted(db.classes):

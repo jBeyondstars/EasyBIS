@@ -16,6 +16,8 @@ What the window lists, as plain tables: the frames only draw them.
                    custom   true for an item the player added by hand (Custom.lua): no score
                    estimated  true for an alternative whose score is no full measure (flag g): it keeps its
                             place, and has no gap and no ratio, so the window shows nothing for its score
+                   level    true for an item whose effect the weights cannot count (flag x): no score of its
+                            own, so no gap and no ratio; it is a tie of the best picks
                    placed   true for an item the data placed from a close spec's simulation (flag e): no
                             score of its own, so no gap and no ratio either
                { kind = "note", slot, text }   a line of plain text between rows
@@ -121,6 +123,8 @@ function Rows.Items(state, withAlts)
                     listed[pick.id] = true
                     if ns.Ladders.HasFlag(pick.entry, "e") then
                         Add(slot, pick.id, { bis = false, placed = true })
+                    elseif ns.Ladders.HasFlag(pick.entry, "x") then
+                        Add(slot, pick.id, { bis = false, tie = true, level = true })
                     elseif ns.Ladders.HasFlag(pick.entry, "g") then
                         Add(slot, pick.id, { bis = false, estimated = true })
                     else
@@ -137,6 +141,8 @@ function Rows.Items(state, withAlts)
                     listed[pick.id] = true
                     if ns.Ladders.HasFlag(pick.entry, "e") then
                         Add(slot, pick.id, { bis = false, other = true, placed = true })
+                    elseif ns.Ladders.HasFlag(pick.entry, "x") then
+                        Add(slot, pick.id, { bis = false, other = true, tie = true, level = true })
                     elseif ns.Ladders.HasFlag(pick.entry, "g") then
                         Add(slot, pick.id, { bis = false, other = true, estimated = true })
                     else

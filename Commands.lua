@@ -12,7 +12,7 @@ local L = ns.L
   phase [0, 1 or all]                    the content phase the lists stop at
   faction [alliance, horde or auto]      the faction the lists are for (auto: the character's)
   item [link or ID]                      say who wants an item
-  list [1-3] [pvp]                       print the list of one of the player's specs
+  list [number] [pvp]                    print the list of one of the player's specs
   add [link or ID] [off]                 add an item by hand to the list the window shows (Custom.lua)
   remove [link or ID]                    take it out again
 ]]
@@ -119,7 +119,11 @@ local function ListCommand(rest)
         if candidate.index == wanted then spec = candidate end
     end
     if not spec then
-        ns:Print(L.LIST_NO_SPEC:format(tostring(wanted)))
+        local known = {}
+        for _, candidate in ipairs(specs) do
+            known[#known + 1] = candidate.index .. " " .. ns.SpecName(candidate.name)
+        end
+        ns:Print(L.LIST_NO_SPEC:format(tostring(wanted), table.concat(known, ", ")))
         return
     end
 

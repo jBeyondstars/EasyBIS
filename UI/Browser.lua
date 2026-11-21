@@ -247,10 +247,10 @@ end
 local function SpecChoices()
     local choices = {}
     local function AddClass(class)
-        local count = ns.Index.SpecCount(class)
-        if count == 0 then return end
+        local order = ns.Index.SpecOrder(class)
+        if not order[1] then return end
         local children = {}
-        for spec = 1, count do
+        for _, spec in ipairs(order) do
             children[#children + 1] = {
                 text = ns.SpecName(ns.Index.SpecName(class, spec)),
                 value = SpecKey(class, spec),
@@ -563,6 +563,8 @@ local function ItemTooltip(owner, data, side)
         GameTooltip:AddLine(L.TIP_CUSTOM, MUTED[1], MUTED[2], MUTED[3], true)
     elseif data.placed then
         GameTooltip:AddLine(L.TIP_PLACED, MUTED[1], MUTED[2], MUTED[3], true)
+    elseif data.level then
+        GameTooltip:AddLine(L.TIP_LEVEL, MUTED[1], MUTED[2], MUTED[3], true)
     elseif data.ratio and not data.bis and not data.tie then
         local share = math.floor(data.ratio * 100 + 0.5)
         GameTooltip:AddLine((data.other and L.TIP_SCORE_SET or L.TIP_SCORE):format(share),

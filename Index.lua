@@ -7,6 +7,7 @@ Which specs want an item: what item tooltips need.
                       bis: a best pick, or an alternative that scores as much as one
                       custom: added to that list by hand (Custom.lua), not a pick of the data
   Index.SpecName(class, spec), Index.SpecCount(class)
+  Index.SpecOrder(class)   the class's spec numbers in the order to show them (the data's)
 
 Built once, class by class, from the lists as the player's faction and the
 options show them. The first classes are read a few seconds after login, one
@@ -21,6 +22,7 @@ local WARM_UP_DELAY = 3   -- seconds after login before the first class is read
 
 local byItem = {}     -- [item id] = hits
 local specNames = {}  -- [class] = { [spec] = English name }
+local specOrder = {}  -- [class] = { spec, ... } as the data lists them
 local done = {}       -- [class] = true once read
 local generation = 0  -- bumped by Reset, so a warm-up in progress stops
 local added           -- [item id] = hits for the items added by hand; nil until asked for, and after a change
@@ -40,6 +42,7 @@ local function ReadClass(class, filter)
     local data = ns.Ladders.Decode(class)
     if not data then return end
     specNames[class] = {}
+    specOrder[class] = data.order
     for spec, def in pairs(data.specs) do
         specNames[class][spec] = def.name
         for _, list in ipairs(ns.LISTS) do
@@ -102,8 +105,14 @@ function Index.SpecCount(class)
     return count
 end
 
+-- The class's spec numbers in the order to show them: the data's, which puts the Druid's two Feral specs together.
+function Index.SpecOrder(class)
+    ReadAll()
+    return specOrder[class] or {}
+end
+
 function Index.Reset()
-    byItem, specNames, done, added = {}, {}, {}, nil
+    byItem, specNames, specOrder, done, added = {}, {}, {}, {}, nil
     generation = generation + 1
 end
 
