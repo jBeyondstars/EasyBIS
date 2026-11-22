@@ -170,7 +170,9 @@ class AddonTest(unittest.TestCase):
         for path in toc_files():
             self.assertTrue(path.is_file(), f"{path.name} is in the toc but not on disk")
         listed = {path.name for path in toc_files()}
-        on_disk = {path.name for path in ADDON.rglob("*.lua") if "_build" not in path.parts}
+        on_disk = {path.name for path in ADDON.rglob("*.lua")
+                   if "_build" not in path.parts
+                   and not any(part.startswith(".") for part in path.relative_to(ADDON).parts)}
         self.assertEqual(listed, on_disk, "the toc and the Lua files on disk differ")
 
     def test_textures_the_game_can_read(self):
@@ -364,6 +366,8 @@ class AddonTest(unittest.TestCase):
         note = Game().ns.Notes.For
         self.assertRegex(note(647, "WARRIOR", 1, "pve", "main"), "^Its proc, 200 Strength .* about 66 DPS")
         self.assertRegex(note(647, "PALADIN", 3, "pve", "main"), "about 49 DPS", "the same item, another spec's note")
+        self.assertIn("Mortal Strike", note(12784, "WARRIOR", 1, "pvp", "main"))
+        self.assertNotIn("Mortal Strike", note(12784, "WARRIOR", 1, "pve", "main") or "")
         main, off = note(12590, "ROGUE", 3, "pve", "main"), note(12590, "ROGUE", 3, "pve", "off")
         self.assertRegex(main, "^Its proc makes every attack land and crit")
         self.assertIsNone(off, "Felstriker's proc was measured in Subtlety's main hand alone")
@@ -411,11 +415,11 @@ class AddonTest(unittest.TestCase):
 
     def test_an_item_worth_its_effect_is_the_equal_of_the_best_picks(self):
         """The Lion Horn of Stormwind in a Protection Paladin's trinkets: flag x, no score, tied, never a best pick."""
-        horn, insignia, stabilizer = 14557, 17904, 272440
+        horn, stabilizer, compass = 14557, 272440, 4130
         game = Game(cls="PALADIN")
         ladders_ = game.ns.Ladders
         trinkets = ladders_.For("PALADIN", 2, "pve").trinket
-        self.assertEqual([pick.id for pick in trinkets.best.values()], [insignia, stabilizer])
+        self.assertEqual([pick.id for pick in trinkets.best.values()], [stabilizer, compass])
         first = trinkets.alts[1]
         self.assertEqual(first.id, horn)
         self.assertTrue(ladders_.HasFlag(first.entry, "x"))

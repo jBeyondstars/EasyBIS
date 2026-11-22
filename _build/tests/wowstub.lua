@@ -63,6 +63,7 @@ local function NewWidget(kind, name, template)
     elseif kind == "DropdownButton" then
         widget.Text = NewWidget("FontString")
         widget.Background = NewWidget("Texture")
+        if template == "WowStyle1DropdownTemplate" then widget.Arrow = NewWidget("Texture") end
         widget.scripts.OnMouseDown = function(self, button)
             if button == "LeftButton" then self:OpenMenu() end
         end

@@ -60,6 +60,9 @@ PVP_VENDORS = {
 }
 # The League of Arathor, The Defilers, Frostwolf Clan, Stormpike Guard, Warsong Outriders, Silverwing Sentinels
 PVP_FACTIONS = frozenset((509, 510, 729, 730, 889, 890))
+# Alterac Valley quest rewards: the insignia upgrades, Korrak, and Hero of the Stormpike/Frostwolf.
+# These sources are recorded as quests, without a quartermaster or a reputation source.
+PVP_QUESTS = frozenset((*range(7161, 7173), 7181, 7202, 8271, 8272))
 PVP_SET = ranks.PREMIER
 PVP_REWARDS = {"pve": False, "pvp": True}  # whether a list counts them until the player says otherwise
 ALTERNATIVES = 2      # picks shown after the best one(s), until the player asks for more
@@ -143,16 +146,27 @@ class Entry:
 
 
 def score(db, item_id: int, weights: dict, cls: str, melee: bool = False) -> float | None:
-    """ForeverDB's ns.gearScore for an item id. melee: a Hunter's melee weapon counts its damage per second as well
-    (ForeverDB counts a Hunter's ranged weapon only, which leaves a Survival Hunter's main hand to its stats)."""
+    """Weighted item stats. For a melee Hunter with corrected weights, value melee weapon DPS by the
+    attack power that adds as much damage to white swings. Ranged weapons keep their published weight."""
     gear = db.gear.get(item_id)
     if gear is None:
         return None
     stats = gear["stats"]
     total = sum(weights[stat] * value for stat, value in stats.items() if stat in weights)
+    total += weights.get("ranged_hit", 0) * specs.RANGED_HIT_PERCENT.get(item_id, 0)
     ranged = gear["inv"] in RANGED_INV
-    if gear["dps"] > 0 and "dps" in weights and (ranged == (cls == "HUNTER") or (melee and not ranged)):
+    if gear["dps"] > 0 and "dps" in weights and ranged == (cls == "HUNTER"):
         total += weights["dps"] * gear["dps"]
+        if "weapon_hit" in weights and "weapon_hit" in gear:
+            # Six seconds of white weapon damage plus one Mortal Strike. Normalization changes
+            # the attack-power term of the strike; it leaves the weapon's own damage roll intact.
+            low, high, _ = gear["weapon_hit"]
+            total += weights["weapon_hit"] * ((low + high) / 2 - specs.TWO_HAND_NORMALIZED_SPEED * gear["dps"])
+    elif gear["dps"] > 0 and melee and cls == "HUNTER" and not ranged:
+        # ranged_power adds the ranged contribution to generic AP. Only its original melee part
+        # applies here. This white-swing estimate cannot capture individual strikes or weapon speed.
+        melee_power = weights[specs.ATTACK_POWER] - weights.get(specs.RANGED_ATTACK_POWER, 0)
+        total += gear["dps"] * specs.ATTACK_POWER_PER_DPS * melee_power
     elif gear["wand"] and gear["dps"] and "wand" in weights:
         total += weights["wand"] * gear["dps"]
     if gear["armor"] and "armor" in weights:
@@ -174,7 +188,9 @@ def pvp_reward(item: dict) -> bool:
         return True
     for source in item["sources"]:
         number = int(source[1]) if len(source) > 1 and source[1].isdigit() else None
-        if (source[0] in ("V", "v") and number in PVP_VENDORS) or (source[0] == "r" and number in PVP_FACTIONS):
+        if (source[0] in ("V", "v") and number in PVP_VENDORS
+                or source[0] == "r" and number in PVP_FACTIONS
+                or source[0] == "q" and number in PVP_QUESTS):
             return True
     return False
 
@@ -206,6 +222,8 @@ def full_ladder(db, cls: str, spec: int, mode: str, slot: str, level: int | None
     spec_def = data["specs"][spec]
     profile = MODES[mode]
     weights = spec_def["weights"][profile]
+    if "weapon_hit" in weights and (level != db.meta["cap"] or not rank_rewards):
+        weights = {stat: value for stat, value in weights.items() if stat != "weapon_hit"}
     groups = SOURCE_GROUPS if rank_rewards or mode != "pve" else SOURCE_GROUPS - {PVP_RANK_GROUP}
     healer, hunter = spec_def["role"] == "Healer", cls == "HUNTER"
     dual_wields = level >= db.dual_wield.get(cls, 99)
@@ -256,10 +274,13 @@ def full_ladder(db, cls: str, spec: int, mode: str, slot: str, level: int | None
             if not (value >= min_score or (value > 0 and armour_only) or measured or item_id in level_ids):
                 continue
             flags = item["flags"]
+            twin = item["twin"]
+            if cls not in class_only.get(twin, (cls,)):
+                twin = None
             weighed[item_id] = value
             entries.append(Entry(
                 item_id=item_id, score=ranked.value(item_id, value) if ranked else value,
-                side=item["side"], twin=item["twin"],
+                side=item["side"], twin=twin,
                 seen="s" in flags, new="n" in flags, unsourced=not sourced, unique="U" in flags,
                 two_hand=gear["inv"] == INV_TWO_HAND, random="r" in flags, limit=item["limit"],
                 phase=phases.item_phase(item), pvp=pvp_reward(item),

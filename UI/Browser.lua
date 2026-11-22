@@ -19,9 +19,9 @@ The Easy BIS window: the best gear of a spec, slot by slot.
            The Character tab shows the best pick of every slot as a character sheet instead
            (UI\Character.lua), the Reputations tab what the spec needs of each faction
            (UI\Reputations.lua): both follow the spec, the list and the phase, and have no other filter.
-  bottom   Items / Enchants / Character / Consumables / Reputations, the data's credit, "Add an item"
-           (UI\AddItem.lua), the alternatives switch and the options menu. The grip in the corner changes the
-           window's height.
+  bottom   Items / Enchants / Character / Consumables / Reputations, "Add an item" (UI\AddItem.lua),
+           the alternatives switch and the options menu. The data credit sits below this row. The grip
+           in the corner changes the window's height.
   side     two tabs down the right edge, as the game's professions have them: the lists (all of the above),
            and the dungeons, which dungeons hold the spec's best picks (UI\Dungeons.lua). The dungeons take
            the whole middle and follow the spec, the list, the phase and the alternatives switch; the tabs
@@ -66,6 +66,7 @@ local NOTICE = "NOTICE_ITEMS"
 local NOTICE_HEIGHT, NOTICE_GAP = 24, 4   -- its band, and the room between it and the list
 local NOTICE_MARK = "|TInterface\\DialogFrame\\UI-Dialog-Icon-AlertNew:16:16:0:0|t "
 local FILTERS, INSET_BOTTOM = 70, 58   -- what the filters and the footer take of the window's height
+local FOOTER_BUTTON_BOTTOM = 24   -- room for the credit below and the corner badge above
 local NOTICE_CLOSE = "Interface\\Buttons\\UI-StopButton"   -- the cross that puts the notice away
 local noticeShown = NOTICE ~= nil   -- false once its cross is clicked, until the window is opened again
 
@@ -1123,7 +1124,7 @@ local function SetTarget(class, spec, list)
 end
 
 function Browser.SpecFilter(parent)
-    local filter = Widgets.Dropdown(parent, L.FILTER_SPEC, 176)
+    local filter = Widgets.Dropdown(parent, L.FILTER_SPEC, 200)
     SetupChoices(filter.button, SpecChoices,
         function() return SpecKey(Browser.Target()) end,
         function(value)
@@ -1149,11 +1150,7 @@ function Browser.ListFilter(parent)
             SetTarget(class, spec, value)
         end)
     filter:Layout(50)
-    -- level with a dropdown's label when their bottoms are
-    filter.label = filter:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    filter.label:SetPoint("TOPLEFT", 2, 16)
-    filter.label:SetTextColor(MUTED[1], MUTED[2], MUTED[3])
-    filter.label:SetText(L.FILTER_LIST)
+    filter.label = Widgets.FilterLabel(filter, L.FILTER_LIST)
     return filter
 end
 
@@ -1168,15 +1165,12 @@ local function Build()
     window.spec:SetPoint("TOPLEFT", 66, -26)
     window.list = Browser.ListFilter(window)
     window.listLabel = window.list.label
-    window.list:SetPoint("BOTTOMLEFT", window.spec, "BOTTOMRIGHT", 8, 0)
 
     -- Not the window's own: the phase is the character's, and tooltips follow it too.
     window.phase = Widgets.Dropdown(window, L.FILTER_PHASE, 100)
-    window.phase:SetPoint("BOTTOMLEFT", window.list, "BOTTOMRIGHT", 8, 0)
     SetupChoices(window.phase.button, PhaseChoices, ns.Phase, function(value) ns:SetPhase(value) end)
 
     window.slot = Widgets.Dropdown(window, L.FILTER_SLOT, 104)
-    window.slot:SetPoint("BOTTOMLEFT", window.phase, "BOTTOMRIGHT", 8, 0)
     SetupChoices(window.slot.button,
         function() return state.tab == "consumables" and CategoryChoices() or SlotChoices() end,
         function()
@@ -1189,19 +1183,17 @@ local function Build()
         end)
 
     window.source = Widgets.Dropdown(window, L.FILTER_SOURCE, 104)
-    window.source:SetPoint("BOTTOMLEFT", window.slot, "BOTTOMRIGHT", 8, 0)
     SetupChoices(window.source.button, function() return SourceChoices(window.facets) end,
         function() return state.source or ALL end, Choose("source"))
 
     window.zone = Widgets.Dropdown(window, L.FILTER_ZONE, 112)
-    window.zone:SetPoint("BOTTOMLEFT", window.source, "BOTTOMRIGHT", 8, 0)
     SetupChoices(window.zone.button, function() return ZoneChoices(window.facets) end,
         function() return state.zone or ALL end, Choose("zone"))
 
     window.reputation = Widgets.Dropdown(window, L.FILTER_REPUTATION, 110)
-    window.reputation:SetPoint("BOTTOMLEFT", window.zone, "BOTTOMRIGHT", 8, 0)
     SetupChoices(window.reputation.button, ReputationChoices,
         function() return state.reputation or ALL end, Choose("reputation"))
+    window.filters = { window.list, window.phase, window.slot, window.source, window.zone, window.reputation }
 
     -- On every tab: the items, the enchants, the character sheet and the tooltips all follow it. The filters
     -- fill their row, so it sits in the window's title bar.
@@ -1245,7 +1237,7 @@ local function Build()
     window.empty:SetPoint("TOP", 0, -40)
     window.empty:SetText(L.NO_ROWS)
 
-    -- Footer, left to right: the four tabs, the credit, "add an item", the alternatives, the options
+    -- Footer tabs and actions share a row, with the data credit underneath.
     window.tabs = Widgets.Segmented(window,
         {
             { value = "items", text = L.TAB_ITEMS },
@@ -1259,9 +1251,9 @@ local function Build()
             state.tab = value
             Refresh()
         end)
-    window.tabs:Layout(nil, 10)   -- five tabs: narrower each, so the credit keeps its room
+    window.tabs:Layout(nil, 10)
     Widgets.MarkNew(window.tabs.buttons[5], L.TAB_NEW)
-    window.tabs:SetPoint("BOTTOMLEFT", 10, 28)
+    window.tabs:SetPoint("BOTTOMLEFT", 10, FOOTER_BUTTON_BOTTOM)
 
     -- Down the right edge: the lists, and the dungeons
     window.pages = Widgets.SideTabs(window,
@@ -1278,7 +1270,7 @@ local function Build()
     if window.SetClampRectInsets then window:SetClampRectInsets(0, Widgets.SIDE_ROOM, 0, 0) end   -- they stay on the screen
 
     window.options = Widgets.MenuButton(window, L.OPTIONS, 88)
-    window.options:SetPoint("BOTTOMRIGHT", -28, 28)
+    window.options:SetPoint("BOTTOMRIGHT", -28, FOOTER_BUTTON_BOTTOM)
     if window.options.SetupMenu then
         window.options:SetupMenu(FillOptionsMenu)
     else
@@ -1291,6 +1283,10 @@ local function Build()
     window.alts:SetPoint("RIGHT", window.options, "LEFT", -8, 0)
 
     window.add = Widgets.Button(window, "+ " .. L.ADD_BUTTON)
+    local actionWidth = math.max(window.add:GetWidth(), window.alts:GetWidth(), window.options:GetWidth())
+    window.add:SetWidth(actionWidth)
+    window.alts:SetWidth(actionWidth)
+    window.options:SetWidth(actionWidth)
     window.add:SetPoint("RIGHT", window.alts, "LEFT", -8, 0)
     window.add:SetScript("OnClick", function()
         Widgets.Click()
@@ -1298,8 +1294,7 @@ local function Build()
     end)
 
     window.credit = window:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    window.credit:SetPoint("LEFT", window.tabs, "RIGHT", 10, 0)
-    window.credit:SetPoint("RIGHT", window.add, "LEFT", -10, 0)
+    window.credit:SetPoint("BOTTOM", 0, 9)
     window.credit:SetJustifyH("CENTER")
     window.credit:SetWordWrap(false)
     window.credit:SetTextColor(MUTED[1], MUTED[2], MUTED[3])
@@ -1377,6 +1372,14 @@ Refresh = function()
     window.source:SetShown(items)
     window.zone:SetShown(items)
     window.reputation:SetShown(items or enchants)
+    local previous = window.spec
+    for _, filter in ipairs(window.filters) do
+        if filter:IsShown() then
+            filter:ClearAllPoints()
+            filter:SetPoint("BOTTOMLEFT", previous, "BOTTOMRIGHT", 8, 0)
+            previous = filter
+        end
+    end
     window.add:SetShown(items)
     window.alts:SetShown(listed or dungeons)
     window.tabs:SetShown(not dungeons)

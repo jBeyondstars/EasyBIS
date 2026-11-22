@@ -638,6 +638,32 @@ class WindowTest(unittest.TestCase):
         other = self.open(cls="MAGE", saved="EasyBISCharDB = { class = 'MAGE', spec = 4, list = 'pve' }")
         self.assertEqual(other.ns.Browser.state.spec, 1)
 
+    def test_filter_alignment_across_tabs(self):
+        for client in ("", OLD_CLIENT):
+            game = self.open(saved=client)
+            window = game.ns.Browser.window
+            same = game.lua.eval("rawequal")
+            height = window.spec.button.height
+            for control in (window.list.buttons[1], window.list.buttons[2], window.phase.button,
+                            window.slot.button, window.source.button, window.zone.button, window.reputation.button,
+                            window.alts, window.options, window.add, *window.tabs.buttons.values()):
+                self.assertEqual(control.height, height)
+            caption = list(window.spec.label.points[1].values())
+            self.assertEqual(list(window.list.label.points[1].values()), caption)
+            for tab, visible in ((2, ("phase", "slot", "reputation")), (3, ("list", "phase")),
+                                 (1, ("list", "phase", "slot", "source", "zone", "reputation"))):
+                game.stub.run(window.tabs.buttons[tab], "OnClick")
+                previous = window.spec
+                right = window.spec.points[1][2] + window.spec.width
+                for key in visible:
+                    control = window[key]
+                    point = control.points[1]
+                    self.assertTrue(control.shown and same(point[2], previous), key)
+                    self.assertEqual((point[1], point[3], point[4], point[5]), ("BOTTOMLEFT", "BOTTOMRIGHT", 8, 0))
+                    right += point[4] + control.width
+                    previous = control
+                self.assertLessEqual(right, window.width - 8)
+
     def test_list_buttons(self):
         game = self.open(saved=ENHANCEMENT)
         window = game.ns.Browser.window
@@ -2733,12 +2759,26 @@ class WindowTest(unittest.TestCase):
             self.assertEqual((bool(frame.zoneBack.shown), bool(frame.zoneMark.shown)), (zoned, zoned), frame.data.id)
         game.stub.run(marked[0], "OnEnter")
 
-    def test_the_five_tabs_leave_the_credit_its_room(self):
+    def test_footer_tabs_actions_and_credit_fit(self):
         for locale in ("enUS", "frFR"):
             game = self.open(locale=locale)
             window = game.ns.Browser.window
             self.assertEqual(len(window.tabs.buttons), 5)
-            self.assertLess(window.tabs.width, 400, locale)
+            self.assertEqual(window.add.width, window.alts.width)
+            self.assertEqual(window.add.width, window.options.width)
+            caption = window.options.Text.points[1]
+            self.assertEqual((caption[1], caption[2], caption[3]), ("CENTER", 0, -2),
+                             "the native filter caption sits higher than the panel button text")
+            tabs_right = window.tabs.points[1][2] + window.tabs.width
+            actions_width = window.add.width + window.alts.width + window.options.width + 2 * 8
+            self.assertLess(tabs_right, window.width + window.options.points[1][2] - actions_width, locale)
+            anchor = window.credit.points[1]
+            self.assertEqual(anchor[1], "BOTTOM")
+            row_bottom = window.tabs.points[1][3]
+            self.assertLess(anchor[3] + window.credit.GetStringHeight(window.credit), row_bottom)
+            badge = window.tabs.buttons[5].newBadge
+            badge_top = row_bottom + window.tabs.height + badge.points[1][5] + badge.height / 2
+            self.assertLessEqual(badge_top, window.inset.points[2][3])
 
     def test_the_new_tabs_are_marked_new(self):
         for locale in ("enUS", "frFR"):
@@ -2754,7 +2794,7 @@ class WindowTest(unittest.TestCase):
                 game.stub.run(tab, "OnClick")
                 self.assertTrue(tab.highlightLocked)
                 self.assertTrue(tab.newBadge.shown, "the badge stays on the open tab")
-                self.assertEqual(tab.newBadge.points[1][3], "TOPRIGHT", "on the corner, so the credit keeps its room")
+                self.assertEqual(tab.newBadge.points[1][3], "TOPRIGHT", "on the corner, clear of the caption")
             # the dungeons, on the window's side
             self.assertIsNone(window.pages.buttons[1].newBadge, locale)
             self.assertEqual(window.pages.buttons[2].newBadge.text.text, "New", locale)

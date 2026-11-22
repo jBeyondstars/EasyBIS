@@ -37,6 +37,7 @@ function Notes.For(item, class, spec, list, slot)
     for _, note in ipairs(notes) do
         if (not note.specs or note.specs[key])
             and (not note.slot or note.slot == slot)
+            and (not note.list or note.list == list)
             and (not note.simulated or ns.Ladders.Measured(class, spec, list)) then
             return note[ns.locale] or note.enUS
         end

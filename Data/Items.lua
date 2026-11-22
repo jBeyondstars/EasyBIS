@@ -113,7 +113,6 @@ ns.data.items = [==[
 4547|Gnomish Zapper|q|s|q^666^Sunken Treasure^35^^s
 4652|Salbac Shield|q|s|q^733^Scrounging^35^a^s
 4653|Ironheel Boots|q|s|q^733^Scrounging^35^a^s
-4696|Lapidis Tankard of Tidesippe|rwx||w^0^0^k~d^249^Onyxia^2.52^1^k
 4727|Chief Brigadier Girdle|wx|s|x^4636^Strong Iron Lockbox^k~x^6827^Box of Supplies^k
 4737|Imperial Leather Spaulders|wx|s|o^Ancient Treasure^1.7^k~o^Captain's Chest^1.3^k
 4738|Imperial Leather Belt|wx|s|o^Ancient Treasure^1.9^k~o^Captain's Chest^0.8^k
@@ -156,6 +155,7 @@ ns.data.items = [==[
 6449|Glowing Lizardscale Cloak|d|s|d^43^Skum^37.5^0^s
 6460|Cobrahn's Grasp|d|s|d^43^Lord Cobrahn^22.22^0^s
 6468|Deviate Scale Belt|c|s|c^Leatherworking^90^7955^f
+6504|Wingblade|Q|s|q^914^Leaders of the Fang^17^h^s
 6622|Sword of Zeal|rw||w^0^0^k~d^249^Onyxia^2.52^1^k
 6627|Mutant Scale Breastplate|d|s|d^43^Mutanus the Devourer^14.29^0^s
 6641|Haunting Blade|d|s|d^33^^0^0^s
@@ -443,6 +443,7 @@ ns.data.items = [==[
 13020|Skystriker Bow|wx|s|m^258042^NPC 258042^0^s
 13023|Eaglehorn Long Bow|w||w^0^0^k
 13029|Umbral Crystal|wx||x^4637^Steel Lockbox^k~x^21512^Ahn'Qiraj War Effort Supplies^k
+13039|Skull Splitting Crossbow|w||w^0^0^k
 13040|Heartseeking Crossbow|rw||w^0^0^k~d^249^Onyxia^2.52^1^k
 13051|Witchfury|w|s|m^7397^Earthen Stonecarver^0^s
 13060|The Needler|rw||w^0^0^k~d^249^Onyxia^2.52^1^k
@@ -662,6 +663,8 @@ ns.data.items = [==[
 16425|Knight-Captain's Chain Hauberk|p|U|p^8^a^f
 16426|Knight-Captain's Chain Leggings|p|U|p^8^a^f
 16427|Lieutenant Commander's Chain Pauldrons|p|U|p^10^a^f
+16429|Lieutenant Commander's Plate Helm|p|U|p^10^a^f
+16430|Knight-Captain's Plate Chestguard|p|U|p^8^a^f
 16433|Knight-Captain's Lamellar Breastplate|p|U|p^8^a^f
 16434|Lieutenant Commander's Lamellar Headguard|p|U|p^10^a^f
 16437|Marshal's Silk Footwraps|p|U|p^12^a^f
@@ -719,6 +722,8 @@ ns.data.items = [==[
 16502|Legionnaire's Dragonhide Trousers|p|U|p^8^h^f
 16504|Legionnaire's Dragonhide Breastplate|p|U|p^8^h^f
 16505|Legionnaire's Leather Hauberk|p|U|p^8^h^f
+16513|Legionnaire's Plate Armor|p|U|p^8^h^f
+16514|Champion's Plate Headguard|p|U|p^10^h^f
 16517|Legionnaire's Chain Bracers|p|U|p^8^h^f
 16519|Blood Guard's Mail Grips|p|U|p^7^h^f
 16523|Legionnaire's Mail Leggings|p|U|p^8^h^f
@@ -966,7 +971,6 @@ ns.data.items = [==[
 18420|Bonecrusher|Q||q^7462^The Treasure of the Shen'dralar^56^a^k~q^7877^The Treasure of the Shen'dralar^56^h^k
 18421|Backwood Helm|Q||q^7462^The Treasure of the Shen'dralar^56^a^k~q^7877^The Treasure of the Shen'dralar^56^h^k
 18424|Sedge Boots|Q||q^7462^The Treasure of the Shen'dralar^56^a^k~q^7877^The Treasure of the Shen'dralar^56^h^k
-18429|First Sergeant's Plate Bracers|pv|U|p^5^h^f
 18445|Sergeant Major's Plate Wristguards|pv|U|p^5^a^f~v^12805^Officer Areyn^1453^76.8^65.9^29021^a^k
 18450|Robe of Combustion|d||d^429^Guard Fengus^11.9^0^w~d^429^Guard Mol'dar^6.9^0^w
 18458|Modest Armguards|d||d^429^Guard Fengus^13.8^0^w~d^429^Guard Mol'dar^13.8^0^w
@@ -991,6 +995,7 @@ ns.data.items = [==[
 18497|Sublime Wristguards|d||d^429^Guard Mol'dar^4.8^0^w~d^429^Guard Slip'kik^4.9^0^w
 18499|Barrier Shield|w||o^Gordok Tribute^20^k
 18500|Tarnished Elven Ring|w||o^Gordok Tribute^33.33^k
+18502|Monstrous Glaive|d||d^429^Captain Kromcrush^21.5^0^w
 18503|Kromcrush's Chestplate|d||d^429^Captain Kromcrush^9.2^0^w
 18504|Girdle of Insight|c||c^Leatherworking^290^22921^f
 18505|Mugger's Belt|d||d^429^Captain Kromcrush^35.4^0^w
@@ -1350,6 +1355,7 @@ ns.data.items = [==[
 20116|Highlander's Leather Girdle|ev|sU|v^15127^Samuel Hawke^1417^46^45.4^20699^a^s~r^509^5^The League of Arathor^f
 20117|Highlander's Leather Girdle|ev|sU|v^15127^Samuel Hawke^1417^46^45.4^8941^a^s~r^509^5^The League of Arathor^f
 20124|Highlander's Plate Girdle|ev|sU|v^15127^Samuel Hawke^1417^46^45.4^35376^a^s~r^509^5^The League of Arathor^f
+20125|Highlander's Plate Girdle|ev|sU|v^15127^Samuel Hawke^1417^46^45.4^15883^a^s~r^509^5^The League of Arathor^f
 20127|Highlander's Plate Greaves|ev|sU|v^15127^Samuel Hawke^1417^46^45.4^48558^a^s~r^509^6^The League of Arathor^f
 20128|Highlander's Plate Greaves|ev|sU|v^15127^Samuel Hawke^1417^46^45.4^24102^a^s~r^509^6^The League of Arathor^f
 20134|Skyfury Helm|q||q^8258^The Darkreaver Menace^60^h^k
@@ -1394,6 +1400,7 @@ ns.data.items = [==[
 20203|Defiler's Mail Pauldrons|u|U|v^15126^Rutherford Twing^1417^73.37^29.67^^h^t
 20204|Defiler's Plate Girdle|ev|U|v^15126^Rutherford Twing^1417^73.4^29.7^56148^h^k
 20205|Defiler's Plate Girdle|ev|U|v^15126^Rutherford Twing^1417^73.4^29.7^32999^h^k
+20206|Defiler's Plate Girdle|ev|U|v^15126^Rutherford Twing^1417^73.4^29.7^16378^h^k
 20208|Defiler's Plate Greaves|ev|U|v^15126^Rutherford Twing^1417^73.4^29.7^85492^h^k
 20209|Defiler's Plate Greaves|ev|U|v^15126^Rutherford Twing^1417^73.4^29.7^24842^h^k
 20211|Defiler's Plate Greaves|ev|U|v^15126^Rutherford Twing^1417^73.4^29.7^50612^h^k
@@ -2383,7 +2390,6 @@ ns.data.items = [==[
 272487|Premier Mail Chestpiece|u|n|p^0^^f
 272489|Premier Linked Shoulders|u|n|p^0^^f
 272490|Premier Chain Breastplate|u|n|p^0^^f
-272494|Premier Chain Girdle|u|n|p^0^^f
 272495|Premier Chain Gauntlets|u|n|p^0^^f
 272496|Premier Chain Boots|u|n|p^0^^f
 272498|Premier Warlord's Magus Cowl|u||p^13^h^f
@@ -3072,7 +3078,6 @@ ns.data.items = [==[
 279480|Bigger Rock on Bigger Stick|q|sn|q^94982^Quest 94982^40^^s
 279836|Thorn Protecting Girdle|Q|sn|q^92456^A Green Sample^28^a^s
 279838|Arcane Infused Rod|Q|sn|q^92457^Starving Arcane^28^^s
-279839|Spellguard Pauldrons|Q|sn|q^92458^Heart of Disruption^28^^s
 279840|Renewing Footpads|Q|sn|q^92458^Heart of Disruption^28^^s
 279841|Defender of Dalaran|Q|sn|q^92458^Heart of Disruption^28^^s
 279843|Enchanted Sandals|Q|sn|q^96984^Heart of Disruption^28^h^s
@@ -3261,6 +3266,7 @@ ns.data.questRuns = {
 [378]="34",
 [704]="70",
 [709]="70",
+[914]="43",
 [1013]="33",
 [1048]="189",
 [1049]="189:l",
