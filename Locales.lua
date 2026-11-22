@@ -139,7 +139,7 @@ local enUS = {
     MINIMAP_DRAG_HINT = "Drag to move this button.",
     NOTICE_HIDE = "Hide this notice. It comes back the next time the window is opened.",
     WHY_TITLE = "About this rank",
-    NOTICE_ITEMS = "I know some items are currently ranked wrong. A fix is on its way and will be out shortly.",
+    NOTICE_ITEMS = "The lists are gradually being improved and corrected through regular updates.",
 
     -- Where items come from
     SRC_quest = "Quest",
@@ -526,7 +526,7 @@ local frFR = {
     MINIMAP_DRAG_HINT = "Faites glisser pour déplacer ce bouton.",
     NOTICE_HIDE = "Masquer ce message. Il revient à la prochaine ouverture de la fenêtre.",
     WHY_TITLE = "À propos de ce rang",
-    NOTICE_ITEMS = "Je suis au courant que certains objets sont actuellement mal classés. Un correctif est en cours et sera publié d'ici peu.",
+    NOTICE_ITEMS = "Les listes sont peu à peu en train d'être améliorées et corrigées avec des mises à jour régulières.",
 
     SRC_quest = "Quête",
     SRC_dungeon = "Donjon",

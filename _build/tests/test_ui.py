@@ -1346,8 +1346,8 @@ class WindowTest(unittest.TestCase):
         self.assertEqual(tiny.ns.Browser.window.height, 620, "a height too small to use is not restored")
 
     def test_notice_under_the_filters(self):
-        """A known problem awaits its fix: a band says so between the filters and the list, on every page."""
-        for locale, word in (("enUS", "items"), ("frFR", "objets")):
+        """The update notice appears between the filters and the list on every page."""
+        for locale, word in (("enUS", "regular updates"), ("frFR", "mises à jour régulières")):
             game = self.open(locale=locale)
             window = game.ns.Browser.window
             notice = window.notice
