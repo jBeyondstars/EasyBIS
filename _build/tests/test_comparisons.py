@@ -71,30 +71,19 @@ class ComparisonTest(unittest.TestCase):
         self.assertFalse(values())
 
     @unittest.skipIf(lupa is None, "lupa is not installed")
-    def test_tooltip_uses_locale_slot_measure_and_editorial_priority(self):
-        for locale, fixed, reversal in (("frFR", "+23,8", "inverse l’ordre"),
-                                        ("enUS", "+23.8", "reverses the ranking")):
-            game = Game(locale=locale)
-            game.ns.data.comparisons = game.lua.table_from({
-                "HUNTER1_hands": " 16571:13255:1232:2380:500:c 911:13255:-2:0:20000:nma 912:13255:-12:-5:5000:r 913:13255:2:3:2000:n 914:13255:4:3:2000:ca",
-                "WARRIOR1_main": " 647:13255:1232:2380:500:c",
-                "HUNTER1_main": " 911:13255:500:600:500:c",
-                "SHAMAN3_hands": " 911:13255:500:600:500:c"})
-            note = game.ns.Notes.For
-            result = note(16571, "HUNTER", 1, "pve", "hands")
-            self.assertIn(game.ns.Items.Name(13255), result)
-            self.assertIn(fixed, result)
-            self.assertIsNone(note(913, "HUNTER", 1, "pve", "hands"))
-            self.assertIn("incertain" if locale == "frFR" else "uncertain proc rate",
-                          note(914, "HUNTER", 1, "pve", "hands"))
-            self.assertIn("omet un effet" if locale == "frFR" else "omits an effect",
-                          note(911, "HUNTER", 1, "pve", "hands"))
-            self.assertIn(reversal, note(912, "HUNTER", 1, "pve", "hands"))
-            self.assertNotIn(fixed, note(647, "WARRIOR", 1, "pve", "main"), "the editorial text wins")
-            for args in ((16463, "HUNTER", 1, "pve", "hands"), (911, "HUNTER", 1, "pvp", "hands"),
-                         (911, "HUNTER", 1, "pve", "head"), (911, "HUNTER", 1, "pve"),
-                         (911, "SHAMAN", 3, "pve", "hands")):
-                self.assertIsNone(note(*args))
+    def test_archived_duels_never_create_tooltips_in_either_language(self):
+        for locale in ("frFR", "enUS"):
+            with self.subTest(locale=locale):
+                game = Game(locale=locale)
+                self.assertIsNone(game.ns.data.comparisons)
+                # Even data from a prior build must not turn a duel into a tooltip.
+                game.ns.data.comparisons = game.lua.table_from({
+                    "HUNTER1_hands": " 911:13255:-2:0:20000:nma 912:13255:-12:-5:5000:r"
+                                     " 913:13255:2:3:2000:n 914:13255:4:3:2000:ca 915:13255:12:12:500:c",
+                })
+                for item in range(911, 916):
+                    self.assertIsNone(game.ns.Notes.For(item, "HUNTER", 1, "pve", "hands"))
+                self.assertIn("200", game.ns.Notes.For(647, "WARRIOR", 1, "pve", "main"))
 
     @unittest.skipIf(lupa is None, "lupa is not installed")
     def test_destruction_shoulders_show_their_gaps_without_circular_notes(self):

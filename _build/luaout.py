@@ -645,8 +645,7 @@ def notes_file(db, all_ladders) -> str:
         "  enUS, frFR the text",
     ))
     lines.append("ns.data.notes = {")
-    specific = notes.shown(db, shown_ids(all_ladders)) + notes.simulation_limits(db, all_ladders)
-    for note in specific:
+    for note in notes.shown(db, shown_ids(all_ladders)):
         fields = ["items = { " + ", ".join(map(str, note["items"])) + " }"]
         if note.get("specs"):
             fields.append("specs = { " + ", ".join(f"{spec.replace(' ', '')} = true" for spec in note["specs"]) + " }")
@@ -658,12 +657,6 @@ def notes_file(db, all_ladders) -> str:
             fields.append("simulated = true")
         fields += [f"{code} = {json.dumps(note[key], ensure_ascii=False)}" for key, code in notes.LANGUAGES.items()]
         lines.append("    { " + ", ".join(fields) + " },")
-    lines.append("}")
-    lines.append("-- Paired PvE trials by profile and slot: measured id:rival id:swap DPS*100:fixed stats DPS*100:iterations:status.")
-    lines.append("ns.data.comparisons = {")
-    for (cls, spec, slot), rows in sorted(notes.comparisons(db, all_ladders, specific).items()):
-        values = " ".join(":".join(map(str, row)) for row in rows)
-        lines.append(f'    {cls}{spec}_{slot} = " {values}",')
     lines.append("}")
     return "\n".join(lines) + "\n"
 

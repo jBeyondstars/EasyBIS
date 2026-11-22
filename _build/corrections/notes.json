@@ -1,7 +1,6 @@
 {
  "about": "A few words on rankings that surprise, shown by a mark on the item's row (see _build/notes.py). items: the item ids the note is for. specs: the specs it shows for, as CLASS N (left out: every spec). slot: the slot it shows in (left out: any). simulated: true when it speaks of the simulation, and shows only in a list ranked by it. en, fr: the text in each language. Of the notes of an item, the first that fits a row is shown. Effect values use the archived WoWSims Forever profile or the updated faction-specific controls documented in docs/audit-forever.",
  "notes": [
-  {"items": [13964], "specs": ["PRIEST 3"], "list": "pve", "slot": "main", "en": "With Obsidian Bauble equipped, Witchblade edges out Mastersmith’s Hammer on the tested Shadow sets.", "fr": "Avec le Globe d’obsidienne en main gauche, Witchblade devance de peu Mastersmith’s Hammer sur les tenues Ombre testées."},
   {"items": [13314], "specs": ["MAGE 1"], "list": "pve", "slot": "chest", "en": "Its 20 Intellect and extra spell power put it ahead of Robes of Dark Summons on the tested Arcane sets.", "fr": "Ses 20 d’Intelligence et sa puissance des sorts supérieure la placent devant Robes of Dark Summons sur les tenues Arcane testées."},
   {"items": [11662], "specs": ["MAGE 2"], "list": "pve", "slot": "waist", "en": "On the tested Fire sets, 1% hit beats the 7 extra spell power on Magician’s Cord.", "fr": "Sur les tenues Feu testées, son 1 % de toucher l’emporte sur les 7 de puissance des sorts en plus de Magician’s Cord."},
   {"items": [12632], "specs": ["SHAMAN 1"], "list": "pve", "slot": "hands", "en": "On the tested sets, 1% hit outweighs the 5 extra spell power on Hands of Power.", "fr": "Sur les tenues testées, leur 1 % de toucher l’emporte sur les 5 de puissance des sorts en plus de Hands of Power."},
@@ -26,8 +25,7 @@
   {"items": [11302], "specs": ["SHAMAN 3"], "list": "pve", "slot": "trinket", "en": "Grants 3 more healing than Second Wind. If you run short on mana, Second Wind restores 630.", "fr": "Donne 3 aux soins de plus que Second Wind. Si tu manques de mana, Second Wind en rend 630."},
   {"items": [13253], "specs": ["DRUID 1"], "list": "pve", "slot": "hands", "en": "Best confirmed pre-raid drop. If you can get Gloves of the Greatfather, their Nature damage puts them ahead.", "fr": "Meilleur butin pré-raid confirmé. Si tu trouves les Gloves of the Greatfather, leurs dégâts de Nature les placent devant."},
   {"items": [14136], "specs": ["PRIEST 3"], "list": "pve", "slot": "chest", "en": "Its 40 Shadow damage wins on the Alliance set. With 18 hit, Robes of Dark Summons ties it on the Horde set.", "fr": "Ses 40 dégâts d’Ombre l’emportent sur la tenue Alliance. Avec 18 de toucher, Robes of Dark Summons fait jeu égal sur la tenue Horde."},
-  {"items": [18510], "specs": ["WARLOCK 3"], "list": "pve", "slot": "back", "en": "Its 14 spell damage matches Spritecaster Cape. Both score 13.5 points.", "fr": "Ses 14 dégâts des sorts égalent ceux de Spritecaster Cape. Les deux capes valent 13,5 points."},
-  {"items": [17713], "specs": ["ROGUE 1"], "list": "pve", "slot": "finger", "en": "With Cutthroat’s Signet equipped, it performs within 0.2 DPS of Tarnished Elven Ring in the Horde test.", "fr": "Avec Cutthroat’s Signet, moins de 0,2 DPS la sépare de Tarnished Elven Ring sur la tenue Horde testée."},
+  {"items": [18510], "specs": ["WARLOCK 3"], "list": "pve", "slot": "back", "en": "Its 14 spell damage matches Spritecaster Cape.", "fr": "Ses 14 dégâts des sorts égalent ceux de Spritecaster Cape."},
   {"items": [13937, 7713, 20069, 20220], "specs": ["DRUID 1"], "list": "pve", "slot": "main", "simulated": true, "en": "With pre-raid Spellblasting (+65 spell power), the staff beats the one-hand setup. Without it, the setup wins.", "fr": "En pré-raid, le bâton passe devant le duo avec Spellblasting (+65 puissance des sorts). Sans cet enchantement, le duo gagne."},
   {"items": [18465], "specs": ["ROGUE 1", "ROGUE 2", "ROGUE 3"], "list": "pvp", "en": "Grants 45 extra attack power against humanoids.", "fr": "Donne 45 PA supplémentaires contre les humanoïdes."},
   {"items": [18484], "specs": ["ROGUE 2", "ROGUE 3"], "list": "pvp", "en": "Grants 30 extra attack power against humanoids.", "fr": "Donne 30 PA supplémentaires contre les humanoïdes."},
@@ -53,8 +51,8 @@
    "specs": ["WARLOCK 1"],
    "list": "pve",
    "slot": "finger",
-   "en": "With Elemental Focus Band, its crit edges out Maiden’s Circle on the Gnome set. The Orc result is too close to call.",
-   "fr": "Avec Elemental Focus Band, son critique devance de peu Maiden’s Circle sur la tenue gnome. Le duel reste indécis chez l’orc."
+   "en": "With Elemental Focus Band, its crit edges out Maiden’s Circle on the Gnome set.",
+   "fr": "Avec Elemental Focus Band, son critique devance de peu Maiden’s Circle sur la tenue gnome."
   },
   {
    "items": [
@@ -135,19 +133,6 @@
    "slot": "hands",
    "en": "The Searing Pain build makes use of all 33 Fire damage.",
    "fr": "Le build Douleur brûlante profite des 33 points de dégâts de Feu."
-  },
-  {
-   "items": [
-    12783,
-    280021
-   ],
-   "specs": [
-    "HUNTER 2"
-   ],
-   "simulated": true,
-   "slot": "off",
-   "en": "With Shadowblade main hand, Tooth edges out Heartseeker by less than 0.5 DPS.",
-   "fr": "Avec Shadowblade en main droite, Tooth devance Heartseeker de moins de 0,5 DPS."
   },
   {
    "items": [
@@ -700,19 +685,6 @@
    "list": "pve",
    "en": "The scepter’s Spirit restores mana for Shifting Power to convert into energy. With Persuader, the scepter beats the tome.",
    "fr": "L’Esprit du sceptre rend du mana pour Shifting Power, qui le convertit en énergie. Avec Persuader, le sceptre devance le tome."
-  },
-  {
-   "items": [
-    11626,
-    272414
-   ],
-   "specs": [
-    "DRUID 4"
-   ],
-   "slot": "back",
-   "list": "pve",
-   "en": "Blackveil leads Howler’s Furs by about 2 DPS in the Alliance set. The two cloaks are close in the Horde set.",
-   "fr": "Blackveil devance Howler’s Furs d’environ 2 DPS sur la tenue Alliance. Les deux capes sont très proches côté Horde."
   },
   {
    "items": [
@@ -1281,20 +1253,6 @@
    "simulated": true,
    "en": "Worn with the other Ironfeather piece: the set's 20 spell power counts in this score.",
    "fr": "Portée avec l'autre pièce Ironfeather : les 20 de puissance des sorts du set comptent dans ce score."
-  },
-  {
-   "items": [
-    19991,
-    19992
-   ],
-   "specs": [
-    "HUNTER 1",
-    "HUNTER 2",
-    "HUNTER 3"
-   ],
-   "simulated": true,
-   "en": "Its Use effect is not simulated: it is ranked without it.",
-   "fr": "Son effet Utiliser n'est pas simulé : il est classé sans lui."
   },
   {
    "items": [
@@ -2234,25 +2192,6 @@
   },
   {
    "items": [
-    276744
-   ],
-   "specs": [
-    "DRUID 1",
-    "MAGE 1",
-    "MAGE 2",
-    "MAGE 3",
-    "PRIEST 3",
-    "SHAMAN 1",
-    "WARLOCK 1",
-    "WARLOCK 2",
-    "WARLOCK 3"
-   ],
-   "simulated": true,
-   "en": "Its Use effect is not simulated: it is ranked without it.",
-   "fr": "Son effet Utiliser n'est pas simulé : elle est classée sans lui."
-  },
-  {
-   "items": [
     280060
    ],
    "specs": [
@@ -2330,14 +2269,6 @@
    "simulated": true,
    "en": "In the simulator a mace makes all attacks ignore 15% of armor (Hack and Slash). Not confirmed in game for both hands.",
    "fr": "Dans le simulateur, une masse fait ignorer 15 % de l'armure à toutes les attaques (Hack and Slash). Non confirmé en jeu pour les deux mains."
-  },
-  {
-   "items": [
-    22321
-   ],
-   "simulated": true,
-   "en": "Proc rate uncertain: no score.",
-   "fr": "Taux de proc incertain : pas de score."
   },
   {
    "items": [

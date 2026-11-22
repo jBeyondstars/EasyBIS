@@ -7,8 +7,8 @@ checked against the game data or the simulator before it is written down. A note
 names, for any slot or one (a weapon's proc is not worth the same in each hand), and the first of an item's notes
 that fits a row is the one shown.
 
-Paired PvE swaps are a final fallback. The CLI imports the run logs into corrections/comparisons.json and
-the build checks the original profile, score difference, stat inversion and exact measured faction id.
+For the offline audit, the CLI imports paired PvE swaps into corrections/comparisons.json.
+Only the written item notes are shipped in the addon.
 """
 
 from __future__ import annotations

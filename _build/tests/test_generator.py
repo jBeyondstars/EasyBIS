@@ -1115,6 +1115,8 @@ class GeneratorTest(unittest.TestCase):
         text = luaout.notes_file(self.db, self.kept)
         self.assertEqual(text, (BUILD.parent / "Data" / "Notes.lua").read_text(encoding="utf-8"),
                          "Data/Notes.lua is not what the build writes: run _build/build.py")
+        self.assertEqual(text.count("    { items = { "), len(written))
+        self.assertNotIn("ns.data.comparisons", text)
         for note in written:
             for key in notes.LANGUAGES:
                 self.assertIn(json.dumps(note[key], ensure_ascii=False), text)
