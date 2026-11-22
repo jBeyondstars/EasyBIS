@@ -10,6 +10,7 @@
 local _, ns = ...
 ns.data = ns.data or {}
 ns.data.notes = {
+    { items = { 2801, 9449, 13060, 14541, 22333 }, specs = { PALADIN4 = true }, slot = "main", simulated = true, enUS = "Seal of Righteousness adds 12% of spell power to every swing: at 2.0 speed, about 44 DPS more than at 3.3.", frFR = "Seal of Righteousness ajoute 12 % de la puissance des sorts à chaque coup : à 2,0 de vitesse, environ 44 DPS de plus qu'à 3,3." },
     { items = { 647 }, specs = { PALADIN3 = true }, slot = "main", simulated = true, enUS = "Its proc, 200 Strength for 12 seconds, is up about half of the fight: about 49 DPS.", frFR = "Son proc, 200 de Force pendant 12 secondes, est actif environ la moitié du combat : environ 49 DPS." },
     { items = { 647 }, specs = { WARRIOR1 = true }, slot = "main", simulated = true, enUS = "Its proc, 200 Strength for 12 seconds, is up about half of the fight: about 66 DPS.", frFR = "Son proc, 200 de Force pendant 12 secondes, est actif environ la moitié du combat : environ 66 DPS." },
     { items = { 811 }, specs = { ROGUE2 = true }, slot = "main", simulated = true, enUS = "Its proc, 126 Nature damage, is worth about 13 DPS.", frFR = "Son proc, 126 dégâts de Nature, vaut environ 13 DPS." },

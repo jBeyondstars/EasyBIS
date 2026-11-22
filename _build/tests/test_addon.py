@@ -925,7 +925,8 @@ class AddonTest(unittest.TestCase):
                 best, _ = ladders.picks(slot, visible)
                 self.assertEqual([pick.id for pick in slots[slot].best.values()],
                                  [entry.shown("a") for entry in best], f"{mode} {slot}")
-            self.assertIsNone(game.ns.Ladders.Measured("PALADIN", 4, mode), "ranked on the weights, by no simulation")
+            # its PvE list is ranked by simulation (WoWSims Forever's Holy Shock build), its PvP list on the weights
+            self.assertEqual(game.ns.Ladders.Measured("PALADIN", 4, mode) is not None, mode == "pve", mode)
 
         chat = game.slash("list 4")
         self.assertEqual(chat[0], "Easy BIS: Paladin Shockadin, Level 60 PvE:")

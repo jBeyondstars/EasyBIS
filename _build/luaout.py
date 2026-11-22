@@ -127,9 +127,10 @@ def _shockadin_note(db) -> list:
     cls, spec = added
     return [f"Added to ForeverDB's specs: {db.classes[cls]['specs'][spec]['name']} {cls.title()}, spec {spec}, the "
             "Paladin who deals damage with Holy Shock in spell damage gear.",
-            f"Its PvE list is ranked on the stat weights of {shockadin.SOURCE},",
-            "MIT License; its PvP list on the same with ForeverDB's stamina and armor for a Paladin in PvP, which is a "
-            "guess. See _build/shockadin.py."]
+            "Its PvE list is ranked by simulation, on WoWSims Forever's Holy Shock build; its PvP list on the stat weights",
+            f"of {shockadin.SOURCE},",
+            "MIT License, with ForeverDB's stamina and armor for a Paladin in PvP, which is a guess. "
+            "See _build/shockadin.py."]
 
 
 def _simulated_note(db) -> list:

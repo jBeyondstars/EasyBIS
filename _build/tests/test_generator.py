@@ -221,9 +221,21 @@ class GeneratorTest(unittest.TestCase):
         for mode in ladders.MODES:
             self.assertFalse([entry for entry in self.full[cls, spec, mode, "trinket"] if entry.level], mode)
 
-    def test_the_shockadins_lists_are_ranked_on_its_weights(self):
+    def test_the_shockadins_pve_list_is_ranked_by_simulation(self):
+        """WoWSims has the build (Holy Shock, of its Retribution Paladin), so the PvE list is measured like the other
+        damage dealers'. It puts the fast two-handers first, which the weights could not see: Seal of Righteousness
+        adds a share of the spell power to every swing, whatever the weapon's speed."""
         cls, spec = self.SHOCKADIN
-        for mode, weights in (("pve", shockadin.PVE), ("pvp", shockadin.PVP)):
+        self.assertIn((cls, spec), self.db.simulated.specs)
+        main = [entry for entry in self.full[cls, spec, "pve", "main"] if entry.passes(("a", False, False, 0, False, None))]
+        self.assertEqual(main[0].item_id, 2801, "Blade of Hanna, 2.0 a swing")
+        zealous = next(place for place, entry in enumerate(main) if entry.item_id == 276397)   # the weights' first
+        self.assertGreater(zealous, 10, "Hand of the Zealous, 3.7 a swing and 68 spell power")
+        self.assertIsNone(simulated.ranking(self.db, cls, spec, "pvp", "main"))
+
+    def test_the_shockadins_pvp_list_is_ranked_on_its_weights(self):
+        cls, spec = self.SHOCKADIN
+        for mode, weights in (("pvp", shockadin.PVP),):
             for slot, _ in ladders.SLOTS:
                 for entry in self.full[cls, spec, mode, slot]:
                     if entry.level:
@@ -234,9 +246,8 @@ class GeneratorTest(unittest.TestCase):
                     stats = self.db.gear[entry.item_id]["stats"]
                     self.assertFalse(ladders.HEALING in stats and not any(s in stats for s in ladders.SPELL_DAMAGE),
                                      f"{entry.item_id} only heals")
-        self.assertNotIn(self.SHOCKADIN, self.db.simulated.specs)
-        flt = (*("a", False, False, phases.CURRENT), False, None)
-        head = [entry for entry in self.full[cls, spec, "pve", "head"] if entry.passes(flt)]
+        flt = (*("a", False, False, phases.CURRENT), True, None)
+        head = [entry for entry in self.full[cls, spec, "pvp", "head"] if entry.passes(flt) and not entry.pvp]
         self.assertEqual(head[0].item_id, self.STALWART_HELM)
         # a PvP reward is ranked on its stats in both lists, as everywhere
         self.assertTrue(any(entry.pvp for entry in self.full[cls, spec, "pve", "main"]))
@@ -285,7 +296,7 @@ class GeneratorTest(unittest.TestCase):
                  if fields[0] == "L" and fields[1] == "4"}
         core = [slot for slot, _ in ladders.SLOTS if slot not in ("off", "ranged")]
         self.assertEqual(slots, {(mode, slot) for mode in ladders.MODES for slot in core})
-        self.assertNotIn("M\t4\t", block, "no simulation ranked it")
+        self.assertIn("M\t4\t", block, "its PvE list is ranked by simulation")
         self.assertIn("-- Added to ForeverDB's specs: Shockadin Paladin, spec 4", text)
         self.assertIn(shockadin.SOURCE, text)
         enchants = luaout.enchants_file(self.db, self.kept).split("PALADIN = [==[\n", 1)[1].split("]==]", 1)[0]

@@ -3,6 +3,22 @@
  "notes": [
   {
    "items": [
+    2801,
+    9449,
+    13060,
+    14541,
+    22333
+   ],
+   "specs": [
+    "PALADIN 4"
+   ],
+   "simulated": true,
+   "slot": "main",
+   "en": "Seal of Righteousness adds 12% of spell power to every swing: at 2.0 speed, about 44 DPS more than at 3.3.",
+   "fr": "Seal of Righteousness ajoute 12 % de la puissance des sorts à chaque coup : à 2,0 de vitesse, environ 44 DPS de plus qu'à 3,3."
+  },
+  {
+   "items": [
     647
    ],
    "specs": [

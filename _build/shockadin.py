@@ -2,8 +2,9 @@
 
 ForeverDB's Paladin has three specs, Holy the healer, Protection the tank and Retribution the melee damage dealer.
 This one is the Paladin who deals damage with Holy Shock, Judgement, Consecration and Seal of Righteousness in
-spell damage gear. It is added as the Paladin's next spec (add, called by specs.apply), ranked on the weights
-below, since nothing in ForeverDB's data weighs it.
+spell damage gear. It is added as the Paladin's next spec (add, called by specs.apply). Its PvE list is ranked by
+simulation, like the other damage dealers' (corrections/simulated.json: the build exists in WoWSims Forever); the
+weights below rank its PvP list and its enchants, and estimate what the simulator cannot wear.
 
 Where the weights come from
 ---------------------------
