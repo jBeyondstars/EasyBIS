@@ -35,6 +35,20 @@ class FeralTrinketsTest(unittest.TestCase):
         self.assertAlmostEqual(self.ranking.value(11815, 0), sum(points) / len(points), places=3)
         self.assertEqual(self.ranking.value(999999, 1.25), 1.25)
 
+    def test_bear_force_of_will_is_a_pre_raid_alternative_after_the_compass(self):
+        full = ladders.full_ladder(self.db, "DRUID", 2, "pve", "trinket")
+        kept = ladders.kept_ladder("trinket", full)
+        for side in "ah":
+            for ladder in (full, kept):
+                visible = ladders.visible(ladder, (side, False, False, 0, False, 6))
+                best, alts = ladders.picks("trinket", visible, 5)
+                self.assertEqual([e.item_id for e in best], [14557, 272440])
+                ids = [e.item_id for e in alts]
+                self.assertEqual(ids[ids.index(4130) + 1], 11810)
+                self.assertTrue(next(e for e in alts if e.item_id == 11810).level)
+            raid = ladders.visible(full, (side, False, False, 1, False, 6))
+            self.assertFalse(next(e for e in raid if e.item_id == 11810).unscored)
+
     def test_pre_raid_pair_and_mana_alternatives(self):
         for side in "ah":
             with self.subTest(side=side):

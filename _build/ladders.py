@@ -388,6 +388,8 @@ def full_ladder(db, cls: str, spec: int, mode: str, slot: str, level: int | None
             )) if e.two_hand else e for e in entries]
     if ranked and (cls, spec, mode, slot) == ("DRUID", 4, "pve", "trinket"):
         return feral_gear.PreRaidTrinkets(entries)
+    if ours and ranked is None and (cls, spec, mode, slot) == ("DRUID", 2, "pve", "trinket"):
+        return feral_gear.BearTrinkets(entries)
     if ours and (cls, spec, mode, slot) == ("WARRIOR", 1, "pve", "head"):
         return ArmsHelms(entries)
     if ranked and (cls, spec, mode) == ("HUNTER", 1, "pve") and slot in hunter_bm.SLOTS:

@@ -11,6 +11,7 @@
 local _, ns = ...
 ns.data = ns.data or {}
 ns.data.notes = {
+    { items = { 11810 }, specs = { DRUID2 = true }, slot = "trinket", list = "pve", enUS = "Its proc reduces physical hits by 51 before armor for 10 seconds. Most useful against packs.", frFR = "Son proc réduit les coups physiques de 51 avant armure pendant 10 s. Surtout utile contre les groupes." },
     { items = { 13314 }, specs = { MAGE1 = true }, slot = "chest", list = "pve", enUS = "Its 20 Intellect and extra spell power put it ahead of Robes of Dark Summons on the tested Arcane sets.", frFR = "Ses 20 d’Intelligence et sa puissance des sorts supérieure la placent devant Robes of Dark Summons sur les tenues Arcane testées." },
     { items = { 11662 }, specs = { MAGE2 = true }, slot = "waist", list = "pve", enUS = "On the tested Fire sets, 1% hit beats the 7 extra spell power on Magician’s Cord.", frFR = "Sur les tenues Feu testées, son 1 % de toucher l’emporte sur les 7 de puissance des sorts en plus de Magician’s Cord." },
     { items = { 12632 }, specs = { SHAMAN1 = true }, slot = "hands", list = "pve", enUS = "On the tested sets, 1% hit outweighs the 5 extra spell power on Hands of Power.", frFR = "Sur les tenues testées, leur 1 % de toucher l’emporte sur les 5 de puissance des sorts en plus de Hands of Power." },

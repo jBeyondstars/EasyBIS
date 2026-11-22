@@ -358,6 +358,7 @@ ns.data.items = [==[
 11784|Arbiter's Blade|d||d^230^Warder Stilgiss^21.1^0^w
 11787|Shalehusk Boots|d||d^230^Panzor the Invincible^22^0^w
 11807|Sash of the Burning Heart|d||d^230^Bael'Gar^22.8^0^w
+11810|Force of Will|d||d^230^General Angerforge^13^0^w
 11815|Hand of Justice|d||d^230^Emperor Dagran Thaurissan^19.2^0^w
 11816|Angerforge's Battle Axe|d||d^230^General Angerforge^22.2^0^w
 11819|Second Wind|d||d^230^Golem Lord Argelmach^24.2^0^w
