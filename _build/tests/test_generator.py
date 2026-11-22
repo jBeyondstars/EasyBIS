@@ -164,8 +164,15 @@ class GeneratorTest(unittest.TestCase):
         self.assertLess(pve[43], 0.01, "mana per 5 seconds is worth nothing to it in a raid")
         self.assertEqual({stat for stat in set(pve) | set(pvp) if pve.get(stat) != pvp.get(stat)}, {7, 31, "armor"})
         for number in (1, 3):
-            self.assertEqual((paladin[number]["weights"]["pvp"][7], paladin[number]["weights"]["pvp"]["armor"]),
-                             (pvp[7], pvp["armor"]))
+            self.assertEqual(paladin[number]["weights"]["pvp"][7], pvp[7])
+            self.assertEqual(paladin[number]["weights"]["pvp"]["armor"], shockadin.FOREVERDB_PVP_ARMOR)
+        # ... but for armor, which counts more: plate matters to this build in PvP, said the addon's author, and at
+        # ForeverDB's 0.02 a cloth belt led the waists over a plate one with 331 more armor and 14 more Stamina.
+        self.assertEqual(pvp["armor"], 0.05)
+        flt = ("a", False, False, phases.CURRENT, True, None)
+        waists = [e.item_id for e in self.full[*self.SHOCKADIN, "pvp", "waist"] if e.passes(flt) and not e.rank]
+        redeemer, vindicator, archmage = 272405, 272404, 18405
+        self.assertEqual(waists[:3], [redeemer, vindicator, archmage])
         self.assertAlmostEqual(pvp[31], (ep[31] - shockadin.EP_HOLY_SPELL_HIT) / ep[45], places=3)
 
     def test_the_shockadin_changes_no_other_list(self):

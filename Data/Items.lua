@@ -1424,6 +1424,7 @@ ns.data.items = [==[
 20685|Wavefront Necklace|w||m^15305^Lord Skwol^30.48^k
 20695|Abyssal War Beads|x||x^20601^Sack of Spoils^k
 20710|Crystal Encrusted Greaves|q||q^8316^Armaments of War^58^^k
+20711|Crystal Lined Greaves|q||q^8376^Armaments of War^58^a^k
 20713|Desertstalkers's Gauntlets|q||q^8377^Armaments of War^58^^k
 20714|Sandstorm Boots|q||q^8382^Armaments of War^58^^k
 20715|Dunestalker's Boots|q||q^8378^Armaments of War^58^^k
@@ -2019,6 +2020,7 @@ ns.data.items = [==[
 226959|Virtuous Slippers|vx||v^230317^Mokvar^1454^34.91^38.06^^h^t~v^230319^Deliana^1455^43.44^52.13^^a^t
 226974|Soulforge Warboots|vx||v^230317^Mokvar^1454^34.91^38.06^^h^t~v^230319^Deliana^1455^43.44^52.13^^a^t
 226977|Soulforge Bindings|v||v^230317^Mokvar^1454^34.91^38.06^^h^t~v^230319^Deliana^1455^43.44^52.13^^a^t
+226978|Soulforge Cord|vx||v^230317^Mokvar^1454^34.91^38.06^^h^t~v^230319^Deliana^1455^43.44^52.13^^a^t
 226979|Soulforge Epaulets|vx||v^230317^Mokvar^1454^34.91^38.06^^h^t~v^230319^Deliana^1455^43.44^52.13^^a^t
 226980|Soulforge Leggings|vx||v^230317^Mokvar^1454^34.91^38.06^^h^t~v^230319^Deliana^1455^43.44^52.13^^a^t
 226982|Soulforge Fists|vx||v^230317^Mokvar^1454^34.91^38.06^^h^t~v^230319^Deliana^1455^43.44^52.13^^a^t
@@ -2074,6 +2076,7 @@ ns.data.items = [==[
 250552|Sentinel's Gloves|c|n|c^Blacksmithing^250^1252301^f
 250553|Warder's Gloves|c|n|c^Blacksmithing^250^1252302^f
 250554|Prefect's Gloves|c|n|c^Blacksmithing^250^1252303^f
+250555|Justicar's Gloves|c|n|c^Blacksmithing^250^1252304^f
 250558|Warder's Belt|c|sn|c^Blacksmithing^150^1252307^f
 250560|Justicar's Belt|c|sn|c^Blacksmithing^150^1252309^f
 250564|Prefect's Sabatons|c|n|c^Blacksmithing^240^1252313^f
@@ -2101,6 +2104,7 @@ ns.data.items = [==[
 251486|Tabitha's Cuffs|Q|sn|q^92401^A Frightened Request^17^^s
 251962|Violet Sash|Q|sn|q^92489^Power Overwhelming^28^a^s
 251963|Gravewalker Boots|Q|sn|q^96986^The Grave Knight^28^h^s
+251965|Undead Knight's Bracers|Q|sn|q^96986^The Grave Knight^28^h^s
 252427|Moonglow Boots|c|sn|c^Leatherworking^35^1255143^f
 252447|Defender's Leather Hood|c|sn|c^Leatherworking^100^1255107^f
 252458|Totemic Leather Leggings|c|sn|c^Leatherworking^125^1255084^f
@@ -3126,6 +3130,7 @@ ns.data.items = [==[
 280072|Cowl of Dark Ambition|d|n|d^2974^Unbound Spirit^28.2^0^w
 280073|Burnished Pridescales|d|n|d^2974^Unbound Spirit^36.1^0^w
 280074|Scalding Flamehoof|d|n|d^2974^Varrox Bleakhoof^35.2^0^w
+280075|Bleak Eye Shoulderplates|d||d^2974^Varrox Bleakhoof^29.2^0^w
 280076|Horns of Varrox|d|n|d^2974^Varrox Bleakhoof^31.4^0^w
 280077|Fist of Revelation|u|n|
 280078|Apprentice's Protective Treads|u|n|

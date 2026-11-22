@@ -55,7 +55,11 @@ weights above are those of a build with a two-hander in the hands and say nothin
 so the list offers none: what such a set would do is not measured anywhere.
 
 PVP is a guess, and named as one: nothing measures this build against players. It is PVE with three changes:
-  7      Stamina 1 and 'armor' 0.02   what ForeverDB gives both the Paladin's Holy and Retribution PvP profiles
+  7      Stamina 1                    what ForeverDB gives both the Paladin's Holy and Retribution PvP profiles
+  armor  0.05                         ForeverDB gives those two profiles 0.02, which left a cloth belt first of the
+                                      waists, 4 points over a plate one with 331 more armor and 14 more Stamina.
+                                      The addon's author plays it: plate matters in PvP (2026-11-22). At 0.05 that
+                                      armor is worth 17 points, and Redeemer's Waistcord leads.
   31     hit rating 1.372             PVE's less the Holy spells' share (10.25 - 2.32, over 5.78): against a
                                       player of the same level a spell misses 4% of the time (sim/core/target.go)
                                       and Divine Precision gives the Holy spells 8%
@@ -86,10 +90,11 @@ REFERENCE = EP[SPELL_DAMAGE]
 FOREVERDB_PVE_STAMINA = 0.1  # Stamina in the PvE profiles of the Paladin's Holy and Retribution
 FOREVERDB_PVP_STAMINA = 1.0  # Stamina in the PvP profiles of the Paladin's Holy and Retribution
 FOREVERDB_PVP_ARMOR = 0.02   # armor in those two profiles
+PVP_ARMOR = 0.05             # ... and here: plate matters to this build in PvP (see above)
 
 PVE = {**{stat: round(value / REFERENCE, 3) for stat, value in EP.items()}, STAMINA: FOREVERDB_PVE_STAMINA}
 PVP = {**PVE, HIT: round((EP[HIT] - EP_HOLY_SPELL_HIT) / REFERENCE, 3), STAMINA: FOREVERDB_PVP_STAMINA,
-       "armor": FOREVERDB_PVP_ARMOR}
+       "armor": PVP_ARMOR}
 
 
 # The slots and the kinds of piece borrowed from the other classes' pools: armor and jewelry a Paladin can wear.
