@@ -83,18 +83,8 @@ function Widgets.Button(parent, text, width)
 end
 
 function Widgets.MenuButton(parent, text, width)
-    if not MenuUtil then return Widgets.Button(parent, text, width) end
-    local button = CreateFrame("DropdownButton", nil, parent, "WowStyle1FilterDropdownTemplate")
-    button.resizeToText = false
-    button:SetText(text)
-    button.Text:SetTextColor(GOLD[1], GOLD[2], GOLD[3])
-    button:SetSize(width, CONTROL_HEIGHT)
-    -- The classic filter template paints its rim and caption above the panel button's.
-    button.Background:ClearAllPoints()
-    button.Background:SetPoint("TOPLEFT", -2, 1)
-    button.Background:SetPoint("BOTTOMRIGHT", 2, -3)
-    button.Text:ClearAllPoints()
-    button.Text:SetPoint("CENTER", 0, -2)
+    local button = Widgets.Button(parent, text, width)
+    button.Text = button:GetFontString()
     return button
 end
 
@@ -169,32 +159,22 @@ end
 function Widgets.Dropdown(parent, label, width)
     local filter = CreateFrame("Frame", nil, parent)
     filter:SetSize(width, CONTROL_HEIGHT + FILTER_LABEL_HEIGHT)
-    if MenuUtil then
-        local button = CreateFrame("DropdownButton", nil, filter, "WowStyle1DropdownTemplate")
-        button:SetSize(width, CONTROL_HEIGHT)
-        button.Text:SetFontObject("GameFontHighlight")
-        button.Text:ClearAllPoints()
-        button.Text:SetPoint("LEFT", button, "LEFT", 9, 0)
-        button.Text:SetPoint("RIGHT", button.Arrow, "LEFT", -2, 0)
-        button.Text:SetHeight(CONTROL_HEIGHT)
-        button.Text:SetJustifyH("LEFT")
-        -- Allow for the holder's left shadow so its bevel lines up with the caption.
-        button.Background:ClearAllPoints()
-        button.Background:SetPoint("TOPLEFT", -8, 8)
-        button.Background:SetPoint("BOTTOMRIGHT", 4, -9)
-        filter.button = button
-    else
-        filter.button = Widgets.Button(filter, " ", width)
-    end
+    local button = Widgets.MenuButton(filter, " ", width)
+    filter.button = button
+    button.Text:SetFontObject("GameFontHighlight")
+    button.Text:ClearAllPoints()
+    button.Text:SetPoint("LEFT", button, "LEFT", 8, 0)
+    button.Text:SetPoint("RIGHT", button, "RIGHT", -18, 0)
+    button.Text:SetJustifyH("LEFT")
+    local arrow = button:CreateTexture(nil, "ARTWORK")
+    arrow:SetSize(14, 14)
+    arrow:SetPoint("RIGHT", -3, 0)
+    arrow:SetTexture("Interface\\ChatFrame\\UI-ChatIcon-ScrollDown-Up")
     filter.button:SetPoint("BOTTOMLEFT", 0, 0)
     filter.label = Widgets.FilterLabel(filter.button, label)
 
     function filter:Set(text, active)
-        if self.button.OverrideText then
-            self.button:OverrideText(text)
-        else
-            self.button:SetText(text)
-        end
+        self.button:SetText(text)
         local color = active and GOLD or Widgets.MUTED
         self.label:SetTextColor(color[1], color[2], color[3])
     end
@@ -276,7 +256,7 @@ function Widgets.SideTabs(parent, options, get, set)
             GameTooltip:SetText(self.text, 1, 1, 1)
             GameTooltip:Show()
         end)
-        button:SetScript("OnLeave", function() GameTooltip:Hide() end)
+        button:SetScript("OnLeave", ns.Tooltip.HideOwned)
         group.buttons[index] = button
     end
 
@@ -342,7 +322,7 @@ function Widgets.Check(parent, text, get, set, tip)
             GameTooltip:AddLine(tip(), Widgets.MUTED[1], Widgets.MUTED[2], Widgets.MUTED[3], true)
             GameTooltip:Show()
         end)
-        check:SetScript("OnLeave", function() GameTooltip:Hide() end)
+        check:SetScript("OnLeave", ns.Tooltip.HideOwned)
     end
 
     check:Refresh()

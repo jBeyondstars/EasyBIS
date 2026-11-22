@@ -106,7 +106,7 @@ local function NewRow(index)
         else GameTooltip:SetItemByID(self.data.key.itemID) end
         GameTooltip:Show()
     end)
-    row:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    row:SetScript("OnLeave", ns.Tooltip.HideOwned)
     row:SetScript("OnClick", function(self)
         local data = self.data
         if C_AuctionHouse.GetItemKeyInfo(data.key) then

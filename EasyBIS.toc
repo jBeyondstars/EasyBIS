@@ -37,6 +37,7 @@ Index.lua
 Tooltip.lua
 UI\Rows.lua
 UI\Widgets.lua
+UI\Menu.lua
 UI\AddItem.lua
 UI\Browser.lua
 AuctionScan.lua

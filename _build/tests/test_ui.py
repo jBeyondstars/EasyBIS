@@ -76,10 +76,7 @@ def look(control) -> str:
 
 
 def open_dropdown(game, button):
-    if button.kind == "DropdownButton":
-        game.stub.run(button, "OnMouseDown", "LeftButton")
-    else:
-        game.stub.run(button, "OnClick")
+    game.stub.openFilter(button)
 
 
 @unittest.skipIf(lupa is None, "lupa is not installed")
@@ -533,13 +530,13 @@ class WindowTest(unittest.TestCase):
         self.assertTrue(compare.shown, "Shift already held: the comparison comes with the tooltip")
         game.stub.shift = False
         compare.Show(compare)
-        game.stub.run(tooltip, "OnUpdate")
+        game.stub.update()
         self.assertFalse(compare.shown, "the game setting it again does not last")
         game.stub.run(row, "OnLeave")
         self.assertFalse(tooltip.shown)
         compare.Show(compare)
         game.stub.fire("MODIFIER_STATE_CHANGED", "LSHIFT", 0)
-        game.stub.run(tooltip, "OnUpdate")
+        game.stub.update()
         self.assertTrue(compare.shown, "another addon's tooltip keeps its comparison")
         compare.Hide(compare)
 
@@ -1097,10 +1094,68 @@ class WindowTest(unittest.TestCase):
     def test_addon_menu_entry(self):
         game = Game()
         game.lua.globals().EasyBIS_OnCompartmentClick()
+        self.assertIsNone(game.ns.Browser.window)
+        game.stub.runTimers()
         self.assertTrue(game.ns.Browser.window.shown)
-        game.lua.globals().EasyBIS_OnCompartmentEnter(None, game.lua.globals().UIParent)
-        self.assertEqual(game.lua.globals().GameTooltip.text, "Easy BIS")
-        game.lua.globals().EasyBIS_OnCompartmentLeave()
+        owner = game.lua.globals().UIParent
+        game.lua.globals().EasyBIS_OnCompartmentEnter(None, owner)
+        tip = game.lua.globals().EasyBISCompartmentTooltip
+        self.assertEqual(tip.text, "Easy BIS")
+        self.assertFalse(game.lua.globals().GameTooltip.shown)
+        game.lua.globals().EasyBIS_OnCompartmentLeave(None, owner)
+        self.assertFalse(tip.shown)
+
+    def test_filters_use_their_own_buttons_and_dismiss_on_outside_click(self):
+        game = self.open(saved=ENHANCEMENT + """
+            MenuUtil.CreateContextMenu = function() error("used Blizzard's menu") end
+            C_LFGList = { Search = function() error("unexpected LFG search") end }
+        """)
+        window = game.ns.Browser.window
+        game.stub.run(window.spec.button, "OnClick")
+        root = game.stub.menuPanel(1)
+        warrior = next(row for row in root.rows.values() if "Warrior" in plain(row.entry.text))
+        game.stub.run(warrior, "OnEnter")
+        sub = game.stub.menuPanel(2)
+        fury = next(row for row in sub.rows.values() if row.entry.text == "Fury")
+        game.stub.run(fury, "OnClick")
+        self.assertEqual(game.ns.Browser.Target(), ("WARRIOR", 2, "pve"))
+        self.assertFalse(root.shown)
+        self.assertFalse(sub.shown)
+
+        game.stub.run(window.options, "OnClick")
+        row = next(row for row in root.rows.values() if row.entry and row.entry.text == game.ns.L.OPT_tooltip)
+        game.stub.run(row, "OnClick")
+        self.assertFalse(game.ns.db.tooltip)
+        self.assertFalse(row.mark.shown)
+        self.assertTrue(root.shown)
+        game.stub.fire("GLOBAL_MOUSE_DOWN", "LeftButton")
+        self.assertFalse(root.shown)
+        self.assertIsNone(game.stub.menu, "the shared menu manager received an Easy BIS entry")
+
+    def test_blizzard_can_take_the_tooltip_before_our_row_gets_its_leave(self):
+        game = self.open(saved=ENHANCEMENT + """
+            local update = function() end
+            GameTooltip:SetScript("OnUpdate", update)
+            function BlizzardTooltipUpdateIntact() return GameTooltip:GetScript("OnUpdate") == update end
+        """)
+        shared = game.lua.globals()
+        row = self.frames(game)[0]
+        game.stub.run(row, "OnEnter")
+        tip, compare = shared.GameTooltip, shared.ShoppingTooltip1
+        foreign = shared.CreateFrame("Button")
+        tip.SetOwner(tip, foreign, "ANCHOR_RIGHT")
+        tip.SetText(tip, "LFG category")
+        tip.Show(tip)
+        compare.SetOwner(compare, foreign, "ANCHOR_NONE")
+        compare.Show(compare)
+        game.stub.run(row, "OnLeave")
+        shared.EasyBIS_OnCompartmentLeave(None, row)
+        game.stub.fire("MODIFIER_STATE_CHANGED", "LSHIFT", 0)
+        game.stub.update()
+        self.assertTrue(shared.BlizzardTooltipUpdateIntact())
+        self.assertTrue(tip.shown)
+        self.assertEqual(tip.text, "LFG category")
+        self.assertTrue(compare.shown)
 
     # -- sources ------------------------------------------------------------------------------
 
@@ -2766,9 +2821,7 @@ class WindowTest(unittest.TestCase):
             self.assertEqual(len(window.tabs.buttons), 5)
             self.assertEqual(window.add.width, window.alts.width)
             self.assertEqual(window.add.width, window.options.width)
-            caption = window.options.Text.points[1]
-            self.assertEqual((caption[1], caption[2], caption[3]), ("CENTER", 0, -2),
-                             "the native filter caption sits higher than the panel button text")
+            self.assertEqual(label(window.options), game.ns.L.OPTIONS)
             tabs_right = window.tabs.points[1][2] + window.tabs.width
             actions_width = window.add.width + window.alts.width + window.options.width + 2 * 8
             self.assertLess(tabs_right, window.width + window.options.points[1][2] - actions_width, locale)

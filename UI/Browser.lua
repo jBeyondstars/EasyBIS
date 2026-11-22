@@ -200,28 +200,23 @@ local function Flatten(choices, into)
     return into
 end
 
-local function FillChoices(parent, list, current, choose, close)
+local function ChoiceEntries(list, current, choose)
+    local entries = {}
     for _, choice in ipairs(list) do
         if choice.children then
-            FillChoices(parent:CreateButton(choice.text), choice.children, current, choose, close)
+            entries[#entries + 1] = { text = choice.text, items = ChoiceEntries(choice.children, current, choose) }
         else
-            parent:CreateRadio(choice.text,
-                function() return current() == choice.value end,
-                function()
-                    choose(choice.value)
-                    return close
-                end)
+            entries[#entries + 1] = { kind = "radio", text = choice.text,
+                selected = function() return current() == choice.value end,
+                pick = function() choose(choice.value) end }
         end
     end
+    return entries
 end
 
 local function SetupChoices(button, choices, current, choose)
-    if button.SetupMenu then
-        local close = MenuResponse and MenuResponse.Close
-        button:SetupMenu(function(_, root)
-            if root.SetScrollMode then root:SetScrollMode(420) end
-            FillChoices(root, choices(), current, choose, close)
-        end)
+    if MenuUtil then
+        ns.Menu.Attach(button, function() return ChoiceEntries(choices(), current, choose) end)
         return
     end
     button:SetScript("OnClick", function()
@@ -461,7 +456,7 @@ local function CreateNotice(parent, text)
         GameTooltip:SetText(L.NOTICE_HIDE, 1, 1, 1, 1, true)
         GameTooltip:Show()
     end)
-    notice.close:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    notice.close:SetScript("OnLeave", ns.Tooltip.HideOwned)
     return notice
 end
 
@@ -482,23 +477,30 @@ end
 -- show it only while Shift is held, as the game does without that option.
 local COMPARISONS = { "ShoppingTooltip1", "ShoppingTooltip2" }
 local tipOwner   -- the part of the window the tooltip was last set for
+local shiftWatch = CreateFrame("Frame")
+shiftWatch:Hide()
 
 local function OursShown()
-    return tipOwner ~= nil and GameTooltip:IsShown() and GameTooltip:GetOwner() == tipOwner
+    return tipOwner ~= nil and not (GameTooltip.IsForbidden and GameTooltip:IsForbidden())
+        and GameTooltip:IsShown() and GameTooltip:GetOwner() == tipOwner
 end
 
 local function ShiftDown() return IsShiftKeyDown ~= nil and IsShiftKeyDown() == true end
 
+local function IsOurComparison(tip)
+    return tip and not (tip.IsForbidden and tip:IsForbidden()) and tip:IsShown() and tip:GetOwner() == GameTooltip
+end
+
 local function HideComparison()
     for _, name in ipairs(COMPARISONS) do
         local tip = _G[name]
-        if tip and tip:IsShown() then tip:Hide() end
+        if IsOurComparison(tip) then tip:Hide() end
     end
 end
 
 local function ComparisonShown()
     local tip = _G[COMPARISONS[1]]
-    return tip ~= nil and tip:IsShown() == true
+    return IsOurComparison(tip)
 end
 
 -- Shift pressed or let go over a tooltip of the window: the comparison follows.
@@ -511,12 +513,18 @@ local function FollowShift()
     end
 end
 
--- the game may set the comparison again while its tooltip refreshes
-GameTooltip:HookScript("OnUpdate", function()
-    if OursShown() and not ShiftDown() then HideComparison() end
+-- Blizzard can refresh the comparison while the row is hovered. Watch only
+-- during that hover, without installing an update script on the shared tooltip.
+shiftWatch:SetScript("OnUpdate", function(self)
+    if not OursShown() then
+        tipOwner = nil
+        self:Hide()
+    elseif not ShiftDown() then
+        HideComparison()
+    end
 end)
-local shiftWatch = CreateFrame("Frame")
-shiftWatch:RegisterEvent("MODIFIER_STATE_CHANGED")
+shiftWatch:SetScript("OnShow", function(self) self:RegisterEvent("MODIFIER_STATE_CHANGED") end)
+shiftWatch:SetScript("OnHide", function(self) self:UnregisterEvent("MODIFIER_STATE_CHANGED") end)
 shiftWatch:SetScript("OnEvent", FollowShift)
 
 -- The tooltip opens beside the window, level with its top, on the side that has room: it stays put
@@ -540,6 +548,8 @@ end
 local function ShowTooltip(owner)
     if owner then tipOwner = owner end
     GameTooltip:Show()
+    if not OursShown() then return end
+    shiftWatch:Show()
     if ShiftDown() then FollowShift() else HideComparison() end
 end
 
@@ -726,7 +736,7 @@ local function CreateRow(parent)
     end)
     row.why:SetScript("OnLeave", function(self)
         self.icon:SetAlpha(0.75)
-        GameTooltip:Hide()
+        ns.Tooltip.HideOwned(self)
     end)
     row.why:Hide()
 
@@ -767,7 +777,7 @@ local function CreateRow(parent)
     end)
     row.info:SetScript("OnLeave", function(self)
         self.icon:SetAlpha(0.75)
-        GameTooltip:Hide()
+        ns.Tooltip.HideOwned(self)
     end)
     row.info:Hide()
 
@@ -802,11 +812,11 @@ local function CreateRow(parent)
         GameTooltip:SetText(L.TIP_REMOVE)
         GameTooltip:Show()
     end)
-    row.remove:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    row.remove:SetScript("OnLeave", ns.Tooltip.HideOwned)
     row.remove:Hide()
 
     row:SetScript("OnEnter", RowTooltip)
-    row:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    row:SetScript("OnLeave", ns.Tooltip.HideOwned)
     row:SetScript("OnClick", RowClick)
     return row
 end
@@ -1069,51 +1079,44 @@ local OPTION_GROUPS = {
     { "compact", "repCompact", "minimap", "auctionTab" },
 }
 
-local function FillOptionsMenu(_, root)
-    local refresh = MenuResponse and MenuResponse.Refresh
-    root:CreateTitle(L.OPTIONS)
+local function OptionEntries()
+    local entries = { { kind = "title", text = L.OPTIONS } }
+    local function Submenu(text)
+        local items = {}
+        entries[#entries + 1] = { kind = "button", text = text, items = items }
+        return items
+    end
     for index, group in ipairs(OPTION_GROUPS) do
-        if index > 1 and root.CreateDivider then root:CreateDivider() end
+        if index > 1 then entries[#entries + 1] = { kind = "divider" } end
         for _, option in ipairs(group) do
-            root:CreateCheckbox(L["OPT_" .. option],
-                function() return ns:GetOption(option) end,
-                function()
-                    ns:SetOption(option, not ns:GetOption(option))
-                    return refresh
-                end)
+            entries[#entries + 1] = { kind = "checkbox", text = L["OPT_" .. option],
+                selected = function() return ns:GetOption(option) end,
+                pick = function() ns:SetOption(option, not ns:GetOption(option)) end }
         end
         if index == 2 then
-            local rewards = root:CreateButton(L.OPT_PVP_REWARDS)
+            local rewards = Submenu(L.OPT_PVP_REWARDS)
             for _, list in ipairs(ns.LISTS) do
-                rewards:CreateCheckbox(L.OPT_PVP_LIST:format(ns.ListName(list)),
-                    function() return ns:PvPRewards(list) end,
-                    function()
-                        ns:SetPvPRewards(list, not ns:PvPRewards(list))
-                        return refresh
-                    end)
+                rewards[#rewards + 1] = { kind = "checkbox", text = L.OPT_PVP_LIST:format(ns.ListName(list)),
+                    selected = function() return ns:PvPRewards(list) end,
+                    pick = function() ns:SetPvPRewards(list, not ns:PvPRewards(list)) end }
             end
-            local counts = root:CreateButton(L.OPT_ALT_COUNT)
+            local counts = Submenu(L.OPT_ALT_COUNT)
             for count = ns.ALTERNATIVES, ns.MaxAlternatives() do
-                counts:CreateRadio(tostring(count),
-                    function() return ns.Alternatives() == count end,
-                    function()
-                        ns:SetAlternatives(count)
-                        return refresh
-                    end)
+                counts[#counts + 1] = { kind = "radio", text = tostring(count),
+                    selected = function() return ns.Alternatives() == count end,
+                    pick = function() ns:SetAlternatives(count) end }
             end
             -- the faction the lists are for: the character's, or the other one to see what it would wear
-            local sides = root:CreateButton(L.OPT_SIDE)
+            local sides = Submenu(L.OPT_SIDE)
             for _, side in ipairs({ "a", "h" }) do
                 local name = L["SIDE_" .. side]
-                sides:CreateRadio(side == ns.CharacterSide() and L.OPT_SIDE_OWN:format(name) or name,
-                    function() return ns.PlayerSide() == side end,
-                    function()
-                        ns:SetSide(side)
-                        return refresh
-                    end)
+                sides[#sides + 1] = { kind = "radio", text = side == ns.CharacterSide() and L.OPT_SIDE_OWN:format(name) or name,
+                    selected = function() return ns.PlayerSide() == side end,
+                    pick = function() ns:SetSide(side) end }
             end
         end
     end
+    return entries
 end
 
 -- A new spec or list, picked in the window or in the auction house's tab.
@@ -1213,10 +1216,10 @@ local function Build()
         window.notice = CreateNotice(window, L[NOTICE])
         window.notice:SetPoint("TOPLEFT", 8, -FILTERS)
         window.notice:SetPoint("TOPRIGHT", -8, -FILTERS)
-        window.notice.close:SetScript("OnClick", function()
+        window.notice.close:SetScript("OnClick", function(self)
             Widgets.Click()
             noticeShown = false
-            GameTooltip:Hide()
+            ns.Tooltip.HideOwned(self)
             PlaceNotice()
             Refresh()
         end)
@@ -1272,8 +1275,8 @@ local function Build()
 
     window.options = Widgets.MenuButton(window, L.OPTIONS, 88)
     window.options:SetPoint("BOTTOMRIGHT", -28, FOOTER_BUTTON_BOTTOM)
-    if window.options.SetupMenu then
-        window.options:SetupMenu(FillOptionsMenu)
+    if MenuUtil then
+        ns.Menu.Attach(window.options, OptionEntries, true)
     else
         window.options:Hide()
     end
@@ -1473,5 +1476,6 @@ ns:On("REPUTATION_CHANGED", function() Refresh() end)
 
 -- The entry in the game's addon menu (see the toc).
 function EasyBIS_OnCompartmentClick()
-    Browser.Toggle()
+    -- Let Blizzard finish picking and dismissing the compartment entry first.
+    C_Timer.After(0, Browser.Toggle)
 end

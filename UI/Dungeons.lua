@@ -246,9 +246,9 @@ local function CreateTile(parent)
         if piece and piece.order then Light(piece.order[1], piece.slot) end
         PieceTooltip(self, piece)
     end)
-    tile:SetScript("OnLeave", function()
+    tile:SetScript("OnLeave", function(self)
         Light(nil)
-        GameTooltip:Hide()
+        ns.Tooltip.HideOwned(self)
     end)
     tile:SetScript("OnClick", function(self) PieceClick(self.piece) end)
     return tile
@@ -315,9 +315,9 @@ local function CreateChip(lane)
         Light(self.run.key, self.entry.piece.slot)
         PieceTooltip(self, self.entry.piece)
     end)
-    chip:SetScript("OnLeave", function()
+    chip:SetScript("OnLeave", function(self)
         Light(nil)
-        GameTooltip:Hide()
+        ns.Tooltip.HideOwned(self)
     end)
     chip:SetScript("OnClick", function(self) PieceClick(self.entry.piece) end)
     return chip
@@ -445,7 +445,7 @@ local function CreateElsewhere(parent)
         GameTooltip:AddLine(L.DUN_TIP_ELSEWHERE, MUTED[1], MUTED[2], MUTED[3], true)
         Browser.ShowTooltip()
     end)
-    button:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    button:SetScript("OnLeave", ns.Tooltip.HideOwned)
     return button
 end
 
@@ -552,7 +552,7 @@ local function CreateHeader(parent)
         if self.run.noWing then GameTooltip:AddLine(L.DUN_NO_WING, MUTED[1], MUTED[2], MUTED[3], true) end
         Browser.ShowTooltip()
     end)
-    header:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    header:SetScript("OnLeave", ns.Tooltip.HideOwned)
     return header
 end
 
@@ -588,7 +588,7 @@ local function CreateRow(parent)
     row.where:SetTextColor(MUTED[1], MUTED[2], MUTED[3])
     row.cells = {}
     row:SetScript("OnEnter", function(self) PieceTooltip(self, self.piece) end)
-    row:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    row:SetScript("OnLeave", ns.Tooltip.HideOwned)
     row:SetScript("OnClick", function(self) PieceClick(self.piece) end)
     return row
 end
