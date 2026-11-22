@@ -54,6 +54,11 @@ class ComparisonTest(unittest.TestCase):
             self.assertFalse(values())
         with patch.dict(profile, {"without_effect": [13255], "assumed_rate": [13255]}):
             self.assertEqual(values()[("HUNTER", 1, "hands")][0][-1], "cma")
+        # An inconclusive swap only warrants a tooltip if the model has a known limitation.
+        source["groups"]["HUNTER 1 hands"] = [row[:4] + [0.2] + row[5:]]
+        self.assertFalse(values())
+        with patch.dict(profile, {"without_effect": [13255]}):
+            self.assertEqual(values()[("HUNTER", 1, "hands")][0][-1], "nm")
         for column, invalid in ((0, 999), (1, 16463), (2, 999), (3, -10.5)):
             with self.subTest(column=column):
                 source["groups"]["HUNTER 1 hands"] = [row[:column] + [invalid] + row[column + 1:]]
@@ -67,8 +72,8 @@ class ComparisonTest(unittest.TestCase):
 
     @unittest.skipIf(lupa is None, "lupa is not installed")
     def test_tooltip_uses_locale_slot_measure_and_editorial_priority(self):
-        for locale, fixed, noise, reversal in (("frFR", "+23,8", "ne départage pas", "inverse l’ordre"),
-                                                ("enUS", "+23.8", "cannot distinguish", "reverses the ranking")):
+        for locale, fixed, reversal in (("frFR", "+23,8", "inverse l’ordre"),
+                                        ("enUS", "+23.8", "reverses the ranking")):
             game = Game(locale=locale)
             game.ns.data.comparisons = game.lua.table_from({
                 "HUNTER1_hands": " 16571:13255:1232:2380:500:c 911:13255:-2:0:20000:nma 912:13255:-12:-5:5000:r 913:13255:2:3:2000:n 914:13255:4:3:2000:ca",
@@ -79,7 +84,7 @@ class ComparisonTest(unittest.TestCase):
             result = note(16571, "HUNTER", 1, "pve", "hands")
             self.assertIn(game.ns.Items.Name(13255), result)
             self.assertIn(fixed, result)
-            self.assertIn(noise, note(913, "HUNTER", 1, "pve", "hands"))
+            self.assertIsNone(note(913, "HUNTER", 1, "pve", "hands"))
             self.assertIn("incertain" if locale == "frFR" else "uncertain proc rate",
                           note(914, "HUNTER", 1, "pve", "hands"))
             self.assertIn("omet un effet" if locale == "frFR" else "omits an effect",
@@ -90,6 +95,16 @@ class ComparisonTest(unittest.TestCase):
                          (911, "HUNTER", 1, "pve", "head"), (911, "HUNTER", 1, "pve"),
                          (911, "SHAMAN", 3, "pve", "hands")):
                 self.assertIsNone(note(*args))
+
+    @unittest.skipIf(lupa is None, "lupa is not installed")
+    def test_destruction_shoulders_show_their_gaps_without_circular_notes(self):
+        for locale in ("frFR", "enUS"):
+            with self.subTest(locale=locale):
+                game = Game(locale=locale, cls="WARLOCK", saved="EasyBISDB = { altCount = 6 }")
+                state = game.lua.table_from({"class": "WARLOCK", "spec": 3, "list": "pve", "slot": "shoulder"})
+                rows, _ = game.ns.Rows.Items(state)
+                shoulders = {row.id: (row.gap, row.why) for row in rows.values() if row.id in (19059, 18681)}
+                self.assertEqual(shoulders, {19059: (-11, None), 18681: (-15, None)})
 
 
 if __name__ == "__main__":

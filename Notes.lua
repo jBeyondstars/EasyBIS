@@ -34,7 +34,7 @@ local function Comparison(item, key, slot)
     local rows = ns.data.comparisons and ns.data.comparisons[key .. "_" .. slot]
     if not rows then return nil end
     local rival, swap, stats, status, limits = rows:match(" " .. item .. ":(%d+):([%d%-]+):([%d%-]+):%d+:(%a)(%a*)")
-    if not rival then return nil end
+    if not rival or (status == "n" and limits == "") then return nil end
     local name = ns.Items.Name(tonumber(rival))
     local french = ns.locale == "frFR"
     if limits ~= "" then
@@ -44,10 +44,6 @@ local function Comparison(item, key, slot)
         end
         return french and ("Le simulateur omet un effet de " .. name .. ", ce qui peut changer le classement.")
             or ("The simulator omits an effect on " .. name .. ", which can change this ranking.")
-    end
-    if status == "n" then
-        return french and ("Le test ne départage pas cet objet et " .. name .. ".")
-            or ("The test cannot distinguish this item from " .. name .. ".")
     end
     local function dps(cents)
         local number = string.format("%+.1f", tonumber(cents) / 100)

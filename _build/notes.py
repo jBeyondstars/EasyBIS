@@ -202,6 +202,9 @@ def comparisons(db, all_ladders, specific, source=None):
                 status += "m"
             if rival in assumed_rate:
                 status += "a"
+            if status == "n":
+                # A noisy duel alone does not explain either item's displayed rank.
+                continue
             # The game loads one string per slot. Hundredths suffice for tooltip text.
             out.setdefault((cls, spec, slot), []).append((actual, rival, round(dps * 100),
                                                          round(stats * 100), count, status))

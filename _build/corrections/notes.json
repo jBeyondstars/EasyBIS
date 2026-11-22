@@ -546,42 +546,6 @@
   },
   {
    "items": [
-    13369
-   ],
-   "specs": [
-    "MAGE 2"
-   ],
-   "slot": "feet",
-   "simulated": true,
-   "en": "The test cannot distinguish this item from Sorcerer's Sandals.",
-   "fr": "Le test ne départage pas cet objet et Sorcerer's Sandals."
-  },
-  {
-   "items": [
-    13938
-   ],
-   "specs": [
-    "MAGE 2"
-   ],
-   "slot": "ranged",
-   "simulated": true,
-   "en": "The test cannot distinguish this item from Pyric Caduceus.",
-   "fr": "Le test ne départage pas cet objet et Pyric Caduceus."
-  },
-  {
-   "items": [
-    18307
-   ],
-   "specs": [
-    "MAGE 3"
-   ],
-   "slot": "feet",
-   "simulated": true,
-   "en": "The test cannot distinguish this item from Sorcerer's Sandals.",
-   "fr": "Le test ne départage pas cet objet et Sorcerer's Sandals."
-  },
-  {
-   "items": [
     19050
    ],
    "specs": [
