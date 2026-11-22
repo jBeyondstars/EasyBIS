@@ -1,3 +1,9 @@
+# Easy BIS 1.9.3
+
+## Item notes
+
+- Removed automatic tooltips that repeated DPS comparisons or gave generic simulation warnings. The information icon now appears only when an item has a written note about its ranking.
+
 # Easy BIS 1.9.2
 
 ## Gear lists
@@ -10,7 +16,6 @@
 
 ## Item notes and sources
 
-- Removed automatic item tooltips that repeated DPS comparisons or gave generic simulation warnings. Item notes now focus on the stats, effects and gear choices behind a rank.
 - New English and French notes explain close choices, including hit versus spell power for casters, healing versus mana regeneration for priests, and Adaptive Combat Assistant versus Hand of Justice for Retribution. Shadow Priests can see when Obsidian Bauble beats Book of the Dead.
 - Corrected faction restrictions, drop sources and reputation requirements for affected items. The gear lists also handle unconfirmed sources and incomplete weapon-pair comparisons more accurately.
 
