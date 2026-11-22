@@ -113,9 +113,9 @@ C	1	pve	flask	274273::30 274274::30 274275::30 274276::30
 U	1	pve	flask	13510 13511 13513
 C	1	pve	elixir	13452::474 250328::300 250337::274
 U	1	pve	elixir	9088 250329
-C	1	pve	food	250069::200 250072::200 12212::150 18045::150
+C	1	pve	food	13932::220 13934::220 250069::200 250072::200
 C	1	pve	scroll	10309::170 10308::32 10307::16
-C	1	pve	combat	250943::80 250942::56
+C	1	pve	combat	250943::440 250942::308
 U	1	pve	combat	9036
 C	1	pve	healing	18253::16000 13446::14000 9144::7500
 C	1	pve	mana	13444::18000 18253::16000 13443::12000
@@ -126,7 +126,7 @@ C	1	pvp	elixir	13452::474 250328::338 250337::312
 U	1	pvp	elixir	9088 250335
 C	1	pvp	food	21023::200 250069::200 250072::200
 C	1	pvp	scroll	10309::170 10307::128 10308::56
-C	1	pvp	combat	13455::400 250943::40 250942::28
+C	1	pvp	combat	13455::400 250943::360 250942::252
 U	1	pvp	combat	9036
 C	1	pvp	healing	18253::16000 13446::14000 17348::11200
 C	1	pvp	mana	13444::18000 18253::16000 13443::12000
@@ -135,8 +135,9 @@ C	2	pve	flask	274273::30 274274::30 274275::30 274276::30
 U	2	pve	flask	13510 13511 13513
 C	2	pve	elixir	13452::530 250337::330 250328::300
 U	2	pve	elixir	9088 250329
-C	2	pve	food	250069::200 250072::200 12212::150 18045::150
+C	2	pve	food	13932::200 13934::200 250069::200 250072::200
 C	2	pve	scroll	10309::170 10308::32 10307::16
+C	2	pve	combat	250943::400 250942::280
 U	2	pve	combat	9036
 C	2	pve	healing	18253::16000 13446::14000 9144::7500
 C	2	pve	mana	13444::18000 18253::16000 13443::12000
@@ -147,7 +148,7 @@ C	2	pvp	elixir	13452::530 250337::368 250328::338
 U	2	pvp	elixir	9088 250335
 C	2	pvp	food	250069::200 250072::200 21023::188
 C	2	pvp	scroll	10309::170 10307::120 10308::56
-C	2	pvp	combat	13455::400
+C	2	pvp	combat	13455::400 250943::360 250942::252
 U	2	pvp	combat	9036
 C	2	pvp	healing	18253::16000 13446::14000 17348::11200
 C	2	pvp	mana	13444::18000 18253::16000 13443::12000
@@ -156,10 +157,10 @@ C	3	pve	flask	274273::45 274274::45 274275::45 274276::45
 U	3	pve	flask	13510 13511 13513
 C	3	pve	elixir	13452::502 250351::302 250337::252 250338::252 250348::252
 U	3	pve	elixir	9088 250329
-C	3	pve	food	250069::200 250072::200 13932::180 13934::180
+C	3	pve	food	13932::220 13934::220 250069::200 250072::200
 C	3	pve	scroll	10309::170 10310::34 10307::24
 C	3	pve	weapon	18262:9:252 12404::192 12643::192:t 7964::144 7965::144:t 2871::96 3241::96:t
-C	3	pve	combat	250943::360 250942::252
+C	3	pve	combat	250943::440 250942::308
 U	3	pve	combat	9036
 C	3	pve	healing	18253::16000 13446::14000 9144::7500
 C	3	pve	mana	13444::18000 18253::16000 13443::12000
@@ -168,10 +169,10 @@ C	3	pvp	flask	274273::270 274274::270 274275::270 274276::270
 U	3	pvp	flask	13510 13511 13513
 C	3	pvp	elixir	13452::502 250337::314 250328::312
 U	3	pvp	elixir	9088 250335
-C	3	pvp	food	21023::225 250069::200 250072::200
+C	3	pvp	food	13932::240 13934::240 21023::225
 C	3	pvp	scroll	10309::170 10307::144 10305::72
 C	3	pvp	weapon	18262:9:252 12404::112 12643::112:t 7964::84 7965::84:t 2871::56 3241::56:t
-C	3	pvp	combat	13455::600 250943::280 250942::196
+C	3	pvp	combat	13455::600 250943::480 250942::336
 U	3	pvp	combat	9036
 C	3	pvp	healing	18253::16000 13446::14000 17348::11200
 C	3	pvp	mana	13444::18000 18253::16000 13443::12000
@@ -324,6 +325,30 @@ U	3	pvp	combat	9036
 C	3	pvp	healing	18253::16000 13446::14000 17348::11200
 C	3	pvp	mana	13444::18000 18253::16000 13443::12000
 C	3	pvp	bandage	14530::20000 14529::13600 8545::11040
+C	4	pve	flask	13512::1500 274273::30 274274::30 274275::30 274276::30
+U	4	pve	flask	13510 13511 13513
+C	4	pve	elixir	250337::422 13452::360 13454::350
+U	4	pve	elixir	9088 250329
+C	4	pve	food	13933::280 13935::280 6887::220 13931::220
+C	4	pve	scroll	10308::125 10309::91 10310::74
+C	4	pve	weapon	20749::360 20750::240 18262:9:226 20746::160
+C	4	pve	combat	250937::470 250936::330 250943::138
+U	4	pve	combat	9036
+C	4	pve	healing	18253::16000 13446::14000 9144::7500
+C	4	pve	mana	13444::18000 18253::16000 13443::12000
+C	4	pve	bandage	14530::20000 14529::13600 8545::11040
+C	4	pvp	flask	13512::1500 274273::300 274274::300 274275::300 274276::300
+U	4	pvp	flask	13510 13511 13513
+C	4	pvp	elixir	250337::422 13452::360 13454::350
+U	4	pvp	elixir	9088 250335
+C	4	pvp	food	13933::280 13935::280 21023::250
+C	4	pvp	scroll	10307::160 10308::125 10309::91
+C	4	pvp	weapon	20749::360 20750::240 18262:9:226 20746::160
+C	4	pvp	combat	250937::470 13455::400 250936::330
+U	4	pvp	combat	9036
+C	4	pvp	healing	18253::16000 13446::14000 17348::11200
+C	4	pvp	mana	13444::18000 18253::16000 13443::12000
+C	4	pvp	bandage	14530::20000 14529::13600 8545::11040
 ]==],
 PRIEST = [==[
 C	1	pve	flask	274273::30 274274::30 274275::30 274276::30
@@ -721,7 +746,6 @@ ns.data.consumableInfo = [==[
 10308|Scroll of Intellect IV|+16 Intellect|Vendor: Professor Thaddeus Paleo (Elwynn Forest)|f|
 10309|Scroll of Agility IV|+17 Agility|Vendor: Professor Thaddeus Paleo (Elwynn Forest)|f|
 10310|Scroll of Strength IV|+17 Strength|Vendor: Professor Thaddeus Paleo (Elwynn Forest)|f|
-12212|Jungle Stew|+15 Agility; Restores 1338 health|Cooking 175: recipe sold by Corporal Bluth (Stranglethorn Vale)|f|
 12404|Dense Sharpening Stone|+8 Weapon Damage|Blacksmithing 230: from a trainer|f|
 12643|Dense Weightstone|+8 Weapon Damage|Blacksmithing 230: from a trainer|f|
 13442|Mighty Rage Potion|+60 Strength; +60 Rage|Alchemy 255: recipe drops from Blackrock Slayer|f|
@@ -753,7 +777,6 @@ ns.data.consumableInfo = [==[
 14530|Heavy Runecloth Bandage|Restores 2000 health|First Aid 290: from a trainer|f|
 17222|Spider Sausage|+15 Stamina; Restores 1338 health|Cooking 200: from a trainer|f|
 17348|Major Healing Draught|Restores 980 to 1260 health; usable only in PvP Battlegrounds|Vendor: Bryanna Embreeze (The Barrens)|f|only:PvP Battlegrounds
-18045|Tender Wolf Steak|+15 Agility; Restores 1338 health|Cooking 225: recipe sold by Dirge Quikcleave (Tanaris)|f|
 18253|Major Rejuvenation Potion|Restores 1440 to 1760 health; Restores 1440 to 1760 mana|Alchemy 300: recipe drops from Magmadar|f|
 18262|Elemental Sharpening Stone|+2% Critical Strike|Blacksmithing 300: recipe drops from Magmadar|f|
 18294|Draught of Greater Water Breathing|Allows the Imbiber to breathe water|Alchemy 215: from a trainer|f|

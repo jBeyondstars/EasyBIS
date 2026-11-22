@@ -40,6 +40,7 @@ import ranks  # noqa: E402
 import questie  # noqa: E402
 import reputations  # noqa: E402
 import runs  # noqa: E402
+import shockadin  # noqa: E402
 import simulated  # noqa: E402
 import specs  # noqa: E402
 
@@ -115,11 +116,195 @@ class GeneratorTest(unittest.TestCase):
     def test_reads_every_class_and_spec(self):
         self.assertEqual(len(self.db.classes), 9)
         self.assertEqual(sum(len(data["specs"]) for data in self.published.classes.values()), 27)
-        self.assertEqual(sum(len(data["specs"]) for data in self.db.classes.values()), 28, "ForeverDB's, and the cat")
+        self.assertEqual(sum(len(data["specs"]) for data in self.db.classes.values()), 29,
+                         "ForeverDB's, the cat and the Shockadin")
         for token, data in self.db.classes.items():
             for spec in data["specs"].values():
                 self.assertEqual(set(spec["weights"]), {"lvl", "raid", "pvp"}, f"{token} {spec['name']}")
         self.assertEqual(self.db.meta["cap"], 60)
+
+    # -- a spec ForeverDB's data does not have: the Paladin's Shockadin (specs.py, shockadin.py) --------------
+
+    SHOCKADIN = ("PALADIN", 4)
+    STALWART_HELM = 250599        # Strength, 2% hit and 38 spell power: the Shockadin's best head before the raids
+    SPELLBLASTING = "s1219580"    # Enchant 2H Weapon - Spellblasting, +65 spell power
+    HOLY_POWER_GLOVES = "Enchant Gloves - Holy Power"
+
+    def test_the_shockadin_is_the_paladins_fourth_spec(self):
+        self.assertEqual(self.db.specs.shockadin, self.SHOCKADIN)
+        ours, theirs = self.db.classes["PALADIN"]["specs"], self.published.classes["PALADIN"]["specs"]
+        self.assertEqual(sorted(theirs), [1, 2, 3], "ForeverDB's own")
+        self.assertEqual(sorted(ours), [1, 2, 3, 4])
+        for number, spec in theirs.items():
+            self.assertEqual((ours[number]["name"], ours[number]["role"], ours[number]["style"]),
+                             (spec["name"], spec["role"], spec["style"]), f"ForeverDB's spec {number} is left as it is")
+            self.assertNotIn("added", ours[number])
+        for number in (1, 3):   # Holy and Retribution: the Shockadin's neighbours, weights and all
+            self.assertEqual(ours[number], theirs[number])
+        added = ours[4]
+        self.assertEqual((added["name"], added["role"], added["style"], added["slug"]),
+                         ("Shockadin", "Melee DPS", "2h", "shockadin"))
+        self.assertTrue(added["added"])
+        self.assertEqual(added["weights"], {"lvl": shockadin.PVE, "raid": shockadin.PVE, "pvp": shockadin.PVP})
+        self.assertEqual([number for number, spec in ours.items() if spec.get("added")], [4])
+
+    def test_the_shockadins_weights_are_the_simulators(self):
+        """PvE: WoWSims Forever's Holy Shock weights, a point of spell damage counting 1. PvP: the same, with
+        ForeverDB's stamina and armor for a Paladin and without the Holy spells' share of hit."""
+        pve, pvp, ep = shockadin.PVE, shockadin.PVP, shockadin.EP
+        self.assertEqual((pve[42], pve[45]), (1, 1))
+        for stat, value in ep.items():
+            self.assertAlmostEqual(pve[stat], value / ep[45], places=3, msg=f"stat {stat}")
+        self.assertEqual(set(pve) - set(ep), {7}, "stamina is ForeverDB's, the rest is the simulator's")
+        paladin = self.published.classes["PALADIN"]["specs"]
+        for number in (1, 3):   # Holy and Retribution
+            self.assertEqual(paladin[number]["weights"]["raid"][7], pve[7], "ForeverDB's PvE stamina for a Paladin")
+        self.assertGreater(pve[31], pve[45], "a point of hit rating is worth more than one of spell damage")
+        self.assertGreater(pve[45], pve[84])
+        self.assertLess(pve[43], 0.01, "mana per 5 seconds is worth nothing to it in a raid")
+        self.assertEqual({stat for stat in set(pve) | set(pvp) if pve.get(stat) != pvp.get(stat)}, {7, 31, "armor"})
+        for number in (1, 3):
+            self.assertEqual((paladin[number]["weights"]["pvp"][7], paladin[number]["weights"]["pvp"]["armor"]),
+                             (pvp[7], pvp["armor"]))
+        self.assertAlmostEqual(pvp[31], (ep[31] - shockadin.EP_HOLY_SPELL_HIT) / ep[45], places=3)
+
+    def test_the_shockadin_changes_no_other_list(self):
+        with mock.patch.object(shockadin, "add", return_value=None):
+            without = fdb.load(CACHE)
+        count = lambda db: sum(len(data["specs"]) for data in db.classes.values())
+        self.assertEqual(count(without), count(self.db) - 1)
+        self.assertEqual(sorted(without.classes["PALADIN"]["specs"]), [1, 2, 3])
+        self.assertEqual(without.enchants["PALADIN"].keys() | {(4, "lvl"), (4, "raid")}, self.db.enchants["PALADIN"].keys())
+        for key in without.enchants["PALADIN"]:
+            self.assertEqual(without.enchants["PALADIN"][key], self.db.enchants["PALADIN"][key], key)
+        for spec in (1, 2, 3):
+            for mode in ladders.MODES:
+                for slot, _ in ladders.SLOTS:
+                    self.assertEqual(ladders.full_ladder(without, "PALADIN", spec, mode, slot),
+                                     self.full["PALADIN", spec, mode, slot], f"PALADIN {spec} {mode} {slot}")
+
+    def test_the_shockadin_holds_a_two_hander(self):
+        for mode in ladders.MODES:
+            main, off = self.full[*self.SHOCKADIN, mode, "main"], self.full[*self.SHOCKADIN, mode, "off"]
+            self.assertTrue(main)
+            self.assertTrue(all(entry.two_hand for entry in main), f"{mode}: a one-hander in the main hand")
+            self.assertEqual(off, [], f"{mode}: an off hand")
+            self.assertEqual(self.full[*self.SHOCKADIN, mode, "ranged"], [], "ForeverDB's data has no libram")
+
+    def test_the_shockadin_borrows_the_caster_pieces_a_paladin_can_wear(self):
+        """ForeverDB pools for a Paladin what a healer, a tank or a melee fighter wears. WoWSims' own set for the Holy
+        Shock build wears Magister's Leggings and Gauntlets of Elements, which are in other classes' pools only: the
+        Shockadin lists them too. Not another class's own piece, nor one whose classes the data cannot tell (the
+        second dungeon sets, which the simulator's database lacks), and never a weapon."""
+        cls, spec = self.SHOCKADIN
+        leggings, gauntlets, deathmist, bonescythe = 16687, 16672, 22074, 22477
+        pools = self.db.classes[cls]["pools"]
+        self.assertNotIn(leggings, {item for item, _ in pools["legs"]})
+        self.assertIn(leggings, {entry.item_id for entry in self.full[cls, spec, "pve", "legs"]})
+        self.assertIn(gauntlets, {entry.item_id for entry in self.full[cls, spec, "pve", "hands"]})
+        self.assertIn(deathmist, self.db.class_unknown)
+        for slot, _ in ladders.SLOTS:
+            ids = {entry.item_id for entry in self.full[cls, spec, "pve", slot]}
+            self.assertFalse(ids & self.db.class_unknown - {item for pool in pools.values() for item, _ in pool}, slot)
+            self.assertNotIn(bonescythe, ids)
+        borrowed = self.db.classes[cls]["specs"][spec]["pools"]
+        self.assertEqual({pool for pool in borrowed if pool in ("mh", "2h", "oh", "ranged")}, set())
+        for other in (1, 2, 3):   # the Paladin's other lists are ForeverDB's pools, as before
+            self.assertNotIn("pools", self.db.classes[cls]["specs"][other])
+            self.assertNotIn(leggings, {entry.item_id for entry in self.full[cls, other, "pve", "legs"]})
+
+    def test_hand_of_justice_is_not_a_shockadins(self):
+        """Measured on WoWSims' Holy Shock build it adds 5 DPS where the best trinkets add 9: it is listed on its 12
+        attack power or not at all, not level with the best as for the other melee damage dealers."""
+        cls, spec = self.SHOCKADIN
+        self.assertIn("shockadin", self.db.effects_but[11815])
+        for mode in ladders.MODES:
+            self.assertFalse([entry for entry in self.full[cls, spec, mode, "trinket"] if entry.level], mode)
+
+    def test_the_shockadins_pve_list_is_ranked_by_simulation(self):
+        """WoWSims has the build (Holy Shock, of its Retribution Paladin), so the PvE list is measured like the other
+        damage dealers'. It puts the fast two-handers first, which the weights could not see: Seal of Righteousness
+        adds a share of the spell power to every swing, whatever the weapon's speed."""
+        cls, spec = self.SHOCKADIN
+        self.assertIn((cls, spec), self.db.simulated.specs)
+        main = [entry for entry in self.full[cls, spec, "pve", "main"] if entry.passes(("a", False, False, 0, False, None))]
+        self.assertEqual(main[0].item_id, 2801, "Blade of Hanna, 2.0 a swing")
+        zealous = next(place for place, entry in enumerate(main) if entry.item_id == 276397)   # the weights' first
+        self.assertGreater(zealous, 10, "Hand of the Zealous, 3.7 a swing and 68 spell power")
+        self.assertIsNone(simulated.ranking(self.db, cls, spec, "pvp", "main"))
+
+    def test_the_shockadins_pvp_list_is_ranked_on_its_weights(self):
+        cls, spec = self.SHOCKADIN
+        for mode, weights in (("pvp", shockadin.PVP),):
+            for slot, _ in ladders.SLOTS:
+                for entry in self.full[cls, spec, mode, slot]:
+                    if entry.level:
+                        continue   # Hand of Justice: no score of its own, level with the best (specs.unvalued)
+                    self.assertAlmostEqual(entry.score, ladders.score(self.db, entry.item_id, weights, cls),
+                                           msg=f"{mode} {slot} {entry.item_id}")
+                    self.assertFalse(entry.estimated or entry.placed, "no simulation ranks it")
+                    stats = self.db.gear[entry.item_id]["stats"]
+                    self.assertFalse(ladders.HEALING in stats and not any(s in stats for s in ladders.SPELL_DAMAGE),
+                                     f"{entry.item_id} only heals")
+        flt = (*("a", False, False, phases.CURRENT), True, None)
+        head = [entry for entry in self.full[cls, spec, "pvp", "head"] if entry.passes(flt) and not entry.pvp]
+        self.assertEqual(head[0].item_id, self.STALWART_HELM)
+        # a PvP reward is ranked on its stats in both lists, as everywhere
+        self.assertTrue(any(entry.pvp for entry in self.full[cls, spec, "pve", "main"]))
+
+    def test_the_shockadins_enchants_are_a_paladins(self):
+        cls, spec = self.SHOCKADIN
+        ladder = self.enchant_ladder(cls, spec)
+        self.assertEqual(ladder["w2h"][0][0], self.SPELLBLASTING)
+        self.assertEqual(self.db.enchant_info[ladder["hands"][0][0]][0], self.HOLY_POWER_GLOVES)
+        self.assertFalse({"w1h", "shield", "held", "rng"} & set(ladder), "it holds a two-hander and nothing else")
+        own = {enchant for (number, _), per_slot in self.db.enchants[cls].items() if number != spec
+               for entries in per_slot.values() for enchant, _ in entries}
+        listed = {enchant for entries in self.db.enchants[cls][spec, "raid"].values() for enchant, _ in entries}
+        self.assertTrue(listed)
+        self.assertLessEqual(listed, own, "an enchant ForeverDB lists for no Paladin")
+        for key, entries in self.db.enchants[cls][spec, "raid"].items():
+            worth = [sum(shockadin.PVE.get(stat, 0) * amount
+                         for stat, amount in specs.enchant_stats(self.db.enchant_info[enchant][1]).items())
+                     for enchant, _ in entries]
+            self.assertEqual(worth, sorted(worth, reverse=True), key)
+            self.assertGreater(worth[-1], 0, key)
+
+    def test_an_enchants_sentence_is_read_as_stats(self):
+        read = specs.enchant_stats
+        self.assertEqual(read("Agility +15"), {3: 15})
+        self.assertEqual(read("+65 Spell Power"), {45: 65})
+        self.assertEqual(read("Attack Power +28/Dodge +1%"), {38: 28, 13: 12})
+        self.assertEqual(read("Attack Power +26 and +1% Critical Strike"), {38: 26, 32: 14})
+        self.assertEqual(read("All Stats +4"), {3: 4, 4: 4, 5: 4, 6: 4, 7: 4})
+        self.assertEqual(read("Holy Damage +20"), {84: 20})
+        self.assertEqual(read("Healing Spells +100, Damage Spells +34"), {41: 100, 42: 34})
+        self.assertEqual(read("+18 Spell Damage and Healing"), {45: 18})
+        self.assertEqual(read("Healing and Spell Damage +8"), {45: 8})
+        self.assertEqual(read("Healing +31 and 5 mana per 5 sec."), {41: 31, 43: 5})
+        for unknown in ("Crusader", "Weapon Damage +9", "Counterweight +3% Attack Speed", "Living Stats"):
+            self.assertIsNone(read(unknown), unknown)
+
+    def test_the_data_files_hold_the_shockadin(self):
+        text = luaout.lists_file(self.db, self.kept)
+        block = text.split("PALADIN = [==[\n", 1)[1].split("]==]", 1)[0]
+        specs_written = [line.split("\t") for line in block.split("\n") if line.startswith("S\t")]
+        self.assertEqual(specs_written, [["S", "1", "Holy", "Healer", "any"], ["S", "2", "Protection", "Tank", "shield"],
+                                         ["S", "3", "Retribution", "Melee DPS", "2h"],
+                                         ["S", "4", "Shockadin", "Melee DPS", "2h"]])
+        slots = {(fields[2], fields[3]) for fields in (line.split("\t") for line in block.split("\n"))
+                 if fields[0] == "L" and fields[1] == "4"}
+        core = [slot for slot, _ in ladders.SLOTS if slot not in ("off", "ranged")]
+        self.assertEqual(slots, {(mode, slot) for mode in ladders.MODES for slot in core})
+        self.assertIn("M\t4\t", block, "its PvE list is ranked by simulation")
+        self.assertIn("-- Added to ForeverDB's specs: Shockadin Paladin, spec 4", text)
+        self.assertIn(shockadin.SOURCE, text)
+        enchants = luaout.enchants_file(self.db, self.kept).split("PALADIN = [==[\n", 1)[1].split("]==]", 1)[0]
+        self.assertIn(f"E\t4\tw2h\t{self.SPELLBLASTING}", enchants)
+        lists = consumable_lists.build(self.db)["PALADIN"]
+        self.assertEqual(sorted(lists), [1, 2, 3, 4])
+        for mode in consumable_lists.MODES:
+            self.assertTrue(lists[4][mode]["flask"].ranked, f"{mode}: no flask")
 
     def test_every_pool_item_is_described(self):
         for token, data in self.db.classes.items():
@@ -792,9 +977,10 @@ class GeneratorTest(unittest.TestCase):
         for (token, spec, mode, slot), ladder in self.full.items():
             weights = self.db.classes[token]["specs"][spec]["weights"][ladders.MODES[mode]]
             ranking = simulated.ranking(self.db, token, spec, mode, slot)
+            melee = (token, mode) == ("HUNTER", "pvp") and self.db.classes[token]["specs"][spec]["role"] == ladders.MELEE
             for entry in ladder:
-                if ladders.score(self.db, entry.item_id, weights, token):
-                    continue
+                if ladders.score(self.db, entry.item_id, weights, token, melee) or entry.level:
+                    continue   # entry.level: what the weights cannot value, listed by hand (specs.unvalued)
                 self.assertIsNotNone(ranking, f"{token} {spec} {mode} {slot}: {entry.item_id} weighs nothing")
                 self.assertTrue(ranking.scores.get(entry.item_id, 0) > 0 or entry.item_id in self.db.placed, entry.item_id)
                 held += 1
@@ -1085,6 +1271,77 @@ class SpecsTest(unittest.TestCase):
     def ladder(self, token, spec, mode="pve", slot="main", db=None):
         return ladders.full_ladder(db or self.db, token, spec, mode, slot)
 
+    def test_another_class_s_piece_is_not_listed(self):
+        """ForeverDB pools by armor type, so a Rogue's Bonescythe was first in a Druid's and a Warrior's lists and a
+        Mage's Frostfire in a Priest's. The game restricts those pieces (corrections/classes.json): only their class
+        lists them. Most are pieces added from the game (corrections.align), which go to every pool of their armor type."""
+        helmet, circlet = 22478, 22498   # Bonescythe Helmet (Rogue), Frostfire Circlet (Mage)
+        self.assertEqual(self.db.class_only[helmet], frozenset(("ROGUE",)))
+        self.assertEqual(self.db.class_only[circlet], frozenset(("MAGE",)))
+        ids = lambda token, spec, mode: {entry.item_id for entry in self.ladder(token, spec, mode, "head")}   # noqa: E731
+        self.assertIn(helmet, ids("ROGUE", 2, "pve"))
+        self.assertIn(circlet, ids("MAGE", 2, "pve"))
+        for token, data in self.db.classes.items():
+            for spec in data["specs"]:
+                for mode in ladders.MODES:
+                    for slot, _ in ladders.SLOTS:
+                        for entry in self.ladder(token, spec, mode, slot):
+                            self.assertIn(token, self.db.class_only.get(entry.item_id, (token,)),
+                                          f"{token} {spec} {mode} {slot}: {entry.item_id}")
+
+    def test_a_survival_hunter_s_melee_weapon_counts_its_damage_in_pvp(self):
+        """ForeverDB counts a Hunter's ranged weapon only, so a caster's staff led a Survival Hunter's PvP main hands
+        on its critical strike. That spec fights in melee: its weapon's damage per second counts there. The other
+        Hunters' main hands stay on their stats."""
+        sunderer, staff = 18830, 20069   # Grand Marshal's Sunderer, 77.4 a second; Ironbark Staff, 42.1 and 88 spell power
+        survival = {entry.item_id: entry.score for entry in self.ladder("HUNTER", 3, "pvp")}
+        self.assertEqual(self.db.classes["HUNTER"]["specs"][3]["role"], "Melee DPS")
+        self.assertGreater(survival[sunderer], survival[staff] + 100)
+        marksman = {entry.item_id: entry.score for entry in self.ladder("HUNTER", 2, "pvp")}
+        self.assertLess(marksman[sunderer], 100)
+
+    def test_an_assassination_rogue_s_pvp_weapons_are_daggers(self):
+        """Mutilate asks for a dagger in each hand: the Assassination PvP list holds no sword, mace or fist weapon.
+        Subtlety has Hemorrhage, which any weapon deals: its list keeps them."""
+        for slot in ("main", "off"):
+            kinds = {self.db.gear[entry.item_id]["kind"] for entry in self.ladder("ROGUE", 1, "pvp", slot)}
+            self.assertEqual(kinds, {ladders.DAGGER}, slot)
+        self.assertEqual(self.db.classes["ROGUE"]["specs"][1]["slug"], "assassination")
+        others = {self.db.gear[entry.item_id]["kind"] for entry in self.ladder("ROGUE", 3, "pvp")}
+        self.assertGreater(len(others), 1)
+
+    def test_hand_of_justice_is_in_the_melee_pvp_lists(self):
+        """Its 12 attack power left it out of every list ranked on the weights. Its extra attacks are what it is worn
+        for (corrections/effects.json): there it stands level with the best picks, without a score, never the pick."""
+        justice = 11815
+        self.assertIn("Melee DPS", self.db.effects[justice])
+        for token, spec in (("ROGUE", 2), ("WARRIOR", 1), ("PALADIN", 3)):
+            ladder = self.ladder(token, spec, "pvp", "trinket")
+            entry = next((e for e in ladder if e.item_id == justice), None)
+            self.assertIsNotNone(entry, f"{token} {spec}")
+            self.assertTrue(entry.level and entry.unscored)
+            self.assertNotEqual(ladders.lead(ladder).item_id, justice)
+        self.assertNotIn(justice, {e.item_id for e in self.ladder("MAGE", 2, "pvp", "trinket")})
+
+    def test_valthalak_s_staff_has_its_spell_power(self):
+        """ForeverDB gives Lord Valthalak's Staff of Command no spell power; the game's tooltip shows 72."""
+        self.assertNotIn(45, self.published.gear[22335]["stats"])
+        self.assertEqual(self.db.gear[22335]["stats"][45], 72)
+
+    def test_a_hunter_s_attack_power_is_ranged_too(self):
+        """An item's attack power is ranged attack power as well: a Hunter's weights count it at least as much
+        (specs.ranged_power). ForeverDB's Marksmanship PvP weights gave it nothing, and Drake Fang Talisman's 56
+        scored 0."""
+        power, ranged, talisman = 38, 39, 19406
+        for spec, data in self.db.classes["HUNTER"]["specs"].items():
+            for profile, weights in data["weights"].items():
+                if weights.get(ranged):
+                    self.assertGreaterEqual(weights[power], weights[ranged], f"HUNTER {spec} {profile}")
+                    self.assertEqual(self.db.specs.ranged["HUNTER", spec, profile], weights[power])
+        self.assertNotIn(power, self.published.classes["HUNTER"]["specs"][2]["weights"]["pvp"])
+        trinkets = [entry.item_id for entry in self.ladder("HUNTER", 2, "pvp", "trinket")]
+        self.assertEqual(trinkets[0], talisman)
+
     def shown(self, token, spec, slot="main", count=7):
         return [entry.item_id for entry in self.ladder(token, spec, slot=slot) if entry.passes(self.DEFAULT)][:count]
 
@@ -1126,7 +1383,12 @@ class SpecsTest(unittest.TestCase):
         for token, data in self.published.classes.items():
             for number, spec in data["specs"].items():
                 if (token, number) not in self.TANKS:
-                    self.assertEqual(self.db.classes[token]["specs"][number]["weights"], spec["weights"],
+                    expected = copy.deepcopy(spec["weights"])
+                    if token == "HUNTER":   # its attack power is ranged attack power too (specs.ranged_power)
+                        for weights in expected.values():
+                            if weights.get(39):
+                                weights[38] = round(weights.get(38, 0) + weights[39], 3)
+                    self.assertEqual(self.db.classes[token]["specs"][number]["weights"], expected,
                                      f"{token} {spec['name']}")
 
     # -- what the user saw: caster weapons among a Protection Warrior's main hands ------------------
@@ -1201,12 +1463,14 @@ class SpecsTest(unittest.TestCase):
 
     LION_HORN, INSIGNIA, STABILIZER = 14557, 17904, 272440
     MARK_OF_TYRANNY, ARENA_GRAND_MASTER, QUEL_SERRAR, FORCE_REACTIVE_DISK = 13966, 19024, 18348, 18168
+    HAND_OF_JUSTICE = 11815   # a melee damage dealer's, where the others are a tank's
 
     def test_an_item_worth_its_effect_has_no_score_and_stands_with_the_best(self):
         """The Lion Horn of Stormwind: 8 defense, half of the best trinket's score, and an armor proc worth nothing."""
         tank = frozenset({"Tank"})
         self.assertEqual(self.db.effects, {self.LION_HORN: tank, self.MARK_OF_TYRANNY: tank, self.ARENA_GRAND_MASTER: tank,
-                                           self.QUEL_SERRAR: tank, self.FORCE_REACTIVE_DISK: tank})
+                                           self.QUEL_SERRAR: tank, self.FORCE_REACTIVE_DISK: tank,
+                                           self.HAND_OF_JUSTICE: frozenset({"Melee DPS"})})
         trinkets = {self.LION_HORN, self.MARK_OF_TYRANNY, self.ARENA_GRAND_MASTER}
         for token, number in self.TANKS:
             for mode in ladders.MODES:
@@ -1238,9 +1502,10 @@ class SpecsTest(unittest.TestCase):
         for token, number in (("DRUID", 4), ("WARRIOR", 2), ("PALADIN", 1)):   # the cat, Fury (simulated), Holy
             for mode in ladders.MODES:
                 ladder = self.ladder(token, number, mode, "trinket")
-                self.assertFalse([entry for entry in ladder if entry.level], f"{token} {number} {mode}")
-        self.assertEqual(specs.unvalued(self.db, "WARRIOR", 3), frozenset(self.db.effects))
-        self.assertEqual(specs.unvalued(self.db, "WARRIOR", 2), frozenset())
+                self.assertFalse([entry for entry in ladder if entry.level and entry.item_id != self.HAND_OF_JUSTICE],
+                                 f"{token} {number} {mode}")
+        self.assertEqual(specs.unvalued(self.db, "WARRIOR", 3), frozenset(self.db.effects) - {self.HAND_OF_JUSTICE})
+        self.assertEqual(specs.unvalued(self.db, "WARRIOR", 2), frozenset({self.HAND_OF_JUSTICE}))
         entries = self.ladder("WARRIOR", 3, slot="neck")
         self.assertIs(ladders.level_with_the_best(entries, frozenset({self.LION_HORN})), entries, "not in that slot")
 
@@ -1293,8 +1558,9 @@ class SpecsTest(unittest.TestCase):
         self.assertEqual(specs.enchant_stats("All Stats +4"), {4: 4, 3: 4, 7: 4, 5: 4, 6: 4})
         self.assertEqual(specs.enchant_stats("Stamina +5 and Armor +40"), {7: 5, "armor": 40})
         for unknown in ("Crusader", "Living Stats", "Weapon Damage +5", "Counterweight +3% Attack Speed",
-                        "Healing Spells +55", "Attack Speed +1%", ""):
+                        "Attack Speed +1%", ""):
             self.assertIsNone(specs.enchant_stats(unknown), unknown)
+        self.assertEqual(specs.enchant_stats("Healing Spells +55"), {41: 55})   # read since the Shockadin's enchants
 
     def test_the_cats_enchants_are_for_damage(self):
         cat = self.db.enchants["DRUID"][(4, "raid")]

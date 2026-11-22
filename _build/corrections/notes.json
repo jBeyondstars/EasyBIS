@@ -3,6 +3,22 @@
  "notes": [
   {
    "items": [
+    2801,
+    9449,
+    13060,
+    14541,
+    22333
+   ],
+   "specs": [
+    "PALADIN 4"
+   ],
+   "simulated": true,
+   "slot": "main",
+   "en": "Seal of Righteousness adds 12% of spell power to every swing: at 2.0 speed, about 44 DPS more than at 3.3.",
+   "fr": "Seal of Righteousness ajoute 12 % de la puissance des sorts à chaque coup : à 2,0 de vitesse, environ 44 DPS de plus qu'à 3,3."
+  },
+  {
+   "items": [
     647
    ],
    "specs": [
@@ -499,6 +515,259 @@
   },
   {
    "items": [
+    13023
+   ],
+   "specs": [
+    "HUNTER 1",
+    "HUNTER 2"
+   ],
+   "simulated": true,
+   "en": "Quick Shots rolls on each Auto Shot: at 1.80 speed it is worth about 14 DPS more than at 2.50.",
+   "fr": "Quick Shots se déclenche par tir automatique : à 1,80 de vitesse il vaut environ 14 DPS de plus qu'à 2,50."
+  },
+  {
+   "items": [
+    19406
+   ],
+   "specs": [
+    "WARLOCK 3"
+   ],
+   "simulated": true,
+   "en": "Its 20 hit rating also counts for spells: about 20 DPS.",
+   "fr": "Ses 20 de toucher comptent aussi pour les sorts : environ 20 DPS."
+  },
+  {
+   "items": [
+    19406
+   ],
+   "specs": [
+    "WARLOCK 2"
+   ],
+   "simulated": true,
+   "en": "Its 20 hit rating also counts for spells: about 21 DPS.",
+   "fr": "Ses 20 de toucher comptent aussi pour les sorts : environ 21 DPS."
+  },
+  {
+   "items": [
+    19406
+   ],
+   "specs": [
+    "MAGE 3"
+   ],
+   "simulated": true,
+   "en": "Its 20 hit rating also counts for spells: about 22 DPS.",
+   "fr": "Ses 20 de toucher comptent aussi pour les sorts : environ 22 DPS."
+  },
+  {
+   "items": [
+    19406
+   ],
+   "specs": [
+    "MAGE 2"
+   ],
+   "simulated": true,
+   "en": "Its 20 hit rating also counts for spells: about 23 DPS.",
+   "fr": "Ses 20 de toucher comptent aussi pour les sorts : environ 23 DPS."
+  },
+  {
+   "items": [
+    19406
+   ],
+   "specs": [
+    "MAGE 1"
+   ],
+   "simulated": true,
+   "en": "Its 20 hit rating also counts for spells: about 18 DPS.",
+   "fr": "Ses 20 de toucher comptent aussi pour les sorts : environ 18 DPS."
+  },
+  {
+   "items": [
+    18473,
+    18715
+   ],
+   "en": "Its bonus attack power works only against Demons: it is ranked without it.",
+   "fr": "Sa puissance d'attaque bonus ne vaut que contre les Démons : il est classé sans elle."
+  },
+  {
+   "items": [
+    279910,
+    22314
+   ],
+   "en": "Its bonus attack power works only against Beasts: it is ranked without it.",
+   "fr": "Sa puissance d'attaque bonus ne vaut que contre les Bêtes : il est classé sans elle."
+  },
+  {
+   "items": [
+    252605
+   ],
+   "specs": [
+    "HUNTER 3"
+   ],
+   "simulated": true,
+   "en": "Careful Aim turns its 38 Intellect into attack power.",
+   "fr": "Careful Aim convertit ses 38 d'Intelligence en puissance d'attaque."
+  },
+  {
+   "items": [
+    16471,
+    23274
+   ],
+   "specs": [
+    "PALADIN 3"
+   ],
+   "simulated": true,
+   "en": "Its effect adds 20 to Judgement of the Crusader's Holy bonus, used by all your seals and Judgements.",
+   "fr": "Son effet ajoute 20 au bonus Sacré de Judgement of the Crusader, utilisé par tous vos sceaux et jugements."
+  },
+  {
+   "items": [
+    271924,
+    272079,
+    271925,
+    272080
+   ],
+   "specs": [
+    "PALADIN 3"
+   ],
+   "simulated": true,
+   "slot": "main",
+   "en": "Its 3.1 speed shrinks each Seal of Command hit: about 30 DPS less than a 3.8 speed axe.",
+   "fr": "Sa vitesse de 3,1 réduit chaque coup de Seal of Command : environ 30 DPS de moins qu'une hache à 3,8."
+  },
+  {
+   "items": [
+    13285
+   ],
+   "specs": [
+    "SHAMAN 2"
+   ],
+   "simulated": true,
+   "slot": "main",
+   "en": "Its proc, Wound, is worth about 25 DPS.",
+   "fr": "Son proc, Wound, vaut environ 25 DPS."
+  },
+  {
+   "items": [
+    13285
+   ],
+   "specs": [
+    "PALADIN 3"
+   ],
+   "simulated": true,
+   "slot": "main",
+   "en": "Its proc, Wound, is worth about 28 DPS.",
+   "fr": "Son proc, Wound, vaut environ 28 DPS."
+  },
+  {
+   "items": [
+    23047
+   ],
+   "specs": [
+    "DRUID 3",
+    "PALADIN 1",
+    "PRIEST 1",
+    "PRIEST 2",
+    "SHAMAN 3"
+   ],
+   "en": "Use: 450 healing for 30 s every 2 min, not counted in its score.",
+   "fr": "Utiliser : 450 de soins pendant 30 s toutes les 2 min, non compté dans son score."
+  },
+  {
+   "items": [
+    23046
+   ],
+   "specs": [
+    "DRUID 3",
+    "PALADIN 1",
+    "PRIEST 1",
+    "PRIEST 2",
+    "SHAMAN 3"
+   ],
+   "en": "Use: 130 spell power for 20 s every 2 min, not counted in its score.",
+   "fr": "Utiliser : 130 de puissance des sorts pendant 20 s toutes les 2 min, non compté dans son score."
+  },
+  {
+   "items": [
+    19019
+   ],
+   "specs": [
+    "ROGUE 3"
+   ],
+   "simulated": true,
+   "slot": "off",
+   "en": "Its proc, Nature damage on hit, is worth about 40 DPS in the off hand.",
+   "fr": "Son proc, des dégâts de Nature au toucher, vaut environ 40 DPS en main gauche."
+  },
+  {
+   "items": [
+    17111
+   ],
+   "specs": [
+    "ROGUE 2"
+   ],
+   "simulated": true,
+   "en": "Its proc, Fire Strike, is worth about 4 DPS.",
+   "fr": "Son proc, Fire Strike, vaut environ 4 DPS."
+  },
+  {
+   "items": [
+    17111
+   ],
+   "specs": [
+    "ROGUE 1"
+   ],
+   "simulated": true,
+   "en": "Its proc, Fire Strike, is worth about 5 DPS.",
+   "fr": "Son proc, Fire Strike, vaut environ 5 DPS."
+  },
+  {
+   "items": [
+    867
+   ],
+   "specs": [
+    "ROGUE 1"
+   ],
+   "simulated": true,
+   "en": "Its proc, a Smite of Holy damage, is worth about 8 DPS.",
+   "fr": "Son proc, un Smite de dégâts du Sacré, vaut environ 8 DPS."
+  },
+  {
+   "items": [
+    22954
+   ],
+   "specs": [
+    "SHAMAN 1"
+   ],
+   "simulated": true,
+   "en": "Its Use effect speeds up attacks only, not spell casts: it adds nothing here.",
+   "fr": "Son effet Utiliser n'accélère que les attaques, pas les sorts : il n'ajoute rien ici."
+  },
+  {
+   "items": [
+    19577
+   ],
+   "specs": [
+    "WARRIOR 2"
+   ],
+   "simulated": true,
+   "en": "Hamstring costs 2 less rage, spent on more Heroic Strikes: about 4 DPS.",
+   "fr": "Hamstring coûte 2 de rage en moins, dépensés en Heroic Strike : environ 4 DPS."
+  },
+  {
+   "items": [
+    15066,
+    15067
+   ],
+   "specs": [
+    "DRUID 1",
+    "SHAMAN 1"
+   ],
+   "simulated": true,
+   "en": "Worn with the other Ironfeather piece: the set's 20 spell power counts in this score.",
+   "fr": "Portée avec l'autre pièce Ironfeather : les 20 de puissance des sorts du set comptent dans ce score."
+  },
+  {
+   "items": [
     13040
    ],
    "specs": [
@@ -720,6 +989,7 @@
   },
   {
    "items": [
+    19991,
     19992
    ],
    "specs": [
@@ -743,6 +1013,50 @@
    "simulated": true,
    "en": "Its Use effect summons a Voidwalker, which is not simulated: it is ranked without it.",
    "fr": "Son effet Utiliser invoque un marcheur du Vide, qui n'est pas simulé : il est classé sans lui."
+  },
+  {
+   "items": [
+    22268
+   ],
+   "specs": [
+    "WARLOCK 2"
+   ],
+   "simulated": true,
+   "en": "Its proc, more spell damage when a harmful spell lands, is worth about 9 DPS.",
+   "fr": "Son proc, des dégâts des sorts en plus quand un sort offensif touche, vaut environ 9 DPS."
+  },
+  {
+   "items": [
+    22268
+   ],
+   "specs": [
+    "MAGE 3"
+   ],
+   "simulated": true,
+   "en": "Its proc, more spell damage when a harmful spell lands, is worth about 6 DPS.",
+   "fr": "Son proc, des dégâts des sorts en plus quand un sort offensif touche, vaut environ 6 DPS."
+  },
+  {
+   "items": [
+    22268
+   ],
+   "specs": [
+    "MAGE 2"
+   ],
+   "simulated": true,
+   "en": "Its proc, more spell damage when a harmful spell lands, is worth about 8 DPS.",
+   "fr": "Son proc, des dégâts des sorts en plus quand un sort offensif touche, vaut environ 8 DPS."
+  },
+  {
+   "items": [
+    22268
+   ],
+   "specs": [
+    "MAGE 1"
+   ],
+   "simulated": true,
+   "en": "Its proc, more spell damage when a harmful spell lands, is worth about 9 DPS.",
+   "fr": "Son proc, des dégâts des sorts en plus quand un sort offensif touche, vaut environ 9 DPS."
   },
   {
    "items": [
@@ -905,6 +1219,7 @@
    ],
    "specs": [
     "HUNTER 1",
+    "HUNTER 2",
     "HUNTER 3",
     "PALADIN 3",
     "ROGUE 1",
@@ -933,6 +1248,50 @@
    "simulated": true,
    "en": "Its aura adds no damage.",
    "fr": "Son aura n'ajoute aucun dégât."
+  },
+  {
+   "items": [
+    13213
+   ],
+   "specs": [
+    "WARLOCK 3"
+   ],
+   "simulated": true,
+   "en": "Its score is its 10 hit rating alone: about 10 DPS.",
+   "fr": "Son score vient de ses seuls 10 de toucher : environ 10 DPS."
+  },
+  {
+   "items": [
+    13213
+   ],
+   "specs": [
+    "WARLOCK 2"
+   ],
+   "simulated": true,
+   "en": "Its score is its 10 hit rating alone: about 10 DPS.",
+   "fr": "Son score vient de ses seuls 10 de toucher : environ 10 DPS."
+  },
+  {
+   "items": [
+    13213
+   ],
+   "specs": [
+    "SHAMAN 1"
+   ],
+   "simulated": true,
+   "en": "Its score is its 10 hit rating alone: about 9 DPS.",
+   "fr": "Son score vient de ses seuls 10 de toucher : environ 9 DPS."
+  },
+  {
+   "items": [
+    13213
+   ],
+   "specs": [
+    "PRIEST 3"
+   ],
+   "simulated": true,
+   "en": "Its score is its 10 hit rating alone: about 6 DPS.",
+   "fr": "Son score vient de ses seuls 10 de toucher : environ 6 DPS."
   },
   {
    "items": [

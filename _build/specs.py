@@ -57,11 +57,17 @@ import re
 from pathlib import Path
 from dataclasses import dataclass, field
 
+import shockadin
+
 TANK = "Tank"
 EFFECTS_FILE = Path(__file__).resolve().parent / "corrections" / "effects.json"
+CLASSES_FILE = EFFECTS_FILE.with_name("classes.json")
+HUNTER = "HUNTER"
+RANGED_ATTACK_POWER = 39
 STRENGTH, AGILITY, STAMINA, INTELLECT, SPIRIT = 4, 3, 7, 5, 6
 DEFENSE, DODGE, HIT, CRIT, HASTE, EXPERTISE, ATTACK_POWER, RANGED_ATTACK_POWER = 12, 13, 31, 32, 36, 37, 38, 39
 SPELL_DAMAGE, SPELL_POWER, BLOCK_VALUE = 42, 45, 48
+HEALING, MANA_PER_5, HOLY_DAMAGE = 41, 43, 84
 
 ATTACK_POWER_PER_STRENGTH = 2
 BLOCK_VALUE_PER_STRENGTH = 0.05
@@ -95,6 +101,9 @@ class Report:
     completed: dict = field(default_factory=dict)   # (class, spec, profile) -> {stat: the weight it was given}
     bear: tuple | None = None                       # (class, spec) of ForeverDB's Feral Combat
     cat: tuple | None = None                        # (class, spec) of the cat added next to it
+    shockadin: tuple | None = None                  # (class, spec) of the Shockadin added to the Paladin
+    ranged: dict = field(default_factory=dict)      # (class, spec, profile) of a Hunter -> the weight its attack
+    #                                                 power got, the ranged attack power's added
     unbound: dict = field(default_factory=dict)     # (class, spec) of a tank -> the other classes' enchants its
     #                                                 lists no longer hold
 
@@ -108,6 +117,16 @@ def load_effects(path=EFFECTS_FILE) -> dict:
             for item_id, record in json.loads(path.read_text(encoding="utf-8")).get("items", {}).items()}
 
 
+def load_effects_but(path=EFFECTS_FILE) -> dict:
+    """{item id: the specs of its roles it is not for, by slug} ("but" in corrections/effects.json): Hand of Justice
+    is a melee damage dealer's and adds 5 DPS to a Shockadin, measured, where its best trinkets add 9."""
+    path = Path(path)
+    if not path.exists():
+        return {}
+    return {int(item_id): frozenset(record["but"])
+            for item_id, record in json.loads(path.read_text(encoding="utf-8")).get("items", {}).items() if record.get("but")}
+
+
 def load_placed(path=EFFECTS_FILE) -> dict:
     """{item id: the item it follows}: the items placed by hand in the lists ranked by simulation (the "placed" part of
     corrections/effects.json)."""
@@ -118,11 +137,41 @@ def load_placed(path=EFFECTS_FILE) -> dict:
             for item_id, record in json.loads(path.read_text(encoding="utf-8")).get("placed", {}).items()}
 
 
+def load_class_only(path=CLASSES_FILE) -> dict:
+    """item -> the classes that can wear it, for the pooled items the game restricts to some (corrections/classes.json).
+    ForeverDB sorts its pools by armor type: without this a Rogue's tier piece is listed for a Druid."""
+    path = Path(path)
+    if not path.exists():
+        return {}
+    items = json.loads(path.read_text(encoding="utf-8"))["items"]
+    return {int(item_id): frozenset(entry["classes"]) for item_id, entry in items.items()}
+
+
+def load_class_unknown(path=CLASSES_FILE) -> frozenset:
+    """The pooled items whose classes are not known: the simulator's database does not have them (classes.json)."""
+    path = Path(path)
+    return frozenset(json.loads(path.read_text(encoding="utf-8")).get("unknown", ())) if path.exists() else frozenset()
+
+
+def ranged_power(db, report: Report) -> None:
+    """Count an item's attack power as the ranged attack power it also is, in a Hunter's weights. ForeverDB weighs
+    "ranged attack power" and gives "attack power" next to nothing, or nothing: a Drake Fang Talisman's 56 scored 0."""
+    for number, spec in db.classes.get(HUNTER, {}).get("specs", {}).items():
+        for profile, weights in spec["weights"].items():
+            if weights.get(RANGED_ATTACK_POWER):
+                melee = spec.setdefault("melee_power", {})   # ForeverDB's own weight, kept: applying twice adds once
+                melee.setdefault(profile, weights.get(ATTACK_POWER, 0))
+                weights[ATTACK_POWER] = round(melee[profile] + weights[RANGED_ATTACK_POWER], 3)
+                report.ranged[HUNTER, number, profile] = weights[ATTACK_POWER]
+
+
 def unvalued(db, cls: str, spec: int) -> frozenset:
     """The items a spec's weights cannot value: most of their worth to its role is an effect (db.effects). In a list
     ranked on the weights they get no score and stand level with the best picks (ladders.full_ladder)."""
-    role = db.classes[cls]["specs"][spec]["role"]
-    return frozenset(item_id for item_id, roles in (getattr(db, "effects", None) or {}).items() if role in roles)
+    role, slug = db.classes[cls]["specs"][spec]["role"], db.classes[cls]["specs"][spec].get("slug")
+    left_out = getattr(db, "effects_but", None) or {}   # item -> the specs of the role it is not for, by slug
+    return frozenset(item_id for item_id, roles in (getattr(db, "effects", None) or {}).items()
+                     if role in roles and slug not in left_out.get(item_id, ()))
 
 
 def complete(weights: dict, cls: str) -> dict:
@@ -181,7 +230,10 @@ def apply(db) -> Report:
     PvP weights are the completed ones, and its enchants are ranked among the ones a Druid can have."""
     report = Report()
     db.effects = load_effects()
+    db.effects_but = load_effects_but()
     db.placed = load_placed()
+    db.class_only = load_class_only()
+    db.class_unknown = load_class_unknown()
     own_enchants(db, report)
     for cls, data in db.classes.items():
         for number, spec in data["specs"].items():
@@ -192,7 +244,11 @@ def apply(db) -> Report:
                 if added:
                     weights.update(added)
                     report.completed[cls, number, profile] = added
+    ranged_power(db, report)
     split_feral(db, report)
+    paladin = db.classes.get(shockadin.PALADIN, {}).get("specs", {})
+    if not any(spec.get("slug") == shockadin.SLUG for spec in paladin.values()):   # applying twice adds it once
+        report.shockadin = shockadin.add(db, enchants_for)
     return report
 
 
@@ -207,6 +263,13 @@ def order(db, cls: str) -> list:
 _STAT_WORDS = {"agility": AGILITY, "strength": STRENGTH, "stamina": STAMINA, "intellect": INTELLECT, "spirit": SPIRIT,
                "attack power": ATTACK_POWER, "ranged attack power": RANGED_ATTACK_POWER, "defense": DEFENSE,
                "armor": "armor", "spell power": SPELL_POWER}
+# What a caster's enchants add to those: a school's damage, the damage and the healing of spells written apart or
+# together ("+18 Spell Damage and Healing" is one stat, spell power: named before the sentence is cut at its
+# "and"), and mana regeneration ("5 mana per 5 sec.").
+_SPELL_WORDS = {"holy damage": HOLY_DAMAGE, "damage spells": SPELL_DAMAGE, "healing spells": HEALING,
+                "healing": HEALING, "mana regen": MANA_PER_5}
+_TOGETHER = ("spell damage and healing", "healing and spell damage")
+_MANA = re.compile(r"^(\d+) mana per 5 sec$")
 _PERCENT_WORDS = {"dodge": DODGE, "hit": HIT, "critical strike": CRIT, "critical strike chance": CRIT, "haste": HASTE}
 _ALL_STATS = (STRENGTH, AGILITY, STAMINA, INTELLECT, SPIRIT)
 _AMOUNT_LAST = re.compile(r"^([a-z ]+?) \+(\d+)(%?)$")     # "Agility +15", "Dodge +1%"
@@ -218,8 +281,15 @@ def enchant_stats(effect: str) -> dict | None:
     of it is not a plain stat this module knows (Crusader, Living Stats, weapon damage, attack speed): what such an
     enchant is worth to a spec is not known here, and it is left out rather than guessed."""
     stats = {}
-    for part in re.split(r"/|,| and ", effect.lower()):
+    effect = effect.lower()
+    for words in _TOGETHER:
+        effect = effect.replace(words, "spell power")
+    for part in re.split(r"/|,| and ", effect):
         part = part.strip().rstrip(".")
+        mana = _MANA.match(part)
+        if mana:
+            stats[MANA_PER_5] = stats.get(MANA_PER_5, 0) + int(mana.group(1))
+            continue
         found = _AMOUNT_LAST.match(part)
         if found:
             name, amount, percent = found.group(1), int(found.group(2)), found.group(3)
@@ -234,6 +304,8 @@ def enchant_stats(effect: str) -> dict | None:
             keys, per_point = (_PERCENT_WORDS[name],), RATING_PER_PERCENT[_PERCENT_WORDS[name]]
         elif not percent and name in _STAT_WORDS:
             keys, per_point = (_STAT_WORDS[name],), 1
+        elif not percent and name in _SPELL_WORDS:
+            keys, per_point = (_SPELL_WORDS[name],), 1
         else:
             return None
         for key in keys:

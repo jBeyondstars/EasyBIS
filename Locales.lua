@@ -795,6 +795,7 @@ local SPECS_frFR = {
     ["Holy"] = "Sacré",
     ["Protection"] = "Protection",
     ["Retribution"] = "Vindicte",
+    ["Shockadin"] = "Shockadin",   -- the players' own word, in French too
     ["Discipline"] = "Discipline",
     ["Shadow"] = "Ombre",
     ["Assassination"] = "Assassinat",

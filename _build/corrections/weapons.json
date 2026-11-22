@@ -1032,6 +1032,7 @@
     "22317": {"build": "1.60.1.70938", "damage": 0, "date": "2026-11-15", "dps": 40, "from": "tooltip", "healing": 0, "name": "Lefty's Brass Knuckle"},
     "22322": {"build": "1.60.1.70938", "damage": 0, "date": "2026-11-15", "dps": 40.31, "from": "tooltip", "healing": 0, "name": "The Jaw Breaker"},
     "22332": {"build": "1.60.1.70959", "damage": 72, "date": "2026-11-18", "dps": 27, "from": "tooltip", "healing": 72, "name": "Blade of Necromancy"},
+    "22335": {"build": "", "damage": 72, "date": "2026-11-21", "dps": 40.0, "from": "tooltip, read on a picture the author sent", "healing": 72, "name": "Lord Valthalak's Staff of Command"},
     "22348": {"build": "1.60.1.70938", "damage": 0, "date": "2026-11-15", "dps": 55.66, "from": "tooltip", "healing": 0, "name": "Doomulus Prime"},
     "22377": {"build": "1.60.1.70938", "damage": 0, "date": "2026-11-15", "dps": 42.5, "from": "tooltip", "healing": 0, "name": "The Thunderwood Poker"},
     "22378": {"build": "1.60.1.70938", "damage": 0, "date": "2026-11-15", "dps": 42.68, "from": "tooltip", "healing": 0, "name": "Ravenholdt Slicer"},

@@ -1,6 +1,16 @@
 {
  "about": "Items whose worth to a role is mostly an effect the stat weights cannot count (a proc, a use), kept by hand. In the lists of that role that are ranked on the weights, such an item gets no score: it is shown level with the best picks, flag x. See _build/specs.py (unvalued). Add an item only when what its effect is worth is not known; one whose effect is measured belongs to a simulated list. placed: items the stat weights give nothing (their worth is all effect), so that no list would hold them: in a list ranked by simulation, such an item is put right after the item named in \"after\", with no score, and is never a best pick; a list that does not hold that item does not hold it either.",
  "items": {
+  "11815": {
+   "name": "Hand of Justice",
+   "roles": [
+    "Melee DPS"
+   ],
+   "effect": "Chance on hit of an extra attack; the score counts its 12 attack power alone, which left it out of every PvP list.",
+   "but": [
+    "shockadin"
+   ]
+  },
   "13966": {
    "name": "Mark of Tyranny",
    "roles": [

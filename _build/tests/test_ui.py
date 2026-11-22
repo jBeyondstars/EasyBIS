@@ -608,6 +608,36 @@ class WindowTest(unittest.TestCase):
         open_dropdown(french, french.ns.Browser.window.spec.button)
         self.assertEqual(texts(find(french.stub.menu, "Druid"))[1:3], ["Farouche (Félin)", "Farouche (Ours)"])
 
+    def test_the_spec_menu_lists_the_shockadin(self):
+        """The Paladin's fourth list, a spec ForeverDB's data does not have, is picked and remembered like the others."""
+        game = self.open(cls="PALADIN")
+        window, state = game.ns.Browser.window, game.ns.Browser.state
+        self.assertEqual((state["class"], state.spec), ("PALADIN", 1), "a Paladin still opens on its first spec")
+        open_dropdown(game, window.spec.button)
+        menu = game.stub.menu
+        self.assertEqual(texts(find(menu, "Paladin")), ["Holy", "Protection", "Retribution", "Shockadin"])
+        for name in ("Warrior", "Shaman", "Mage"):
+            self.assertEqual(len(texts(find(menu, name))), 3, name)
+        find(find(menu, "Paladin"), "Shockadin").pick()
+        self.assertEqual((state["class"], state.spec), ("PALADIN", 4))
+        self.assertEqual(label(window.spec), "Paladin Shockadin")
+        self.assertEqual(self.shown_rows(game), self.reference_rows("PALADIN", 4, "pve"))
+        saved = game.lua.globals().EasyBISCharDB
+        self.assertEqual((saved["class"], saved.spec, saved.list), ("PALADIN", 4, "pve"))
+
+        again = self.open(cls="PALADIN", saved="EasyBISCharDB = { class = 'PALADIN', spec = 4, list = 'pvp' }")
+        state = again.ns.Browser.state
+        self.assertEqual((state["class"], state.spec, state.list), ("PALADIN", 4, "pvp"))
+        self.assertEqual(self.shown_rows(again), self.reference_rows("PALADIN", 4, "pvp"))
+        # what a player had chosen before the list existed is still the same list
+        for spec, name in ((1, "Holy"), (2, "Protection"), (3, "Retribution")):
+            before = self.open(cls="PALADIN", saved=f"EasyBISCharDB = {{ class = 'PALADIN', spec = {spec}, list = 'pve' }}")
+            self.assertEqual(before.ns.Browser.state.spec, spec)
+            self.assertEqual(label(before.ns.Browser.window.spec), f"Paladin {name}")
+        # and a class of three specs has no fourth to restore
+        other = self.open(cls="MAGE", saved="EasyBISCharDB = { class = 'MAGE', spec = 4, list = 'pve' }")
+        self.assertEqual(other.ns.Browser.state.spec, 1)
+
     def test_list_buttons(self):
         game = self.open(saved=ENHANCEMENT)
         window = game.ns.Browser.window

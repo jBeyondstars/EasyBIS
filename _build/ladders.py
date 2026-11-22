@@ -70,6 +70,11 @@ SPELL_DAMAGE = (42, 45, 84, 85, 86, 87, 88, 89)
 HIT = 31
 INV_SHIELD, INV_ONE_HAND, INV_OFF_HAND, INV_TWO_HAND, INV_THROWN, INV_HELD = 14, 13, 22, 17, 25, 23
 RANGED_INV = (15, 25, 26)
+MELEE = "Melee DPS"
+DAGGER = "2.15"   # item class.subclass
+# The specs whose PvP list holds daggers only, by slot: Mutilate asks for one in each hand (WoWSims Forever,
+# sim/rogue/talents_assassination.go). Backstab and Ambush ask for one in the main hand, and Subtlety has Hemorrhage.
+DAGGERS_ONLY = {("ROGUE", "assassination"): ("main", "off")}
 
 # What the addon can filter on at run time: faction, items with no known source, items seen in Forever only,
 # the content phase the list stops at, whether the PvP rewards count in the list (the addon's default:
@@ -137,15 +142,16 @@ class Entry:
         return self.seen or not seen_only
 
 
-def score(db, item_id: int, weights: dict, cls: str) -> float | None:
-    """ForeverDB's ns.gearScore for an item id."""
+def score(db, item_id: int, weights: dict, cls: str, melee: bool = False) -> float | None:
+    """ForeverDB's ns.gearScore for an item id. melee: a Hunter's melee weapon counts its damage per second as well
+    (ForeverDB counts a Hunter's ranged weapon only, which leaves a Survival Hunter's main hand to its stats)."""
     gear = db.gear.get(item_id)
     if gear is None:
         return None
     stats = gear["stats"]
     total = sum(weights[stat] * value for stat, value in stats.items() if stat in weights)
     ranged = gear["inv"] in RANGED_INV
-    if gear["dps"] > 0 and "dps" in weights and ranged == (cls == "HUNTER"):
+    if gear["dps"] > 0 and "dps" in weights and (ranged == (cls == "HUNTER") or (melee and not ranged)):
         total += weights["dps"] * gear["dps"]
     elif gear["wand"] and gear["dps"] and "wand" in weights:
         total += weights["wand"] * gear["dps"]
@@ -207,15 +213,28 @@ def full_ladder(db, cls: str, spec: int, mode: str, slot: str, level: int | None
     # The specs a simulator ranked (simulated.py). The site's rule and other levels stay on the weights.
     ranked = simulated.ranking(db, cls, spec, mode, slot) if rank_rewards and level == db.meta["cap"] else None
     placed = getattr(db, "placed", None) or {}   # the items put by hand after another one (corrections/effects.json)
+    class_only = getattr(db, "class_only", None) or {}   # the classes of an item the game restricts (corrections/classes.json)
+    ours = rank_rewards and level == db.meta["cap"]   # Easy BIS's own list, not the site's rule nor a leveling one
+    # In a PvP list, which no simulator ranks: a Survival Hunter fights in melee, so its weapon's damage counts, and
+    # an Assassination Rogue's Mutilate asks for a dagger in each hand.
+    melee = ours and mode == "pvp" and hunter and spec_def["role"] == MELEE
+    daggers = ours and mode == "pvp" and slot in DAGGERS_ONLY.get((cls, spec_def.get("slug")), ())
+    # What the weights cannot value (specs.unvalued) is listed whatever they give it: it stands level with the best.
+    level_ids = specs.unvalued(db, cls, spec) if ours and ranked is None else frozenset()
 
     entries, seen_ids, weighed = [], set(), {}
     for pool in dict(SLOTS)[slot]:
-        for item_id, item_level in data["pools"].get(pool, ()):
+        # A spec that is not ForeverDB's may have candidates of its own next to the class's (shockadin.borrowed).
+        for item_id, item_level in (*data["pools"].get(pool, ()), *spec_def.get("pools", {}).get(pool, ())):
             if item_level > level or item_id in seen_ids:
                 continue
             seen_ids.add(item_id)
             gear, item = db.gear.get(item_id), db.items.get(item_id)
             if gear is None or item is None:
+                continue
+            if cls not in class_only.get(item_id, (cls,)):
+                continue   # another class's piece: ForeverDB pools by armor type
+            if daggers and gear["kind"] != DAGGER:
                 continue
             stats = gear["stats"]
             if not _fits_style(pool, gear["inv"], spec_def["style"], dual_wields):
@@ -229,12 +248,12 @@ def full_ladder(db, cls: str, spec: int, mode: str, slot: str, level: int | None
             sourced = bool(item["groups"] & groups)
             if not sourced and "u" not in item["groups"]:
                 continue
-            value = score(db, item_id, weights, cls) or 0.0
+            value = score(db, item_id, weights, cls, melee) or 0.0
             armour_only = gear["armor"] > 0 and not gear["dps"] and not stats
             # A list ranked by simulation also holds what the weights give nothing and the simulator measures: a
             # trinket that is all proc, a weapon a Hunter only holds. The weights say what to list only where they rank.
             measured = ranked is not None and (ranked.scores.get(item_id, 0) > 0 or item_id in placed)
-            if not (value >= min_score or (value > 0 and armour_only) or measured):
+            if not (value >= min_score or (value > 0 and armour_only) or measured or item_id in level_ids):
                 continue
             flags = item["flags"]
             weighed[item_id] = value

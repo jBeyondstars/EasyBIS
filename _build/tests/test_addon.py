@@ -232,7 +232,9 @@ class AddonTest(unittest.TestCase):
                             self.assertEqual(other, expected["other"].get(slot, []),
                                              f"{token} {spec} {mode} {slot} {flt}: the other weapon style")
                             checked += 1
-        self.assertEqual(checked, len(ladders.FILTERS) * 28 * 2 * 15)   # ForeverDB's 27 specs and the Feral cat
+        specs = sum(len(self.kept[token]) for token in CLASSES)
+        self.assertEqual(specs, 29, "ForeverDB's 27, the Feral cat and the Paladin's Shockadin")
+        self.assertEqual(checked, len(ladders.FILTERS) * specs * 2 * 15)
         self.assertEqual(len(ladders.FILTERS), 2 * 2 * 2 * len(phases.PHASES) * 2 * len(ladders.RANK_CAPS))
         # a filter that does not say counts the PvP rewards, as the lists did before the option
         silent = game.lua.table(side="a", unsourced=False, seenOnly=False, phase=phases.CURRENT)
@@ -723,7 +725,8 @@ class AddonTest(unittest.TestCase):
                 per_class.setdefault(token, {}).setdefault(spec, {})
                 per_class[token][spec][mode] = per_class[token][spec].get(mode, False) or bis
             for token, specs in per_class.items():
-                if len(specs) == 3 and len({tuple(sorted(status.items())) for status in specs.values()}) == 1:
+                if (len(specs) == len(self.db.classes[token]["specs"])
+                        and len({tuple(sorted(status.items())) for status in specs.values()}) == 1):
                     found = (item_id, token)
                     break
             if found:
@@ -901,7 +904,59 @@ class AddonTest(unittest.TestCase):
         main = next(line for line in mage.slash("list 2") if "Main hand" in line)
         self.assertEqual(main.count("["), 1 + ladders.ALTERNATIVES + 1 + ladders.ALTERNATIVES, main)
         self.assertIn("PvP", game.slash("list 2 pvp")[0])
-        self.assertIn("no spec number 7", game.slash("list 7")[0])
+        self.assertEqual(game.slash("list 7"), ["Easy BIS: Your class has no spec number 7. Its specs: 1 Elemental, "
+                                                "2 Enhancement, 3 Restoration."])
+
+    def test_the_paladin_has_a_shockadin_list(self):
+        """A fourth list, for a way of playing ForeverDB's data has no spec for (_build/shockadin.py)."""
+        game = Game(cls="PALADIN")
+        specs = [(spec.index, spec.name, spec.role, spec.style) for spec in game.ns.Ladders.Specs("PALADIN").values()]
+        self.assertEqual(specs, [(1, "Holy", "Healer", "any"), (2, "Protection", "Tank", "shield"),
+                                 (3, "Retribution", "Melee DPS", "2h"), (4, "Shockadin", "Melee DPS", "2h")])
+        self.assertEqual(game.ns.Index.SpecCount("PALADIN"), 4)
+        self.assertEqual(game.ns.Index.SpecName("PALADIN", 4), "Shockadin")
+        for mode in ladders.MODES:
+            flt = for_list(default_filter(), mode)
+            slots = game.ns.Ladders.For("PALADIN", 4, mode)
+            self.assertTrue(slots.twoHand, mode)
+            self.assertEqual(len(slots.off.best), 0, mode)
+            for slot, _ in ladders.SLOTS:
+                visible = [entry for entry in self.kept["PALADIN"][4][mode][slot] if entry.passes(flt)]
+                best, _ = ladders.picks(slot, visible)
+                self.assertEqual([pick.id for pick in slots[slot].best.values()],
+                                 [entry.shown("a") for entry in best], f"{mode} {slot}")
+            # its PvE list is ranked by simulation (WoWSims Forever's Holy Shock build), its PvP list on the weights
+            self.assertEqual(game.ns.Ladders.Measured("PALADIN", 4, mode) is not None, mode == "pve", mode)
+
+        chat = game.slash("list 4")
+        self.assertEqual(chat[0], "Easy BIS: Paladin Shockadin, Level 60 PvE:")
+        self.assertEqual(len(chat), 1 + 15)
+        self.assertIn("two-hander", next(line for line in chat if "Off hand" in line))
+        self.assertEqual(game.slash("list 4 pvp")[0], "Easy BIS: Paladin Shockadin, Level 60 PvP:")
+        self.assertEqual(game.slash("list 3")[0], "Easy BIS: Paladin Retribution, Level 60 PvE:")
+        self.assertEqual(game.slash("list 5"), ["Easy BIS: Your class has no spec number 5. Its specs: 1 Holy, "
+                                                "2 Protection, 3 Retribution, 4 Shockadin."])
+        french = Game(cls="PALADIN", locale="frFR")
+        self.assertIn("Paladin Shockadin", french.slash("list 4")[0])
+        self.assertIn("1 Sacré, 2 Protection, 3 Vindicte, 4 Shockadin", french.slash("list 5")[0])
+
+    def test_a_tooltip_names_the_shockadin(self):
+        """An item only the Shockadin lists among the Paladin's specs is said to be wanted by it."""
+        flt = default_filter()
+        wanted = {}
+        for spec, modes in self.kept["PALADIN"].items():
+            for mode, slots in modes.items():
+                for slot, entries in slots.items():
+                    visible = [entry for entry in entries if entry.passes(for_list(flt, mode))]
+                    best, others = ladders.picks(slot, visible)
+                    for entry in best + others:
+                        wanted.setdefault(entry.shown("a"), set()).add(spec)
+        item = next((item for item, specs in sorted(wanted.items()) if specs == {4}), None)
+        self.assertIsNotNone(item, "no item is the Shockadin's alone")
+        lines = Game(cls="PALADIN").lines(item)
+        paladin = [left for left, _ in lines if "Paladin" in left]
+        self.assertEqual(len(paladin), 1, paladin)
+        self.assertTrue(paladin[0].endswith("Paladin Shockadin"), paladin[0])
 
     # -- reputations ---------------------------------------------------------------------------
 
@@ -1441,8 +1496,14 @@ class ConsumablesTest(unittest.TestCase):
         self.assertEqual(list(self.game.ns.Consumables.CATEGORIES.values()), list(consumable_lists.CATEGORIES))
         self.assertEqual(self.game.ns.Consumables.PER_CATEGORY, consumable_lists.PER_CATEGORY)
 
+    def specs(self) -> list:
+        """(class, spec) of every list: ForeverDB's three specs a class, and the ones the lists add."""
+        return [(token, spec) for token in CLASSES for spec in sorted(self.lists[token])]
+
     def test_the_lists_are_the_generators(self):
-        for token, spec, mode, phase in product(CLASSES, (1, 2, 3), consumable_lists.MODES, phases.PHASES):
+        self.assertEqual(self.specs(), [(token, spec) for token in CLASSES for spec in sorted(self.db.classes[token]["specs"])])
+        self.assertIn(("PALADIN", 4), self.specs(), "the Shockadin has its consumables")
+        for (token, spec), mode, phase in product(self.specs(), consumable_lists.MODES, phases.PHASES):
             groups = self.groups(token, spec, mode, phase)
             for category, shelf in self.lists[token][spec][mode].items():
                 with self.subTest(token=token, spec=spec, mode=mode, phase=phase, category=category):
@@ -1459,7 +1520,7 @@ class ConsumablesTest(unittest.TestCase):
         self.assertEqual([entry.twin for entry in ranked], [None, True, None, True, None, True])
 
     def test_every_spec_is_listed_in_both_lists(self):
-        for token, spec, mode in product(CLASSES, (1, 2, 3), consumable_lists.MODES):
+        for (token, spec), mode in product(self.specs(), consumable_lists.MODES):
             groups = self.groups(token, spec, mode, phases.CURRENT)
             self.assertLessEqual({"flask", "elixir", "food", "scroll", "combat", "healing", "bandage", "situational"},
                                  set(groups), (token, spec, mode))

@@ -11,8 +11,9 @@ items the game does not have. Then it gives the items that have no source in
 the data the one read in QuestieDB (corrections.fill), and checks the drops
 that are not confirmed against the ones counted in Forever (corrections.confirm),
 and writes what the vendors ask in a currency (corrections.price). It notes which dungeon each quest
-is done in (runs.quest_places). Last, it completes the tanks' weights and adds the Feral Druid's cat next to
-ForeverDB's bear (specs.apply). So the build and the tests rank the same database; load(..., corrected=False)
+is done in (runs.quest_places). Last, it completes the tanks' weights and adds the specs ForeverDB's data does not
+have, the Feral Druid's cat next to its bear and the Paladin's Shockadin (specs.apply). So the build and the tests
+rank the same database; load(..., corrected=False)
 is ForeverDB's data as published.
 """
 from __future__ import annotations
@@ -90,7 +91,8 @@ class Database:
         self.header = ""        # the credit line every data file starts with
         self.meta = {}          # version, build, cap
         self.classes = {}       # token -> {"specs": {index: spec}, "pools": {pool: [(id, level)]}, "min": {profile: n}};
-        #                         a class specs.apply added a spec to also has "order", the specs as the addon lists them
+        #                         a class specs.apply added a spec to also has "order", the specs as the addon lists them;
+        #                         a spec that is not ForeverDB's (specs.apply) also has "added"
         self.gear = {}          # id -> {"inv", "kind": "item class.subclass", "req": required level,
         #                                "stats": {stat: value}, "dps", "armor", "wand"}
         self.items = {}         # id -> {"name", "groups", "flags", "side", "twin", "limit", "sources"}; a piece
