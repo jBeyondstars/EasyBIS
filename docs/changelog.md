@@ -8,6 +8,7 @@
 
 - **Arms Warrior PvP.** Two-handed weapons now account for the base damage of a Mortal Strike in a six-second window. At level 60 with the pre-raid, rank-6 filters, Arcanite Reaper moves from 11th to 3rd. Blade of Hanna moves from 4th to 45th.
 - **Tanks.** Shields now include their intrinsic block value as well as any explicit equip bonus.
+- **Item rankings.** Items with an unscored effect show “Situational”. “Tied” is reserved for matching scores.
 - **Protection Paladin PvE trinkets.** The Lion Horn of Stormwind now counts its armor proc. Mark of Tyranny ranks above Smotts’ Compass because it gives the same 1% dodge and adds a maximum-health cooldown.
 - **Hunter and Rogue.** Hunter ranged attacks benefit from attack power and ranged hit. The Survival PvP list accounts for melee weapon damage. Assassination’s PvP weapon recommendations use daggers for Mutilate.
 - **Warlock.** Lapidis Tankard lost the DPS credited to drinking its beverage in combat. For Destruction, Sandstorm Cover edges ahead of Glowing Thresher Cape.

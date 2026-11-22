@@ -138,10 +138,10 @@ class AddonTest(unittest.TestCase):
         for slot, entries in visible.items():
             best, alternatives = ladders.picks(slot, entries, count)
             out[slot] = ([e.shown(side) for e in best], [e.shown(side) for e in alternatives])
-            # an alternative that scores exactly as a best pick is its equal; a placed one has no score of its own;
-            # one whose effect the weights cannot count (level) is shown as the best picks' equal
+            # Only equal, comparable scores count as a tie.
             out["ties"][slot] = {e.shown(side) for e in alternatives
-                                 if e.level or (not e.placed and any(e.stored == b.stored for b in best))}
+                                 if not e.unscored and not e.estimated and any(
+                                     not b.unscored and not b.estimated and e.stored == b.stored for b in best)}
         shown = 1 + count
         out["other"] = {"main": [e.shown(side) for e in other_main[:shown]],
                         "off": [e.shown(side) for e in other_off[:shown]]}
@@ -413,8 +413,8 @@ class AddonTest(unittest.TestCase):
         self.assertEqual(french.ns.SpecName("Feral (Cat)"), "Farouche (Félin)")
         self.assertEqual(french.ns.SpecName("Feral (Bear)"), "Farouche (Ours)")
 
-    def test_an_item_worth_its_effect_is_the_equal_of_the_best_picks(self):
-        """Arena Grand Master in a Protection Paladin's trinkets: flag x, no score, tied, never a best pick."""
+    def test_an_unmeasured_effect_stays_a_situational_alternative(self):
+        """Arena Grand Master in a Protection Paladin's trinkets: flag x, no score, no measured tie."""
         horn, stabilizer, arena, mark, compass = 14557, 272440, 19024, 13966, 4130
         game = Game(cls="PALADIN", saved="EasyBISDB = { altCount = 6 }")
         ladders_ = game.ns.Ladders
@@ -426,14 +426,15 @@ class AddonTest(unittest.TestCase):
         self.assertNotIn(compass, [pick.id for pick in trinkets.best.values()])
         self.assertTrue(ladders_.HasFlag(first.entry, "x"))
         self.assertTrue(ladders_.Unscored(first.entry))
-        self.assertTrue(ladders_.IsTie(trinkets, first))
+        self.assertFalse(ladders_.IsTie(trinkets, first))
         state = game.lua.table_from({"class": "PALADIN", "spec": 2, "list": "pve"})
         rows = [row for row in game.ns.Rows.Items(state, True)[0].values() if row.kind == "item" and row.id == arena]
         self.assertEqual(len(rows), 1)
-        self.assertTrue(rows[0].level and rows[0].tie)
+        self.assertTrue(rows[0].level)
+        self.assertFalse(rows[0].tie)
         self.assertIsNone(rows[0].gap)
         self.assertIsNone(rows[0].ratio)
-        self.assertIn(("<classicon-paladin> Paladin Protection", "BIS PvE"), game.lines(arena), "a best pick's equal")
+        self.assertNotIn(("<classicon-paladin> Paladin Protection", "BIS PvE"), game.lines(arena))
 
     def test_a_tooltip_names_the_specs_in_the_order_they_are_listed(self):
         game = Game(cls="DRUID")

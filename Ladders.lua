@@ -52,8 +52,7 @@ end
 -- flags: s seen in Forever, n new in Forever, u no known source, U unique, t two-hander, r random bonus,
 -- p a PvP reward, v a Premier piece (sold for honor, even when the data gives it no source), e placed from a
 -- close spec's simulation: its score is a stand-in, never shown, and it is never a best pick (Ladders.Lead); g
--- x most of its worth is an effect the stat weights cannot count: no score of its own, it is shown level with the
--- best picks and is never one itself;
+-- x an effect the stat weights cannot count: a situational alternative without a score;
 -- ranked by simulation on a score that is no full measure: it keeps its rank, and no score is shown for it; a
 -- digit is the content phase the item needs (entry.phase, 0 without one)
 function Ladders.HasFlag(entry, letter)
@@ -218,12 +217,15 @@ end
 
 -- An alternative that scores exactly as one of the best picks is its equal, not a second choice.
 -- picks: a slot of Compute's result. A placed item has no score of its own: it is nobody's equal. One whose effect
--- the weights cannot count (flag x) is shown level with the best picks: their equal, whatever its stand-in score.
+-- the weights cannot count (flag x) has no measured score either.
+local function HasComparableScore(entry)
+    return not Ladders.Unscored(entry) and not Ladders.HasFlag(entry, "g")
+end
+
 function Ladders.IsTie(picks, pick)
-    if Ladders.HasFlag(pick.entry, "e") then return false end
-    if Ladders.HasFlag(pick.entry, "x") then return true end
+    if not HasComparableScore(pick.entry) then return false end
     for _, best in ipairs(picks.best) do
-        if pick.entry.score10 == best.entry.score10 then return true end
+        if HasComparableScore(best.entry) and pick.entry.score10 == best.entry.score10 then return true end
     end
     return false
 end

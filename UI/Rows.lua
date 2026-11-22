@@ -17,7 +17,7 @@ What the window lists, as plain tables: the frames only draw them.
                    estimated  true for an alternative whose score is no full measure (flag g): it keeps its
                             place, and has no gap and no ratio, so the window shows nothing for its score
                    level    true for an item whose effect the weights cannot count (flag x): no score of its
-                            own, so no gap and no ratio; it is a tie of the best picks
+                            own, so it has no gap, ratio or measured tie
                    placed   true for an item the data placed from a close spec's simulation (flag e): no
                             score of its own, so no gap and no ratio either
                { kind = "note", slot, text }   a line of plain text between rows
@@ -124,7 +124,7 @@ function Rows.Items(state, withAlts)
                     if ns.Ladders.HasFlag(pick.entry, "e") then
                         Add(slot, pick.id, { bis = false, placed = true })
                     elseif ns.Ladders.HasFlag(pick.entry, "x") then
-                        Add(slot, pick.id, { bis = false, tie = true, level = true })
+                        Add(slot, pick.id, { bis = false, level = true })
                     elseif ns.Ladders.HasFlag(pick.entry, "g") then
                         Add(slot, pick.id, { bis = false, estimated = true })
                     else
@@ -142,7 +142,7 @@ function Rows.Items(state, withAlts)
                     if ns.Ladders.HasFlag(pick.entry, "e") then
                         Add(slot, pick.id, { bis = false, other = true, placed = true })
                     elseif ns.Ladders.HasFlag(pick.entry, "x") then
-                        Add(slot, pick.id, { bis = false, other = true, tie = true, level = true })
+                        Add(slot, pick.id, { bis = false, other = true, level = true })
                     elseif ns.Ladders.HasFlag(pick.entry, "g") then
                         Add(slot, pick.id, { bis = false, other = true, estimated = true })
                     else
@@ -214,7 +214,7 @@ local SHEET = {
 local function Ties(picks, rank)
     local pick, ties = picks.best[rank], {}
     local second = picks.best[2]
-    if rank == 1 and second and second.entry.score10 == pick.entry.score10 then return ties end
+    if rank == 1 and second and ns.Ladders.IsTie({ best = { pick } }, second) then return ties end
     for _, alt in ipairs(picks.alts) do
         if ns.Ladders.IsTie({ best = { pick } }, alt) then ties[#ties + 1] = alt.id end
     end
