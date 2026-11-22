@@ -23,9 +23,11 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 import corrections
+import raid_sources
 import runs
 import simulated
 import specs
+import verified_gear
 
 DATA_FILES = ("GearFinder.lua", "Gear.lua", "GearSources.lua", "Enhance.lua", "Meta.lua")
 # What the Consumables tab reads. A build of the gear lists does without them: see Database.consumables.
@@ -141,6 +143,8 @@ def load(data_dir, corrected: bool = True) -> Database:
         corrections.assign_sides(db)
         corrections.pair_basin_mail_shoulders(db)
         corrections.assign_reward_sides(db)
+        raid_sources.apply(db)
+        verified_gear.apply(db)
         db.quest_places = runs.quest_places(db, runs.load_quests())
         db.specs = specs.apply(db)
         db.simulated = simulated.load() if simulated.IN_USE else simulated.Reading()

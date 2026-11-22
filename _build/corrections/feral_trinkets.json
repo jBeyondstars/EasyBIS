@@ -1,0 +1,737 @@
+{
+ "about": "Feral Cat PvE, maintained in Cat Form from pull to finish. Single-trinket substitutions from two empty trinkets. Tested forced-use and passive modes where applicable; impossible buttons are held, and uses are counted. Faction-legal, no rank rewards in the references; original raid buffs, debuffs and cat talents retained. Delta versus empty converted using +40 AP per faction.",
+ "wowsims": "07648faf129cd82f99f4dd9e63b015f59f8ec811",
+ "date": "2026-11-22",
+ "reference": {
+  "protocol": "docs/audit-forever/protocole-felin-permanent-07648faf.zip",
+  "seed": 1402487,
+  "duration_seconds": 180,
+  "variation_seconds": 5,
+  "pool_primary": 86,
+  "pool_actual": 94,
+  "native": 93,
+  "refined": 0,
+  "fingers": [
+   272408,
+   17713
+  ],
+  "pvp_rewards_equipped": false,
+  "starting_trinkets": [
+   0,
+   0
+  ],
+  "iterations": 2000,
+  "cat_uptime_fraction": 1,
+  "buffered_buttons_requiring_form_exit": [
+   273643,
+   274152,
+   274641,
+   276337,
+   280065,
+   284231
+  ]
+ },
+ "calibration_ap": 40,
+ "calibration": {
+  "a": [
+   8.998249127370347,
+   0.006623049066859622,
+   2000
+  ],
+  "h": [
+   8.874720424946199,
+   0.006636575822967329,
+   2000
+  ]
+ },
+ "estimated": [
+  18951,
+  274152,
+  274641,
+  275009,
+  276337,
+  280074,
+  286556,
+  286646
+ ],
+ "candidates": [
+  {
+   "item": 19406,
+   "weighted_candidate": true,
+   "trials": [
+    [
+     19406,
+     "a",
+     19.9731,
+     0.629857,
+     2000
+    ],
+    [
+     19406,
+     "h",
+     20.387202,
+     0.637017,
+     2000
+    ]
+   ]
+  },
+  {
+   "item": 23041,
+   "weighted_candidate": true,
+   "trials": [
+    [
+     23041,
+     "a",
+     23.922224,
+     0.729509,
+     2000
+    ],
+    [
+     23041,
+     "h",
+     22.897844,
+     0.701111,
+     2000
+    ]
+   ]
+  },
+  {
+   "item": 23001,
+   "weighted_candidate": true,
+   "trials": [
+    [
+     23001,
+     "a",
+     12.083692,
+     0.318881,
+     2000
+    ],
+    [
+     23001,
+     "h",
+     12.868073,
+     0.340302,
+     2000
+    ]
+   ]
+  },
+  {
+   "item": 22954,
+   "weighted_candidate": true,
+   "trials": [
+    [
+     22954,
+     "a",
+     13.723192,
+     0.733421,
+     2000
+    ],
+    [
+     22954,
+     "h",
+     11.687624,
+     0.6986,
+     2000
+    ]
+   ]
+  },
+  {
+   "item": 19379,
+   "weighted_candidate": true,
+   "trials": [
+    [
+     19379,
+     "a",
+     7.221964,
+     0.624954,
+     2000
+    ],
+    [
+     19379,
+     "h",
+     7.800362,
+     0.631788,
+     2000
+    ]
+   ]
+  },
+  {
+   "item": 280065,
+   "weighted_candidate": true,
+   "trials": [
+    [
+     280065,
+     "a",
+     7.648512,
+     0.00563,
+     2000
+    ],
+    [
+     280065,
+     "h",
+     7.543512,
+     0.005641,
+     2000
+    ]
+   ]
+  },
+  {
+   "item": 280060,
+   "weighted_candidate": true,
+   "trials": [
+    [
+     280060,
+     "a",
+     7.725929,
+     0.597377,
+     2000
+    ],
+    [
+     280060,
+     "h",
+     8.625612,
+     0.588598,
+     2000
+    ]
+   ]
+  },
+  {
+   "item": 272437,
+   "weighted_candidate": true,
+   "trials": [
+    [
+     272437,
+     "a",
+     4.010777,
+     0.60318,
+     2000
+    ],
+    [
+     272437,
+     "h",
+     3.997557,
+     0.589715,
+     2000
+    ]
+   ]
+  },
+  {
+   "item": 13213,
+   "weighted_candidate": true,
+   "trials": [
+    [
+     13213,
+     "a",
+     3.475449,
+     0.600588,
+     2000
+    ],
+    [
+     13213,
+     "h",
+     3.747689,
+     0.579777,
+     2000
+    ]
+   ]
+  },
+  {
+   "item": 280074,
+   "weighted_candidate": true,
+   "trials": [
+    [
+     280074,
+     "a",
+     6.80074,
+     0.622317,
+     2000
+    ],
+    [
+     280074,
+     "h",
+     6.8927,
+     0.567389,
+     2000
+    ]
+   ]
+  },
+  {
+   "item": 249469,
+   "weighted_candidate": true,
+   "trials": [
+    [
+     249469,
+     "a",
+     3.558154,
+     0.585185,
+     2000
+    ],
+    [
+     249469,
+     "h",
+     3.824425,
+     0.56185,
+     2000
+    ]
+   ]
+  },
+  {
+   "item": 276337,
+   "weighted_candidate": true,
+   "trials": [
+    [
+     276337,
+     "a",
+     4.049212,
+     0.00298,
+     2000
+    ],
+    [
+     276337,
+     "h",
+     3.993624,
+     0.002986,
+     2000
+    ]
+   ]
+  },
+  {
+   "item": 286556,
+   "weighted_candidate": true,
+   "trials": [
+    [
+     286556,
+     "a",
+     3.5993,
+     0.002649,
+     2000
+    ],
+    [
+     286556,
+     "h",
+     3.549888,
+     0.002655,
+     2000
+    ]
+   ]
+  },
+  {
+   "item": 19120,
+   "weighted_candidate": true,
+   "trials": [
+    [
+     19120,
+     "h",
+     5.409608,
+     0.543158,
+     2000
+    ]
+   ]
+  },
+  {
+   "item": 270275,
+   "weighted_candidate": true,
+   "trials": [
+    [
+     270275,
+     "a",
+     5.560792,
+     0.539671,
+     2000
+    ],
+    [
+     270275,
+     "h",
+     5.409608,
+     0.543158,
+     2000
+    ]
+   ]
+  },
+  {
+   "item": 270225,
+   "weighted_candidate": true,
+   "trials": [
+    [
+     270225,
+     "a",
+     2.934292,
+     0.173568,
+     2000
+    ],
+    [
+     270225,
+     "h",
+     3.292017,
+     0.163925,
+     2000
+    ]
+   ]
+  },
+  {
+   "item": 270276,
+   "weighted_candidate": true,
+   "trials": [
+    [
+     270276,
+     "a",
+     2.934292,
+     0.173568,
+     2000
+    ],
+    [
+     270276,
+     "h",
+     3.292017,
+     0.163925,
+     2000
+    ]
+   ]
+  },
+  {
+   "item": 275009,
+   "weighted_candidate": true,
+   "trials": [
+    [
+     275009,
+     "a",
+     3.149387,
+     0.002318,
+     2000
+    ],
+    [
+     275009,
+     "h",
+     3.106152,
+     0.002323,
+     2000
+    ]
+   ]
+  },
+  {
+   "item": 11815,
+   "weighted_candidate": true,
+   "trials": [
+    [
+     11815,
+     "a",
+     5.044212,
+     0.707575,
+     2000
+    ],
+    [
+     11815,
+     "h",
+     5.188561,
+     0.702264,
+     2000
+    ]
+   ]
+  },
+  {
+   "item": 22321,
+   "weighted_candidate": false,
+   "trials": [
+    [
+     22321,
+     "a",
+     6.977045,
+     0.710907,
+     2000
+    ],
+    [
+     22321,
+     "h",
+     7.58338,
+     0.707457,
+     2000
+    ]
+   ]
+  },
+  {
+   "item": 286646,
+   "weighted_candidate": true,
+   "trials": [
+    [
+     286646,
+     "a",
+     2.699475,
+     0.001987,
+     2000
+    ],
+    [
+     286646,
+     "h",
+     2.662416,
+     0.001991,
+     2000
+    ]
+   ]
+  },
+  {
+   "item": 744,
+   "weighted_candidate": false,
+   "trials": [
+    [
+     744,
+     "a",
+     2.889399,
+     0.581776,
+     2000
+    ]
+   ]
+  },
+  {
+   "item": 1713,
+   "weighted_candidate": false,
+   "trials": [
+    [
+     1713,
+     "a",
+     2.534242,
+     0.604167,
+     2000
+    ],
+    [
+     1713,
+     "h",
+     3.150397,
+     0.585967,
+     2000
+    ]
+   ]
+  },
+  {
+   "item": 10659,
+   "weighted_candidate": false,
+   "trials": [
+    [
+     10659,
+     "a",
+     3.643638,
+     0.62093,
+     2000
+    ],
+    [
+     10659,
+     "h",
+     3.668049,
+     0.58246,
+     2000
+    ]
+   ]
+  },
+  {
+   "item": 11832,
+   "weighted_candidate": false,
+   "trials": [
+    [
+     11832,
+     "a",
+     2.965842,
+     0.617709,
+     2000
+    ],
+    [
+     11832,
+     "h",
+     3.579915,
+     0.580184,
+     2000
+    ]
+   ]
+  },
+  {
+   "item": 18371,
+   "weighted_candidate": false,
+   "trials": [
+    [
+     18371,
+     "a",
+     3.643638,
+     0.62093,
+     2000
+    ],
+    [
+     18371,
+     "h",
+     3.668049,
+     0.58246,
+     2000
+    ]
+   ]
+  },
+  {
+   "item": 18951,
+   "weighted_candidate": false,
+   "trials": [
+    [
+     18951,
+     "a",
+     2.663377,
+     0.589941,
+     2000
+    ],
+    [
+     18951,
+     "h",
+     2.854722,
+     0.578172,
+     2000
+    ]
+   ]
+  },
+  {
+   "item": 23027,
+   "weighted_candidate": false,
+   "trials": [
+    [
+     23027,
+     "a",
+     4.048557,
+     0.605554,
+     2000
+    ],
+    [
+     23027,
+     "h",
+     4.003908,
+     0.586705,
+     2000
+    ]
+   ]
+  },
+  {
+   "item": 249470,
+   "weighted_candidate": false,
+   "trials": [
+    [
+     249470,
+     "a",
+     3.106433,
+     0.003146,
+     2000
+    ],
+    [
+     249470,
+     "h",
+     3.064857,
+     0.003137,
+     2000
+    ]
+   ]
+  },
+  {
+   "item": 271903,
+   "weighted_candidate": false,
+   "trials": [
+    [
+     271903,
+     "a",
+     2.804511,
+     0.611963,
+     2000
+    ]
+   ]
+  },
+  {
+   "item": 271905,
+   "weighted_candidate": false,
+   "trials": [
+    [
+     271905,
+     "a",
+     2.399523,
+     0.598509,
+     2000
+    ]
+   ]
+  },
+  {
+   "item": 272059,
+   "weighted_candidate": false,
+   "trials": [
+    [
+     272059,
+     "h",
+     1.76935,
+     0.562334,
+     2000
+    ]
+   ]
+  },
+  {
+   "item": 272061,
+   "weighted_candidate": false,
+   "trials": [
+    [
+     272061,
+     "h",
+     3.453242,
+     0.579837,
+     2000
+    ]
+   ]
+  },
+  {
+   "item": 274152,
+   "weighted_candidate": false,
+   "trials": [
+    [
+     274152,
+     "a",
+     2.629056,
+     0.590038,
+     2000
+    ],
+    [
+     274152,
+     "h",
+     1.641737,
+     0.544487,
+     2000
+    ]
+   ]
+  },
+  {
+   "item": 274641,
+   "weighted_candidate": false,
+   "trials": [
+    [
+     274641,
+     "a",
+     3.643638,
+     0.62093,
+     2000
+    ],
+    [
+     274641,
+     "h",
+     3.668049,
+     0.58246,
+     2000
+    ]
+   ]
+  },
+  {
+   "item": 280071,
+   "weighted_candidate": false,
+   "trials": [
+    [
+     280071,
+     "a",
+     2.18957,
+     0.714371,
+     2000
+    ],
+    [
+     280071,
+     "h",
+     1.929272,
+     0.693892,
+     2000
+    ]
+   ]
+  }
+ ]
+}

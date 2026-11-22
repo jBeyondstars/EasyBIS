@@ -1,6 +1,276 @@
 {
- "about": "A few words on rankings that surprise, shown by a mark on the item's row (see _build/notes.py). items: the item ids the note is for. specs: the specs it shows for, as CLASS N (left out: every spec). slot: the slot it shows in (left out: any). simulated: true when it speaks of the simulation, and shows only in a list ranked by it. en, fr: the text in each language. Of the notes of an item, the first that fits a row is shown. list: pve or pvp when the note applies only to that mode.",
+ "about": "A few words on rankings that surprise, shown by a mark on the item's row (see _build/notes.py). items: the item ids the note is for. specs: the specs it shows for, as CLASS N (left out: every spec). slot: the slot it shows in (left out: any). simulated: true when it speaks of the simulation, and shows only in a list ranked by it. en, fr: the text in each language. Of the notes of an item, the first that fits a row is shown. Effect values use the archived WoWSims Forever profile or the updated faction-specific controls documented in docs/audit-forever.",
  "notes": [
+  {"items": [13964], "specs": ["PRIEST 3"], "list": "pve", "slot": "main", "en": "With Obsidian Bauble equipped, Witchblade edges out Mastersmith’s Hammer on the tested Shadow sets.", "fr": "Avec le Globe d’obsidienne en main gauche, Witchblade devance de peu Mastersmith’s Hammer sur les tenues Ombre testées."},
+  {"items": [13314], "specs": ["MAGE 1"], "list": "pve", "slot": "chest", "en": "Its 20 Intellect and extra spell power put it ahead of Robes of Dark Summons on the tested Arcane sets.", "fr": "Ses 20 d’Intelligence et sa puissance des sorts supérieure la placent devant Robes of Dark Summons sur les tenues Arcane testées."},
+  {"items": [11662], "specs": ["MAGE 2"], "list": "pve", "slot": "waist", "en": "On the tested Fire sets, 1% hit beats the 7 extra spell power on Magician’s Cord.", "fr": "Sur les tenues Feu testées, son 1 % de toucher l’emporte sur les 7 de puissance des sorts en plus de Magician’s Cord."},
+  {"items": [12632], "specs": ["SHAMAN 1"], "list": "pve", "slot": "hands", "en": "On the tested sets, 1% hit outweighs the 5 extra spell power on Hands of Power.", "fr": "Sur les tenues testées, leur 1 % de toucher l’emporte sur les 5 de puissance des sorts en plus de Hands of Power."},
+  {"items": [22240], "specs": ["SHAMAN 1"], "list": "pve", "slot": "feet", "en": "Their 1% hit edges out Waterspout Boots on the tested sets despite 11 less spell power.", "fr": "Sur les tenues testées, leur 1 % de toucher les place devant Waterspout Boots malgré 11 de puissance des sorts en moins."},
+  {"items": [226930], "specs": ["MAGE 3"], "list": "pve", "slot": "hands", "en": "Their 1% hit puts them ahead of Sandworm Skin Gloves on the tested Frost sets.", "fr": "Leur 1 % de toucher les place devant Sandworm Skin Gloves sur les tenues Givre testées."},
+  {"items": [280057], "specs": ["WARLOCK 2"], "list": "pve", "slot": "chest", "en": "Their 1.8% hit puts them ahead of Alanna’s Embrace on the tested Demonology sets.", "fr": "Leur 1,8 % de toucher les place devant Alanna’s Embrace sur les tenues Démonologie testées."},
+  {"items": [272414], "specs": ["PALADIN 4"], "list": "pve", "slot": "back", "en": "Its 1% hit keeps it competitive with Hide of the Wild despite having no spell power.", "fr": "Son 1 % de toucher lui permet de rivaliser avec Hide of the Wild malgré l’absence de puissance des sorts."},
+  {"items": [13404], "specs": ["DRUID 1"], "list": "pve", "slot": "head", "en": "Its 2% hit keeps it close to Crimson Felt Hat despite giving up 30 spell power.", "fr": "Son 2 % de toucher lui permet de rivaliser avec Crimson Felt Hat malgré ses 30 de puissance des sorts en moins."},
+  {"items": [271955, 271956, 272105, 272106], "specs": ["WARRIOR 1"], "list": "pve", "slot": "shoulder", "en": "The 27 Agility adds 1.35% melee crit before buffs, putting leather and mail ahead of plate.", "fr": "Les 27 d’Agilité ajoutent 1,35 % de critique en mêlée avant buffs, ce qui place le cuir et les mailles devant les plaques."},
+  {"items": [271959, 272108], "specs": ["WARRIOR 1"], "list": "pve", "slot": "shoulder", "en": "Its 12 Strength trails the 27 Agility shoulders by about 6 DPS on the tested sets.", "fr": "Sur les tenues testées, ses 12 de Force donnent environ 6 DPS de moins que les épaules à 27 d’Agilité."},
+  {"items": [279260], "specs": ["SHAMAN 2"], "list": "pve", "slot": "main", "en": "Its 18 Strength boosts melee and its 28 spell power boosts spells. Brain Hacker is within 1 DPS.", "fr": "Ses 18 de Force renforcent la mêlée et ses 28 de puissance des sorts renforcent les sorts. Brain Hacker est à moins de 1 DPS."},
+  {"items": [12103], "specs": ["MAGE 3"], "list": "pve", "slot": "neck", "en": "Its 1.3% hit helps Frostbolt land. At the hit cap, the 22 spell power on Orb of the Darkmoon wins.", "fr": "Son 1,3 % de toucher réduit les ratés d’Éclair de givre. Au cap, les 22 de puissance des sorts de l’Orbe de Sombrelune l’emportent."},
+  {"items": [22403], "specs": ["PRIEST 3"], "list": "pve", "slot": "neck", "en": "Below the Shadow hit cap, its 1% hit keeps it level with Orb of the Darkmoon.", "fr": "Sous le cap de toucher en Ombre, son 1 % de toucher lui permet de rivaliser avec l’Orbe de Sombrelune."},
+  {"items": [22403], "specs": ["MAGE 3"], "list": "pve", "slot": "neck", "en": "Its 1% hit helps Frostbolt land. At the hit cap, Orb of the Darkmoon pulls ahead.", "fr": "Son 1 % de toucher réduit les ratés d’Éclair de givre. Au cap, l’Orbe de Sombrelune passe devant."},
+  {"items": [226955], "specs": ["PRIEST 3"], "list": "pve", "slot": "shoulder", "en": "Below the Shadow hit cap, its 1% hit rivals the Timbermaw mantle’s 1% crit.", "fr": "Sous le cap de toucher en Ombre, son 1 % de toucher rivalise avec le 1 % de critique du mantelet grumegueule."},
+  {"items": [20685], "specs": ["PRIEST 1", "PRIEST 2"], "list": "pve", "slot": "neck", "en": "Its 8 mana per 5 sec helps on long fights. Animated Chain Necklace gives 9 more healing.", "fr": "Ses 8 mana toutes les 5 s aident sur les combats longs. Animated Chain Necklace donne 9 soins de plus."},
+  {"items": [18327], "specs": ["PRIEST 1", "PRIEST 2"], "list": "pve", "slot": "waist", "en": "Its 6 mana per 5 sec gives it the edge over Wisdom of the Timbermaw on long fights.", "fr": "Ses 6 mana toutes les 5 s lui donnent l’avantage sur Wisdom of the Timbermaw en combat long."},
+  {"items": [274605], "specs": ["PRIEST 1"], "list": "pve", "slot": "waist", "en": "Same Intellect as Whipvine Cord, with 3 less healing and 6 less mana per 5 sec.", "fr": "Même Intelligence que Whipvine Cord, avec 3 soins et 6 mana toutes les 5 s de moins."},
+  {"items": [272437], "specs": ["PALADIN 3"], "list": "pve", "slot": "trinket", "en": "Its expertise reduces boss dodges by 1.1%. With Smolderweb’s Eye equipped, it performs close to HoJ.", "fr": "Son expertise réduit les esquives du boss de 1,1 %. Avec Smolderweb’s Eye équipé, il fait jeu égal avec HoJ sur les tenues testées."},
+  {"items": [11815], "specs": ["DRUID 4"], "list": "pve", "slot": "trinket", "en": "Its 12 attack power and extra attacks still work when you run out of mana.", "fr": "Ses 12 PA et son proc restent utiles même à court de mana."},
+  {"items": [272440], "specs": ["WARRIOR 3"], "list": "pve", "slot": "trinket", "en": "Paired with the Lion Horn, it prevents more damage over 18 minutes. Arena Grand Master wins over 3 minutes.", "fr": "Avec le Cor de Hurlevent, il évite plus de dégâts sur 18 minutes. Le Maître de l’arène passe devant sur 3 minutes."},
+  {"items": [11302], "specs": ["SHAMAN 3"], "list": "pve", "slot": "trinket", "en": "Grants 3 more healing than Second Wind. If you run short on mana, Second Wind restores 630.", "fr": "Donne 3 aux soins de plus que Second Wind. Si tu manques de mana, Second Wind en rend 630."},
+  {"items": [13253], "specs": ["DRUID 1"], "list": "pve", "slot": "hands", "en": "Best confirmed pre-raid drop. If you can get Gloves of the Greatfather, their Nature damage puts them ahead.", "fr": "Meilleur butin pré-raid confirmé. Si tu trouves les Gloves of the Greatfather, leurs dégâts de Nature les placent devant."},
+  {"items": [14136], "specs": ["PRIEST 3"], "list": "pve", "slot": "chest", "en": "Its 40 Shadow damage wins on the Alliance set. With 18 hit, Robes of Dark Summons ties it on the Horde set.", "fr": "Ses 40 dégâts d’Ombre l’emportent sur la tenue Alliance. Avec 18 de toucher, Robes of Dark Summons fait jeu égal sur la tenue Horde."},
+  {"items": [18510], "specs": ["WARLOCK 3"], "list": "pve", "slot": "back", "en": "Its 14 spell damage matches Spritecaster Cape. Both score 13.5 points.", "fr": "Ses 14 dégâts des sorts égalent ceux de Spritecaster Cape. Les deux capes valent 13,5 points."},
+  {"items": [17713], "specs": ["ROGUE 1"], "list": "pve", "slot": "finger", "en": "With Cutthroat’s Signet equipped, it performs within 0.2 DPS of Tarnished Elven Ring in the Horde test.", "fr": "Avec Cutthroat’s Signet, moins de 0,2 DPS la sépare de Tarnished Elven Ring sur la tenue Horde testée."},
+  {"items": [13937, 7713, 20069, 20220], "specs": ["DRUID 1"], "list": "pve", "slot": "main", "simulated": true, "en": "With pre-raid Spellblasting (+65 spell power), the staff beats the one-hand setup. Without it, the setup wins.", "fr": "En pré-raid, le bâton passe devant le duo avec Spellblasting (+65 puissance des sorts). Sans cet enchantement, le duo gagne."},
+  {"items": [18465], "specs": ["ROGUE 1", "ROGUE 2", "ROGUE 3"], "list": "pvp", "en": "Grants 45 extra attack power against humanoids.", "fr": "Donne 45 PA supplémentaires contre les humanoïdes."},
+  {"items": [18484], "specs": ["ROGUE 2", "ROGUE 3"], "list": "pvp", "en": "Grants 30 extra attack power against humanoids.", "fr": "Donne 30 PA supplémentaires contre les humanoïdes."},
+  {"items": [18502], "specs": ["HUNTER 1", "HUNTER 2", "HUNTER 3"], "list": "pvp", "en": "Its 36 attack power against humanoids also applies to ranged attacks.", "fr": "Ses 36 PA contre les humanoïdes s’appliquent aussi aux tirs."},
+  {"items": [18520], "specs": ["HUNTER 1", "HUNTER 2", "HUNTER 3", "PALADIN 3"], "list": "pvp", "en": "Grants 33 extra attack power against humanoids.", "fr": "Donne 33 PA supplémentaires contre les humanoïdes."},
+  {"items": [18694], "specs": ["HUNTER 3", "PALADIN 3"], "list": "pvp", "en": "Grants 18 extra attack power against humanoids.", "fr": "Donne 18 PA supplémentaires contre les humanoïdes."},
+  {"items": [13393], "specs": ["DRUID 4"], "list": "pve", "slot": "main", "en": "The proc grants 53 Strength for 20 seconds, even when the boss is immune to its stun.", "fr": "Le proc donne 53 de Force pendant 20 s, même si le boss est immunisé à son étourdissement."},
+  {"items": [12583], "specs": ["DRUID 4"], "list": "pve", "slot": "main", "en": "Attacks in Cat Form can trigger Fatal Wound.", "fr": "Blessure fatale se déclenche aussi sur les attaques du félin."},
+  {"items": [12583], "specs": ["HUNTER 3"], "list": "pvp", "slot": "main", "en": "Each landed Wing Clip can trigger Fatal Wound in melee.", "fr": "Chaque Coupure d’ailes qui touche peut déclencher Blessure fatale."},
+  {"items": [12583], "specs": ["WARRIOR 1", "PALADIN 3"], "list": "pvp", "slot": "main", "en": "Fatal Wound makes this a strong melee finisher below 25% health.", "fr": "Blessure fatale en fait une bonne arme pour finir une cible sous 25 % de vie."},
+  {"items": [13348], "specs": ["HUNTER 3"], "list": "pvp", "slot": "main", "en": "Wing Clip can trigger the Shadow damage even on a full-health target.", "fr": "Coupure d’ailes peut déclencher les dégâts d’Ombre dès l’ouverture."},
+  {"items": [12583], "specs": ["PALADIN 3"], "list": "pve", "slot": "main", "simulated": true, "en": "Fatal Wound adds about 35 DPS on the pre-raid setup.", "fr": "Blessure fatale apporte environ 35 DPS sur la tenue pré-raid testée."},
+  {
+   "items": [272414],
+   "specs": ["WARRIOR 2"],
+   "list": "pve",
+   "slot": "back",
+   "en": "Its 10 hit and 28 attack power edge out Cape of the Black Baron on both reference sets.",
+   "fr": "Ses 10 de toucher et 28 PA devancent la Cape du baron noir sur les deux tenues testées."
+  },
+  {
+   "items": [22433],
+   "specs": ["WARLOCK 1"],
+   "list": "pve",
+   "slot": "finger",
+   "en": "With Elemental Focus Band, its crit edges out Maiden’s Circle on the Gnome set. The Orc result is too close to call.",
+   "fr": "Avec Elemental Focus Band, son critique devance de peu Maiden’s Circle sur la tenue gnome. Le duel reste indécis chez l’orc."
+  },
+  {
+   "items": [
+    13213
+   ],
+   "list": "pvp",
+   "en": "Removes a Disarm from an ally every 8 minutes.",
+   "fr": "Retire un désarmement à un allié toutes les 8 minutes."
+  },
+  {
+   "items": [
+    20071,
+    20072
+   ],
+   "list": "pvp",
+   "en": "Absorbs 554–678 physical damage for 15 seconds on use.",
+   "fr": "Absorbe 554 à 678 dégâts physiques pendant 15 s à l’activation."
+  },
+  {
+   "items": [
+    11726
+   ],
+   "list": "pvp",
+   "en": "Fear effects have 4% less chance to hit you.",
+   "fr": "Les effets de peur ont 4 % de chances en moins de vous toucher."
+  },
+  {
+   "items": [
+    272455
+   ],
+   "list": "pvp",
+   "en": "Adds 285 absorption to Mana Shield.",
+   "fr": "Ajoute 285 points d’absorption à Bouclier de mana."
+  },
+  {
+   "items": [
+    226831
+   ],
+   "list": "pvp",
+   "en": "Its extra point of stealth makes you harder to detect.",
+   "fr": "Son point de camouflage supplémentaire vous rend plus difficile à repérer."
+  },
+  {
+   "items": [
+    22150,
+    252483,
+    272414
+   ],
+   "specs": [
+    "WARRIOR 1"
+   ],
+   "simulated": true,
+   "en": "The 10 hit rating gains value without Rune of the Guard Captain.",
+   "fr": "Les 10 points de toucher gagnent en valeur sans la Rune du capitaine de la garde."
+  },
+  {
+   "items": [
+    14503,
+    227018,
+    252483,
+    274599
+   ],
+   "specs": [
+    "SHAMAN 2"
+   ],
+   "simulated": true,
+   "en": "Hit is worth more on the Orc set. Dwarves already gain 1% hit from their racial.",
+   "fr": "Le toucher rapporte davantage sur la tenue orque. Le nain gagne déjà 1 % de toucher avec son racial."
+  },
+  {
+   "items": [
+    18408
+   ],
+   "specs": [
+    "WARLOCK 2"
+   ],
+   "simulated": true,
+   "slot": "hands",
+   "en": "The Searing Pain build makes use of all 33 Fire damage.",
+   "fr": "Le build Douleur brûlante profite des 33 points de dégâts de Feu."
+  },
+  {
+   "items": [
+    12783,
+    280021
+   ],
+   "specs": [
+    "HUNTER 2"
+   ],
+   "simulated": true,
+   "slot": "off",
+   "en": "With Shadowblade main hand, Tooth edges out Heartseeker by less than 0.5 DPS.",
+   "fr": "Avec Shadowblade en main droite, Tooth devance Heartseeker de moins de 0,5 DPS."
+  },
+  {
+   "items": [
+    12960,
+    22225
+   ],
+   "en": "The suffix adds resistance to one random school of magic.",
+   "fr": "Le suffixe ajoute une résistance à une école de magie aléatoire."
+  },
+  {
+   "items": [
+    21407
+   ],
+   "en": "Adds 140 attack power in Cat or Bear Form.",
+   "fr": "Confère 140 PA en forme de félin ou d’ours.",
+   "specs": [
+    "DRUID 2",
+    "DRUID 4"
+   ]
+  },
+  {
+   "items": [
+    22632
+   ],
+   "en": "Adds 420 attack power in Cat or Bear Form.",
+   "fr": "Confère 420 PA en forme de félin ou d’ours.",
+   "specs": [
+    "DRUID 2",
+    "DRUID 4"
+   ]
+  },
+  {
+   "items": [
+    271903,
+    272061
+   ],
+   "en": "Restores 5 mana per 5 sec, rising to 15 in forests and grasslands.",
+   "fr": "Rend 5 points de mana par 5 s, et 15 en forêt ou en plaine."
+  },
+  {
+   "items": [
+    271905,
+    272059
+   ],
+   "en": "Restores 3 mana per 5 sec, rising to 9 in forests and grasslands.",
+   "fr": "Rend 3 points de mana par 5 s, et 9 en forêt ou en plaine."
+  },
+  {
+   "items": [
+    19120,
+    270275
+   ],
+   "en": "Its 14 attack power rises to 42 in forests and grasslands.",
+   "fr": "Ses 14 PA passent à 42 en forêt ou en plaine."
+  },
+  {
+   "items": [
+    22631
+   ],
+   "en": "Its 300 healing is supplemented by a 62 healing aura for the party.",
+   "fr": "À ses 300 soins s’ajoute une aura de 62 soins pour le groupe.",
+   "specs": [
+    "PRIEST 1",
+    "PRIEST 2"
+   ]
+  },
+  {
+   "items": [
+    22632
+   ],
+   "en": "Its party aura restores 11 mana per 5 sec on top of its 300 healing.",
+   "fr": "Ses 300 soins s’accompagnent d’une aura de groupe qui rend 11 points de mana par 5 s.",
+   "specs": [
+    "DRUID 3"
+   ]
+  },
+  {
+   "items": [
+    274444,
+    274445
+   ],
+   "slot": "trinket",
+   "list": "pvp",
+   "en": "Breaks movement-impairing effects and loss of control every 5 minutes.",
+   "fr": "Dissipe les entraves au déplacement et les pertes de contrôle toutes les 5 minutes."
+  },
+  {
+   "items": [
+    18371
+   ],
+   "specs": [
+    "DRUID 4"
+   ],
+   "slot": "trinket",
+   "list": "pve",
+   "en": "Its passive mana regen feeds Shifting Power while you stay in Cat Form.",
+   "fr": "Sa régénération de mana alimente Shifting Power en forme de félin."
+  },
+  {"items": [10659], "specs": ["DRUID 4"], "list": "pve", "slot": "trinket", "en": "Its 6 mana per 5 sec feeds Shifting Power. Against demons, it also grants 21 attack power.", "fr": "Ses 6 mana/5 s alimentent Shifting Power. Contre les démons, il donne aussi 21 PA."},
+  {
+   "items": [
+    11832
+   ],
+   "specs": [
+    "DRUID 4"
+   ],
+   "slot": "trinket",
+   "list": "pve",
+   "en": "Its 8 mana per 5 sec lets you use Shifting Power more often for energy.",
+   "fr": "Ses 8 mana/5 s permettent de récupérer plus souvent de l’énergie avec Shifting Power."
+  },
+  {
+   "items": [
+    280060
+   ],
+   "specs": [
+    "DRUID 4"
+   ],
+   "slot": "trinket",
+   "list": "pve",
+   "en": "Shifting Power turns mana from its 11 Spirit into energy in Cat Form. Without it, only its Strength counts against Hand of Justice.",
+   "fr": "Avec Shifting Power, le mana de ses 11 d’Esprit devient de l’énergie en félin. Sans ce sort, seule sa Force compte face à HoJ."
+  },
   {
    "items": [
     14557
@@ -36,8 +306,8 @@
    ],
    "slot": "trinket",
    "list": "pve",
-   "en": "Against a physical boss, the horn’s proc adds about 196 armor on average in Bear Form.",
-   "fr": "Contre un boss physique, le proc du cor vaut environ 196 d’armure en moyenne en forme d’ours."
+   "en": "Against a physical boss, the horn’s proc averages 193 armor in Bear Form.",
+   "fr": "Contre un boss physique, le proc du cor apporte en moyenne 193 d’armure en forme d’ours."
   },
   {
    "items": [
@@ -48,8 +318,8 @@
    ],
    "slot": "trinket",
    "list": "pve",
-   "en": "Against a physical boss, the horn’s proc adds about 174 armor on average.",
-   "fr": "Contre un boss physique, le proc du cor vaut environ 174 d’armure en moyenne."
+   "en": "Against a physical boss, the horn’s proc averages 171 armor.",
+   "fr": "Contre un boss physique, le proc du cor apporte en moyenne 171 d’armure."
   },
   {
    "items": [
@@ -99,6 +369,56 @@
    "list": "pve",
    "en": "Its 30 block value improves Shield Slam threat as well as damage blocked.",
    "fr": "Ses 30 de blocage augmentent aussi la menace de Heurt de bouclier."
+  },
+  {
+   "items": [
+    15411,
+    22340
+   ],
+   "specs": [
+    "HUNTER 1"
+   ],
+   "slot": "neck",
+   "list": "pve",
+   "fr": "La Marque de Fordring passe devant le pendentif lorsque le reste de ton équipement fournit déjà assez de toucher.",
+   "en": "Mark of Fordring beats the pendant when the rest of your gear already supplies enough hit."
+  },
+  {
+   "items": [
+    280021,
+    2163
+   ],
+   "specs": [
+    "HUNTER 1"
+   ],
+   "slot": "off",
+   "list": "pve",
+   "fr": "Avec Ironwood Blade en main droite, la Dent dépasse Shadowblade lorsque le reste de ton équipement fournit déjà assez de toucher.",
+   "en": "With Ironwood Blade in your main hand, Tooth of the Matriarch beats Shadowblade when the rest of your gear supplies enough hit."
+  },
+  {
+   "items": [
+    226881
+   ],
+   "specs": [
+    "HUNTER 1"
+   ],
+   "slot": "feet",
+   "list": "pve",
+   "fr": "Avec assez de toucher ailleurs, le bonus aux dégâts du familier fait passer ces bottes devant.",
+   "en": "With enough hit elsewhere, the pet damage bonus puts these boots ahead of Windreaver Greaves."
+  },
+  {
+   "items": [
+    17721
+   ],
+   "specs": [
+    "DRUID 1"
+   ],
+   "slot": "hands",
+   "list": "pve",
+   "fr": "Leurs 10 dégâts de Nature les placent devant Hands of Power si le patron saisonnier est disponible.",
+   "en": "Their 10 Nature damage puts them ahead of Hands of Power if the seasonal pattern is available."
   },
   {
    "items": [
@@ -163,6 +483,32 @@
   },
   {
    "items": [
+    21522,
+    12590
+   ],
+   "specs": [
+    "ROGUE 3"
+   ],
+   "slot": "off",
+   "simulated": true,
+   "en": "Shadowsong beats Felstriker off hand with Heartseeker main hand. With Felstriker main hand, Distracting Dagger leads.",
+   "fr": "En main gauche, Shadowsong devance Felstriker avec Heartseeker à droite. Avec Felstriker à droite, Distracting Dagger passe devant."
+  },
+  {
+   "items": [
+    22317,
+    280085
+   ],
+   "specs": [
+    "HUNTER 2"
+   ],
+   "slot": "off",
+   "simulated": true,
+   "en": "Lefty beats Tunnelweb with Shadowblade main hand. With Sageblade or Tooth of the Matriarch, the order flips by under 0.5 DPS.",
+   "fr": "Lefty devance Tunnelweb avec Shadowblade en main droite. Avec Sageblade ou Tooth of the Matriarch, l’ordre s’inverse de moins de 0,5 DPS."
+  },
+  {
+   "items": [
     6901,
     274752
    ],
@@ -173,6 +519,198 @@
    "simulated": true,
    "en": "With equal Spirit, Sandstorm Cover gives 4 spell damage against Glowing Thresher Cape’s 3.",
    "fr": "Sandstorm Cover donne 4 dégâts des sorts contre 3 pour Glowing Thresher Cape, à Esprit égal."
+  },
+  {
+   "items": [
+    18375
+   ],
+   "specs": [
+    "HUNTER 2"
+   ],
+   "slot": "wrist",
+   "simulated": true,
+   "en": "Their attack power benefits shots. Marksman Bands gains value when you still need ranged hit.",
+   "fr": "Leur PA profite aux tirs. Marksman Bands gagne surtout en valeur s’il te manque du toucher à distance."
+  },
+  {
+   "items": [
+    18761
+   ],
+   "specs": [
+    "MAGE 1"
+   ],
+   "slot": "ranged",
+   "simulated": true,
+   "en": "Wand of Arcane Potency’s 16 Arcane damage nearly offsets the difference between these wands.",
+   "fr": "Les 16 dégâts des Arcanes de Wand of Arcane Potency compensent presque l’écart entre ces baguettes."
+  },
+  {
+   "items": [
+    13369
+   ],
+   "specs": [
+    "MAGE 2"
+   ],
+   "slot": "feet",
+   "simulated": true,
+   "en": "The test cannot distinguish this item from Sorcerer's Sandals.",
+   "fr": "Le test ne départage pas cet objet et Sorcerer's Sandals."
+  },
+  {
+   "items": [
+    13938
+   ],
+   "specs": [
+    "MAGE 2"
+   ],
+   "slot": "ranged",
+   "simulated": true,
+   "en": "The test cannot distinguish this item from Pyric Caduceus.",
+   "fr": "Le test ne départage pas cet objet et Pyric Caduceus."
+  },
+  {
+   "items": [
+    18307
+   ],
+   "specs": [
+    "MAGE 3"
+   ],
+   "slot": "feet",
+   "simulated": true,
+   "en": "The test cannot distinguish this item from Sorcerer's Sandals.",
+   "fr": "Le test ne départage pas cet objet et Sorcerer's Sandals."
+  },
+  {
+   "items": [
+    19050
+   ],
+   "specs": [
+    "PALADIN 3"
+   ],
+   "slot": "shoulder",
+   "simulated": true,
+   "en": "The extra 27 Agility on Theramore Pauldrons nearly offsets this pair’s other stats.",
+   "fr": "Les 27 d’Agilité de plus des épaules de Theramore compensent presque les autres stats de cette paire."
+  },
+  {
+   "items": [
+    279256
+   ],
+   "specs": [
+    "PALADIN 3"
+   ],
+   "slot": "wrist",
+   "simulated": true,
+   "en": "Vambraces of the Sadist’s extra 14 crit rating makes these bracers a close choice.",
+   "fr": "Les 14 de critique de plus de Vambraces of the Sadist rendent les deux poignets très proches."
+  },
+  {
+   "items": [
+    14146
+   ],
+   "specs": [
+    "PRIEST 3"
+   ],
+   "slot": "hands",
+   "simulated": true,
+   "en": "Their extra 28 crit rating gives them the edge over Virtuous Hands.",
+   "fr": "Leurs 28 de critique supplémentaires leur donnent l’avantage sur Virtuous Hands."
+  },
+  {
+   "items": [
+    18316
+   ],
+   "specs": [
+    "PRIEST 3"
+   ],
+   "slot": "off",
+   "simulated": true,
+   "en": "With the book’s skeleton inactive, 0.5% crit puts the Bauble ahead of Book of the Dead.",
+   "fr": "Quand le squelette du Livre des morts est inactif, le 0,5 % de critique place le globe devant."
+  },
+  {
+   "items": [
+    275981
+   ],
+   "specs": [
+    "SHAMAN 2"
+   ],
+   "slot": "finger",
+   "simulated": true,
+   "en": "Channeler’s Ring’s extra 14 Intellect helps it pull ahead of this ring.",
+   "fr": "Les 14 d’Intelligence de plus de Channeler’s Ring expliquent son avantage sur cet anneau."
+  },
+  {
+   "items": [
+    19050
+   ],
+   "specs": [
+    "WARLOCK 1"
+   ],
+   "slot": "shoulder",
+   "simulated": true,
+   "en": "Felcloth Shoulders’ extra 26 Shadow damage narrows this pair’s lead.",
+   "fr": "Les 26 dégâts d’Ombre supplémentaires des épaules en gangrétoffe réduisent fortement l’avance de cette paire."
+  },
+  {
+   "items": [
+    11822
+   ],
+   "specs": [
+    "WARLOCK 1"
+   ],
+   "slot": "feet",
+   "simulated": true,
+   "en": "Their extra 20 spell damage offsets Black Sandals’ other advantages.",
+   "fr": "Leurs 20 dégâts des sorts supplémentaires compensent les autres avantages de Black Sandals."
+  },
+  {
+   "items": [
+    18316
+   ],
+   "specs": [
+    "WARLOCK 1"
+   ],
+   "slot": "off",
+   "simulated": true,
+   "en": "Spirit of Aquementas’s extra 6 spell damage makes these two off-hands close.",
+   "fr": "Les 6 dégâts des sorts supplémentaires de Spirit of Aquementas rendent ces deux mains gauches proches."
+  },
+  {
+   "items": [
+    18497
+   ],
+   "specs": [
+    "WARLOCK 2"
+   ],
+   "slot": "wrist",
+   "simulated": true,
+   "en": "Their extra 6 spell damage accounts for almost all of their lead over Necropile Cuffs.",
+   "fr": "Leurs 6 dégâts des sorts supplémentaires expliquent presque toute l’avance sur Necropile Cuffs."
+  },
+  {
+   "items": [
+    11822
+   ],
+   "specs": [
+    "WARLOCK 3"
+   ],
+   "slot": "feet",
+   "simulated": true,
+   "en": "Their extra 20 spell damage gives them the edge over Fire Striders.",
+   "fr": "Leurs 20 dégâts des sorts supplémentaires leur donnent l’avantage sur Fire Striders."
+  },
+  {
+   "items": [
+    22384
+   ],
+   "specs": [
+    "WARRIOR 2"
+   ],
+   "slot": "main",
+   "simulated": true,
+   "en": "Persuader hits harder per swing than Ironwood Blade. Fixed stats alone explain about 6 of its 23 DPS lead.",
+   "fr": "Persuader frappe plus fort à chaque coup qu’Ironwood Blade. Ses stats fixes seules expliquent environ 6 des 23 DPS d’avance."
   },
   {
    "items": [
@@ -188,6 +726,177 @@
   },
   {
    "items": [
+    22329,
+    13385
+   ],
+   "specs": [
+    "DRUID 4"
+   ],
+   "slot": "off",
+   "list": "pve",
+   "en": "The scepter’s Spirit restores mana for Shifting Power to convert into energy. With Persuader, the scepter beats the tome.",
+   "fr": "L’Esprit du sceptre rend du mana pour Shifting Power, qui le convertit en énergie. Avec Persuader, le sceptre devance le tome."
+  },
+  {
+   "items": [
+    11626,
+    272414
+   ],
+   "specs": [
+    "DRUID 4"
+   ],
+   "slot": "back",
+   "list": "pve",
+   "en": "Blackveil leads Howler’s Furs by about 2 DPS in the Alliance set. The two cloaks are close in the Horde set.",
+   "fr": "Blackveil devance Howler’s Furs d’environ 2 DPS sur la tenue Alliance. Les deux capes sont très proches côté Horde."
+  },
+  {
+   "items": [
+    280065
+   ],
+   "specs": [
+    "DRUID 4"
+   ],
+   "slot": "trinket",
+   "list": "pve",
+   "en": "Its 34 attack power explains its rank. Using the heal costs DPS in Cat Form.",
+   "fr": "Ses 34 PA expliquent son rang. Activer le soin coûte du DPS en forme de félin."
+  },
+  {
+   "items": [
+    13966
+   ],
+   "specs": [
+    "DRUID 2",
+    "PALADIN 2",
+    "WARRIOR 3"
+   ],
+   "en": "Same dodge as the compass, plus 620 maximum health on demand before a damage spike.",
+   "fr": "Même esquive que la Boussole, plus 620 PV maximum à activer avant un pic de dégâts."
+  },
+  {
+   "items": [
+    14557
+   ],
+   "specs": [
+    "DRUID 2",
+    "PALADIN 2",
+    "WARRIOR 3"
+   ],
+   "en": "Frequent physical hits help keep the horn’s 725 armor buff active on the party.",
+   "fr": "Des coups physiques fréquents aident à maintenir le bonus de 725 d’armure sur le groupe."
+  },
+  {
+   "items": [
+    18531
+   ],
+   "specs": [
+    "DRUID 2"
+   ],
+   "en": "Its 240 armor makes it a defensive weapon. Its weapon DPS also counts in Bear Form on Forever.",
+   "fr": "Ses 240 d’armure en font une arme défensive. Sur Forever, son DPS compte aussi en forme d’ours."
+  },
+  {
+   "items": [
+    250619
+   ],
+   "specs": [
+    "DRUID 4"
+   ],
+   "en": "On Forever, Cat Form attacks also benefit from the weapon’s 53.9 DPS.",
+   "fr": "Sur Forever, les dégâts des pattes profitent aussi des 53,9 DPS de l’arme."
+  },
+  {
+   "items": [
+    280065
+   ],
+   "specs": [
+    "DRUID 4"
+   ],
+   "en": "Its offensive rank comes from the 34 attack power.",
+   "fr": "Son rang offensif vient de ses 34 points de puissance d’attaque."
+  },
+  {
+   "items": [
+    272439
+   ],
+   "specs": [
+    "DRUID 3",
+    "SHAMAN 3",
+    "PALADIN 1"
+   ],
+   "en": "Its 21 healing is permanent. The 72 Spirit bonus lasts only 15 seconds.",
+   "fr": "Ses 21 soins sont permanents. Le bonus de 72 Esprit ne dure que 15 s."
+  },
+  {
+   "items": [
+    11819
+   ],
+   "specs": [
+    "DRUID 3",
+    "SHAMAN 3",
+    "PALADIN 1"
+   ],
+   "en": "The score counts its 15 healing. Its 630 mana on use matters more in long fights.",
+   "fr": "Le score retient ses 15 soins. Ses 630 mana à l’activation gagnent en valeur sur un combat long."
+  },
+  {
+   "items": [
+    18470
+   ],
+   "specs": [
+    "DRUID 3",
+    "DRUID 1"
+   ],
+   "en": "The score excludes the extra 16 Spirit the seal grants in forests and plains.",
+   "fr": "Le score est calculé hors forêt et plaine, où le sceau donne 16 Esprit de plus."
+  },
+  {
+   "items": [
+    18472
+   ],
+   "specs": [
+    "PALADIN 1"
+   ],
+   "en": "In haunted areas the seal also restores 9 mana per 5 seconds on top of its rated healing.",
+   "fr": "En zone hantée, le sceau rend aussi 9 mana toutes les 5 s, en plus des soins pris en compte."
+  },
+  {
+   "items": [
+    22268
+   ],
+   "specs": [
+    "DRUID 1",
+    "SHAMAN 1"
+   ],
+   "simulated": true,
+   "en": "Damaging spells can grant 35 spell damage for 10 seconds, doubled against dragonkin.",
+   "fr": "Ses sorts offensifs peuvent gagner 35 dégâts des sorts pendant 10 s, le double contre les draconiens."
+  },
+  {
+   "items": [
+    13393
+   ],
+   "specs": [
+    "SHAMAN 2",
+    "PALADIN 3"
+   ],
+   "simulated": true,
+   "en": "Its slow swings benefit weapon attacks and can grant 53 Strength for 20 seconds.",
+   "fr": "Ses coups lents profitent à tes techniques et peuvent déclencher 53 Force pendant 20 s."
+  },
+  {
+   "items": [
+    22383
+   ],
+   "specs": [
+    "PALADIN 2"
+   ],
+   "en": "Its 94 spell power increases threat from Holy spells.",
+   "fr": "Ses 94 de puissance des sorts augmentent la menace de tes sorts du Sacré."
+  },
+  {
+   "items": [
     279262
    ],
    "specs": [
@@ -195,6 +904,67 @@
    ],
    "en": "Its 44 block value complements 2,468 armor and 16 Stamina.",
    "fr": "Ses 44 de blocage s’ajoutent aux 2 468 d’armure et aux 16 d’Endurance."
+  },
+  {
+   "items": [
+    944,
+    11748
+   ],
+   "specs": [
+    "WARLOCK 2"
+   ],
+   "simulated": true,
+   "en": "With Fire Brand, Searing Pain benefits from this weapon’s Fire damage.",
+   "fr": "Avec Fire Brand, Douleur brûlante profite du bonus aux dégâts de Feu de cette arme."
+  },
+  {
+   "items": [
+    11819
+   ],
+   "specs": [
+    "PRIEST 1",
+    "PRIEST 2"
+   ],
+   "slot": "trinket",
+   "en": "Its 630 mana on use adds value beyond its healing on longer fights.",
+   "fr": "Ses 630 mana à l’activation s’ajoutent aux soins pris en compte et valent davantage sur un combat long."
+  },
+  {
+   "items": [
+    22268
+   ],
+   "specs": [
+    "PRIEST 3"
+   ],
+   "slot": "trinket",
+   "simulated": true,
+   "en": "Its proc grants 35 spell damage for 10 seconds, doubled against dragonkin.",
+   "fr": "Son proc donne 35 dégâts des sorts pendant 10 s, le double contre les draconiens."
+  },
+  {
+   "items": [
+    18468
+   ],
+   "specs": [
+    "MAGE 1"
+   ],
+   "slot": "trinket",
+   "simulated": true,
+   "en": "Its 21 Arcane damage applies to this rotation’s main spells.",
+   "fr": "Ses 21 dégâts des Arcanes s’appliquent aux sorts principaux de cette rotation."
+  },
+  {
+   "items": [
+    13023
+   ],
+   "specs": [
+    "HUNTER 1",
+    "HUNTER 2"
+   ],
+   "slot": "ranged",
+   "simulated": true,
+   "en": "At 1.80 seconds per shot, this bow triggers Quick Shots more often than the 2.50-speed gun.",
+   "fr": "À 1,80 s par tir, cet arc déclenche Tirs rapides plus souvent que le fusil à 2,50 s."
   },
   {
    "items": [
@@ -209,6 +979,30 @@
   },
   {
    "items": [
+    15063
+   ],
+   "slot": "hands",
+   "specs": [
+    "HUNTER 2"
+   ],
+   "simulated": true,
+   "en": "These gloves complete the 2% hit bonus with Devilsaur Leggings. Without them, Trueaim can take the lead.",
+   "fr": "Ces gants complètent le bonus de 2 % de toucher avec les jambières du diablosaure. Sans elles, Trueaim peut passer devant."
+  },
+  {
+   "items": [
+    13285
+   ],
+   "slot": "main",
+   "specs": [
+    "HUNTER 3"
+   ],
+   "simulated": true,
+   "en": "Its heavy 4.00-speed hits strengthen Raptor Strike, and its proc adds a bleed.",
+   "fr": "Ses gros coups à 4,00 s renforcent Frappe du raptor, et son proc ajoute un saignement."
+  },
+  {
+   "items": [
     252605
    ],
    "specs": [
@@ -217,6 +1011,19 @@
    "simulated": true,
    "en": "The simulated build takes Careful Aim. Its 38 Intellect contributes to melee and ranged attack power.",
    "fr": "Le profil simulé prend Visée minutieuse. Ses 38 d’Intelligence contribuent à la puissance d’attaque en mêlée et à distance."
+  },
+  {
+   "items": [
+    18392
+   ],
+   "specs": [
+    "ROGUE 1",
+    "ROGUE 3"
+   ],
+   "slot": "off",
+   "simulated": true,
+   "en": "At 1.30 seconds per swing this dagger applies off-hand poison more often.",
+   "fr": "À 1,30 s par coup, cette dague applique plus souvent le poison de main gauche."
   },
   {
    "items": [
@@ -231,139 +1038,407 @@
   },
   {
    "items": [
-    15058,
-    21278,
-    15057
+    19024
    ],
    "specs": [
-    "ROGUE 1"
+    "WARRIOR 3",
+    "DRUID 2",
+    "PALADIN 2"
    ],
-   "simulated": true,
-   "en": "The three-piece Stormshroud bonus restores energy, worth about 45 DPS in this set.",
-   "fr": "Le bonus de trois pièces Stormshroud rend de l’énergie, soit environ 45 DPS avec cette tenue."
+   "en": "It matches the compass’s dodge and can also absorb 810–1,350 damage on use.",
+   "fr": "À esquive égale avec la Boussole, son activation absorbe aussi 810 à 1 350 dégâts."
   },
   {
    "items": [
-    15058,
-    21278,
-    15057
+    18348
    ],
    "specs": [
-    "ROGUE 2"
+    "WARRIOR 3",
+    "PALADIN 2"
    ],
-   "simulated": true,
-   "en": "The three-piece Stormshroud bonus restores energy, worth about 27 DPS in this set.",
-   "fr": "Le bonus de trois pièces Stormshroud rend de l’énergie, soit environ 27 DPS avec cette tenue."
+   "slot": "main",
+   "en": "Its proc adds 300 armor and 30 Defense for 10 seconds on top of the weapon’s stats.",
+   "fr": "Le proc ajoute 300 d’armure et 30 de défense pendant 10 s, au-delà des stats de l’arme."
   },
   {
    "items": [
-    15058,
-    21278,
-    15057
+    18473,
+    18715
+   ],
+   "specs": [
+    "HUNTER 1",
+    "HUNTER 2",
+    "HUNTER 3"
+   ],
+   "simulated": true,
+   "en": "The extra attack power applies only against demons.",
+   "fr": "Le bonus de puissance d’attaque s’applique uniquement contre les démons."
+  },
+  {
+   "items": [
+    279910,
+    22314
+   ],
+   "specs": [
+    "HUNTER 1",
+    "HUNTER 2",
+    "HUNTER 3"
+   ],
+   "simulated": true,
+   "en": "The extra attack power applies only against beasts.",
+   "fr": "Le bonus de puissance d’attaque s’applique uniquement contre les bêtes."
+  },
+  {
+   "items": [
+    19406
+   ],
+   "specs": [
+    "WARLOCK 3"
+   ],
+   "simulated": true,
+   "en": "Its 20 hit rating also counts for spells: about 20 DPS.",
+   "fr": "Ses 20 de toucher comptent aussi pour les sorts : environ 20 DPS."
+  },
+  {
+   "items": [
+    19406
+   ],
+   "specs": [
+    "WARLOCK 2"
+   ],
+   "simulated": true,
+   "en": "Its 20 hit rating also counts for spells: about 21 DPS.",
+   "fr": "Ses 20 de toucher comptent aussi pour les sorts : environ 21 DPS."
+  },
+  {
+   "items": [
+    19406
+   ],
+   "specs": [
+    "MAGE 3"
+   ],
+   "simulated": true,
+   "en": "Its 20 hit rating also counts for spells: about 22 DPS.",
+   "fr": "Ses 20 de toucher comptent aussi pour les sorts : environ 22 DPS."
+  },
+  {
+   "items": [
+    19406
+   ],
+   "specs": [
+    "MAGE 2"
+   ],
+   "simulated": true,
+   "en": "Its 20 hit rating also counts for spells: about 23 DPS.",
+   "fr": "Ses 20 de toucher comptent aussi pour les sorts : environ 23 DPS."
+  },
+  {
+   "items": [
+    19406
+   ],
+   "specs": [
+    "MAGE 1"
+   ],
+   "simulated": true,
+   "en": "Its 20 hit rating also counts for spells: about 18 DPS.",
+   "fr": "Ses 20 de toucher comptent aussi pour les sorts : environ 18 DPS."
+  },
+  {
+   "items": [
+    18473,
+    18715
+   ],
+   "en": "Its bonus attack power works only against Demons: it is ranked without it.",
+   "fr": "Sa puissance d'attaque bonus ne vaut que contre les Démons : il est classé sans elle."
+  },
+  {
+   "items": [
+    279910,
+    22314
+   ],
+   "en": "Its bonus attack power works only against Beasts: it is ranked without it.",
+   "fr": "Sa puissance d'attaque bonus ne vaut que contre les Bêtes : il est classé sans elle."
+  },
+  {
+   "items": [
+    16471,
+    23274
+   ],
+   "specs": [
+    "PALADIN 3"
+   ],
+   "simulated": true,
+   "en": "Its effect adds 20 to Judgement of the Crusader's Holy bonus, used by all your seals and Judgements.",
+   "fr": "Son effet ajoute 20 au bonus Sacré de Judgement of the Crusader, utilisé par tous vos sceaux et jugements."
+  },
+  {
+   "items": [
+    271924,
+    272079,
+    271925,
+    272080
+   ],
+   "specs": [
+    "PALADIN 3"
+   ],
+   "simulated": true,
+   "slot": "main",
+   "en": "Its 3.1 speed shrinks each Seal of Command hit: about 30 DPS less than a 3.8 speed axe.",
+   "fr": "Sa vitesse de 3,1 réduit chaque coup de Seal of Command : environ 30 DPS de moins qu'une hache à 3,8."
+  },
+  {
+   "items": [
+    13285
+   ],
+   "specs": [
+    "SHAMAN 2"
+   ],
+   "simulated": true,
+   "slot": "main",
+   "en": "Its proc, Wound, is worth about 25 DPS.",
+   "fr": "Son proc, Wound, vaut environ 25 DPS."
+  },
+  {
+   "items": [
+    13285
+   ],
+   "specs": [
+    "PALADIN 3"
+   ],
+   "simulated": true,
+   "slot": "main",
+   "en": "Its proc, Wound, is worth about 28 DPS.",
+   "fr": "Son proc, Wound, vaut environ 28 DPS."
+  },
+  {
+   "items": [
+    23047
+   ],
+   "specs": [
+    "DRUID 3",
+    "PALADIN 1",
+    "PRIEST 1",
+    "PRIEST 2",
+    "SHAMAN 3"
+   ],
+   "en": "Use: 450 healing for 30 s every 2 min, not counted in its score.",
+   "fr": "Utiliser : 450 de soins pendant 30 s toutes les 2 min, non compté dans son score."
+  },
+  {
+   "items": [
+    23046
+   ],
+   "specs": [
+    "DRUID 3",
+    "PALADIN 1",
+    "PRIEST 1",
+    "PRIEST 2",
+    "SHAMAN 3"
+   ],
+   "en": "Use: 130 spell power for 20 s every 2 min, not counted in its score.",
+   "fr": "Utiliser : 130 de puissance des sorts pendant 20 s toutes les 2 min, non compté dans son score."
+  },
+  {
+   "items": [
+    19019
    ],
    "specs": [
     "ROGUE 3"
    ],
    "simulated": true,
-   "en": "The three-piece Stormshroud bonus restores energy, worth about 31 DPS in this set.",
-   "fr": "Le bonus de trois pièces Stormshroud rend de l’énergie, soit environ 31 DPS avec cette tenue."
+   "slot": "off",
+   "en": "Its proc, Nature damage on hit, is worth about 40 DPS in the off hand.",
+   "fr": "Son proc, des dégâts de Nature au toucher, vaut environ 40 DPS en main gauche."
   },
   {
    "items": [
-    272591,
-    272838,
-    278468,
-    278469
+    17111
    ],
    "specs": [
-    "WARRIOR 3",
-    "PALADIN 2"
-   ],
-   "en": "The score uses the tooltip’s 44 block value. The uncorrected simulator counts 58.",
-   "fr": "Le score utilise les 44 de blocage de l’infobulle. Le simulateur brut en compte 58."
-  },
-  {
-   "items": [
-    18825,
-    18826
-   ],
-   "specs": [
-    "WARRIOR 3",
-    "PALADIN 2"
-   ],
-   "en": "The score uses the tooltip’s 55 block value. The uncorrected simulator counts 73.",
-   "fr": "Le score utilise les 55 de blocage de l’infobulle. Le simulateur brut en compte 73."
-  },
-  {
-   "items": [
-    19321
-   ],
-   "specs": [
-    "WARRIOR 3",
-    "PALADIN 2"
-   ],
-   "en": "The score uses the tooltip’s 66 block value. The uncorrected simulator counts 79.",
-   "fr": "Le score utilise les 66 de blocage de l’infobulle. Le simulateur brut en compte 79."
-  },
-  {
-   "items": [
-    21269
-   ],
-   "specs": [
-    "WARRIOR 3",
-    "PALADIN 2"
-   ],
-   "en": "The score uses the tooltip’s 70 block value. The uncorrected simulator counts 88.",
-   "fr": "Le score utilise les 70 de blocage de l’infobulle. Le simulateur brut en compte 88."
-  },
-  {
-   "items": [
-    21610
-   ],
-   "specs": [
-    "WARRIOR 3",
-    "PALADIN 2"
-   ],
-   "en": "The score uses the tooltip’s 57 block value. The uncorrected simulator counts 75.",
-   "fr": "Le score utilise les 57 de blocage de l’infobulle. Le simulateur brut en compte 75."
-  },
-  {
-   "items": [
-    22198
-   ],
-   "specs": [
-    "WARRIOR 3",
-    "PALADIN 2"
-   ],
-   "en": "The score uses the tooltip’s 48 block value. The uncorrected simulator counts 63.",
-   "fr": "Le score utilise les 48 de blocage de l’infobulle. Le simulateur brut en compte 63."
-  },
-  {
-   "items": [
-    18168
-   ],
-   "specs": [
-    "WARRIOR 3",
-    "PALADIN 2"
-   ],
-   "en": "Its discharge on block generates threat on nearby enemies.",
-   "fr": "Ses décharges au blocage génèrent de la menace sur les ennemis proches."
-  },
-  {
-   "items": [
-    2801,
-    9449,
-    13060,
-    14541,
-    22333
-   ],
-   "specs": [
-    "PALADIN 4"
+    "ROGUE 2"
    ],
    "simulated": true,
-   "slot": "main",
-   "en": "Seal of Righteousness adds 12% of spell power to every swing: at 2.0 speed, about 44 DPS more than at 3.3.",
-   "fr": "Seal of Righteousness ajoute 12 % de la puissance des sorts à chaque coup : à 2,0 de vitesse, environ 44 DPS de plus qu'à 3,3."
+   "en": "Its proc, Fire Strike, is worth about 4 DPS.",
+   "fr": "Son proc, Fire Strike, vaut environ 4 DPS."
+  },
+  {
+   "items": [
+    17111
+   ],
+   "specs": [
+    "ROGUE 1"
+   ],
+   "simulated": true,
+   "en": "Its proc, Fire Strike, is worth about 5 DPS.",
+   "fr": "Son proc, Fire Strike, vaut environ 5 DPS."
+  },
+  {
+   "items": [
+    867
+   ],
+   "specs": [
+    "ROGUE 1"
+   ],
+   "simulated": true,
+   "en": "Its proc, a Smite of Holy damage, is worth about 8 DPS.",
+   "fr": "Son proc, un Smite de dégâts du Sacré, vaut environ 8 DPS."
+  },
+  {
+   "items": [
+    22954
+   ],
+   "specs": [
+    "SHAMAN 1"
+   ],
+   "simulated": true,
+   "en": "Its Use effect speeds up attacks only, not spell casts: it adds nothing here.",
+   "fr": "Son effet Utiliser n'accélère que les attaques, pas les sorts : il n'ajoute rien ici."
+  },
+  {
+   "items": [
+    19577
+   ],
+   "specs": [
+    "WARRIOR 2"
+   ],
+   "simulated": true,
+   "en": "Hamstring costs 2 less rage, spent on more Heroic Strikes: about 4 DPS.",
+   "fr": "Hamstring coûte 2 de rage en moins, dépensés en Heroic Strike : environ 4 DPS."
+  },
+  {
+   "items": [
+    15066,
+    15067
+   ],
+   "specs": [
+    "DRUID 1",
+    "SHAMAN 1"
+   ],
+   "simulated": true,
+   "en": "Worn with the other Ironfeather piece: the set's 20 spell power counts in this score.",
+   "fr": "Portée avec l'autre pièce Ironfeather : les 20 de puissance des sorts du set comptent dans ce score."
+  },
+  {
+   "items": [
+    19991,
+    19992
+   ],
+   "specs": [
+    "HUNTER 1",
+    "HUNTER 2",
+    "HUNTER 3"
+   ],
+   "simulated": true,
+   "en": "Its Use effect is not simulated: it is ranked without it.",
+   "fr": "Son effet Utiliser n'est pas simulé : il est classé sans lui."
+  },
+  {
+   "items": [
+    22268
+   ],
+   "specs": [
+    "WARLOCK 2"
+   ],
+   "simulated": true,
+   "en": "Its proc, more spell damage when a harmful spell lands, is worth about 9 DPS.",
+   "fr": "Son proc, des dégâts des sorts en plus quand un sort offensif touche, vaut environ 9 DPS."
+  },
+  {
+   "items": [
+    22268
+   ],
+   "specs": [
+    "MAGE 3"
+   ],
+   "simulated": true,
+   "en": "Its proc, more spell damage when a harmful spell lands, is worth about 6 DPS.",
+   "fr": "Son proc, des dégâts des sorts en plus quand un sort offensif touche, vaut environ 6 DPS."
+  },
+  {
+   "items": [
+    22268
+   ],
+   "specs": [
+    "MAGE 2"
+   ],
+   "simulated": true,
+   "en": "Its proc, more spell damage when a harmful spell lands, is worth about 8 DPS.",
+   "fr": "Son proc, des dégâts des sorts en plus quand un sort offensif touche, vaut environ 8 DPS."
+  },
+  {
+   "items": [
+    22268
+   ],
+   "specs": [
+    "MAGE 1"
+   ],
+   "simulated": true,
+   "en": "Its proc, more spell damage when a harmful spell lands, is worth about 9 DPS.",
+   "fr": "Son proc, des dégâts des sorts en plus quand un sort offensif touche, vaut environ 9 DPS."
+  },
+  {
+   "items": [
+    280065
+   ],
+   "specs": [
+    "HUNTER 1",
+    "HUNTER 2",
+    "HUNTER 3",
+    "PALADIN 3",
+    "ROGUE 1",
+    "ROGUE 2",
+    "ROGUE 3",
+    "SHAMAN 2",
+    "WARRIOR 1",
+    "WARRIOR 2"
+   ],
+   "simulated": true,
+   "en": "Its Use effect, a heal, counts for no damage: its score is its 34 attack power.",
+   "fr": "Son effet Utiliser, un soin, ne compte pour aucun dégât : son score vient de ses 34 de puissance d'attaque."
+  },
+  {
+   "items": [
+    13213
+   ],
+   "specs": [
+    "WARLOCK 3"
+   ],
+   "simulated": true,
+   "en": "Its score is its 10 hit rating alone: about 10 DPS.",
+   "fr": "Son score vient de ses seuls 10 de toucher : environ 10 DPS."
+  },
+  {
+   "items": [
+    13213
+   ],
+   "specs": [
+    "WARLOCK 2"
+   ],
+   "simulated": true,
+   "en": "Its score is its 10 hit rating alone: about 10 DPS.",
+   "fr": "Son score vient de ses seuls 10 de toucher : environ 10 DPS."
+  },
+  {
+   "items": [
+    13213
+   ],
+   "specs": [
+    "SHAMAN 1"
+   ],
+   "simulated": true,
+   "en": "Its score is its 10 hit rating alone: about 9 DPS.",
+   "fr": "Son score vient de ses seuls 10 de toucher : environ 9 DPS."
+  },
+  {
+   "items": [
+    13213
+   ],
+   "specs": [
+    "PRIEST 3"
+   ],
+   "simulated": true,
+   "en": "Its score is its 10 hit rating alone: about 6 DPS.",
+   "fr": "Son score vient de ses seuls 10 de toucher : environ 6 DPS."
   },
   {
    "items": [
@@ -839,259 +1914,6 @@
   },
   {
    "items": [
-    13023
-   ],
-   "specs": [
-    "HUNTER 1",
-    "HUNTER 2"
-   ],
-   "simulated": true,
-   "en": "Quick Shots rolls on each Auto Shot: at 1.80 speed it is worth about 14 DPS more than at 2.50.",
-   "fr": "Quick Shots se déclenche par tir automatique : à 1,80 de vitesse il vaut environ 14 DPS de plus qu'à 2,50."
-  },
-  {
-   "items": [
-    19406
-   ],
-   "specs": [
-    "WARLOCK 3"
-   ],
-   "simulated": true,
-   "en": "Its 20 hit rating also counts for spells: about 20 DPS.",
-   "fr": "Ses 20 de toucher comptent aussi pour les sorts : environ 20 DPS."
-  },
-  {
-   "items": [
-    19406
-   ],
-   "specs": [
-    "WARLOCK 2"
-   ],
-   "simulated": true,
-   "en": "Its 20 hit rating also counts for spells: about 21 DPS.",
-   "fr": "Ses 20 de toucher comptent aussi pour les sorts : environ 21 DPS."
-  },
-  {
-   "items": [
-    19406
-   ],
-   "specs": [
-    "MAGE 3"
-   ],
-   "simulated": true,
-   "en": "Its 20 hit rating also counts for spells: about 22 DPS.",
-   "fr": "Ses 20 de toucher comptent aussi pour les sorts : environ 22 DPS."
-  },
-  {
-   "items": [
-    19406
-   ],
-   "specs": [
-    "MAGE 2"
-   ],
-   "simulated": true,
-   "en": "Its 20 hit rating also counts for spells: about 23 DPS.",
-   "fr": "Ses 20 de toucher comptent aussi pour les sorts : environ 23 DPS."
-  },
-  {
-   "items": [
-    19406
-   ],
-   "specs": [
-    "MAGE 1"
-   ],
-   "simulated": true,
-   "en": "Its 20 hit rating also counts for spells: about 18 DPS.",
-   "fr": "Ses 20 de toucher comptent aussi pour les sorts : environ 18 DPS."
-  },
-  {
-   "items": [
-    18473,
-    18715
-   ],
-   "en": "Its bonus attack power works only against Demons: it is ranked without it.",
-   "fr": "Sa puissance d'attaque bonus ne vaut que contre les Démons : il est classé sans elle."
-  },
-  {
-   "items": [
-    279910,
-    22314
-   ],
-   "en": "Its bonus attack power works only against Beasts: it is ranked without it.",
-   "fr": "Sa puissance d'attaque bonus ne vaut que contre les Bêtes : il est classé sans elle."
-  },
-  {
-   "items": [
-    252605
-   ],
-   "specs": [
-    "HUNTER 3"
-   ],
-   "simulated": true,
-   "en": "Careful Aim turns its 38 Intellect into attack power.",
-   "fr": "Careful Aim convertit ses 38 d'Intelligence en puissance d'attaque."
-  },
-  {
-   "items": [
-    16471,
-    23274
-   ],
-   "specs": [
-    "PALADIN 3"
-   ],
-   "simulated": true,
-   "en": "Its effect adds 20 to Judgement of the Crusader's Holy bonus, used by all your seals and Judgements.",
-   "fr": "Son effet ajoute 20 au bonus Sacré de Judgement of the Crusader, utilisé par tous vos sceaux et jugements."
-  },
-  {
-   "items": [
-    271924,
-    272079,
-    271925,
-    272080
-   ],
-   "specs": [
-    "PALADIN 3"
-   ],
-   "simulated": true,
-   "slot": "main",
-   "en": "Its 3.1 speed shrinks each Seal of Command hit: about 30 DPS less than a 3.8 speed axe.",
-   "fr": "Sa vitesse de 3,1 réduit chaque coup de Seal of Command : environ 30 DPS de moins qu'une hache à 3,8."
-  },
-  {
-   "items": [
-    13285
-   ],
-   "specs": [
-    "SHAMAN 2"
-   ],
-   "simulated": true,
-   "slot": "main",
-   "en": "Its proc, Wound, is worth about 25 DPS.",
-   "fr": "Son proc, Wound, vaut environ 25 DPS."
-  },
-  {
-   "items": [
-    13285
-   ],
-   "specs": [
-    "PALADIN 3"
-   ],
-   "simulated": true,
-   "slot": "main",
-   "en": "Its proc, Wound, is worth about 28 DPS.",
-   "fr": "Son proc, Wound, vaut environ 28 DPS."
-  },
-  {
-   "items": [
-    23047
-   ],
-   "specs": [
-    "DRUID 3",
-    "PALADIN 1",
-    "PRIEST 1",
-    "PRIEST 2",
-    "SHAMAN 3"
-   ],
-   "en": "Use: 450 healing for 30 s every 2 min, not counted in its score.",
-   "fr": "Utiliser : 450 de soins pendant 30 s toutes les 2 min, non compté dans son score."
-  },
-  {
-   "items": [
-    23046
-   ],
-   "specs": [
-    "DRUID 3",
-    "PALADIN 1",
-    "PRIEST 1",
-    "PRIEST 2",
-    "SHAMAN 3"
-   ],
-   "en": "Use: 130 spell power for 20 s every 2 min, not counted in its score.",
-   "fr": "Utiliser : 130 de puissance des sorts pendant 20 s toutes les 2 min, non compté dans son score."
-  },
-  {
-   "items": [
-    19019
-   ],
-   "specs": [
-    "ROGUE 3"
-   ],
-   "simulated": true,
-   "slot": "off",
-   "en": "Its proc, Nature damage on hit, is worth about 40 DPS in the off hand.",
-   "fr": "Son proc, des dégâts de Nature au toucher, vaut environ 40 DPS en main gauche."
-  },
-  {
-   "items": [
-    17111
-   ],
-   "specs": [
-    "ROGUE 2"
-   ],
-   "simulated": true,
-   "en": "Its proc, Fire Strike, is worth about 4 DPS.",
-   "fr": "Son proc, Fire Strike, vaut environ 4 DPS."
-  },
-  {
-   "items": [
-    17111
-   ],
-   "specs": [
-    "ROGUE 1"
-   ],
-   "simulated": true,
-   "en": "Its proc, Fire Strike, is worth about 5 DPS.",
-   "fr": "Son proc, Fire Strike, vaut environ 5 DPS."
-  },
-  {
-   "items": [
-    867
-   ],
-   "specs": [
-    "ROGUE 1"
-   ],
-   "simulated": true,
-   "en": "Its proc, a Smite of Holy damage, is worth about 8 DPS.",
-   "fr": "Son proc, un Smite de dégâts du Sacré, vaut environ 8 DPS."
-  },
-  {
-   "items": [
-    22954
-   ],
-   "specs": [
-    "SHAMAN 1"
-   ],
-   "simulated": true,
-   "en": "Its Use effect speeds up attacks only, not spell casts: it adds nothing here.",
-   "fr": "Son effet Utiliser n'accélère que les attaques, pas les sorts : il n'ajoute rien ici."
-  },
-  {
-   "items": [
-    19577
-   ],
-   "specs": [
-    "WARRIOR 2"
-   ],
-   "simulated": true,
-   "en": "Hamstring costs 2 less rage, spent on more Heroic Strikes: about 4 DPS.",
-   "fr": "Hamstring coûte 2 de rage en moins, dépensés en Heroic Strike : environ 4 DPS."
-  },
-  {
-   "items": [
-    15066,
-    15067
-   ],
-   "specs": [
-    "DRUID 1",
-    "SHAMAN 1"
-   ],
-   "simulated": true,
-   "en": "Worn with the other Ironfeather piece: the set's 20 spell power counts in this score.",
-   "fr": "Portée avec l'autre pièce Ironfeather : les 20 de puissance des sorts du set comptent dans ce score."
-  },
-  {
-   "items": [
     13040
    ],
    "specs": [
@@ -1139,7 +1961,6 @@
     13937
    ],
    "specs": [
-    "DRUID 1",
     "MAGE 3"
    ],
    "simulated": true,
@@ -1250,6 +2071,45 @@
   },
   {
    "items": [
+    15058,
+    21278,
+    15057
+   ],
+   "specs": [
+    "ROGUE 1"
+   ],
+   "simulated": true,
+   "en": "The three-piece Stormshroud bonus restores energy, worth about 45 DPS in this set.",
+   "fr": "Le bonus de trois pièces Stormshroud rend de l’énergie, soit environ 45 DPS avec cette tenue."
+  },
+  {
+   "items": [
+    15058,
+    21278,
+    15057
+   ],
+   "specs": [
+    "ROGUE 2"
+   ],
+   "simulated": true,
+   "en": "The three-piece Stormshroud bonus restores energy, worth about 27 DPS in this set.",
+   "fr": "Le bonus de trois pièces Stormshroud rend de l’énergie, soit environ 27 DPS avec cette tenue."
+  },
+  {
+   "items": [
+    15058,
+    21278,
+    15057
+   ],
+   "specs": [
+    "ROGUE 3"
+   ],
+   "simulated": true,
+   "en": "The three-piece Stormshroud bonus restores energy, worth about 31 DPS in this set.",
+   "fr": "Le bonus de trois pièces Stormshroud rend de l’énergie, soit environ 31 DPS avec cette tenue."
+  },
+  {
+   "items": [
     17193
    ],
    "specs": [
@@ -1274,20 +2134,6 @@
   },
   {
    "items": [
-    19991,
-    19992
-   ],
-   "specs": [
-    "HUNTER 1",
-    "HUNTER 2",
-    "HUNTER 3"
-   ],
-   "simulated": true,
-   "en": "Its Use effect is not simulated: it is ranked without it.",
-   "fr": "Son effet Utiliser n'est pas simulé : il est classé sans lui."
-  },
-  {
-   "items": [
     20534
    ],
    "specs": [
@@ -1298,50 +2144,6 @@
    "simulated": true,
    "en": "Its Use effect summons a Voidwalker, which is not simulated: it is ranked without it.",
    "fr": "Son effet Utiliser invoque un marcheur du Vide, qui n'est pas simulé : il est classé sans lui."
-  },
-  {
-   "items": [
-    22268
-   ],
-   "specs": [
-    "WARLOCK 2"
-   ],
-   "simulated": true,
-   "en": "Its proc, more spell damage when a harmful spell lands, is worth about 9 DPS.",
-   "fr": "Son proc, des dégâts des sorts en plus quand un sort offensif touche, vaut environ 9 DPS."
-  },
-  {
-   "items": [
-    22268
-   ],
-   "specs": [
-    "MAGE 3"
-   ],
-   "simulated": true,
-   "en": "Its proc, more spell damage when a harmful spell lands, is worth about 6 DPS.",
-   "fr": "Son proc, des dégâts des sorts en plus quand un sort offensif touche, vaut environ 6 DPS."
-  },
-  {
-   "items": [
-    22268
-   ],
-   "specs": [
-    "MAGE 2"
-   ],
-   "simulated": true,
-   "en": "Its proc, more spell damage when a harmful spell lands, is worth about 8 DPS.",
-   "fr": "Son proc, des dégâts des sorts en plus quand un sort offensif touche, vaut environ 8 DPS."
-  },
-  {
-   "items": [
-    22268
-   ],
-   "specs": [
-    "MAGE 1"
-   ],
-   "simulated": true,
-   "en": "Its proc, more spell damage when a harmful spell lands, is worth about 9 DPS.",
-   "fr": "Son proc, des dégâts des sorts en plus quand un sort offensif touche, vaut environ 9 DPS."
   },
   {
    "items": [
@@ -1409,8 +2211,8 @@
     "WARRIOR 2"
    ],
    "simulated": true,
-   "en": "Its Use effect absorbs damage and adds none: its score is its 11 expertise rating.",
-   "fr": "Son effet Utiliser absorbe des dégâts et n'en ajoute aucun : son score vient de ses 11 d'expertise."
+   "en": "Its expertise reduces boss dodges by 1.1% when attacking from behind.",
+   "fr": "En frappant le boss de dos, son expertise réduit de 1,1 % le risque d’esquive."
   },
   {
    "items": [
@@ -1500,26 +2302,6 @@
   },
   {
    "items": [
-    280065
-   ],
-   "specs": [
-    "HUNTER 1",
-    "HUNTER 2",
-    "HUNTER 3",
-    "PALADIN 3",
-    "ROGUE 1",
-    "ROGUE 2",
-    "ROGUE 3",
-    "SHAMAN 2",
-    "WARRIOR 1",
-    "WARRIOR 2"
-   ],
-   "simulated": true,
-   "en": "Its Use effect, a heal, counts for no damage: its score is its 34 attack power.",
-   "fr": "Son effet Utiliser, un soin, ne compte pour aucun dégât : son score vient de ses 34 de puissance d'attaque."
-  },
-  {
-   "items": [
     18538
    ],
    "simulated": true,
@@ -1533,50 +2315,6 @@
    "simulated": true,
    "en": "Its aura adds no damage.",
    "fr": "Son aura n'ajoute aucun dégât."
-  },
-  {
-   "items": [
-    13213
-   ],
-   "specs": [
-    "WARLOCK 3"
-   ],
-   "simulated": true,
-   "en": "Its score is its 10 hit rating alone: about 10 DPS.",
-   "fr": "Son score vient de ses seuls 10 de toucher : environ 10 DPS."
-  },
-  {
-   "items": [
-    13213
-   ],
-   "specs": [
-    "WARLOCK 2"
-   ],
-   "simulated": true,
-   "en": "Its score is its 10 hit rating alone: about 10 DPS.",
-   "fr": "Son score vient de ses seuls 10 de toucher : environ 10 DPS."
-  },
-  {
-   "items": [
-    13213
-   ],
-   "specs": [
-    "SHAMAN 1"
-   ],
-   "simulated": true,
-   "en": "Its score is its 10 hit rating alone: about 9 DPS.",
-   "fr": "Son score vient de ses seuls 10 de toucher : environ 9 DPS."
-  },
-  {
-   "items": [
-    13213
-   ],
-   "specs": [
-    "PRIEST 3"
-   ],
-   "simulated": true,
-   "en": "Its score is its 10 hit rating alone: about 6 DPS.",
-   "fr": "Son score vient de ses seuls 10 de toucher : environ 6 DPS."
   },
   {
    "items": [
@@ -1615,8 +2353,8 @@
     11750
    ],
    "simulated": true,
-   "en": "Its proc has no known rate: a supposed one never makes it the best pick.",
-   "fr": "Son proc n'a pas de taux connu : un taux supposé n'en fait jamais le premier choix."
+   "en": "Its rank depends on an unverified proc rate.",
+   "fr": "Son classement dépend d’une fréquence de proc encore incertaine."
   },
   {
    "items": [
@@ -2881,7 +3619,6 @@
     226950,
     226953,
     226954,
-    226955,
     226956,
     226958,
     226959
@@ -4364,6 +5101,166 @@
    "simulated": true,
    "en": "With 6 pieces of Warlord's Battlegear, the set's bonus adds about 14 DPS, which this score does not count.",
    "fr": "Avec 6 pièces de Warlord's Battlegear, le bonus du set ajoute environ 14 DPS, que ce score ne compte pas."
+  },
+  {
+   "items": [
+    272591,
+    272838,
+    278468,
+    278469
+   ],
+   "specs": [
+    "WARRIOR 3",
+    "PALADIN 2"
+   ],
+   "en": "The score uses the tooltip’s 44 block value. The uncorrected simulator counts 58.",
+   "fr": "Le score utilise les 44 de blocage de l’infobulle. Le simulateur brut en compte 58."
+  },
+  {
+   "items": [
+    18825,
+    18826
+   ],
+   "specs": [
+    "WARRIOR 3",
+    "PALADIN 2"
+   ],
+   "en": "The score uses the tooltip’s 55 block value. The uncorrected simulator counts 73.",
+   "fr": "Le score utilise les 55 de blocage de l’infobulle. Le simulateur brut en compte 73."
+  },
+  {
+   "items": [
+    19321
+   ],
+   "specs": [
+    "WARRIOR 3",
+    "PALADIN 2"
+   ],
+   "en": "The score uses the tooltip’s 66 block value. The uncorrected simulator counts 79.",
+   "fr": "Le score utilise les 66 de blocage de l’infobulle. Le simulateur brut en compte 79."
+  },
+  {
+   "items": [
+    21269
+   ],
+   "specs": [
+    "WARRIOR 3",
+    "PALADIN 2"
+   ],
+   "en": "The score uses the tooltip’s 70 block value. The uncorrected simulator counts 88.",
+   "fr": "Le score utilise les 70 de blocage de l’infobulle. Le simulateur brut en compte 88."
+  },
+  {
+   "items": [
+    21610
+   ],
+   "specs": [
+    "WARRIOR 3",
+    "PALADIN 2"
+   ],
+   "en": "The score uses the tooltip’s 57 block value. The uncorrected simulator counts 75.",
+   "fr": "Le score utilise les 57 de blocage de l’infobulle. Le simulateur brut en compte 75."
+  },
+  {
+   "items": [
+    22198
+   ],
+   "specs": [
+    "WARRIOR 3",
+    "PALADIN 2"
+   ],
+   "en": "The score uses the tooltip’s 48 block value. The uncorrected simulator counts 63.",
+   "fr": "Le score utilise les 48 de blocage de l’infobulle. Le simulateur brut en compte 63."
+  },
+  {
+   "items": [
+    18168
+   ],
+   "specs": [
+    "WARRIOR 3",
+    "PALADIN 2"
+   ],
+   "en": "Its discharge on block generates threat on nearby enemies.",
+   "fr": "Ses décharges au blocage génèrent de la menace sur les ennemis proches."
+  },
+  {
+   "items": [
+    2099,
+    3021,
+    9412,
+    11307,
+    12651,
+    13040,
+    16007,
+    17687,
+    18713,
+    18738,
+    18836,
+    18837,
+    18855,
+    18860,
+    19107,
+    19558,
+    19562,
+    21616,
+    22318,
+    22347,
+    23557,
+    272595,
+    272599,
+    272842,
+    272846,
+    274084,
+    274604,
+    274748,
+    280020
+   ],
+   "specs": [
+    "HUNTER 3"
+   ],
+   "slot": "ranged",
+   "simulated": true,
+   "en": "The high score includes the attacks the Survival rotation loses with an empty ranged slot.",
+   "fr": "Ce score élevé inclut les attaques que la rotation Survie perd sans arme à distance."
+  },
+  {
+   "items": [
+    2801,
+    9449,
+    13060,
+    14541,
+    22333
+   ],
+   "specs": [
+    "PALADIN 4"
+   ],
+   "simulated": true,
+   "slot": "main",
+   "en": "Seal of Righteousness adds 12% of spell power to every swing: at 2.0 speed, about 44 DPS more than at 3.3.",
+   "fr": "Seal of Righteousness ajoute 12 % de la puissance des sorts à chaque coup : à 2,0 de vitesse, environ 44 DPS de plus qu'à 3,3."
+  },
+  {
+   "items": [
+    13023
+   ],
+   "specs": [
+    "HUNTER 1",
+    "HUNTER 2"
+   ],
+   "simulated": true,
+   "en": "Quick Shots rolls on each Auto Shot: at 1.80 speed it is worth about 14 DPS more than at 2.50.",
+   "fr": "Quick Shots se déclenche par tir automatique : à 1,80 de vitesse il vaut environ 14 DPS de plus qu'à 2,50."
+  },
+  {
+   "items": [
+    252605
+   ],
+   "specs": [
+    "HUNTER 3"
+   ],
+   "simulated": true,
+   "en": "Careful Aim turns its 38 Intellect into attack power.",
+   "fr": "Careful Aim convertit ses 38 d'Intelligence en puissance d'attaque."
   }
  ]
 }

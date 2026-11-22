@@ -98,26 +98,33 @@ class WindowTest(unittest.TestCase):
         alts: False with the alternatives switched off. count: the alternatives a slot lists."""
         flt = for_list(flt or default_filter(), mode)
         side = flt[0]
-        visible = {slot: [e for e in self.kept[token][spec][mode][slot] if e.passes(flt)]
-                   for slot, _ in ladders.SLOTS}
-        two = [e for e in visible["main"] if e.two_hand]
-        one = [e for e in visible["main"] if not e.two_hand]
+        slots = self.kept[token][spec][mode]
+        visible = ladders.visible_slots(slots, flt)
         lead = ladders.lead   # a placed item (flag e) is never a best pick
-        two_hand = bool(two) and (not one or lead(two).stored >= lead(one).stored
-                                  + (lead(visible["off"]).stored if visible["off"] else 0))
         shown = 1 + count
-        other = {slot: entries[:shown] for slot, entries in
-                 zip(("main", "off"), ladders.other_weapons(visible["main"], visible["off"]))}
+        other_main, other_off = ladders.other_weapons(visible["main"], visible["off"])
+        other = {"main": other_main[:shown], "off": other_off[:shown]}
         visible["main"], visible["off"] = ladders.weapon_lists(visible["main"], visible["off"])
+        first = lead(visible["main"])
+        two_hand = bool(first and first.two_hand)
+        one, off = lead(other_main), lead(other_off)
+        measured_set = (two_hand and first.weapon_set_side == side and one and off
+                        and (side, one.shown(side), off.shown(side)) in first.pre_raid_weapon_sets)
 
         def other_gap(slot, entry) -> int | None:
             """A set against a set: one-hander + off hand against the two-hander, or the reverse. A placed
             item has no score of its own, so no gap; nor has one whose score is no full measure."""
-            if entry.unscored or entry.estimated:
+            if measured_set or entry.unscored or entry.estimated:
                 return None
             best_main, best_off = lead(visible["main"]), [lead(visible["off"])] if visible["off"] else []
             if two_hand:
                 partner = [lead(other["off" if slot == "main" else "main"])] if other["off" if slot == "main" else "main"] else []
+                if slot == "main" and hasattr(slots["off"], "contexts"):
+                    main = entry.shown(side)
+                    if (side, main) not in slots["off"].contexts:
+                        return None
+                    valid = ladders.visible(slots["off"], flt, main)
+                    partner = [lead(valid)] if valid and lead(valid) else []
                 return self.gap(entry.stored / 10 + (partner[0].stored / 10 if partner else 0), best_main.stored / 10)
             return self.gap(entry.stored / 10, best_main.stored / 10 + (best_off[0].stored / 10 if best_off else 0))
 
@@ -131,7 +138,7 @@ class WindowTest(unittest.TestCase):
             for entry in alternatives if alts else []:
                 rows.append(("item", entry.shown(side), slot, False,
                              None if entry.unscored or entry.estimated
-                             else self.gap(entry.stored / 10, best[0].stored / 10)))
+                             else self.gap(entry.stored / 10, best[1 if entry.paired_with else 0].stored / 10)))
             if alts and other.get(slot):
                 rows.append(("note", None, slot, None, None))
                 for entry in other[slot]:
@@ -460,6 +467,18 @@ class WindowTest(unittest.TestCase):
         position = next(index for index, frame in enumerate(frames) if frame.data.kind == "note")
         self.assertEqual(frames[position - 1].data.kind, "header")
         self.assertEqual(frames[position - 1].header.text, "Off hand")
+
+    def test_balance_compares_enchanted_weapon_sets_without_showing_a_false_score_gap(self):
+        game = self.open(saved="EasyBISCharDB = { class = 'DRUID', spec = 1, list = 'pve' }")
+        frames = {frame.data.id: frame for frame in self.all_frames(game) if frame.data.kind == "item"}
+        self.assertTrue(frames[13937].data.bis)
+        for item in (2243, 18316):
+            row = frames[item]
+            self.assertTrue(row.data.other)
+            self.assertIsNone(row.data.gap)
+            self.assertIsNone(row.data.ratio)
+            self.assertFalse(row.data.tie)
+            self.assertEqual(strip_colors(row.rank.text), game.ns.L.RANK_ALT)
 
     def test_both_weapon_styles_are_listed(self):
         game = Game(cls="MAGE", saved=FIRE_MAGE + " " + WITH_PVP)   # the Mageblade is a PvP reward
@@ -1989,9 +2008,12 @@ class WindowTest(unittest.TestCase):
         self.assertEqual(free.height, ROW)
 
     def test_a_faction_nobody_knows_how_to_earn(self):
-        """The Watchers' rings stay in the list, a grey "?" after their name that the tooltip explains."""
+        """The unknown-source filter admits the rings and preserves their standing and its tooltip."""
         game = self.open(cls="PRIEST")   # Discipline: a healer's list, which stays on the weights
         window = game.ns.Browser.window
+        self.assertFalse(any(row.data.kind == "item" and row.data.reputation
+                             and row.data.reputation.factionID == 2819 for row in self.frames(game)))
+        game.ns.SetOption(game.ns, "unsourced", True)
         rows = self.frames(game)
         watchers = [row for row in rows if row.data.kind == "item" and row.data.reputation
                     and row.data.reputation.factionID == 2819]
@@ -2014,7 +2036,7 @@ class WindowTest(unittest.TestCase):
         game.stub.run(window.tabs.buttons[3], "OnClick")
         cells = [cell for cell in game.ns.Character.view.cells.values() if cell.data and cell.data.id]
         marked = [cell for cell in cells if cell.data.reputation and cell.data.reputation.factionID == 2819]
-        self.assertTrue(marked, "a Watchers ring is the Arcane sheet's best ring before the raids")
+        self.assertTrue(marked, "the Discipline sheet admits its Watchers ring when unknown sources are shown")
         self.assertTrue(all(" |cff808080?|r" in cell.name.text for cell in marked))
         self.assertFalse(any("|cff808080?|r" in cell.name.text for cell in cells if cell not in marked))
 
@@ -2294,7 +2316,7 @@ class WindowTest(unittest.TestCase):
     def shown_pieces(self, token, spec, count) -> tuple[set, set]:
         """(shown, best): the items a PvE list shows with that many alternatives, and its best picks."""
         flt = for_list(default_filter(), "pve")
-        visible = {slot: [e for e in self.kept[token][spec]["pve"][slot] if e.passes(flt)] for slot, _ in ladders.SLOTS}
+        visible = ladders.visible_slots(self.kept[token][spec]["pve"], flt)
         visible["main"], visible["off"] = ladders.weapon_lists(visible["main"], visible["off"])
         shown, best = set(), set()
         for slot, _ in ladders.SLOTS:

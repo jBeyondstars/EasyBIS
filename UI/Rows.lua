@@ -73,7 +73,12 @@ end
 local function OtherScores(slots, slot, pick)
     local main, off = slots.main, slots.off
     if slots.twoHand then
-        local partner = ns.Ladders.Lead(slot == "main" and off.other or main.other)
+        local partner
+        if pick.partialSet ~= nil then
+            partner = pick.partner
+        else
+            partner = ns.Ladders.Lead(slot == "main" and off.other or main.other)
+        end
         return pick.score + (partner and partner.score or 0), main.best[1].score,
             pick.entry.score10 + (partner and partner.entry.score10 or 0), main.best[1].entry.score10
     end
@@ -128,9 +133,10 @@ function Rows.Items(state, withAlts)
                     elseif ns.Ladders.HasFlag(pick.entry, "g") then
                         Add(slot, pick.id, { bis = false, estimated = true })
                     else
+                        local reference = pick.pairedWith and picks.best[2] or top
                         Add(slot, pick.id, {
                             bis = false, tie = ns.Ladders.IsTie(picks, pick) or nil,
-                            gap = Gap(pick.score, top.score), ratio = Ratio(pick.score, top.score),
+                            gap = Gap(pick.score, reference.score), ratio = Ratio(pick.score, reference.score),
                         })
                     end
                 end
@@ -143,8 +149,11 @@ function Rows.Items(state, withAlts)
                         Add(slot, pick.id, { bis = false, other = true, placed = true })
                     elseif ns.Ladders.HasFlag(pick.entry, "x") then
                         Add(slot, pick.id, { bis = false, other = true, level = true })
-                    elseif ns.Ladders.HasFlag(pick.entry, "g") then
+                    elseif ns.Ladders.HasFlag(pick.entry, "g") or pick.partialSet then
                         Add(slot, pick.id, { bis = false, other = true, estimated = true })
+                    elseif slots.measuredWeaponSet then
+                        -- The full enchanted sets decided the style. Individual slot scores use a different baseline.
+                        Add(slot, pick.id, { bis = false, other = true })
                     else
                         local score, reference, score10, reference10 = OtherScores(slots, slot, pick)
                         Add(slot, pick.id, {

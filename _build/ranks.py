@@ -18,6 +18,8 @@ To maintain: when a new season opens, change SEASON_START, and WEEKLY_CAPS if it
 """
 from __future__ import annotations
 
+import pvp_insignia
+
 SEASON_START = 1793833200  # 2026-11-04 23:00 UTC: the game's launch
 WEEKLY_CAPS = (3, 5, 6, 7, 8, 9, 11, 12, 13, 14)  # the highest rank of each week; the last one stays
 
@@ -34,17 +36,19 @@ WEAPON_RANK = 14
 # Inventory type -> the rank that sells its Emboldened Seal.
 SEAL_RANKS = {9: 8, 6: 8, 8: 9, 10: 10, 7: 12, 3: 12, 5: 13, 20: 13, 1: 13}  # wrist and waist, feet, hands,
 #                                                                              legs and shoulders, chest and head
-NEEDED = (NO_RANK, *sorted({*BLUE_RANKS.values(), *SEAL_RANKS.values(), WEAPON_RANK}))
+NEEDED = (NO_RANK, *sorted({pvp_insignia.RANK, *BLUE_RANKS.values(), *SEAL_RANKS.values(), WEAPON_RANK}))
 
 
 def sold_for_honor(item: dict) -> bool:
     """Whether an item of the source list is a piece of the Premier sets, which the data often gives no
     source for: the honor quartermasters sell them."""
-    return item["name"].startswith(PREMIER)
+    return bool(item.get("honor_rank")) or item["name"].startswith(PREMIER)
 
 
 def required(item: dict, gear: dict | None) -> int:
     """The rank an item of the source list needs: NO_RANK, a rank, or NOT_SOLD."""
+    if item.get("honor_rank"):
+        return item["honor_rank"]
     if sold_for_honor(item):
         gear = gear or {}
         if gear.get("req", 0) >= EPIC_LEVEL:

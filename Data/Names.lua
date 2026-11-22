@@ -7338,6 +7338,8 @@ ns.data.names = [==[
 274430|39|Rock Sentinel Slicer
 274431|41|Sandstorm Staff
 274432|44|Stone Keeper Spire
+274444||Greater Insignia of the Horde
+274445||Greater Insignia of the Alliance
 274485|39|Axe of Lingering Dread
 274490|35|Centaur Hoofwarmers
 274598|34|Bloodslash Axe

@@ -1,0 +1,73 @@
+{
+  "wowsims": "07648faf129cd82f99f4dd9e63b015f59f8ec811",
+  "source": "https://github.com/wowsims/forever/blob/07648faf129cd82f99f4dd9e63b015f59f8ec811/docs/evidence/EV-0178-proc-rate-of-protocole-blackhand-doomsaw.zip",
+  "protocol": "docs/audit-forever/blackhand-doomsaw.md",
+  "duration_seconds": 180,
+  "iterations": 20000,
+  "seed": 812913,
+  "calibration_ap": 40,
+  "trials": {
+    "a": {
+      "ap_dps": 8.9869355,
+      "ap_se": 0.0020348,
+      "weapons": {
+        "12583": [
+          12.6576339,
+          0.2203607
+        ],
+        "18725": [
+          11.797359,
+          0.1814495
+        ],
+        "13393": [
+          11.5029133,
+          0.2170605
+        ],
+        "280059": [
+          9.7210892,
+          0.1970065
+        ],
+        "274419": [
+          10.1605791,
+          0.1896465
+        ],
+        "250615": [
+          9.6255823,
+          0.1812931
+        ]
+      }
+    },
+    "h": {
+      "ap_dps": 8.9117228,
+      "ap_se": 0.0020339,
+      "weapons": {
+        "12583": [
+          12.6680736,
+          0.216866
+        ],
+        "18725": [
+          11.8296855,
+          0.1821958
+        ],
+        "13393": [
+          11.2439139,
+          0.2147384
+        ],
+        "280059": [
+          9.6777072,
+          0.1977078
+        ],
+        "274419": [
+          9.7922124,
+          0.188231
+        ],
+        "250615": [
+          9.6968552,
+          0.1826995
+        ]
+      }
+    }
+  },
+  "anchor_weapon": 12583,
+  "reference": "Stat score of Blackhand Doomsaw with Fatal Wound removed. Each candidate replaces this identical, proc-free reference. The default pre-raid neighbors use the same attack-power scale."
+}

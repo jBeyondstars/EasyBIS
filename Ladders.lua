@@ -20,7 +20,7 @@ content phase the list stops at, and how many alternatives a slot lists.
   Ladders.IsTie(picks, pick)         whether an alternative of a slot scores as much as a best pick
   Ladders.Lead(picks)                the first pick that can be a best pick (not a placed one, flag e, nor one
                                      whose effect the weights cannot count, flag x)
-  Ladders.Unscored(entry)            whether an entry's score is a stand-in, not its own (flag e or x)
+  Ladders.Unscored(entry)            whether an entry has a stand-in score or only a partial measurement (e, x, g, b)
 
 The rules are the generator's (_build/ladders.py: picks, weapon_lists,
 other_weapons); the tests check both give the same picks.
@@ -51,10 +51,9 @@ end
 
 -- flags: s seen in Forever, n new in Forever, u no known source, U unique, t two-hander, r random bonus,
 -- p a PvP reward, v a Premier piece (sold for honor, even when the data gives it no source), e placed from a
--- close spec's simulation: its score is a stand-in, never shown, and it is never a best pick (Ladders.Lead); g
--- x an effect the stat weights cannot count: a situational alternative without a score;
--- ranked by simulation on a score that is no full measure: it keeps its rank, and no score is shown for it; a
--- digit is the content phase the item needs (entry.phase, 0 without one)
+-- close spec's simulation; x situational effect beyond the stat weights; g estimated simulation score;
+-- b incomplete faction-specific measurement, j extra situational option, k situational only in pre-raid.
+-- A digit gives the content phase the item needs (entry.phase, 0 without one).
 function Ladders.HasFlag(entry, letter)
     return entry.flags:find(letter, 1, true) ~= nil
 end
@@ -66,7 +65,7 @@ end
 function Ladders.Decode(class)
     local text = ns.data and ns.data.lists and ns.data.lists[class]
     if not text then return nil end
-    local data = { specs = {}, order = {}, lists = {}, measured = {} }
+    local data = { specs = {}, order = {}, lists = {}, measured = {}, contexts = {}, weaponSets = {} }
     for line in text:gmatch("[^\n]+") do
         local kind, index, first, second, rest = line:match("^(%a)\t(%d+)\t([^\t]*)\t([^\t]*)\t?(.*)$")
         index = tonumber(index)
@@ -76,14 +75,27 @@ function Ladders.Decode(class)
         elseif kind == "M" then
             data.measured[index] = data.measured[index] or {}
             data.measured[index][first] = second
-        elseif kind == "L" then
+        elseif kind == "W" then
+            data.weaponSets[index] = data.weaponSets[index] or {}
+            data.weaponSets[index][first] = data.weaponSets[index][first] or {}
+            data.weaponSets[index][first][second] = true
+        elseif kind == "L" or kind == "F" then
+            local context
+            if kind == "F" then context, rest = rest:match("^([^\t]+)\t(.*)$") end
             local entries = {}
             for token in rest:gmatch("%S+") do
                 entries[#entries + 1] = ParseEntry(token)
             end
-            data.lists[index] = data.lists[index] or {}
-            data.lists[index][first] = data.lists[index][first] or {}
-            data.lists[index][first][second] = entries
+            local target = context and data.contexts or data.lists
+            target[index] = target[index] or {}
+            target[index][first] = target[index][first] or {}
+            if context then
+                local slots = target[index][first]
+                slots[second] = slots[second] or {}
+                slots[second][context] = entries
+            else
+                target[index][first][second] = entries
+            end
         end
     end
     return data
@@ -106,7 +118,7 @@ local function Visible(entries, filter, list)
     local rewards = filter.pvpRewards
     if type(rewards) == "table" then rewards = rewards[list] end
     local cap = filter.rankCap
-    local visible = {}
+    local visible, options = {}, nil
     for _, entry in ipairs(entries or {}) do
         local id = Shown(entry, filter.side)
         if id
@@ -115,16 +127,26 @@ local function Visible(entries, filter, list)
             and (filter.unsourced or not Ladders.HasFlag(entry, "u") or (cap and Ladders.HasFlag(entry, "v")))
             and (rewards ~= false or not Ladders.HasFlag(entry, "p"))
             and (not filter.seenOnly or Ladders.HasFlag(entry, "s")) then
-            visible[#visible + 1] = { id = id, score = entry.score10 / 10, entry = entry }
+            if filter.phase == 0 and Ladders.HasFlag(entry, "k") then
+                -- This contact window was checked in pre-raid. Keep the ordinary entry for later phases.
+                options = options or {}
+                local situational = setmetatable({ flags = entry.flags .. "xj", score10 = 0 }, { __index = entry })
+                options[#options + 1] = { id = id, score = 0, entry = situational }
+            else
+                visible[#visible + 1] = { id = id, score = entry.score10 / 10, entry = entry }
+            end
         end
+    end
+    if options then
+        for _, pick in ipairs(options) do visible[#visible + 1] = pick end
     end
     return visible
 end
 
 -- Whether an entry's score is a stand-in that keeps the ladder in order, not its own: placed from a close spec's
--- simulation (flag e), or worth mostly an effect the weights cannot count (flag x).
+-- simulation (e), an effect the weights cannot count (x), or an incomplete simulation score (g or b).
 function Ladders.Unscored(entry)
-    return Ladders.HasFlag(entry, "e") or Ladders.HasFlag(entry, "x")
+    return entry.flags:find("[exgb]") ~= nil
 end
 
 -- The first pick that can be a best pick: one with no score of its own never is, unless the list has nothing else.
@@ -132,7 +154,7 @@ function Ladders.Lead(picks)
     for _, pick in ipairs(picks) do
         if not Ladders.Unscored(pick.entry) then return pick end
     end
-    return picks[1]
+    if picks[1] and not picks[1].entry.flags:find("[gbj]") then return picks[1] end
 end
 
 -- Weighs the two weapon slots against each other. When the best two-hander
@@ -141,24 +163,27 @@ end
 -- main hand lists one-handers and the off hand leaves out the main hand's pick.
 -- The fourth and fifth values are the style that lost, main hand and off hand:
 -- the one-handers and the off hands that go with them, or the two-handers.
-local function WeaponLists(main, off)
+local function WeaponLists(main, off, side, measuredSets)
     local two, one = {}, {}
     for _, pick in ipairs(main) do
         local list = Ladders.HasFlag(pick.entry, "t") and two or one
         list[#list + 1] = pick
     end
-    local twoBest, oneBest, offBest = Ladders.Lead(two), Ladders.Lead(one), Ladders.Lead(off)
+    local twoBest, oneBest = Ladders.Lead(two), Ladders.Lead(one)
     local others = {}
     if oneBest then
         for _, pick in ipairs(off) do
             if pick.entry.id ~= oneBest.entry.id then others[#others + 1] = pick end
         end
     end
-    if twoBest and (not oneBest
+    local offBest = Ladders.Lead(others)
+    local measured = measuredSets and twoBest and oneBest and offBest
+        and measuredSets[side .. ":" .. twoBest.id .. ":" .. oneBest.id .. ":" .. offBest.id]
+    if twoBest and (not oneBest or measured
         or twoBest.entry.score10 >= oneBest.entry.score10 + (offBest and offBest.entry.score10 or 0)) then
-        return two, {}, true, one, others
+        return two, {}, true, one, others, measured
     end
-    if not one[1] then return main, off, false, {}, {} end
+    if not oneBest then return main, off, false, {}, {} end
     return one, others, false, two, {}
 end
 
@@ -174,8 +199,16 @@ end
 -- item (flag e) is never a best pick.
 local function Picks(slot, visible, count)
     local best, alts = {}, {}
+    local last = visible[#visible]
+    if last and Ladders.HasFlag(last.entry, "j") then
+        -- Keep the ordinary number of alternatives when a situational pick is offered.
+        visible[#visible] = nil
+        best, alts = Picks(slot, visible, count)
+        alts[#alts + 1] = last
+        return best, alts
+    end
     local first = Ladders.Lead(visible)
-    if not first then return best, alts end
+    if not first then return best, First(visible, count) end
     best[1] = first
     if ns.PAIRED[slot] then
         for _, pick in ipairs(visible) do
@@ -197,21 +230,59 @@ end
 -- The picks of every slot for a spec and a list, from decoded data.
 function Ladders.Compute(data, spec, list, filter)
     local ladders = data.lists[spec] and data.lists[spec][list] or {}
+    local specContexts = data.contexts and data.contexts[spec]
+    local contexts = specContexts and specContexts[list] or {}
     local visible = {}
     for _, slot in ipairs(ns.SLOTS) do
-        visible[slot] = Visible(ladders[slot], filter, list)
+        local entries = ladders[slot]
+        if contexts[slot] then
+            entries = (filter.phase == 0 and contexts[slot].pre) or contexts[slot][filter.side] or entries
+        end
+        visible[slot] = Visible(entries, filter, list)
+        if contexts[slot] and ns.PAIRED[slot] then
+            local first = Ladders.Lead(visible[slot])
+            local paired = first and contexts[slot][filter.side .. ":" .. first.id]
+            if paired then
+                local companions = Visible(paired, filter, list)
+                for _, pick in ipairs(companions) do pick.pairedWith = first.id end
+                table.insert(companions, 1, first)
+                visible[slot] = companions
+            end
+        end
     end
-    local twoHand, otherMain, otherOff
-    visible.main, visible.off, twoHand, otherMain, otherOff = WeaponLists(visible.main, visible.off)
+    local offSets = contexts.off
+    if offSets then
+        -- An off-hand gain depends on the hit and stats of this actual main hand.
+        local one = {}
+        for _, pick in ipairs(visible.main) do
+            if not Ladders.HasFlag(pick.entry, "t") then one[#one + 1] = pick end
+        end
+        local first = Ladders.Lead(one)
+        if first then
+            local selected = offSets[filter.side .. ":" .. first.id] or offSets[filter.side]
+            visible.off = Visible(selected, filter, list)
+        end
+    end
+    local twoHand, otherMain, otherOff, measuredWeaponSet
+    local measuredSets = filter.phase == 0 and data.weaponSets and data.weaponSets[spec]
+    visible.main, visible.off, twoHand, otherMain, otherOff, measuredWeaponSet =
+        WeaponLists(visible.main, visible.off, filter.side, measuredSets and measuredSets[list])
 
     local count = filter.alternatives or ns.ALTERNATIVES
-    local result = { twoHand = twoHand }
+    local result = { twoHand = twoHand, measuredWeaponSet = measuredWeaponSet }
     for _, slot in ipairs(ns.SLOTS) do
         local best, alts = Picks(slot, visible[slot], count)
         result[slot] = { best = best, alts = alts, other = {} }
     end
     result.main.other = First(otherMain, 1 + count)
     result.off.other = First(otherOff, 1 + count)
+    if offSets and twoHand then
+        for _, pick in ipairs(result.main.other) do
+            local context = offSets[filter.side .. ":" .. pick.id] or offSets[filter.side]
+            pick.partialSet = context == nil
+            if context then pick.partner = Ladders.Lead(Visible(context, filter, list)) end
+        end
+    end
     return result
 end
 
@@ -225,7 +296,8 @@ end
 function Ladders.IsTie(picks, pick)
     if not HasComparableScore(pick.entry) then return false end
     for _, best in ipairs(picks.best) do
-        if HasComparableScore(best.entry) and pick.entry.score10 == best.entry.score10 then return true end
+        if pick.pairedWith == best.pairedWith and HasComparableScore(best.entry)
+            and pick.entry.score10 == best.entry.score10 then return true end
     end
     return false
 end

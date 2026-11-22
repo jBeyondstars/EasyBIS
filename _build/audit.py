@@ -64,7 +64,7 @@ class Finding:
 
 def shown_rows(slots: dict, flt) -> dict[str, tuple[list, list]]:
     """{slot: (best, alternatives)} as the addon shows a spec's list under one filter."""
-    visible = {slot: [entry for entry in entries if entry.passes(flt)] for slot, entries in slots.items()}
+    visible = ladders.visible_slots(slots, flt)
     visible["main"], visible["off"] = ladders.weapon_lists(visible["main"], visible["off"])
     return {slot: ladders.picks(slot, entries) for slot, entries in visible.items()}
 
@@ -113,8 +113,9 @@ def run(db, all_ladders: dict, read_in_game=frozenset()) -> list[Finding]:
                          if db.items[entry.item_id].get("added")}
                 for side in ("a", "h") if added else ():
                     everything = (side, True, False, phases.LATER)
+                    visible = ladders.visible_slots(slots, everything)
                     for slot, (best, _) in shown_rows(slots, everything).items():
-                        listed = [e for e in slots[slot] if e.passes(everything) and e.item_id not in added]
+                        listed = [e for e in visible[slot] if e.item_id not in added]
                         for entry in best:
                             if (entry.item_id in added and listed and listed[0].stored > 0
                                     and entry.stored > ADDED_LEAD * listed[0].stored):

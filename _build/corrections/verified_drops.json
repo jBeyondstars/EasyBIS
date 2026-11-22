@@ -1,0 +1,507 @@
+{
+  "version": "2026-11-22",
+  "sources": {
+    "wowsims": "https://github.com/wowsims/forever/blob/3289d8314fec155f97c79b08ab0dff85b5555e68/assets/database/db.json",
+    "questie": "https://github.com/Questie/QuestieDB",
+    "audit": "docs/audit-forever/acquisition-pre-raid.json"
+  },
+  "items": {
+    "1936": {
+      "name": "Goblin Screwdriver",
+      "range": [
+        "0",
+        "0"
+      ],
+      "places": [
+        [
+          "d",
+          "36",
+          "Goblin Engineer",
+          "",
+          "0",
+          "t"
+        ]
+      ]
+    },
+    "10331": {
+      "name": "Scarlet Gauntlets",
+      "range": [
+        "0",
+        "0"
+      ],
+      "places": [
+        [
+          "d",
+          "189",
+          "",
+          "",
+          "0",
+          "t"
+        ]
+      ]
+    },
+    "14536": {
+      "name": "Bonebrace Hauberk",
+      "range": [
+        "0",
+        "0"
+      ],
+      "places": [
+        [
+          "d",
+          "289",
+          "Scholomance Adept",
+          "",
+          "0",
+          "t"
+        ]
+      ]
+    },
+    "16671": {
+      "name": "Bindings of Elements",
+      "range": [
+        "0",
+        "0"
+      ],
+      "places": [
+        [
+          "d",
+          "329",
+          "Crypt Crawler",
+          "",
+          "0",
+          "t"
+        ],
+        [
+          "d",
+          "289",
+          "",
+          "",
+          "0",
+          "t"
+        ]
+      ]
+    },
+    "16681": {
+      "name": "Beaststalker's Bindings",
+      "range": [
+        "0",
+        "0"
+      ],
+      "places": [
+        [
+          "d",
+          "229",
+          "Rage Talon Dragonspawn",
+          "",
+          "0",
+          "t"
+        ],
+        [
+          "d",
+          "329",
+          "Ghoul Ravener",
+          "",
+          "0",
+          "t"
+        ]
+      ]
+    },
+    "16685": {
+      "name": "Magister's Belt",
+      "range": [
+        "0",
+        "0"
+      ],
+      "places": [
+        [
+          "d",
+          "229",
+          "Smolderthorn Mystic",
+          "",
+          "0",
+          "t"
+        ],
+        [
+          "d",
+          "329",
+          "Thuzadin Shadowcaster",
+          "",
+          "0",
+          "t"
+        ],
+        [
+          "d",
+          "289",
+          "",
+          "",
+          "0",
+          "t"
+        ]
+      ]
+    },
+    "16697": {
+      "name": "Devout Bracers",
+      "range": [
+        "0",
+        "0"
+      ],
+      "places": [
+        [
+          "d",
+          "329",
+          "Thuzadin Shadowcaster",
+          "",
+          "0",
+          "t"
+        ]
+      ]
+    },
+    "16703": {
+      "name": "Dreadmist Bracers",
+      "range": [
+        "0",
+        "0"
+      ],
+      "places": [
+        [
+          "d",
+          "229",
+          "Scarshield Warlock",
+          "",
+          "0",
+          "t"
+        ]
+      ]
+    },
+    "16713": {
+      "name": "Shadowcraft Belt",
+      "range": [
+        "0",
+        "0"
+      ],
+      "places": [
+        [
+          "d",
+          "229",
+          "Scarshield Legionnaire",
+          "",
+          "0",
+          "t"
+        ]
+      ]
+    },
+    "16714": {
+      "name": "Wildheart Bracers",
+      "range": [
+        "0",
+        "0"
+      ],
+      "places": [
+        [
+          "d",
+          "329",
+          "Crimson Inquisitor",
+          "",
+          "0",
+          "t"
+        ],
+        [
+          "d",
+          "289",
+          "",
+          "",
+          "0",
+          "t"
+        ]
+      ]
+    },
+    "16723": {
+      "name": "Lightforge Belt",
+      "range": [
+        "0",
+        "0"
+      ],
+      "places": [
+        [
+          "d",
+          "329",
+          "Rockwing Gargoyle",
+          "",
+          "0",
+          "t"
+        ]
+      ]
+    },
+    "16735": {
+      "name": "Bracers of Valor",
+      "range": [
+        "0",
+        "0"
+      ],
+      "places": [
+        [
+          "d",
+          "229",
+          "Scarshield Legionnaire",
+          "",
+          "0",
+          "t"
+        ]
+      ]
+    },
+    "16736": {
+      "name": "Belt of Valor",
+      "range": [
+        "0",
+        "0"
+      ],
+      "places": [
+        [
+          "d",
+          "229",
+          "Smolderthorn Berserker",
+          "",
+          "0",
+          "t"
+        ],
+        [
+          "d",
+          "329",
+          "Patchwork Horror",
+          "",
+          "0",
+          "t"
+        ]
+      ]
+    },
+    "18289": {
+      "name": "Barbed Thorn Necklace",
+      "range": [
+        "0",
+        "0"
+      ],
+      "places": [
+        [
+          "d",
+          "429",
+          "Warpwood Guardian",
+          "",
+          "0",
+          "t"
+        ]
+      ]
+    },
+    "18296": {
+      "name": "Marksman Bands",
+      "range": [
+        "0",
+        "0"
+      ],
+      "places": [
+        [
+          "d",
+          "429",
+          "Wildspawn Satyr",
+          "",
+          "0",
+          "t"
+        ]
+      ]
+    },
+    "18338": {
+      "name": "Wand of Arcane Potency",
+      "range": [
+        "0",
+        "0"
+      ],
+      "places": [
+        [
+          "d",
+          "429",
+          "Arcane Aberration",
+          "",
+          "0",
+          "t"
+        ]
+      ]
+    },
+    "18672": {
+      "name": "Elemental Ember",
+      "range": [
+        "0",
+        "0"
+      ],
+      "places": [
+        [
+          "R",
+          "14461",
+          "Baron Charr",
+          "",
+          "t"
+        ]
+      ]
+    },
+    "18676": {
+      "name": "Sash of the Windreaver",
+      "range": [
+        "0",
+        "0"
+      ],
+      "places": [
+        [
+          "R",
+          "14454",
+          "The Windreaver",
+          "",
+          "t"
+        ]
+      ]
+    },
+    "18698": {
+      "name": "Tattered Leather Hood",
+      "range": [
+        "0",
+        "0"
+      ],
+      "places": [
+        [
+          "d",
+          "289",
+          "Scholomance Adept",
+          "",
+          "0",
+          "t"
+        ]
+      ]
+    },
+    "18700": {
+      "name": "Malefic Bracers",
+      "range": [
+        "0",
+        "0"
+      ],
+      "places": [
+        [
+          "d",
+          "289",
+          "Scholomance Adept",
+          "",
+          "0",
+          "t"
+        ]
+      ]
+    },
+    "18701": {
+      "name": "Innervating Band",
+      "range": [
+        "0",
+        "0"
+      ],
+      "places": [
+        [
+          "d",
+          "289",
+          "Scholomance Adept",
+          "",
+          "0",
+          "t"
+        ]
+      ]
+    },
+    "18702": {
+      "name": "Belt of the Ordained",
+      "range": [
+        "0",
+        "0"
+      ],
+      "places": [
+        [
+          "d",
+          "289",
+          "Scholomance Adept",
+          "",
+          "0",
+          "t"
+        ]
+      ]
+    },
+    "18736": {
+      "name": "Plaguehound Leggings",
+      "range": [
+        "0",
+        "0"
+      ],
+      "places": [
+        [
+          "d",
+          "329",
+          "Thuzadin Shadowcaster",
+          "",
+          "0",
+          "t"
+        ]
+      ]
+    },
+    "18743": {
+      "name": "Gracious Cape",
+      "range": [
+        "55",
+        "61"
+      ],
+      "places": [
+        [
+          "d",
+          "329",
+          "Ravaged Cadaver",
+          "",
+          "0",
+          "t"
+        ]
+      ]
+    },
+    "18744": {
+      "name": "Plaguebat Fur Gloves",
+      "range": [
+        "55",
+        "61"
+      ],
+      "places": [
+        [
+          "d",
+          "329",
+          "Ravaged Cadaver",
+          "",
+          "0",
+          "t"
+        ]
+      ]
+    },
+    "23237": {
+      "name": "Ring of the Eternal Flame",
+      "range": [
+        "60",
+        "63"
+      ],
+      "raid_only": true,
+      "places": [
+        [
+          "d",
+          "533",
+          "Dread Creeper",
+          "",
+          "1",
+          "t"
+        ],
+        [
+          "d",
+          "533",
+          "Carrion Spinner",
+          "",
+          "1",
+          "t"
+        ]
+      ]
+    }
+  }
+}

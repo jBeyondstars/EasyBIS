@@ -1,3 +1,22 @@
+# Easy BIS 1.9.2
+
+## Gear lists
+
+- **Feral Cat PvE.** Hand of Justice and Behemoth Bones are the recommended pre-raid trinket pair. Lucky Shovelnose Tuft is third and marked Tied. Its note explains when Shifting Power makes Spirit valuable while staying in Cat Form.
+- **Arms Warrior PvE.** The pre-raid list drops Stalwart Helm when Lionheart Helm is available. Horde warriors can now see Darkspear Epaulets alongside the equivalent leather shoulders. New notes explain why the Agility options beat the plate version on the tested sets.
+- **Arcane and Frost Mage PvE.** Updated chest rankings for both factions put Alanna’s Embrace second for Arcane and fourth for Frost. Robe of the Archmage remains first for both.
+- **Weapons, rings and trinkets.** Updated rankings account for faction, the other equipped item and weapon enchants where those comparisons were measured. Blackhand Doomsaw now appears in several pre-raid lists. Its proc deals extra damage against targets below 25% health.
+- **PvP trinkets.** The faction insignia is available as a situational choice when the character meets the rank requirement.
+
+## Item notes and sources
+
+- New English and French notes explain close choices, including hit versus spell power for casters, healing versus mana regeneration for priests, and Adaptive Combat Assistant versus Hand of Justice for Retribution. Shadow Priests can see when Obsidian Bauble beats Book of the Dead.
+- Corrected faction restrictions, drop sources and reputation requirements for affected items. The gear lists also handle unconfirmed sources and incomplete weapon-pair comparisons more accurately.
+
+## Interface
+
+- Buttons and dropdowns on the same row now share the same height.
+
 # Easy BIS 1.9.1
 
 ## New

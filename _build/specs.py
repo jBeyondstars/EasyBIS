@@ -34,8 +34,8 @@ Feral Combat, which its weights, its enchants and its coach all treat as a bear.
    per second a point of each stat adds to a cat, as WoWSims Forever publishes them (CAT_PVE), its PvP weights
    are ForeverDB's Feral ones, which are one profile for both forms, and its enchants are ForeverDB's, ranked on
    the cat's weights (enchants_for). Only two weapons carry attack power "in Cat, Bear and Dire Bear forms" in
-   WoWSims Forever's item database, both from raids, and ForeverDB's data has that stat on no item: it is not
-   weighed.
+   WoWSims Forever's item database, both from raids. The corrected items carry stat 40, weighted like attack
+   power only by the bear and cat.
 
 3. A tank is listed its own class's Zul'Gurub enchant only (own_enchants), and so is the cat. ForeverDB's lists
    give the head and leg enchants of that raid's class quests to several classes each (the Rogue's Death's
@@ -57,6 +57,7 @@ import re
 from pathlib import Path
 from dataclasses import dataclass, field
 
+import pvp_insignia
 import shockadin
 
 TANK = "Tank"
@@ -73,6 +74,8 @@ STRENGTH, AGILITY, STAMINA, INTELLECT, SPIRIT = 4, 3, 7, 5, 6
 BLOCK_RATING = 15
 DEFENSE, DODGE, HIT, CRIT, HASTE, EXPERTISE, ATTACK_POWER, RANGED_ATTACK_POWER = 12, 13, 31, 32, 36, 37, 38, 39
 SPELL_DAMAGE, SPELL_POWER, BLOCK_VALUE = 42, 45, 48
+FERAL_ATTACK_POWER = 40
+HUMANOID_ATTACK_POWER = 125
 HEALING, MANA_PER_5, HOLY_DAMAGE = 41, 43, 84
 
 ATTACK_POWER_PER_STRENGTH = 2
@@ -92,7 +95,7 @@ BEAR_NAME, CAT_NAME, CAT_SLUG = "Feral (Bear)", "Feral (Cat)", "feral-cat"
 # its reference build at 7 to 8% hit. The stats ForeverDB's data has; the weapon's damage per second is its
 # PseudoStatMainHandDps.
 CAT_SOURCE = "WoWSims Forever 21377c070b, ui/specs/druid/feral_ep.ts (CatEp)"
-CAT_PVE = {STRENGTH: 0.594, AGILITY: 0.655, ATTACK_POWER: 0.244, HIT: 0.521, CRIT: 0.506, HASTE: 0.393,
+CAT_PVE = {STRENGTH: 0.594, AGILITY: 0.655, ATTACK_POWER: 0.244, FERAL_ATTACK_POWER: 0.244, HIT: 0.521, CRIT: 0.506, HASTE: 0.393,
            EXPERTISE: 0.490, "dps": 2.142}
 CAT_ROLE = "Melee DPS"
 
@@ -105,6 +108,7 @@ CLASS_ENCHANTS = {"i19782": "WARRIOR", "i19783": "PALADIN", "i19784": "ROGUE", "
 @dataclass
 class Report:
     completed: dict = field(default_factory=dict)   # (class, spec, profile) -> {stat: the weight it was given}
+    humanoid_power: set = field(default_factory=set)  # (class, spec) with a conditional PvP weight added here
     bear: tuple | None = None                       # (class, spec) of ForeverDB's Feral Combat
     cat: tuple | None = None                        # (class, spec) of the cat added next to it
     shockadin: tuple | None = None                  # (class, spec) of the Shockadin added to the Paladin
@@ -175,7 +179,7 @@ def ranged_power(db, report: Report) -> None:
 
 # Average armor from the Lion Horn (725 armor on proc) against a frontal boss swinging every 2 s.
 # The tank's avoidance changes its uptime. These are rounded means measured on both factions.
-TANK_HORN_ARMOR = {("DRUID", 2): 196, ("PALADIN", 2): 172, ("WARRIOR", 3): 174}
+TANK_HORN_ARMOR = {("DRUID", 2): 193, ("PALADIN", 2): 172, ("WARRIOR", 3): 171}
 
 
 def tank_trinket_bonuses(cls: str, spec: int, weights: dict) -> dict:
@@ -258,6 +262,7 @@ def apply(db) -> Report:
     """Complete the tanks' weights, leave them their own class's enchants, then split the Feral Druid: the cat's
     PvP weights are the completed ones, and its enchants are ranked among the ones a Druid can have."""
     report = Report()
+    pvp_insignia.include(db)
     db.effects = load_effects()
     db.effects_but = load_effects_but()
     db.placed = load_placed()
@@ -281,9 +286,22 @@ def apply(db) -> Report:
         pvp = arms["weights"]["pvp"]
         pvp["weapon_hit"] = pvp["dps"] / (MORTAL_STRIKE_COOLDOWN + TWO_HAND_NORMALIZED_SPEED)
     split_feral(db, report)
+    for spec in db.classes.get(DRUID, {}).get("specs", {}).values():
+        if spec.get("slug") in (FERAL, CAT_SLUG):
+            for weights in spec["weights"].values():
+                if ATTACK_POWER in weights:
+                    weights[FERAL_ATTACK_POWER] = weights[ATTACK_POWER]
     paladin = db.classes.get(shockadin.PALADIN, {}).get("specs", {})
     if not any(spec.get("slug") == shockadin.SLUG for spec in paladin.values()):   # applying twice adds it once
         report.shockadin = shockadin.add(db, enchants_for)
+    # On a humanoid opponent this bonus adds the same melee and ranged AP as ordinary attack power.
+    # Forever's equipment data separates these points from the weapon's permanent stats.
+    for cls, data in db.classes.items():
+        for number, spec in data["specs"].items():
+            pvp = spec["weights"].get("pvp", {})
+            if ATTACK_POWER in pvp and HUMANOID_ATTACK_POWER not in pvp:
+                pvp[HUMANOID_ATTACK_POWER] = pvp[ATTACK_POWER]
+                report.humanoid_power.add((cls, number))
     return report
 
 

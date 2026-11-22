@@ -129,7 +129,7 @@ def pair_basin_mail_shoulders(db) -> None:
 
 # Each item binds on pickup. The quests carry a faction in WoWSims' Forever database.
 # The three honor quartermasters sell their listed IDs inside their own faction's hall.
-# Quest source and faction checked on 2026-11-22 against WoWSims Forever a73af71451.
+# Quest factions: https://github.com/wowsims/forever/blob/a73af7145111ce19c621e3b5f678553adf326907/assets/database/db.json
 FACTION_REWARDS = (
     ("h", "v", 12793, (272578, 272589)),
     ("a", "v", 12781, (272698, 272699)),
@@ -139,7 +139,7 @@ FACTION_REWARDS = (
     ("a", "q", 94984, (279854,)),
     ("a", "q", 95064, (274959,)),
     ("a", "q", 95925, (279912,)),
-    ("a", "q", 96609, (276903,)),
+    ("a", "q", 96609, (276903, 276904)),
 )
 
 
