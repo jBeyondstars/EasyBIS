@@ -70,6 +70,7 @@ RANGED_ATTACK_POWER = 39
 # the Hunter's pools with PseudoStatRangedHitPercent in WoWSims Forever 21377c070b, db.json.
 RANGED_HIT_PERCENT = {13255: 3, 17754: 1, 18296: 1, 18388: 1, 22207: 1}
 STRENGTH, AGILITY, STAMINA, INTELLECT, SPIRIT = 4, 3, 7, 5, 6
+BLOCK_RATING = 15
 DEFENSE, DODGE, HIT, CRIT, HASTE, EXPERTISE, ATTACK_POWER, RANGED_ATTACK_POWER = 12, 13, 31, 32, 36, 37, 38, 39
 SPELL_DAMAGE, SPELL_POWER, BLOCK_VALUE = 42, 45, 48
 HEALING, MANA_PER_5, HOLY_DAMAGE = 41, 43, 84
@@ -172,18 +173,25 @@ def ranged_power(db, report: Report) -> None:
                 report.ranged[HUNTER, number, profile] = weights[ATTACK_POWER]
 
 
-# The Lion Horn grants 725 armor. In 20,000 simulations per faction against a frontal physical boss
-# (2 s swings) with Defender's Grip Stabilizer, its 30 s buff was active 23.72% of the time on both
-# level-60 Protection Paladins. That gives 172 average armor outside Strongholds (WoWSims a73af71451).
-LION_HORN_AVERAGE_ARMOR = 172
+# Average armor from the Lion Horn (725 armor on proc) against a frontal boss swinging every 2 s.
+# The tank's avoidance changes its uptime. These are rounded means measured on both factions.
+TANK_HORN_ARMOR = {("DRUID", 2): 196, ("PALADIN", 2): 172, ("WARRIOR", 3): 174}
 
 
-def protection_trinket_bonuses(weights: dict) -> dict:
-    """Stat-weight contributions beyond the permanent defense or dodge already on the tooltip."""
-    # The Mark gives 620 maximum health for 15 s every five minutes. Ten base health correspond to
-    # one point of Stamina at this level. A planned use against a burst gives the full health buffer.
-    stamina = 620 / 10 * 15 / 300
-    return {14557: LION_HORN_AVERAGE_ARMOR * weights.get("armor", 0), 13966: stamina * weights.get(STAMINA, 0)}
+def tank_trinket_bonuses(cls: str, spec: int, weights: dict) -> dict:
+    """Contributions above passive defense and dodge, for the level-60 PvE tank lists."""
+    armor = TANK_HORN_ARMOR.get((cls, spec))
+    if armor is None:
+        return {}
+    # Mark of Tyranny gives 620 maximum health for 15 s every 5 min. At base stats, 10 HP = 1 Stamina.
+    mark_stamina = (620 / 10) * (15 / 300)
+    bonuses = {14557: armor * weights.get("armor", 0), 13966: mark_stamina * weights.get(STAMINA, 0)}
+    # Arena Grand Master's absorb can win on a short fight. Its nine-minute cooldown reverses
+    # that comparison against Grip in the long tests, so it remains a situational alternative.
+    if cls != "DRUID":
+        # Defender's Grip Stabilizer gives 8% block for 15 s every 6 min. One percent takes 5 block rating.
+        bonuses[272440] = 8 * 5 * (15 / 360) * weights.get(BLOCK_RATING, 0)
+    return bonuses
 
 
 def unvalued(db, cls: str, spec: int) -> frozenset:

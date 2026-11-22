@@ -10,7 +10,7 @@
 - **Tanks.** Shields now include their intrinsic block value as well as any explicit equip bonus.
 - **Group Finder.** EasyBIS uses its own menu buttons and only hides tooltips it owns when a menu or row loses focus.
 - **Item rankings.** Items with an unscored effect show “Situational”. “Tied” is reserved for matching scores.
-- **Protection Paladin PvE trinkets.** The Lion Horn of Stormwind now counts its armor proc. Mark of Tyranny ranks above Smotts’ Compass because it gives the same 1% dodge and adds a maximum-health cooldown.
+- **Tank PvE trinkets.** The Lion Horn of Stormwind and Defender’s Grip Stabilizer lead the pre-raid physical tank lists. Mark of Tyranny ranks above Smotts’ Compass for Protection Paladins, Protection Warriors and Feral Bears. Arena Grand Master is a situational absorb.
 - **Hunter and Rogue.** Hunter ranged attacks benefit from attack power and ranged hit. The Survival PvP list accounts for melee weapon damage. Assassination’s PvP weapon recommendations use daggers for Mutilate.
 - **Warlock.** Lapidis Tankard lost the DPS credited to drinking its beverage in combat. For Destruction, Sandstorm Cover edges ahead of Glowing Thresher Cape.
 - **Availability.** Class-restricted quest rewards and faction variants follow the character. Alterac Valley quest rewards respect the PvP filter, and Sulfuron Hammer requires Molten Core materials. Arathi Basin mail shoulders use the correct item for each faction.

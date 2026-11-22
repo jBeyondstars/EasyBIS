@@ -1555,7 +1555,7 @@ class SpecsTest(unittest.TestCase):
             for mode in ladders.MODES:
                 ladder = self.ladder(token, number, mode, "trinket")
                 level = [entry for entry in ladder if entry.level]
-                expected = {self.ARENA_GRAND_MASTER} if (token, mode) == ("PALADIN", "pve") else trinkets
+                expected = {self.ARENA_GRAND_MASTER} if mode == "pve" else trinkets
                 self.assertEqual({entry.item_id for entry in level}, expected, f"{token} {mode}")
                 self.assertEqual(ladder[:len(level)], level, "at the head of the ladder")
                 first = ladder[len(level)]
@@ -1564,6 +1564,14 @@ class SpecsTest(unittest.TestCase):
                     self.assertEqual(entry.score, first.score, "a stand-in: the ladder stays in order")
                     self.assertIn(":x", luaout.encode_entry(entry))
                 self.assertIs(ladders.lead(ladder), first, "never a best pick")
+        for token, number in self.TANKS:
+            pool = self.ladder(token, number, "pve", "trinket")
+            for side in ("a", "h"):
+                visible = [entry for entry in pool if entry.passes((side, False, False, 0, False, 6))]
+                best, _ = ladders.picks("trinket", visible)
+                self.assertEqual([entry.shown(side) for entry in best], [self.LION_HORN, self.STABILIZER])
+                scores = {entry.item_id: entry.stored for entry in visible}
+                self.assertGreater(scores[self.MARK_OF_TYRANNY], scores[4130])
         for slot, item_id in (("main", self.QUEL_SERRAR), ("off", self.FORCE_REACTIVE_DISK)):
             for token, number in (("PALADIN", 2), ("WARRIOR", 3)):
                 ladder = self.ladder(token, number, "pve", slot)

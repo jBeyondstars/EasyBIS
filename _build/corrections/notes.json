@@ -18,7 +18,9 @@
     13966
    ],
    "specs": [
-    "PALADIN 2"
+    "DRUID 2",
+    "PALADIN 2",
+    "WARRIOR 3"
    ],
    "slot": "trinket",
    "list": "pve",
@@ -27,15 +29,76 @@
   },
   {
    "items": [
-    4130
+    14557
+   ],
+   "specs": [
+    "DRUID 2"
+   ],
+   "slot": "trinket",
+   "list": "pve",
+   "en": "Against a physical boss, the horn’s proc adds about 196 armor on average in Bear Form.",
+   "fr": "Contre un boss physique, le proc du cor vaut environ 196 d’armure en moyenne en forme d’ours."
+  },
+  {
+   "items": [
+    14557
+   ],
+   "specs": [
+    "WARRIOR 3"
+   ],
+   "slot": "trinket",
+   "list": "pve",
+   "en": "Against a physical boss, the horn’s proc adds about 174 armor on average.",
+   "fr": "Contre un boss physique, le proc du cor vaut environ 174 d’armure en moyenne."
+  },
+  {
+   "items": [
+    272440
+   ],
+   "specs": [
+    "DRUID 2"
+   ],
+   "slot": "trinket",
+   "list": "pve",
+   "en": "The 13 Defense works in Bear Form. A bear cannot block, so the on-use effect adds no mitigation.",
+   "fr": "Les 13 de défense fonctionnent en forme d’ours. L’ours ne peut pas bloquer à l’activation."
+  },
+  {
+   "items": [
+    19024
    ],
    "specs": [
     "PALADIN 2"
    ],
    "slot": "trinket",
    "list": "pve",
-   "en": "Its only combat bonus is 1% dodge.",
-   "fr": "Son seul bonus en combat est 1 % d’esquive."
+   "en": "Use its shield after Templar’s Bulwark so their absorbs do not overlap.",
+   "fr": "Active son bouclier après le Rempart du templier pour éviter que les deux absorptions se chevauchent."
+  },
+  {
+   "items": [
+    19024
+   ],
+   "specs": [
+    "DRUID 2",
+    "WARRIOR 3"
+   ],
+   "slot": "trinket",
+   "list": "pve",
+   "en": "The absorb helps with a damage spike. Its nine-minute cooldown limits its value in long fights.",
+   "fr": "Son bouclier aide à encaisser un pic de dégâts. Sa recharge de 9 min limite son apport sur la durée."
+  },
+  {
+   "items": [
+    18466
+   ],
+   "specs": [
+    "WARRIOR 3"
+   ],
+   "slot": "trinket",
+   "list": "pve",
+   "en": "Its 30 block value improves Shield Slam threat as well as damage blocked.",
+   "fr": "Ses 30 de blocage augmentent aussi la menace de Heurt de bouclier."
   },
   {
    "items": [

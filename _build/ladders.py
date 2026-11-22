@@ -240,8 +240,8 @@ def full_ladder(db, cls: str, spec: int, mode: str, slot: str, level: int | None
     # What the weights cannot value (specs.unvalued) is listed whatever they give it: it stands level with the best.
     level_ids = specs.unvalued(db, cls, spec) if ours and ranked is None else frozenset()
     bonuses = {}
-    if ours and ranked is None and (cls, spec, mode, slot) == ("PALADIN", 2, "pve", "trinket"):
-        bonuses = specs.protection_trinket_bonuses(weights)
+    if ours and ranked is None and (mode, slot) == ("pve", "trinket"):
+        bonuses = specs.tank_trinket_bonuses(cls, spec, weights)
         level_ids = level_ids.difference(bonuses)
 
     entries, seen_ids, weighed = [], set(), {}
