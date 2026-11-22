@@ -28,6 +28,9 @@ The window's controls use the game's panel, menu and achievement artwork.
                                                    alpha to the other ("HORIZONTAL": to the right)
 
 An active filter has a gold label. The green badge marks a new tab.
+
+Controls set on one line look one height: each one's art is laid over its frame so that its bevel starts a
+twentieth of the frame's height inside it, whatever margin the artwork has of its own (ART, FitArt).
 ]]
 
 local Widgets = {}
@@ -42,6 +45,23 @@ local CHECK_SIZE = 22
 local SIDE_TAB, SIDE_TAB_GAP, SIDE_TAB_TOP = 32, 17, 36   -- a tab of the window's side, the room under it, the first one's place
 Widgets.SIDE_ROOM = SIDE_TAB + 6   -- what the side tabs take on the window's right
 local CATEGORY_ART = "Interface\\AchievementFrame\\UI-Achievement-Category-"
+
+-- How far each artwork reaches past its control, as shares of the control's height: above, below, and in
+-- points on each side. The game's art has margins of its own, a shadow under it mostly, and none the same:
+-- left as the templates set them, a row of controls of one height shows three heights. Measured in the
+-- game, so that every bevel starts a twentieth of the height inside the frame, as a panel button's does.
+local ART = {
+    choice = { 0.20, 0.40, 0 },      -- of the texture's 32 rows, 4 are empty above the 20 drawn and 8 below
+    menu = { 0.087, 0.123, 2 },      -- the options button: its holder is drawn on 74% of its height, 11% down
+    dropdown = { 0.24, 0.33, 4 },    -- a dropdown's holder: drawn on 57% of its height, 18% down; the sides
+    --                                  stay clear of the next filter
+}
+
+local function FitArt(texture, control, art)
+    texture:ClearAllPoints()
+    texture:SetPoint("TOPLEFT", control, "TOPLEFT", -art[3], art[1] * CONTROL_HEIGHT)
+    texture:SetPoint("BOTTOMRIGHT", control, "BOTTOMRIGHT", art[3], -art[2] * CONTROL_HEIGHT)
+end
 
 function Widgets.Click()
     if PlaySound and SOUNDKIT then PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON) end
@@ -89,6 +109,10 @@ function Widgets.MenuButton(parent, text, width)
     button:SetText(text)
     button.Text:SetTextColor(GOLD[1], GOLD[2], GOLD[3])
     button:SetSize(width, CONTROL_HEIGHT)
+    FitArt(button.Background, button, ART.menu)
+    -- The template hangs its text from the top, higher than a panel button's: in the middle, as theirs is.
+    button.Text:ClearAllPoints()
+    button.Text:SetPoint("CENTER")
     return button
 end
 
@@ -99,13 +123,11 @@ local function CategoryTexture(button, layer, art)
     return texture
 end
 
-local function ChoiceButton(parent, text, topInset)
+local function ChoiceButton(parent, text)
     local button = CreateFrame("Button", nil, parent)
     button:SetHeight(CONTROL_HEIGHT)
     local face = CategoryTexture(button, "BACKGROUND", "Background")
-    -- The original art has more shadow below the bevel than above it.
-    face:SetPoint("TOPLEFT", 0, 5 - (topInset or 0))
-    face:SetPoint("BOTTOMRIGHT", 0, -10)
+    FitArt(face, button, ART.choice)
     local highlight = CategoryTexture(button, "HIGHLIGHT", "Highlight")
     highlight:SetBlendMode("ADD")
     button:SetHighlightTexture(highlight)
@@ -166,9 +188,8 @@ function Widgets.Dropdown(parent, label, width)
         local button = CreateFrame("DropdownButton", nil, filter, "WowStyle1DropdownTemplate")
         button:SetSize(width, CONTROL_HEIGHT)
         button.Text:SetJustifyH("LEFT")
-        button.Background:ClearAllPoints()
-        button.Background:SetPoint("TOPLEFT", -4, 8)
-        button.Background:SetPoint("BOTTOMRIGHT", 4, -9)
+        -- The stock holder sits half a point high on its button, off the arrow's middle and the text's.
+        FitArt(button.Background, button, ART.dropdown)
         filter.button = button
     else
         filter.button = Widgets.Button(filter, " ", width)
@@ -279,7 +300,7 @@ function Widgets.SideTabs(parent, options, get, set)
 end
 
 function Widgets.Toggle(parent, text, get, set)
-    local button = ChoiceButton(parent, text, 1)   -- align the top bevel with the adjacent footer actions
+    local button = ChoiceButton(parent, text)
     button:SetScript("OnClick", function()
         Widgets.Click()
         set(not get())
