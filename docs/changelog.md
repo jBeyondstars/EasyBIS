@@ -1,3 +1,12 @@
+# Easy BIS 1.9.4
+
+- **Feral Bear PvE.** Force of Will is the fourth pre-raid trinket, just after Arena Grand Master. It appears with the default two alternatives. Its damage reduction is especially useful against packs. Mark of the Chosen is an option for threat.
+- **Healers.** Tome of Divine Right ranks first among pre-raid PvE off-hands for all five healing specs. Hammer of Revitalization ranks first for Holy Paladins and second for Restoration Druids, Restoration Shamans and both Priest healing specs.
+- **Relics.** Druids, Paladins and Shamans now have relic recommendations for all 11 specs in PvE and PvP. Idol of the Dream leads for raid cats staying in Cat Form. Short notes explain which spells benefit from each relic.
+- **Caster trinkets.** Pre-raid PvE rankings for ten damage specs now account for faction and trinket partner. Eye of the Beast pairs with Weakness Analyzer for Shadow Priests, Balance Druids and all three Warlock specs. Fire Mages keep Weakness Analyzer and Smolderweb's Eye in both factions.
+- **Situational gear.** Rune of the Dawn and Seal of the Dawn appear against undead, Force of Will for Protection tanks against packs, and Skullflame Shield for multi-target Warrior threat. Ramstein's Lightning Bolts is a PvP stun option for every spec. These choices appear alongside the usual alternatives.
+- **Quest sources.** Faction-specific rewards such as Eye of the Beast and Mark of Tyranny now show the quest for the selected faction.
+
 # Easy BIS 1.9.3
 
 ## Item notes

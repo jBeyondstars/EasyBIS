@@ -32,6 +32,14 @@ class CasterGearTest(unittest.TestCase):
                     self.assertNotIn(22315, [i for i, _ in pools.get("mh", ())])
 
     @unittest.skipIf(lupa is None, "lupa is not installed")
+    def test_drakkisath_quest_rewards_show_the_selected_factions_quest(self):
+        for faction, quest in (("Alliance", "General Drakkisath's Demise"), ("Horde", "For The Horde!")):
+            game = Game(faction=faction)
+            for item in (13968, 13966):
+                with self.subTest(faction=faction, item=item):
+                    self.assertEqual(game.ns.Sources.Describe(item).detail, quest)
+
+    @unittest.skipIf(lupa is None, "lupa is not installed")
     def test_both_factions_see_the_correct_healer_weapon_set(self):
         game = Game()
         for cls, spec in (("DRUID", 3), ("PALADIN", 1), ("PRIEST", 1), ("PRIEST", 2), ("SHAMAN", 3)):
