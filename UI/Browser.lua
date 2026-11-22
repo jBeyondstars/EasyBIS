@@ -1128,7 +1128,7 @@ local function SetTarget(class, spec, list)
 end
 
 function Browser.SpecFilter(parent)
-    local filter = Widgets.Dropdown(parent, L.FILTER_SPEC, 200)
+    local filter = Widgets.Dropdown(parent, L.FILTER_SPEC, 176)
     SetupChoices(filter.button, SpecChoices,
         function() return SpecKey(Browser.Target()) end,
         function(value)
@@ -1287,10 +1287,6 @@ local function Build()
     window.alts:SetPoint("RIGHT", window.options, "LEFT", -8, 0)
 
     window.add = Widgets.Button(window, "+ " .. L.ADD_BUTTON)
-    local actionWidth = math.max(window.add:GetWidth(), window.alts:GetWidth(), window.options:GetWidth())
-    window.add:SetWidth(actionWidth)
-    window.alts:SetWidth(actionWidth)
-    window.options:SetWidth(actionWidth)
     window.add:SetPoint("RIGHT", window.alts, "LEFT", -8, 0)
     window.add:SetScript("OnClick", function()
         Widgets.Click()

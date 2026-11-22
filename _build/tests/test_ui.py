@@ -1111,7 +1111,7 @@ class WindowTest(unittest.TestCase):
             C_LFGList = { Search = function() error("unexpected LFG search") end }
         """)
         window = game.ns.Browser.window
-        game.stub.run(window.spec.button, "OnClick")
+        game.stub.run(window.spec.button, "OnMouseDown", "LeftButton")
         root = game.stub.menuPanel(1)
         warrior = next(row for row in root.rows.values() if "Warrior" in plain(row.entry.text))
         game.stub.run(warrior, "OnEnter")
@@ -1122,7 +1122,7 @@ class WindowTest(unittest.TestCase):
         self.assertFalse(root.shown)
         self.assertFalse(sub.shown)
 
-        game.stub.run(window.options, "OnClick")
+        game.stub.run(window.options, "OnMouseDown", "LeftButton")
         row = next(row for row in root.rows.values() if row.entry and row.entry.text == game.ns.L.OPT_tooltip)
         game.stub.run(row, "OnClick")
         self.assertFalse(game.ns.db.tooltip)
@@ -2819,9 +2819,16 @@ class WindowTest(unittest.TestCase):
             game = self.open(locale=locale)
             window = game.ns.Browser.window
             self.assertEqual(len(window.tabs.buttons), 5)
-            self.assertEqual(window.add.width, window.alts.width)
-            self.assertEqual(window.add.width, window.options.width)
-            self.assertEqual(label(window.options), game.ns.L.OPTIONS)
+            self.assertEqual(window.options.width, 88)
+            self.assertEqual(window.alts.Text.fontObject, "GameFontNormalSmall")
+            self.assertEqual(window.add.template, "UIPanelButtonTemplate")
+            for name in ("spec", "phase", "slot", "source", "zone", "reputation"):
+                self.assertEqual(window[name].button.template, "WowStyle1DropdownTemplate")
+            self.assertEqual(window.options.template, "WowStyle1FilterDropdownTemplate")
+            open_dropdown(game, window.spec.button)
+            self.assertTrue(game.stub.menu.panel.shown)
+            open_dropdown(game, window.options)
+            self.assertEqual(game.stub.menu.panel.rows[1].label.text, window.options.Text.text)
             tabs_right = window.tabs.points[1][2] + window.tabs.width
             actions_width = window.add.width + window.alts.width + window.options.width + 2 * 8
             self.assertLess(tabs_right, window.width + window.options.points[1][2] - actions_width, locale)

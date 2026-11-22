@@ -447,7 +447,7 @@ function stub.setupMenu(button, generator)
 end
 
 function stub.openMenu(button)
-    return MenuUtil.CreateContextMenu(button, button.menuGenerator)
+    if button.menuGenerator then return MenuUtil.CreateContextMenu(button, button.menuGenerator) end
 end
 
 ---------------------------------------------------------------------------
@@ -516,10 +516,11 @@ end
 
 function stub.openFilter(button)
     local panel = stub.menuPanel(1)
-    if panel and panel.anchor == button then stub.run(button, "OnClick") end
-    stub.run(button, "OnClick")
+    local script = button.kind == "DropdownButton" and "OnMouseDown" or "OnClick"
+    if panel and panel.anchor == button then stub.run(button, script, "LeftButton") end
+    stub.run(button, script, "LeftButton")
     panel = stub.menuPanel(1)
-    stub.menu = panel and { items = panel.entries } or nil
+    stub.menu = panel and { items = panel.entries, panel = panel } or nil
 end
 
 function stub.clearChat() stub.chat = {} end

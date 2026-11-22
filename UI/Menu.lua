@@ -6,7 +6,12 @@ local W = ns.Widgets
 local Menu = {}
 ns.Menu = Menu
 local panels = {}
-local ROW, PAD = 22, 5
+local ROW = 20
+local FILTER = { atlas = "common-dropdown-classic-bg", padX = 16, padY = 10, top = 3 }
+local OPTIONS = { atlas = "common-dropdown-classic-b-bg", padX = 14, padY = 14, top = 1 }
+local function HasAtlas(name)
+    return C_Texture and C_Texture.GetAtlasInfo and C_Texture.GetAtlasInfo(name) ~= nil
+end
 
 local function CloseFrom(level)
     for i = #panels, level, -1 do
@@ -21,7 +26,24 @@ end
 local function RefreshMarks()
     for _, panel in ipairs(panels) do
         for i, entry in ipairs(panel.entries or {}) do
-            panel.rows[i].mark:SetShown(entry.selected and entry.selected() or false)
+            local mark = panel.rows[i].mark
+            local selected = entry.selected and entry.selected()
+            if entry.kind == "radio" then
+                local atlas = selected and "common-dropdown-icon-radialtick-yellow-classic" or "common-dropdown-tickradial-classic"
+                if HasAtlas(atlas) then
+                    mark:SetAtlas(atlas, true)
+                else
+                    mark:SetTexture("Interface\\Buttons\\UI-RadioButton")
+                    local left = selected and 0.25 or 0
+                    mark:SetTexCoord(left, left + 0.25, 0, 1)
+                    mark:SetSize(16, 16)
+                end
+            elseif entry.kind == "checkbox" then
+                mark:SetTexture("Interface\\Buttons\\UI-CheckBox-Check")
+                mark:SetTexCoord(0, 1, 0, 1)
+                mark:SetSize(20, 20)
+            end
+            mark:SetShown(entry.kind == "radio" or selected or false)
         end
     end
 end
@@ -31,7 +53,7 @@ local ShowLevel
 local function Enter(row)
     local level = row.panel.level + 1
     if row.entry.items then
-        ShowLevel(level, row, row.entry.items)
+        ShowLevel(level, row, row.entry.items, row.panel.style)
     else
         CloseFrom(level)
     end
@@ -53,15 +75,18 @@ local function MakeRow(panel)
     local row = CreateFrame("Button", nil, panel.child)
     row.panel = panel
     row:SetHeight(ROW)
-    W.ListHighlight(row, "HIGHLIGHT", 0.5)
+    W.ListHighlight(row, "HIGHLIGHT", 1)
     row.label = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-    row.label:SetPoint("LEFT", 20, 0)
     row.mark = row:CreateTexture(nil, "ARTWORK")
-    row.mark:SetSize(16, 16)
-    row.mark:SetPoint("LEFT", 1, 0)
+    row.mark:SetPoint("LEFT")
+    row.divider = row:CreateTexture(nil, "ARTWORK")
+    row.divider:SetTexture("Interface\\Common\\UI-TooltipDivider-Transparent")
+    row.divider:SetPoint("LEFT")
+    row.divider:SetPoint("RIGHT")
+    row.divider:SetHeight(13)
     row.arrow = row:CreateTexture(nil, "ARTWORK")
-    row.arrow:SetSize(14, 14)
-    row.arrow:SetPoint("RIGHT", -2, 0)
+    row.arrow:SetSize(16, 16)
+    row.arrow:SetPoint("RIGHT")
     row.arrow:SetTexture("Interface\\ChatFrame\\ChatFrameExpandArrow")
     row:SetScript("OnEnter", Enter)
     row:SetScript("OnClick", Pick)
@@ -75,11 +100,12 @@ local function MakePanel(level)
     panel:SetFrameLevel(100 + level * 10)
     panel:SetClampedToScreen(true)
     panel:EnableMouse(true)
-    panel:SetBackdrop(W.FLAT)
-    panel:SetBackdropColor(0.06, 0.06, 0.07, 0.98)
-    panel:SetBackdropBorderColor(0.44, 0.40, 0.32, 1)
+    local fill = panel:CreateTexture(nil, "BACKGROUND")
+    fill:SetColorTexture(0, 0, 0, 0.8)
+    fill:SetPoint("TOPLEFT", 3, -3)
+    fill:SetPoint("BOTTOMRIGHT", -3, 3)
+    panel.border = panel:CreateTexture(nil, "BORDER")
     panel.scroll, panel.child = W.Scroll(panel)
-    panel.scroll:SetPoint("TOPLEFT", PAD, -PAD)
     if level == 1 then
         panel:SetScript("OnShow", function(self) self:RegisterEvent("GLOBAL_MOUSE_DOWN") end)
         panel:SetScript("OnHide", function(self) self:UnregisterEvent("GLOBAL_MOUSE_DOWN") end)
@@ -96,28 +122,43 @@ local function MakePanel(level)
     return panel
 end
 
-ShowLevel = function(level, anchor, entries)
+ShowLevel = function(level, anchor, entries, style)
     local panel = panels[level] or MakePanel(level)
     if panel:IsShown() and panel.anchor == anchor and panel.entries == entries then return end
     CloseFrom(level + 1)
-    panel.anchor, panel.entries = anchor, entries
+    panel.anchor, panel.entries, panel.style = anchor, entries, style
+    local native = HasAtlas(style.atlas)
+    if native then
+        panel:SetBackdrop(nil)
+        panel.border:SetAtlas(style.atlas)
+    else
+        panel:SetBackdrop({ edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border", edgeSize = 14 })
+    end
+    panel.border:SetShown(native and true or false)
+    panel.border:ClearAllPoints()
+    panel.border:SetPoint("TOPLEFT", -3, style.top)
+    panel.border:SetPoint("BOTTOMRIGHT", 3, -4)
+    panel.scroll:ClearAllPoints()
+    panel.scroll:SetPoint("TOPLEFT", style.padX, -style.padY)
     local width, height = anchor:GetWidth(), 0
     for i, entry in ipairs(entries) do
         local row = panel.rows[i] or MakeRow(panel)
         panel.rows[i], row.entry = row, entry
         row.label:SetText(entry.text or "")
         row.label:SetFontObject(entry.kind == "title" and "GameFontNormal" or "GameFontHighlight")
+        row.label:ClearAllPoints()
+        if entry.selected then
+            row.label:SetPoint("LEFT", row.mark, "RIGHT", 2, 0)
+        else
+            row.label:SetPoint("LEFT")
+        end
+        row.divider:SetShown(entry.kind == "divider")
         row.arrow:SetShown(entry.items ~= nil)
         row:SetEnabled(entry.pick ~= nil or entry.items ~= nil)
         row:ClearAllPoints()
         row:SetPoint("TOPLEFT", 0, -height)
         row:SetPoint("TOPRIGHT", panel.child, "TOPRIGHT", 0, -height)
-        if entry.kind == "radio" then
-            row.mark:SetAtlas("common-dropdown-icon-radialtick-yellow-classic")
-        else
-            row.mark:SetTexture("Interface\\Buttons\\UI-CheckBox-Check")
-        end
-        row:SetHeight(entry.kind == "divider" and 6 or ROW)
+        row:SetHeight(entry.kind == "divider" and 13 or ROW)
         width = math.max(width, row.label:GetStringWidth() + 42)
         height = height + row:GetHeight()
         row:Show()
@@ -130,8 +171,8 @@ ShowLevel = function(level, anchor, entries)
     panel.child:SetSize(width, height)
     panel.scroll:SetSize(width, visible)
     panel.scroll:SetVerticalScroll(0)
-    width = width + 2 * PAD + (visible < height and 20 or 0)
-    panel:SetSize(width, visible + 2 * PAD)
+    width = width + 2 * style.padX + (visible < height and 20 or 0)
+    panel:SetSize(width, visible + 2 * style.padY)
     panel:ClearAllPoints()
     if level == 1 then
         if (anchor:GetBottom() or 0) < panel:GetHeight() then
@@ -149,14 +190,16 @@ ShowLevel = function(level, anchor, entries)
 end
 
 function Menu.Attach(button, entries, keepOpen)
-    button:SetScript("OnClick", function()
+    -- The native control paints the pressed state. Only our private panel supplies menu rows.
+    button:HookScript("OnMouseDown", function(self, mouseButton)
+        if mouseButton ~= "LeftButton" or not self:IsEnabled() then return end
         local root = panels[1]
         if root and root:IsShown() and root.anchor == button then
             CloseFrom(1)
             return
         end
         W.Click()
-        ShowLevel(1, button, entries())
+        ShowLevel(1, button, entries(), keepOpen and OPTIONS or FILTER)
         panels[1].keepOpen = keepOpen
     end)
     button:HookScript("OnHide", function()

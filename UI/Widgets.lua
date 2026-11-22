@@ -83,17 +83,19 @@ function Widgets.Button(parent, text, width)
 end
 
 function Widgets.MenuButton(parent, text, width)
-    local button = Widgets.Button(parent, text, width)
-    button.Text = button:GetFontString()
+    if not MenuUtil then return Widgets.Button(parent, text, width) end
+    local button = CreateFrame("DropdownButton", nil, parent, "WowStyle1FilterDropdownTemplate")
+    button.resizeToText = false
+    button:SetText(text)
+    button.Text:SetTextColor(GOLD[1], GOLD[2], GOLD[3])
+    button:SetSize(width, CONTROL_HEIGHT)
     return button
 end
 
 local function CategoryTexture(button, layer, art)
     local texture = button:CreateTexture(nil, layer)
     texture:SetTexture(CATEGORY_ART .. art)
-    -- The bevel occupies rows 4..23 of the 256 x 32 texture. Trim its uneven shadow
-    -- so the bevel and highlight are centered on the text and fill the click target.
-    texture:SetTexCoord(2 / 256, 165 / 256, 4 / 32, 24 / 32)
+    texture:SetTexCoord(0, 170 / 256, 0, 1)
     return texture
 end
 
@@ -101,13 +103,14 @@ local function ChoiceButton(parent, text, topInset)
     local button = CreateFrame("Button", nil, parent)
     button:SetHeight(CONTROL_HEIGHT)
     local face = CategoryTexture(button, "BACKGROUND", "Background")
-    face:SetPoint("TOPLEFT", 0, -(topInset or 0))
-    face:SetPoint("BOTTOMRIGHT")
+    -- The original art has more shadow below the bevel than above it.
+    face:SetPoint("TOPLEFT", 0, 5 - (topInset or 0))
+    face:SetPoint("BOTTOMRIGHT", 0, -10)
     local highlight = CategoryTexture(button, "HIGHLIGHT", "Highlight")
     highlight:SetBlendMode("ADD")
     button:SetHighlightTexture(highlight)
     highlight:SetAllPoints(face)
-    button.Text = button:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    button.Text = button:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     button.Text:SetPoint("CENTER")
     button.Text:SetText(text)
     button:SetWidth(math.max(60, math.ceil(button.Text:GetStringWidth()) + 24))
@@ -159,22 +162,26 @@ end
 function Widgets.Dropdown(parent, label, width)
     local filter = CreateFrame("Frame", nil, parent)
     filter:SetSize(width, CONTROL_HEIGHT + FILTER_LABEL_HEIGHT)
-    local button = Widgets.MenuButton(filter, " ", width)
-    filter.button = button
-    button.Text:SetFontObject("GameFontHighlight")
-    button.Text:ClearAllPoints()
-    button.Text:SetPoint("LEFT", button, "LEFT", 8, 0)
-    button.Text:SetPoint("RIGHT", button, "RIGHT", -18, 0)
-    button.Text:SetJustifyH("LEFT")
-    local arrow = button:CreateTexture(nil, "ARTWORK")
-    arrow:SetSize(14, 14)
-    arrow:SetPoint("RIGHT", -3, 0)
-    arrow:SetTexture("Interface\\ChatFrame\\UI-ChatIcon-ScrollDown-Up")
+    if MenuUtil then
+        local button = CreateFrame("DropdownButton", nil, filter, "WowStyle1DropdownTemplate")
+        button:SetSize(width, CONTROL_HEIGHT)
+        button.Text:SetJustifyH("LEFT")
+        button.Background:ClearAllPoints()
+        button.Background:SetPoint("TOPLEFT", -4, 8)
+        button.Background:SetPoint("BOTTOMRIGHT", 4, -9)
+        filter.button = button
+    else
+        filter.button = Widgets.Button(filter, " ", width)
+    end
     filter.button:SetPoint("BOTTOMLEFT", 0, 0)
     filter.label = Widgets.FilterLabel(filter.button, label)
 
     function filter:Set(text, active)
-        self.button:SetText(text)
+        if self.button.OverrideText then
+            self.button:OverrideText(text)
+        else
+            self.button:SetText(text)
+        end
         local color = active and GOLD or Widgets.MUTED
         self.label:SetTextColor(color[1], color[2], color[3])
     end

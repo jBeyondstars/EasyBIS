@@ -14,7 +14,7 @@
 - **Hunter and Rogue.** Hunter ranged attacks benefit from attack power and ranged hit. The Survival PvP list accounts for melee weapon damage. Assassination’s PvP weapon recommendations use daggers for Mutilate.
 - **Warlock.** Lapidis Tankard lost the DPS credited to drinking its beverage in combat. For Destruction, Sandstorm Cover edges ahead of Glowing Thresher Cape.
 - **Availability.** Class-restricted quest rewards and faction variants follow the character. Alterac Valley quest rewards respect the PvP filter, and Sulfuron Hammer requires Molten Core materials. Arathi Basin mail shoulders use the correct item for each faction.
-- **Interface.** Visible filters sit next to one another when switching tabs. Footer buttons share a width, the data credit sits below them, and the auction scan status is vertically centered.
+- **Interface.** Visible filters sit next to one another when switching tabs. Filters and Options use the original WoW styling, footer buttons keep their individual widths, and the auction scan status is vertically centered.
 
 # Easy BIS 1.9.0
 
