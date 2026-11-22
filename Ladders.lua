@@ -52,7 +52,8 @@ end
 -- flags: s seen in Forever, n new in Forever, u no known source, U unique, t two-hander, r random bonus,
 -- p a PvP reward, v a Premier piece (sold for honor, even when the data gives it no source), e placed from a
 -- close spec's simulation; x situational effect beyond the stat weights; g estimated simulation score;
--- b incomplete faction-specific measurement, j extra situational option, k situational only in pre-raid.
+-- b incomplete faction-specific measurement, j extra situational option, f show that option fourth,
+-- k situational only in pre-raid.
 -- A digit gives the content phase the item needs (entry.phase, 0 without one).
 function Ladders.HasFlag(entry, letter)
     return entry.flags:find(letter, 1, true) ~= nil
@@ -93,6 +94,9 @@ function Ladders.Decode(class)
                 local slots = target[index][first]
                 slots[second] = slots[second] or {}
                 slots[second][context] = entries
+                if second == "off" and context ~= "situational" then
+                    slots[second].hasWeaponContexts = true
+                end
             else
                 target[index][first][second] = entries
             end
@@ -114,14 +118,18 @@ end
 -- filter.pvpRewards: whether the PvP rewards count, as { pve = bool, pvp = bool } or one answer for both
 -- lists; they count when the filter does not say. filter.rankCap: the rank the week's cap allows, nil when
 -- the list does not follow it. A list that follows it counts the Premier pieces it allows, source known or not.
-local function Visible(entries, filter, list)
+local function Visible(entries, filter, list, extras)
     local rewards = filter.pvpRewards
     if type(rewards) == "table" then rewards = rewards[list] end
     local cap = filter.rankCap
-    local visible, options = {}, nil
+    local visible, options, conditional = {}, nil, {}
+    if filter.phase == 0 and extras then
+        options = Visible(extras, filter, list)
+        for _, pick in ipairs(options) do conditional[pick.id] = true end
+    end
     for _, entry in ipairs(entries or {}) do
         local id = Shown(entry, filter.side)
-        if id
+        if id and not conditional[id]
             and entry.phase <= (filter.phase or 9)
             and (not cap or entry.rank <= cap)
             and (filter.unsourced or not Ladders.HasFlag(entry, "u") or (cap and Ladders.HasFlag(entry, "v")))
@@ -141,6 +149,16 @@ local function Visible(entries, filter, list)
         for _, pick in ipairs(options) do visible[#visible + 1] = pick end
     end
     return visible
+end
+
+local function Context(slot, filter, companion)
+    if not slot then return nil end
+    local key = companion and (filter.side .. ":" .. companion) or filter.side
+    if filter.phase == 0 then
+        if slot["pre:" .. filter.side] then return slot["pre:" .. key] end
+        if not companion and slot.pre then return slot.pre end
+    end
+    return slot[key]
 end
 
 -- Whether an entry's score is a stand-in that keeps the ladder in order, not its own: placed from a close spec's
@@ -204,7 +222,9 @@ local function Picks(slot, visible, count)
         -- Keep the ordinary number of alternatives when a situational pick is offered.
         visible[#visible] = nil
         best, alts = Picks(slot, visible, count)
-        alts[#alts + 1] = last
+        local position = #alts + 1
+        if Ladders.HasFlag(last.entry, "f") then position = math.min(position, 4 - #best) end
+        table.insert(alts, position, last)
         return best, alts
     end
     local first = Ladders.Lead(visible)
@@ -235,15 +255,14 @@ function Ladders.Compute(data, spec, list, filter)
     local visible = {}
     for _, slot in ipairs(ns.SLOTS) do
         local entries = ladders[slot]
-        if contexts[slot] then
-            entries = (filter.phase == 0 and contexts[slot].pre) or contexts[slot][filter.side] or entries
-        end
-        visible[slot] = Visible(entries, filter, list)
+        entries = Context(contexts[slot], filter) or entries
+        local extras = contexts[slot] and contexts[slot].situational
+        visible[slot] = Visible(entries, filter, list, extras)
         if contexts[slot] and ns.PAIRED[slot] then
             local first = Ladders.Lead(visible[slot])
-            local paired = first and contexts[slot][filter.side .. ":" .. first.id]
+            local paired = first and Context(contexts[slot], filter, first.id)
             if paired then
-                local companions = Visible(paired, filter, list)
+                local companions = Visible(paired, filter, list, extras)
                 for _, pick in ipairs(companions) do pick.pairedWith = first.id end
                 table.insert(companions, 1, first)
                 visible[slot] = companions
@@ -251,7 +270,7 @@ function Ladders.Compute(data, spec, list, filter)
         end
     end
     local offSets = contexts.off
-    if offSets then
+    if offSets and offSets.hasWeaponContexts then
         -- An off-hand gain depends on the hit and stats of this actual main hand.
         local one = {}
         for _, pick in ipairs(visible.main) do
@@ -259,8 +278,8 @@ function Ladders.Compute(data, spec, list, filter)
         end
         local first = Ladders.Lead(one)
         if first then
-            local selected = offSets[filter.side .. ":" .. first.id] or offSets[filter.side]
-            visible.off = Visible(selected, filter, list)
+            local selected = Context(offSets, filter, first.id) or Context(offSets, filter)
+            if selected then visible.off = Visible(selected, filter, list, offSets.situational) end
         end
     end
     local twoHand, otherMain, otherOff, measuredWeaponSet
@@ -276,9 +295,9 @@ function Ladders.Compute(data, spec, list, filter)
     end
     result.main.other = First(otherMain, 1 + count)
     result.off.other = First(otherOff, 1 + count)
-    if offSets and twoHand then
+    if offSets and offSets.hasWeaponContexts and twoHand then
         for _, pick in ipairs(result.main.other) do
-            local context = offSets[filter.side .. ":" .. pick.id] or offSets[filter.side]
+            local context = Context(offSets, filter, pick.id) or Context(offSets, filter)
             pick.partialSet = context == nil
             if context then pick.partner = Ladders.Lead(Visible(context, filter, list)) end
         end

@@ -66,6 +66,7 @@ def encode_entry(entry: ladders.Entry) -> str:
     flags += "e" if entry.placed else ""
     flags += "x" if entry.level or entry.pvp_utility else ""
     flags += "j" if entry.pvp_utility else ""
+    flags += "f" if entry.fourth_option else ""
     flags += "k" if entry.preraid_option else ""
     flags += "g" if entry.estimated else ""
     flags += "b" if entry.alternative_only else ""
@@ -231,6 +232,9 @@ def lists_file(db, all_ladders) -> str:
         "                                      the order the addon lists its specs, which is not always the numbers'",
         "  L <spec> <list> <slot> <entries>    list: pve, pvp; entries best first, separated by spaces",
         "  F <spec> <list> <slot> pre <entries>   pre-raid recommendations for both factions",
+        "  F <spec> <list> <slot> pre:<faction[:companionID]> <entries>   paired pre-raid measurements",
+        "      See corrections/caster_trinkets.json and corrections/relics.json for the 2,000-fight trials and revisions.",
+        "  F <spec> <list> <slot> situational <entries>   additional pre-raid options",
         *(("  F <spec> <list> <slot> <faction[:companionID]> <entries>    scores by faction and equipped companion",
            "                                      (main-hand weapon, first ring or first trinket)") if contextual else ()),
         "  M <spec> <list> <date>              that list is ranked by simulation, measured on that day; the others are",
@@ -271,6 +275,8 @@ def lists_file(db, all_ladders) -> str:
                         block.append("\t".join(("L", str(spec), mode, slot, " ".join(map(encode_entry, entries)))))
                     if getattr(entries, "pre_raid", None):
                         block.append("\t".join(("F", str(spec), mode, slot, "pre", " ".join(map(encode_entry, entries.pre_raid)))))
+                    if getattr(entries, "options", None):
+                        block.append("\t".join(("F", str(spec), mode, slot, "situational", " ".join(map(encode_entry, entries.options)))))
                     if slot == "main":
                         for entry in entries:
                             for side, one, off in entry.pre_raid_weapon_sets:
@@ -279,6 +285,9 @@ def lists_file(db, all_ladders) -> str:
                                 block.append("\t".join(("W", str(spec), mode, key)))
                     for (side, companion), rows in getattr(entries, "contexts", {}).items():
                         context = f"{side}:{companion}" if companion else side
+                        block.append("\t".join(("F", str(spec), mode, slot, context, " ".join(map(encode_entry, rows)))))
+                    for (side, companion), rows in getattr(entries, "pre_contexts", {}).items():
+                        context = f"pre:{side}:{companion}" if companion else f"pre:{side}"
                         block.append("\t".join(("F", str(spec), mode, slot, context, " ".join(map(encode_entry, rows)))))
         lines.append(f"{cls} = {_block(block)},")
     lines.append("}")
@@ -298,7 +307,9 @@ def shown_ids(all_ladders) -> set[int]:
         for modes in specs.values():
             for slots in modes.values():
                 for entries in slots.values():
-                    for entry in entries:
+                    extra = getattr(entries, "options", ())
+                    measured = getattr(entries, "pre_contexts", {})
+                    for entry in (*entries, *extra, *(e for rows in measured.values() for e in rows)):
                         ids.add(entry.item_id)
                         if entry.twin:
                             ids.add(entry.twin)

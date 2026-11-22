@@ -103,7 +103,9 @@ def run(db, all_ladders: dict, read_in_game=frozenset()) -> list[Finding]:
                                         and not any(gear["stats"].get(stat) for stat in wanted)):
                                     note(POWERLESS, key, entry, entry in best, "no healing or spell damage in the data",
                                          phase)
-                            if best and alternatives and best[-1].stored:
+                            if (best and alternatives and best[-1].stored and not best[-1].unscored
+                                    and not alternatives[0].unscored
+                                    and best[-1].paired_with == alternatives[0].paired_with):
                                 lead = (best[-1].stored - alternatives[0].stored) / best[-1].stored
                                 if lead > LONELY_LEAD:
                                     behind = db.items[alternatives[0].item_id]["name"]

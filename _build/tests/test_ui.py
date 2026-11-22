@@ -788,13 +788,18 @@ class WindowTest(unittest.TestCase):
         game = self.open(saved=ENHANCEMENT)
         window = game.ns.Browser.window
         self.assertFalse(window.empty.shown)
-        game.ns.SetOption(game.ns, "seenOnly", True)
-        find_slot = "ranged"   # an Enhancement Shaman has no ranged pick
-        game.ns.Browser.state.slot = find_slot
-        game.ns.SetOption(game.ns, "seenOnly", False)
+        open_dropdown(game, window.source.button)
+        find(game.stub.menu, "Crafted").pick()
+        self.assertGreater(len(window.rowData), 0)
+        open_dropdown(game, window.zone.button)
+        find(game.stub.menu, "Blackrock Spire").pick()
         self.assertEqual(len(window.rowData), 0)
         self.assertTrue(window.empty.shown)
         self.assertEqual(window.empty.text, "Nothing matches these filters.")
+        open_dropdown(game, window.source.button)
+        find(game.stub.menu, "All").pick()
+        self.assertGreater(len(window.rowData), 0)
+        self.assertFalse(window.empty.shown)
 
     # -- enchants -----------------------------------------------------------------------------
 
@@ -3307,20 +3312,25 @@ class WindowTest(unittest.TestCase):
                 self.assertEqual(row.used, len(list(row.piece.order.values())) if row.piece.order else 0)
 
     def test_dungeons_say_a_quest(self):
-        game, view = self.open_dungeons(saved=self.DISCIPLINE)
+        game, view = self.open_dungeons(saved=self.DISCIPLINE, alts=True)
         rose = self.chip_of(view, "Penelope's Rose")
         self.assertEqual(rose.run.key, "289")
+        self.assertFalse(rose.entry.piece.best)
         self.assertTrue(rose.icon.quest.shown, "the game's quest mark on the piece")
         self.assertIn("AvailableQuestIcon", rose.sub.text)
         self.assertEqual(plain(rose.sub.text), "Kirtonos the Herald", "the quest's title in place of a boss, and no rate")
         self.assertIsNone(rose.entry.percent)
         lane = next(lane for lane in self.lanes(view) if lane.run.key == "289")
-        self.assertEqual(rose.run.need, sum(1 for chip in self.chips(lane) if chip.entry.piece.best),
-                         "a quest's reward counts as a piece to get there")
+        self.assertEqual(rose.run.alts, sum(1 for chip in self.chips(lane) if not chip.entry.piece.best),
+                         "a recommended quest alternative counts in its dungeon")
         game.stub.run(rose, "OnEnter")
         said = [plain(line[1]) for line in game.lua.globals().GameTooltip.lines.values()]
         self.assertIn("Scholomance - reward of the quest Kirtonos the Herald. One run is enough.", said)
-        tile = next(tile for tile in view.tiles.values() if tile.piece.id == rose.entry.piece.id)
+        self.assertNotIn(rose.entry.piece.id, [tile.piece.id for tile in view.tiles.values()])
+        # Every class's Royal Seal has the same name. The priest's quest awards item 18469.
+        best_quest = next(chip for run in self.lanes(view) for chip in self.chips(run) if chip.entry.piece.id == 18469)
+        self.assertTrue(best_quest.entry.quest and best_quest.entry.piece.best)
+        tile = next(tile for tile in view.tiles.values() if tile.piece.id == best_quest.entry.piece.id)
         self.assertFalse(tile.grey or tile.icon.art.desaturated, "a dungeon's piece in the set")
         # in the grid: the quest mark in the run's cell
         game.stub.run(view.mode.buttons[2], "OnClick")

@@ -31,13 +31,16 @@ import json
 from pathlib import Path
 from itertools import product
 
+import caster_gear
 import feral_gear
 import hunter_bm
 import phases
 import pvp_insignia
 import ranks
 import reputations
+import relics
 import simulated
+import situational_gear
 import specs
 
 # Easy BIS slot -> the ForeverDB pools it reads. Rings and trinkets fill two slots from one pool.
@@ -128,6 +131,7 @@ class Entry:
     # Complete pre-raid sets beaten with this two-hander's recommended enchant.
     pre_raid_weapon_sets: tuple[tuple[str, int, int], ...] = ()
     weapon_set_side: str | None = None  # set only in the pre-raid view
+    fourth_option: bool = False  # display this situational option fourth, including at the default list length
 
     @property
     def stored(self) -> int:
@@ -258,6 +262,33 @@ class ArmsHelms(list):
 
 def full_ladder(db, cls: str, spec: int, mode: str, slot: str, level: int | None = None,
                 rank_rewards: bool = True) -> list[Entry]:
+    entries = _ranked_ladder(db, cls, spec, mode, slot, level, rank_rewards)
+    if not rank_rewards or (level is not None and level != db.meta["cap"]):
+        return entries
+    if slot == "ranged" and cls in relics.CLASSES:
+        return relics.ranking(db, cls, spec, mode, entries)
+    options = []
+    for item_id in situational_gear.item_ids(cls, spec, mode, slot):
+        if (cls, spec, item_id) == ("DRUID", 2, 11810):
+            # The bear has a dedicated fourth-place pre-raid recommendation.
+            continue
+        item = db.items.get(item_id)
+        gear = db.gear.get(item_id)
+        if not item or not gear or gear["req"] > db.meta["cap"]:
+            continue
+        flags = item["flags"]
+        options.append(Entry(item_id=item_id, score=0, side=item["side"], twin=item["twin"],
+                             seen="s" in flags, new="n" in flags, unique="U" in flags, random="r" in flags,
+                             unsourced=not bool(item["groups"] & SOURCE_GROUPS), two_hand=False, limit=item["limit"],
+                             phase=phases.item_phase(item), pvp=pvp_reward(item), rank=ranks.required(item, gear),
+                             honor=ranks.sold_for_honor(item), pvp_utility=True))
+    if options:
+        entries = _annotatable(entries)
+        entries.options = options
+    return entries
+
+
+def _ranked_ladder(db, cls: str, spec: int, mode: str, slot: str, level: int | None, rank_rewards: bool):
     """Every pick for the slot, best first, with no faction or source filter applied.
 
     rank_rewards=False is foreverdb.net/bis's rule: the PvP-rank rewards are left out of the PvE list, and a
@@ -268,6 +299,9 @@ def full_ladder(db, cls: str, spec: int, mode: str, slot: str, level: int | None
     spec_def = data["specs"][spec]
     profile = MODES[mode]
     weights = spec_def["weights"][profile]
+    if slot == "trinket" and spec_def["role"] in {"Healer", "Caster DPS"} and 32 in weights:
+        # These profiles get their crit value from spells. Never credit a melee crit for the Eye.
+        weights = {caster_gear.SPELL_CRIT_RATING: weights[32], **weights}
     if mode == "pvp" and (level != db.meta["cap"] or not rank_rewards):
         weights = dict(weights)
         weights.pop("weapon_hit", None)
@@ -280,6 +314,10 @@ def full_ladder(db, cls: str, spec: int, mode: str, slot: str, level: int | None
     # The specs a simulator ranked (simulated.py). The site's rule and other levels stay on the weights.
     ours = rank_rewards and level == db.meta["cap"]
     ranked = slot_ranking(db, cls, spec, mode, slot) if ours else None
+    trinkets = (getattr(db, "pre_raid_trinkets", {}).get((cls, spec), {})
+                if ranked and mode == "pve" and slot == "trinket" else {})
+    pre_measured = {int(item) for side in ("a", "h") for item, row in trinkets.get(slot, {}).get(side, {}).items()
+                    if row[3] == "measured" and row[0] is not None}
     arm_epaulets = {}
     if ours and (cls, spec, mode, slot) == ("WARRIOR", 1, "pve", "shoulder"):
         # The Warrior pool only includes the Alliance mail shoulders. Both factions' versions
@@ -342,7 +380,8 @@ def full_ladder(db, cls: str, spec: int, mode: str, slot: str, level: int | None
             # A list ranked by simulation also holds what the weights give nothing and the simulator measures: a
             # trinket that is all proc, a weapon a Hunter only holds. The weights say what to list only where they rank.
             measured = ranked is not None and (ranked.scores.get(item_id, 0) > 0 or item_id in placed)
-            if not (value >= min_score or (value > 0 and armour_only) or measured or item_id in level_ids):
+            if not (value >= min_score or (value > 0 and armour_only) or measured or item_id in level_ids
+                    or item_id in pre_measured):
                 continue
             flags = item["flags"]
             twin = item["twin"] or arm_epaulets.get(item_id)
@@ -396,11 +435,15 @@ def full_ladder(db, cls: str, spec: int, mode: str, slot: str, level: int | None
         return hunter_bm.contextual_ladder(entries, slot, weighed)
     if ranked and mode == "pve":
         calibrated = db.simulated.by_faction.get((cls, spec), {})
+        pre_contexts = hunter_bm.rank_contexts(entries, slot, weighed, trinkets).contexts if trinkets else None
         if slot in calibrated:
             result = hunter_bm.rank_contexts(entries, slot, weighed, calibrated)
             if placed and any(entry.placed for entry in entries):
                 result.contexts = {key: after_their_anchor(rows, placed) for key, rows in result.contexts.items()}
-            return result
+            entries = result
+        if pre_contexts:
+            entries = _annotatable(entries)
+            entries.pre_contexts = pre_contexts
     return entries
 
 
@@ -452,7 +495,9 @@ def picks(slot: str, visible: list[Entry], alternatives: int = ALTERNATIVES) -> 
         return [], []
     if visible[-1].pvp_utility:
         best, others = picks(slot, visible[:-1], alternatives)
-        return best, [*others, visible[-1]]
+        position = max(0, 3 - len(best)) if visible[-1].fourth_option else len(others)
+        others.insert(position, visible[-1])
+        return best, others
     first = lead(visible)
     if first is None:
         return [], visible[:alternatives]
@@ -518,20 +563,29 @@ def _needed(slot: str, visible: list[Entry]) -> list[Entry]:
     return needed
 
 
+def _contexts(entries, phase):
+    if phase == phases.PRE_RAID and hasattr(entries, "pre_contexts"):
+        return entries.pre_contexts
+    return getattr(entries, "contexts", {})
+
+
 def visible(entries: list[Entry], flt, companion: int | None = None) -> list[Entry]:
     """Ordered entries for a filter and its equipped companion, if one was measured."""
-    if isinstance(entries, hunter_bm.ContextLadder):
-        entries = entries.contexts.get((flt[0], companion), ())
     pre_raid = flt[3] == phases.PRE_RAID
-    if pre_raid and hasattr(entries, "pre_raid"):
+    extra = [e for e in getattr(entries, "options", ()) if pre_raid and e.passes(flt)]
+    replaced = {e.shown(flt[0]) for e in extra}
+    contexts = _contexts(entries, flt[3])
+    if contexts:
+        entries = contexts.get((flt[0], companion), ())
+    elif pre_raid and hasattr(entries, "pre_raid"):
         entries = entries.pre_raid
     eligible = [replace(e, weapon_set_side=flt[0]) if e.pre_raid_weapon_sets and pre_raid else e
-                for e in entries if e.passes(flt)]
+                for e in entries if e.passes(flt) and e.shown(flt[0]) not in replaced]
     if pre_raid:
         options = [replace(e, score=0, pvp_utility=True) for e in eligible if e.preraid_option]
         if options:
-            return [e for e in eligible if not e.preraid_option] + options
-    return eligible
+            eligible = [e for e in eligible if not e.preraid_option] + options
+    return eligible + extra
 
 
 def visible_slots(slots: dict, flt) -> dict:
@@ -539,10 +593,11 @@ def visible_slots(slots: dict, flt) -> dict:
     result = {slot: visible(entries, flt) for slot, entries in slots.items()}
     for slot in PAIRED:
         ladder = slots.get(slot)
-        if not isinstance(ladder, hunter_bm.ContextLadder):
+        contexts = _contexts(ladder, flt[3])
+        if not contexts:
             continue
         first = lead(result[slot])
-        if first and (flt[0], first.shown(flt[0])) in ladder.contexts:
+        if first and (flt[0], first.shown(flt[0])) in contexts:
             result[slot] = [first, *visible(ladder, flt, first.shown(flt[0]))]
     if isinstance(slots.get("off"), hunter_bm.ContextLadder):
         main = lead([entry for entry in result.get("main", ()) if not entry.two_hand])
@@ -552,27 +607,52 @@ def visible_slots(slots: dict, flt) -> dict:
     return result
 
 
+class OptionLadder(list):
+    """Ordinary entries with additional pre-raid recommendations."""
+
+
+def _annotatable(entries):
+    return OptionLadder(entries) if type(entries) is list else entries
+
+
 def kept_ladder(slot: str, ladder: list[Entry]) -> list[Entry]:
     """The part of the ladder the addon needs, whatever it filters on."""
+    kept = _kept_ladder(slot, ladder)
+    if hasattr(ladder, "pre_contexts"):
+        kept = _annotatable(kept)
+        kept.pre_contexts = _keep_contexts(slot, ladder.pre_contexts, pre_raid=True)
+    if hasattr(ladder, "options"):
+        kept = _annotatable(kept)
+        kept.options = ladder.options
+    return kept
+
+
+def _keep_contexts(slot, source, pre_raid=False):
+    contexts = {}
+    for key, candidates in source.items():
+        keep = set()
+        for flt in FILTERS:
+            if flt[0] != key[0] or (pre_raid and flt[3] != phases.PRE_RAID):
+                continue
+            eligible = [entry for entry in candidates if entry.passes(flt)]
+            groups = ([e for e in eligible if e.two_hand], [e for e in eligible if not e.two_hand]) \
+                if slot == "main" else (eligible,)
+            for group in groups:
+                best, alts = picks(slot, group, MAX_ALTERNATIVES)
+                keep.update(best + alts)
+                if slot in ("main", "off"):
+                    keep.update(group[:1 + MAX_ALTERNATIVES])
+        contexts[key] = [entry for entry in candidates if entry in keep]
+    return contexts
+
+
+def _kept_ladder(slot, ladder):
     if isinstance(ladder, hunter_bm.ContextLadder):
         # Older clients read only L rows. Keep every entry their original order needs,
         # as well as all new entries selected by any supported faction or weapon.
-        contexts = {}
+        contexts = _keep_contexts(slot, ladder.contexts)
         ids = {entry.item_id for entry in kept_ladder(slot, list(ladder))}
-        for key, candidates in ladder.contexts.items():
-            keep = set()
-            for flt in FILTERS:
-                if flt[0] == key[0]:
-                    eligible = [entry for entry in candidates if entry.passes(flt)]
-                    groups = ([e for e in eligible if e.two_hand], [e for e in eligible if not e.two_hand]) \
-                        if slot == "main" else (eligible,)
-                    for group in groups:
-                        best, alts = picks(slot, group, MAX_ALTERNATIVES)
-                        keep.update(best + alts)
-                        if slot in ("main", "off"):
-                            keep.update(group[:1 + MAX_ALTERNATIVES])  # rows offered when this style loses
-            contexts[key] = [entry for entry in candidates if entry in keep]
-            ids.update(entry.item_id for entry in keep)
+        ids.update(e.item_id for rows in contexts.values() for e in rows)
         return hunter_bm.ContextLadder([entry for entry in ladder if entry.item_id in ids], contexts)
     if hasattr(ladder, "pre_raid"):
         ids = {e.item_id for flt in FILTERS for e in _needed(slot, visible(ladder, flt))}

@@ -22,10 +22,14 @@ import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
+import caster_gear
+import caster_trinkets
 import corrections
 import raid_sources
+import relics
 import runs
 import simulated
+import situational_gear
 import specs
 import verified_gear
 
@@ -116,6 +120,7 @@ class Database:
         self.quest_places = {}  # quest -> (instance, wing key or "") for the quests done in a dungeon (runs.quest_places)
         self.priced = None      # what corrections.price changed (a corrections.Priced), None for the published data
         self.simulated = None   # the PvE lists WoWSims Forever ranked (a simulated.Reading), None for the published data
+        self.pre_raid_trinkets = {}  # additional faction and partner scores in the pre-raid phase
         self.specs = None       # what specs.apply changed in the specs (a specs.Report), None for the published data
         self.effects = {}       # item -> the roles whose weights cannot value it (corrections/effects.json)
         self.data_dir = None    # the folder this was read from
@@ -132,6 +137,7 @@ class Database:
 def load(data_dir, corrected: bool = True) -> Database:
     db = _read(data_dir)
     if corrected:
+        caster_gear.include_items(db)
         corrections.apply(db, corrections.load())
         corrections.include(db)
         corrections.align(db, corrections.load_game())
@@ -147,7 +153,20 @@ def load(data_dir, corrected: bool = True) -> Database:
         verified_gear.apply(db)
         db.quest_places = runs.quest_places(db, runs.load_quests())
         db.specs = specs.apply(db)
+        caster_gear.include(db)
+        relics.apply(db)
+        situational_gear.include(db)
         db.simulated = simulated.load() if simulated.IN_USE else simulated.Reading()
+        if simulated.IN_USE:
+            db.pre_raid_trinkets = caster_trinkets.tables()
+    return db
+
+
+def load_for_capture(data_dir):
+    """Start with the published catalogue and also request the caster items verified in Forever."""
+    db = load(data_dir, corrected=False)
+    caster_gear.include_items(db)
+    caster_gear.include(db)
     return db
 
 

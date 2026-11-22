@@ -580,9 +580,6 @@ class AddonTest(unittest.TestCase):
         self.assertEqual(dict(game.ns.db.pvpRewards), ladders.PVP_REWARDS)
         self.assertEqual(dict(game.ns.Filter().pvpRewards), {"pve": False, "pvp": True})
         self.assertEqual((game.ns.PvPRewards(game.ns, "pve"), game.ns.PvPRewards(game.ns, "pvp")), (False, True))
-        lists = game.ns.Ladders.Decode("WARRIOR").lists[3]
-        flags = {mode: {entry.id: entry.flags for entries in lists[mode].values() for entry in entries.values()}
-                 for mode in ladders.MODES}
         with_them, without = default_filter(pvp=True), default_filter(pvp=False)
 
         def picks(mode):
@@ -594,7 +591,7 @@ class AddonTest(unittest.TestCase):
             shown, expected = picks(mode), self.expected_picks("WARRIOR", 3, mode, flt)
             for slot, _ in ladders.SLOTS:
                 self.assertEqual(shown[slot][:len(expected[slot][0])], expected[slot][0], f"{mode} {slot} {flt}")
-                rewards = [item_id for item_id in shown[slot] if "p" in flags[mode][item_id]]
+                rewards = [item_id for item_id in shown[slot] if ladders.pvp_reward(self.db.items[item_id])]
                 self.assertEqual(bool(rewards) and not flt[4], False, f"{mode} {slot}: a PvP reward is listed")
             return shown
 
@@ -602,7 +599,7 @@ class AddonTest(unittest.TestCase):
                                for hit in (game.ns.Index.ForItem(item) or game.lua.table()).values()}
         in_pve, in_pvp = check("pve", without), check("pvp", with_them)
         rank_13 = in_pvp["head"][0]
-        self.assertIn("p", flags["pvp"][rank_13], "the best PvP head is no PvP reward: this test needs another spec")
+        self.assertTrue(ladders.pvp_reward(self.db.items[rank_13]), "this case needs a PvP reward as its best head")
         self.assertEqual(wanted(rank_13) & {("WARRIOR", 3, "pve"), ("WARRIOR", 3, "pvp")}, {("WARRIOR", 3, "pvp")})
 
         # the PvE list counts them: its best head is that helm too; the PvP list has not moved

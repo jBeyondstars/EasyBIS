@@ -3089,6 +3089,7 @@ ns.data.names = [==[
 12926|56|Flaming Band
 12927|56|Truestrike Shoulders
 12929|56|Emberfury Talisman
+12930|55|Briarwood Reed
 12935|58|Warmaster Legguards
 12936|58|Battleborn Armbraces
 12939|58|Dal'Rend's Tribal Guardian
@@ -3276,6 +3277,7 @@ ns.data.names = [==[
 13204|55|Bashguuder
 13205|56|Rhombeard Protector
 13208|56|Bleak Howler Armguards
+13209||Seal of the Dawn
 13210|55|Pads of the Dread Wolf
 13211|55|Slashclaw Bracers
 13212|55|Halycon's Spiked Collar
@@ -3339,6 +3341,7 @@ ns.data.names = [==[
 13498|55|Handcrafted Mastersmith Leggings
 13502|58|Handcrafted Mastersmith Girdle
 13505|58|Runeblade of Baron Rivendare
+13515|55|Ramstein's Lightning Bolts
 13524|57|Skull of Burning Shadows
 13529|56|Husk of Nerub'enkan
 13534|55|Banshee Finger
@@ -3369,6 +3372,7 @@ ns.data.names = [==[
 13963||Voone's Vice Grips
 13966||Mark of Tyranny
 13967|56|Windreaver Greaves
+13968||Eye of the Beast
 13969|56|Loomguard Armbraces
 13982||Warblade of Caer Darrow
 13984||Darrowspike
@@ -4585,6 +4589,7 @@ ns.data.names = [==[
 17770||Branchclaw Gauntlets
 17772||Zealous Shadowshard Pendant
 17773||Prodigious Shadowshard Pendant
+17774||Mark of the Chosen
 17775||Acumen Robes
 17776||Sprightring Helm
 17777||Relentless Chain
@@ -5069,6 +5074,7 @@ ns.data.names = [==[
 19693|60|Darksoul Breastplate
 19694|60|Darksoul Leggings
 19695|60|Darksoul Shoulders
+19812||Rune of the Dawn
 19822||Zandalar Vindicator's Breastplate
 19823||Zandalar Vindicator's Belt
 19824||Zandalar Vindicator's Armguards
@@ -5514,8 +5520,10 @@ ns.data.names = [==[
 22311|56|Ironweave Boots
 22313|56|Ironweave Bracers
 22314|56|Huntsman's Harpoon
+22315|56|Hammer of Revitalization
 22317|56|Lefty's Brass Knuckle
 22318|56|Malgen's Long Bow
+22319|56|Tome of Divine Right
 22322|56|The Jaw Breaker
 22325|56|Belt of the Trickster
 22327|58|Amulet of the Redeemed
@@ -5528,6 +5536,7 @@ ns.data.names = [==[
 22339|58|Rune Band of Wizardry
 22340|58|Pendant of Celerity
 22342|58|Leggings of Torment
+22345|57|Totem of Tides
 22347||Fahrad's Reloading Repeater
 22348||Doomulus Prime
 22377||The Thunderwood Poker
@@ -5538,6 +5547,14 @@ ns.data.names = [==[
 22384|58|Persuader
 22385|55|Titanic Leggings
 22394|57|Staff of Metanoia
+22395|52|Totem of Rage
+22396|60|Totem of Life
+22397|52|Idol of Ferocity
+22398|57|Idol of Rejuvenation
+22399|60|Idol of Health
+22400|52|Libram of Truth
+22401|57|Libram of Hope
+22402|60|Libram of Grace
 22403|56|Nacreous Shell Necklace
 22404|56|Willey's Back Scratcher
 22405|56|Mantle of the Scarlet Crusade
@@ -5619,10 +5636,19 @@ ns.data.names = [==[
 22885|60|Legionnaire's Satin Tunic
 22886|60|Legionnaire's Silk Tunic
 22887|60|Legionnaire's Mail Legguards
+23004|60|Idol of Longevity
+23005|60|Totem of Flowing Water
+23006|60|Libram of Light
 23025|60|Seal of the Damned
 23027|60|Warmth of Forgiveness
 23125|55|Chains of the Lich
 23169|30|Scorn's Icy Choker
+23197|60|Idol of the Moon
+23198|60|Idol of Brutality
+23199|60|Totem of the Storm
+23200|60|Totem of Sustaining
+23201|60|Libram of Divinity
+23203|60|Libram of Fervor
 23237|60|Ring of the Eternal Flame
 23243|60|Champion's Plate Shoulders
 23244|60|Champion's Plate Helm
@@ -5704,6 +5730,7 @@ ns.data.names = [==[
 134111|1|Hidden Cloak
 213105||Shawarmageddon
 215374|26|Ancestral Sword
+220606|55|Idol of the Dream
 220840|50|First Sergeant's Inscribed Sabatons
 220846|50|First Sergeant's Pulsing Greaves
 220860|50|Sergeant Major's Leather Boots
@@ -5802,6 +5829,8 @@ ns.data.names = [==[
 227187|60|Blood Guard's Dragonhide Gloves
 227198|60|Knight-Lieutenant's Dragonhide Gauntlets
 227935||Hammer of the Fallen Thane
+228175|55|Libram of Holy Alacrity
+228176|60|Totem of Thunder
 231569|60|General's Chain Grips
 231575|60|General's Chain Vices
 231578|60|Marshal's Chain Vices
@@ -5857,6 +5886,12 @@ ns.data.names = [==[
 249393|25|Soulstaff
 249394|25|Orb of Mystic Insight
 249395|25|Orb of Souls
+249396|20|Mystic Mushroom
+249397|20|Tenets of the Silver Hand
+249398|20|Polished Driftwood Icon
+249441|40|Talons of Wrath
+249442|40|Libram of Invocation
+249443|40|Totem of Ancestral Protection
 249453|45|Radiant Staff
 249454|45|Dreamstaff
 249455|45|Truesilver Conduit
@@ -6360,6 +6395,8 @@ ns.data.names = [==[
 263408|2|Exterminator's Vest
 263409||Gardening Pants
 263410||Watcher's Mail Chest
+263411||Idol of Shifting Tides
+263412||Totem of Charged Flames
 263414||Traveler's Wraps
 263417||Adventurer's Cloak
 263420||Hiking Boots
@@ -6374,6 +6411,8 @@ ns.data.names = [==[
 263431||Defender's Aegis
 263432||Skulker's Shiv
 263434||Winged Beast Staff
+263435||Mark of Urs'endris
+263436||Firestorm Totem
 263935|10|Elunar Longstaff
 263936|10|Windforged Shortblade
 263937|10|Skyseeker's Greatstaff
@@ -6700,6 +6739,16 @@ ns.data.names = [==[
 272413|60|Drape of Recovery
 272414|60|Howler's Furs
 272415|60|Stalwart Cloak
+272427|60|Howling Idol
+272428|60|Enraged Idol
+272429|60|Idol of Synthesis
+272430|60|Swarming Idol
+272431|60|Tidal Totem
+272432|60|Totem of the Storm
+272433|60|Burning Totem
+272434|60|Sentinel's Libram
+272435|60|Libram of Law
+272436|60|Libram of Economy
 272437|60|Adaptive Combat Assistant
 272438|60|Weakness Analyzer
 272439|60|Serenity Field
@@ -7775,6 +7824,11 @@ ns.data.names = [==[
 278469|60|Premier High Warlord's Barricade
 278567||Stromgarde Hood
 279246|60|Torch of Light
+279247|60|Steadfast Libram
+279248|60|Libram of Infusion
+279249|60|Totem of Urgency
+279250|60|Idol of Swiftness
+279251|60|Idol of the Ursine Twins
 279252|60|Elderwild Waistcord
 279253|60|Outlaw's Collar
 279254|60|Elderwild Pants

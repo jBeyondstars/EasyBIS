@@ -20,16 +20,15 @@ FILES = {"off": DATA / "feral_offhands.json", "trinket": DATA / "feral_trinkets.
 
 
 class BearTrinkets(list):
-    """Force of Will rivals the Compass on one physical boss and gains value against packs."""
+    """Present Force of Will fourth in pre-raid for packs of small physical hits."""
 
     def __init__(self, entries):
         super().__init__(entries)
         self.pre_raid = [entry for entry in entries if entry.phase == 0]
         force = next((entry for entry in self.pre_raid if entry.item_id == 11810), None)
-        compass = next((entry for entry in self.pre_raid if entry.item_id == 4130), None)
-        if force and compass:
+        if force:
             self.pre_raid.remove(force)
-            self.pre_raid.insert(self.pre_raid.index(compass) + 1, replace(force, score=compass.score, level=True))
+            self.pre_raid.append(replace(force, score=0, level=True, pvp_utility=True, fourth_option=True))
 
 
 class PreRaidTrinkets(list):

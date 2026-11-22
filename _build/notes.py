@@ -19,6 +19,8 @@ from collections import defaultdict
 from pathlib import Path
 
 import ladders
+import relics
+import situational_gear
 
 FILE = Path(__file__).resolve().parent / "corrections" / "notes.json"
 COMPARISONS = FILE.with_name("comparisons.json")
@@ -56,7 +58,9 @@ def check(db, notes: list[dict]) -> None:
 
 def shown(db, shown_ids: set[int], notes: list[dict] | None = None) -> list[dict]:
     """The notes with the items the lists show; a note none of whose items is shown is a mistake."""
-    notes = load() if notes is None else notes
+    if notes is None:
+        options = [n for n in situational_gear.notes() if shown_ids.intersection(n["items"])]
+        notes = load() + options + relics.notes(shown_ids)
     check(db, notes)
     out = []
     for number, note in enumerate(notes, 1):

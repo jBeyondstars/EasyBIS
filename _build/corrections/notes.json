@@ -1,7 +1,8 @@
 {
  "about": "A few words on rankings that surprise, shown by a mark on the item's row (see _build/notes.py). items: the item ids the note is for. specs: the specs it shows for, as CLASS N (left out: every spec). slot: the slot it shows in (left out: any). simulated: true when it speaks of the simulation, and shows only in a list ranked by it. en, fr: the text in each language. Of the notes of an item, the first that fits a row is shown. Effect values use the archived WoWSims Forever profile or the updated faction-specific controls documented in docs/audit-forever.",
  "notes": [
-  {"items": [11810], "specs": ["DRUID 2"], "list": "pve", "slot": "trinket", "en": "Its proc reduces physical hits by 51 before armor for 10 seconds. Most useful against packs.", "fr": "Son proc réduit les coups physiques de 51 avant armure pendant 10 s. Surtout utile contre les groupes."},
+  {"items": [12930], "slot": "trinket", "en": "The ranking uses +15 spell power. It doubles to +30 in marshes and swamps.", "fr": "Le classement compte +15 aux soins et aux dégâts des sorts. Ce bonus passe à +30 dans les marais."},
+  {"items": [13968], "slot": "trinket", "list": "pve", "specs": ["DRUID 1", "MAGE 1", "MAGE 2", "MAGE 3", "PALADIN 4", "PRIEST 3", "SHAMAN 1", "WARLOCK 1", "WARLOCK 2", "WARLOCK 3"], "en": "Its 20-second spell hit bonus is worth more when you are below the hit cap.", "fr": "Ses 20 s de toucher des sorts gagnent en valeur si ton équipement est sous le cap toucher."},
   {"items": [13314], "specs": ["MAGE 1"], "list": "pve", "slot": "chest", "en": "Its 20 Intellect and extra spell power put it ahead of Robes of Dark Summons on the tested Arcane sets.", "fr": "Ses 20 d’Intelligence et sa puissance des sorts supérieure la placent devant Robes of Dark Summons sur les tenues Arcane testées."},
   {"items": [11662], "specs": ["MAGE 2"], "list": "pve", "slot": "waist", "en": "On the tested Fire sets, 1% hit beats the 7 extra spell power on Magician’s Cord.", "fr": "Sur les tenues Feu testées, son 1 % de toucher l’emporte sur les 7 de puissance des sorts en plus de Magician’s Cord."},
   {"items": [12632], "specs": ["SHAMAN 1"], "list": "pve", "slot": "hands", "en": "On the tested sets, 1% hit outweighs the 5 extra spell power on Hands of Power.", "fr": "Sur les tenues testées, leur 1 % de toucher l’emporte sur les 5 de puissance des sorts en plus de Hands of Power."},
@@ -219,18 +220,6 @@
    "list": "pvp",
    "en": "Breaks movement-impairing effects and loss of control every 5 minutes.",
    "fr": "Dissipe les entraves au déplacement et les pertes de contrôle toutes les 5 minutes."
-  },
-  {
-   "items": [
-    18371
-   ],
-   "specs": [
-    "DRUID 4"
-   ],
-   "slot": "trinket",
-   "list": "pve",
-   "en": "Its passive mana regen feeds Shifting Power while you stay in Cat Form.",
-   "fr": "Sa régénération de mana alimente Shifting Power en forme de félin."
   },
   {"items": [10659], "specs": ["DRUID 4"], "list": "pve", "slot": "trinket", "en": "Its 6 mana per 5 sec feeds Shifting Power. Against demons, it also grants 21 attack power.", "fr": "Ses 6 mana/5 s alimentent Shifting Power. Contre les démons, il donne aussi 21 PA."},
   {

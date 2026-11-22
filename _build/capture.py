@@ -115,13 +115,19 @@ _SLOT_WORDS = frozenset((
 def weapon_ids(db) -> list[int]:
     """The weapons of ForeverDB's pools: what a list can rank, so what is worth reading in the game."""
     ids = set()
-    for data in db.classes.values():
+    for data in _pool_owners(db):
         for pool in POOLS:
             for item_id, _ in data["pools"].get(pool, ()):
                 gear = db.gear.get(item_id)
                 if gear and gear["inv"] in corrections.WEAPONS and item_id in db.items:
                     ids.add(item_id)
     return sorted(ids)
+
+
+def _pool_owners(db):
+    for cls in db.classes.values():
+        yield cls
+        yield from (spec for spec in cls.get("specs", {}).values() if "pools" in spec)
 
 
 def capture_ids(db) -> dict[str, list[int]]:
@@ -137,7 +143,7 @@ def capture_ids(db) -> dict[str, list[int]]:
     """
     weapons = weapon_ids(db)
     pooled = set()
-    for data in db.classes.values():
+    for data in _pool_owners(db):
         for pool in data["pools"].values():
             pooled.update(item_id for item_id, _ in pool if item_id in db.gear and item_id in db.items)
     cap = db.meta["cap"]

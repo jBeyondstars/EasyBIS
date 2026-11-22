@@ -386,7 +386,7 @@ def main(argv=None) -> int:
         fetched = source.update(CACHE, manifest)
         print(f"Downloaded: {', '.join(fetched) if fetched else 'nothing, the local copy is current'}")
     if args.capture_tool:
-        folder, counts = capture.write_tool(fdb.load(CACHE, corrected=False), ADDONS)
+        folder, counts = capture.write_tool(fdb.load_for_capture(CACHE), ADDONS)
         print(f"Installed {folder.name} in {folder.parent} with {sum(counts.values())} items to read: "
               + ", ".join(f"{count} {name}" for name, count in counts.items()) + ".")
         print("In the game: enable it, type /reload if the game was running, type /ebiscapture, wait for it to")
@@ -400,7 +400,7 @@ def main(argv=None) -> int:
         print(f"Capture: {saved}")
         try:
             check = capture.check_capture(fdb.load(CACHE), saved.read_text(encoding="utf-8", errors="replace"),
-                                          groups=capture.capture_ids(fdb.load(CACHE, corrected=False)))
+                                          groups=capture.capture_ids(fdb.load_for_capture(CACHE)))
         except ValueError as error:
             print(f"{saved.name}: {error}")
             return 1
@@ -415,7 +415,7 @@ def main(argv=None) -> int:
             print(f"No {capture.SAVED} under {GAME / 'WTF'}: run /ebiscapture in the game, then /reload.")
             return 1
         print(f"Capture: {saved}")
-        published = fdb.load(CACHE, corrected=False)
+        published = fdb.load_for_capture(CACHE)
         eaten = None
         try:
             parsed = capture.parse_saved(saved.read_text(encoding="utf-8", errors="replace"))

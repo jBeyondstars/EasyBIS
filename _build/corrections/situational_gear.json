@@ -1,0 +1,77 @@
+[
+  {
+    "id": 11810,
+    "name": "Force of Will",
+    "mode": "pve",
+    "slot": "trinket",
+    "specs": ["DRUID 2", "PALADIN 2", "WARRIOR 3"],
+    "en": "The proc reduces each physical hit by 51 before armor for 10 seconds. It works best against packs.",
+    "fr": "Le proc retire 51 à chaque coup physique avant armure pendant 10 s. Surtout utile contre les groupes.",
+    "evidence": "https://www.wowhead.com/forever/item=11810"
+  },
+  {
+    "id": 17774,
+    "name": "Mark of the Chosen",
+    "mode": "pve",
+    "slot": "trinket",
+    "specs": ["DRUID 2"],
+    "en": "Hits taken can grant +21 to all stats for a minute, boosting bear threat.",
+    "fr": "Les coups reçus peuvent donner +21 à toutes les caractéristiques pendant 1 min, ce qui augmente la menace de l’ours.",
+    "missing_trinket": {
+      "group": "Q", "flags": "sU", "required_level": 0,
+      "source": ["q", "7067", "The Pariah's Instructions", "39", "", "s"], "quest_place": [349, ""]
+    },
+    "evidence": "https://foreverdb.net/item/17774"
+  },
+  {
+    "id": 19812,
+    "name": "Rune of the Dawn",
+    "mode": "pve",
+    "slot": "trinket",
+    "specs": ["DRUID 1", "MAGE 1", "MAGE 2", "MAGE 3", "PALADIN 3", "PALADIN 4", "PRIEST 3", "SHAMAN 1", "WARLOCK 1", "WARLOCK 2", "WARLOCK 3"],
+    "en": "Up to +46 spell damage against undead. The quest offers a choice of this rune or Seal of the Dawn.",
+    "fr": "Jusqu’à +46 aux dégâts des sorts contre les morts-vivants. La quête donne le choix entre cette rune et le Sceau de l’Aube.",
+    "missing_trinket": {
+      "group": "Q", "flags": "U", "limit": "TrinketoftheDawn", "required_level": 0,
+      "source": ["q", "5213", "The Active Agent", "55", "", "k"], "quest_place": [329, "u"]
+    },
+    "evidence": "https://foreverdb.net/item/19812"
+  },
+  {
+    "id": 13209,
+    "name": "Seal of the Dawn",
+    "mode": "pve",
+    "slot": "trinket",
+    "specs": ["DRUID 4", "HUNTER 1", "HUNTER 2", "HUNTER 3", "PALADIN 3", "ROGUE 1", "ROGUE 2", "ROGUE 3", "SHAMAN 2", "WARRIOR 1", "WARRIOR 2", "WARRIOR 3"],
+    "en": "+78 melee and ranged attack power against undead. The quest offers a choice of this seal or Rune of the Dawn.",
+    "fr": "+78 à la puissance d’attaque en mêlée et à distance contre les morts-vivants. La quête donne le choix entre ce sceau et la Rune de l’Aube.",
+    "missing_trinket": {
+      "group": "Q", "flags": "U", "limit": "TrinketoftheDawn", "required_level": 0,
+      "source": ["q", "5213", "The Active Agent", "55", "", "k"], "quest_place": [329, "u"]
+    },
+    "evidence": "https://foreverdb.net/item/13209"
+  },
+  {
+    "id": 1168,
+    "name": "Skullflame Shield",
+    "mode": "pve",
+    "slot": "off",
+    "specs": ["WARRIOR 3"],
+    "en": "Hits taken can trigger a life drain or an area fire burst, adding threat against packs.",
+    "fr": "Les coups reçus peuvent déclencher un drain de vie ou des dégâts de feu de zone, utiles pour la menace sur un groupe.",
+    "evidence": "https://www.wowhead.com/forever/item=1168"
+  },
+  {
+    "id": 13515,
+    "name": "Ramstein's Lightning Bolts",
+    "mode": "pvp",
+    "slot": "trinket",
+    "en": "Use to stun the target for 2 seconds, or 4 seconds if the enemy player is in water. 5-minute cooldown.",
+    "fr": "À l’utilisation, étourdit la cible pendant 2 s, ou 4 s si le joueur ennemi est dans l’eau. Recharge de 5 min.",
+    "missing_trinket": {
+      "group": "d", "flags": "U", "required_level": 55,
+      "source": ["d", "329", "Ramstein the Gorger", "", "0", "k"]
+    },
+    "evidence": "https://www.wowhead.com/forever/item=13515"
+  }
+]
