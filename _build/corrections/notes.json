@@ -3,6 +3,42 @@
  "notes": [
   {
    "items": [
+    14557
+   ],
+   "specs": [
+    "PALADIN 2"
+   ],
+   "slot": "trinket",
+   "list": "pve",
+   "en": "The horn’s proc averages about 172 armor against a physical boss.",
+   "fr": "Le proc du cor vaut environ 172 d’armure en moyenne contre un boss physique."
+  },
+  {
+   "items": [
+    13966
+   ],
+   "specs": [
+    "PALADIN 2"
+   ],
+   "slot": "trinket",
+   "list": "pve",
+   "en": "Same 1% dodge as Smotts’ Compass, plus 620 maximum health for 15 seconds on use.",
+   "fr": "Même 1 % d’esquive que la Boussole, avec 620 PV maximum en plus pendant 15 s à l’activation."
+  },
+  {
+   "items": [
+    4130
+   ],
+   "specs": [
+    "PALADIN 2"
+   ],
+   "slot": "trinket",
+   "list": "pve",
+   "en": "Its only combat bonus is 1% dodge.",
+   "fr": "Son seul bonus en combat est 1 % d’esquive."
+  },
+  {
+   "items": [
     2801,
     12784
    ],
@@ -11,8 +47,8 @@
    ],
    "list": "pvp",
    "slot": "main",
-   "en": "Mortal Strike uses the weapon’s base damage roll. Arcanite Reaper hits for 153–256 and adds 62 attack power. Blade of Hanna hits for 96–145, has no permanent stats and requires 30 charges to trigger its bonus.",
-   "fr": "Frappe mortelle utilise les dégâts de base par coup. La Déchireuse en arcanite frappe à 153–256 et donne 62 PA. Blade of Hanna frappe à 96–145, sans stats permanentes, et demande 30 charges pour déclencher son bonus."
+   "en": "Mortal Strike favors Arcanite Reaper’s harder hits. Hanna swings faster and needs 30 charges to proc.",
+   "fr": "Frappe mortelle profite des gros coups de la Déchireuse. Hanna frappe plus vite et son proc demande 30 charges."
   },
   {
    "items": [
@@ -24,8 +60,8 @@
    ],
    "slot": "hands",
    "simulated": true,
-   "en": "With Stormshroud shoulders and pants, the gloves complete the energy bonus. Against Devilsaur Gauntlets they gain about 103 DPS in the archived simulator and 43 DPS with the November 21 update and its rotation.",
-   "fr": "Avec les épaules et le pantalon Stormshroud, les gants activent le bonus d’énergie. Face aux gants du diablosaure, leur avance passe de 103 DPS dans le moteur archivé à 43 DPS avec la mise à jour du 21 novembre et sa rotation."
+   "en": "With Stormshroud shoulders and pants, the gloves unlock the set’s energy bonus.",
+   "fr": "Avec les épaules et le pantalon Stormshroud, les gants déclenchent le bonus d’énergie du set."
   },
   {
    "items": [
@@ -35,8 +71,8 @@
     "PALADIN 4"
    ],
    "slot": "main",
-   "en": "Its 68 spell power helps Holy Shock. At 3.70 seconds per swing, it triggers the spell-power part of Seal of Righteousness much less often than Blade of Hanna at 2.00.",
-   "fr": "Ses 68 de puissance des sorts profitent à Horion sacré. Un coup toutes les 3,70 s déclenche la part du Sceau de piété liée à la puissance des sorts bien moins souvent qu’avec Blade of Hanna, à 2,00 s."
+   "en": "Despite its 68 spell power, its 3.70 swing triggers Seal of Righteousness less often than Hanna’s 2.00 swing.",
+   "fr": "Malgré ses 68 de puissance des sorts, sa vitesse de 3,70 s déclenche moins souvent le Sceau de piété que Hanna à 2,00 s."
   },
   {
    "items": [
@@ -47,8 +83,8 @@
    ],
    "slot": "trinket",
    "simulated": true,
-   "en": "Its extra attack counts for this Holy Shock build. It adds about 6 DPS in the reference set, compared with 9.5 for Weakness Analyzer or Smolderweb’s Eye.",
-   "fr": "Son attaque supplémentaire compte pour ce profil Horion sacré. Le bijou ajoute environ 6 DPS sur la tenue de référence, contre 9,5 pour Weakness Analyzer ou Smolderweb’s Eye."
+   "en": "The extra attack adds about 6 DPS to Shockadin, versus 9.5 from Weakness Analyzer or Smolderweb’s Eye.",
+   "fr": "L’attaque supplémentaire vaut environ 6 DPS en Shockadin, contre 9,5 pour Weakness Analyzer ou Smolderweb’s Eye."
   },
   {
    "items": [
@@ -59,8 +95,8 @@
    ],
    "slot": "head",
    "simulated": true,
-   "en": "Champion of the Light converts 60% of its 38 Intellect into spell damage. Its 21 Agility and 14 critical strike rating also benefit this melee caster.",
-   "fr": "Champion de la Lumière convertit 60 % de ses 38 points d’Intelligence en dégâts des sorts. Ses 21 d’Agilité et ses 14 de critique profitent aussi aux attaques de ce paladin."
+   "en": "Champion of the Light converts 60% of its 38 Intellect into spell damage.",
+   "fr": "Champion de la Lumière convertit 60 % de ses 38 d’Intelligence en dégâts des sorts."
   },
   {
    "items": [
@@ -72,8 +108,8 @@
    ],
    "slot": "back",
    "simulated": true,
-   "en": "Both cloaks have 8 Spirit. Sandstorm Cover gives 4 spell damage and Glowing Thresher Cape gives 3. Their extra healing and armor do not change this DPS comparison.",
-   "fr": "Les deux capes ont 8 Esprit. Sandstorm Cover donne 4 aux dégâts des sorts et Glowing Thresher Cape en donne 3. Leurs différences de soins et d’armure sont sans incidence sur cette mesure de DPS."
+   "en": "With equal Spirit, Sandstorm Cover gives 4 spell damage against Glowing Thresher Cape’s 3.",
+   "fr": "Sandstorm Cover donne 4 dégâts des sorts contre 3 pour Glowing Thresher Cape, à Esprit égal."
   },
   {
    "items": [
@@ -84,8 +120,8 @@
     "HUNTER 2"
    ],
    "simulated": true,
-   "en": "Together the Devilsaur pieces grant 20 hit rating. With the leggings, the gloves beat Trueaim by 14 DPS on the reference set. With Legguards of the Chromatic Defier, Trueaim led by 5 DPS.",
-   "fr": "Ensemble, les pièces du diablosaure donnent 20 de score de toucher. Avec les jambières du set, les gants devancent Trueaim de 14 DPS sur la référence. Avec Legguards of the Chromatic Defier, Trueaim reprend 5 DPS d’avance."
+   "en": "Devilsaur leggings and gloves together grant 2% hit. Without the leggings, Trueaim can pull ahead.",
+   "fr": "Les jambières et les gants du diablosaure donnent ensemble 2 % de toucher. Sans les jambières, Trueaim peut passer devant."
   },
   {
    "items": [
@@ -94,8 +130,8 @@
    "specs": [
     "PALADIN 2"
    ],
-   "en": "The Forever tooltip gives 44 block value, 2,468 armor and 16 Stamina. The audit uses 44. Using the engine’s native value of 58 makes the paladin take about 4.4 less damage per second in the same gear.",
-   "fr": "L’infobulle Forever donne 44 de blocage, 2 468 d’armure et 16 d’Endurance. Le contrôle utilise 44. Avec les 58 du moteur brut, le paladin reçoit environ 4,4 dégâts/s de moins dans la même tenue."
+   "en": "Its 44 block value complements 2,468 armor and 16 Stamina.",
+   "fr": "Ses 44 de blocage s’ajoutent aux 2 468 d’armure et aux 16 d’Endurance."
   },
   {
    "items": [
@@ -127,8 +163,8 @@
     "WARRIOR 3"
    ],
    "slot": "off",
-   "en": "2,468 armor, 16 Stamina and 44 block value explain its rating. The audit uses 44. The engine’s native value of 58 gives the same warrior about 8.8 extra threat/s and 4.0–4.1 less damage taken/s.",
-   "fr": "Ses 2 468 d’armure, 16 d’Endurance et 44 de blocage expliquent son rang. Le contrôle utilise 44. Avec les 58 du moteur brut, le même guerrier gagne environ 8,8 menace/s et reçoit 4,0 à 4,1 dégâts/s de moins."
+   "en": "Its 44 block value, 2,468 armor and 16 Stamina favor mitigation.",
+   "fr": "Ses 44 de blocage, ses 2 468 d’armure et ses 16 d’Endurance favorisent la mitigation."
   },
   {
    "items": [
@@ -140,8 +176,8 @@
     "ROGUE 1"
    ],
    "simulated": true,
-   "en": "After the November 20 hotfix, three Stormshroud pieces give each melee attack a 3% chance to restore 18 energy. The bonus adds 45.3 DPS on the tested loadout with the same pieces equipped and only the bonus toggled.",
-   "fr": "Depuis le correctif du 20 novembre, le bonus trois pièces Stormshroud a 3 % de chance de rendre 18 points d’énergie sur une attaque de mêlée. Il vaut 45,3 DPS sur la tenue testée, en gardant les mêmes pièces et en désactivant seulement le bonus pour comparer."
+   "en": "The three-piece Stormshroud bonus restores energy, worth about 45 DPS in this set.",
+   "fr": "Le bonus de trois pièces Stormshroud rend de l’énergie, soit environ 45 DPS avec cette tenue."
   },
   {
    "items": [
@@ -153,8 +189,8 @@
     "ROGUE 2"
    ],
    "simulated": true,
-   "en": "After the November 20 hotfix, three Stormshroud pieces give each melee attack a 3% chance to restore 18 energy. The bonus adds 26.5 DPS on the tested loadout with the same pieces equipped and only the bonus toggled.",
-   "fr": "Depuis le correctif du 20 novembre, le bonus trois pièces Stormshroud a 3 % de chance de rendre 18 points d’énergie sur une attaque de mêlée. Il vaut 26,5 DPS sur la tenue testée, en gardant les mêmes pièces et en désactivant seulement le bonus pour comparer."
+   "en": "The three-piece Stormshroud bonus restores energy, worth about 27 DPS in this set.",
+   "fr": "Le bonus de trois pièces Stormshroud rend de l’énergie, soit environ 27 DPS avec cette tenue."
   },
   {
    "items": [
@@ -166,8 +202,8 @@
     "ROGUE 3"
    ],
    "simulated": true,
-   "en": "After the November 20 hotfix, three Stormshroud pieces give each melee attack a 3% chance to restore 18 energy. The bonus adds 31.0 DPS on the tested loadout with the same pieces equipped and only the bonus toggled.",
-   "fr": "Depuis le correctif du 20 novembre, le bonus trois pièces Stormshroud a 3 % de chance de rendre 18 points d’énergie sur une attaque de mêlée. Il vaut 31,0 DPS sur la tenue testée, en gardant les mêmes pièces et en désactivant seulement le bonus pour comparer."
+   "en": "The three-piece Stormshroud bonus restores energy, worth about 31 DPS in this set.",
+   "fr": "Le bonus de trois pièces Stormshroud rend de l’énergie, soit environ 31 DPS avec cette tenue."
   },
   {
    "items": [
@@ -180,8 +216,8 @@
     "WARRIOR 3",
     "PALADIN 2"
    ],
-   "en": "The Forever tooltip gives 44 total block value. The audit used 44 to measure this shield. The unmodified WoWSims database assigns 58.",
-   "fr": "L’infobulle Forever donne 44 de valeur de blocage au total. Le contrôle de ce bouclier utilise 44. La base WoWSims d’origine en attribue 58."
+   "en": "The score uses the tooltip’s 44 block value. The uncorrected simulator counts 58.",
+   "fr": "Le score utilise les 44 de blocage de l’infobulle. Le simulateur brut en compte 58."
   },
   {
    "items": [
@@ -192,8 +228,8 @@
     "WARRIOR 3",
     "PALADIN 2"
    ],
-   "en": "The Forever tooltip gives 55 total block value. The audit used 55 to measure this shield. The unmodified WoWSims database assigns 73.",
-   "fr": "L’infobulle Forever donne 55 de valeur de blocage au total. Le contrôle de ce bouclier utilise 55. La base WoWSims d’origine en attribue 73."
+   "en": "The score uses the tooltip’s 55 block value. The uncorrected simulator counts 73.",
+   "fr": "Le score utilise les 55 de blocage de l’infobulle. Le simulateur brut en compte 73."
   },
   {
    "items": [
@@ -203,8 +239,8 @@
     "WARRIOR 3",
     "PALADIN 2"
    ],
-   "en": "The Forever tooltip gives 66 total block value. The audit used 66 to measure this shield. The unmodified WoWSims database assigns 79.",
-   "fr": "L’infobulle Forever donne 66 de valeur de blocage au total. Le contrôle de ce bouclier utilise 66. La base WoWSims d’origine en attribue 79."
+   "en": "The score uses the tooltip’s 66 block value. The uncorrected simulator counts 79.",
+   "fr": "Le score utilise les 66 de blocage de l’infobulle. Le simulateur brut en compte 79."
   },
   {
    "items": [
@@ -214,8 +250,8 @@
     "WARRIOR 3",
     "PALADIN 2"
    ],
-   "en": "The Forever tooltip gives 70 total block value. The audit used 70 to measure this shield. The unmodified WoWSims database assigns 88.",
-   "fr": "L’infobulle Forever donne 70 de valeur de blocage au total. Le contrôle de ce bouclier utilise 70. La base WoWSims d’origine en attribue 88."
+   "en": "The score uses the tooltip’s 70 block value. The uncorrected simulator counts 88.",
+   "fr": "Le score utilise les 70 de blocage de l’infobulle. Le simulateur brut en compte 88."
   },
   {
    "items": [
@@ -225,8 +261,8 @@
     "WARRIOR 3",
     "PALADIN 2"
    ],
-   "en": "The Forever tooltip gives 57 total block value. The audit used 57 to measure this shield. The unmodified WoWSims database assigns 75.",
-   "fr": "L’infobulle Forever donne 57 de valeur de blocage au total. Le contrôle de ce bouclier utilise 57. La base WoWSims d’origine en attribue 75."
+   "en": "The score uses the tooltip’s 57 block value. The uncorrected simulator counts 75.",
+   "fr": "Le score utilise les 57 de blocage de l’infobulle. Le simulateur brut en compte 75."
   },
   {
    "items": [
@@ -236,8 +272,8 @@
     "WARRIOR 3",
     "PALADIN 2"
    ],
-   "en": "The Forever tooltip gives 48 total block value. The audit used 48 to measure this shield. The unmodified WoWSims database assigns 63.",
-   "fr": "L’infobulle Forever donne 48 de valeur de blocage au total. Le contrôle de ce bouclier utilise 48. La base WoWSims d’origine en attribue 63."
+   "en": "The score uses the tooltip’s 48 block value. The uncorrected simulator counts 63.",
+   "fr": "Le score utilise les 48 de blocage de l’infobulle. Le simulateur brut en compte 63."
   },
   {
    "items": [
@@ -247,8 +283,8 @@
     "WARRIOR 3",
     "PALADIN 2"
    ],
-   "en": "Blocking can damage nearby enemies and wear down the shield. This helps with multi-target threat. The audit used the Forever tooltip’s 44 block value. Unmodified WoWSims assigns 58.",
-   "fr": "Chaque blocage peut infliger des dégâts aux ennemis proches et endommager le bouclier. Cet effet aide à tenir la menace sur plusieurs cibles. Le contrôle utilise les 44 de blocage de l’infobulle Forever. Le moteur brut en attribue 58."
+   "en": "Its discharge on block generates threat on nearby enemies.",
+   "fr": "Ses décharges au blocage génèrent de la menace sur les ennemis proches."
   },
   {
    "items": [

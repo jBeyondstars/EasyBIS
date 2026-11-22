@@ -172,6 +172,20 @@ def ranged_power(db, report: Report) -> None:
                 report.ranged[HUNTER, number, profile] = weights[ATTACK_POWER]
 
 
+# The Lion Horn grants 725 armor. In 20,000 simulations per faction against a frontal physical boss
+# (2 s swings) with Defender's Grip Stabilizer, its 30 s buff was active 23.72% of the time on both
+# level-60 Protection Paladins. That gives 172 average armor outside Strongholds (WoWSims a73af71451).
+LION_HORN_AVERAGE_ARMOR = 172
+
+
+def protection_trinket_bonuses(weights: dict) -> dict:
+    """Stat-weight contributions beyond the permanent defense or dodge already on the tooltip."""
+    # The Mark gives 620 maximum health for 15 s every five minutes. Ten base health correspond to
+    # one point of Stamina at this level. A planned use against a burst gives the full health buffer.
+    stamina = 620 / 10 * 15 / 300
+    return {14557: LION_HORN_AVERAGE_ARMOR * weights.get("armor", 0), 13966: stamina * weights.get(STAMINA, 0)}
+
+
 def unvalued(db, cls: str, spec: int) -> frozenset:
     """The items a spec's weights cannot value: most of their worth to its role is an effect (db.effects). In a list
     ranked on the weights they get no score and stand level with the best picks (ladders.full_ladder)."""

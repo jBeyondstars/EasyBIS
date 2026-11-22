@@ -1555,7 +1555,8 @@ class SpecsTest(unittest.TestCase):
             for mode in ladders.MODES:
                 ladder = self.ladder(token, number, mode, "trinket")
                 level = [entry for entry in ladder if entry.level]
-                self.assertEqual({entry.item_id for entry in level}, trinkets, f"{token} {mode}")
+                expected = {self.ARENA_GRAND_MASTER} if (token, mode) == ("PALADIN", "pve") else trinkets
+                self.assertEqual({entry.item_id for entry in level}, expected, f"{token} {mode}")
                 self.assertEqual(ladder[:len(level)], level, "at the head of the ladder")
                 first = ladder[len(level)]
                 for entry in level:
@@ -1570,11 +1571,14 @@ class SpecsTest(unittest.TestCase):
                 self.assertIs(ladder[0].level, True)
         visible = [entry for entry in self.ladder("PALADIN", 2, slot="trinket") if entry.passes(self.DEFAULT)]
         best, alternatives = ladders.picks("trinket", visible)
-        self.assertEqual([entry.item_id for entry in best], [self.STABILIZER, 4130])  # Smotts' Compass
+        self.assertEqual([entry.item_id for entry in best], [self.LION_HORN, self.STABILIZER])
         self.assertNotIn(self.INSIGNIA, [entry.item_id for entry in visible], "Alterac Valley rewards are hidden")
-        self.assertEqual(alternatives[0].item_id, self.LION_HORN, "the first thing after the two best picks")
+        self.assertEqual(alternatives[0].item_id, self.ARENA_GRAND_MASTER)
         _, more = ladders.picks("trinket", visible, ladders.MAX_ALTERNATIVES)
-        self.assertEqual({entry.item_id for entry in more[:3]}, trinkets)
+        self.assertIn(self.MARK_OF_TYRANNY, [entry.item_id for entry in more])
+        by_id = {entry.item_id: entry for entry in visible}
+        self.assertGreater(by_id[self.MARK_OF_TYRANNY].stored, by_id[4130].stored)
+        self.assertFalse(by_id[self.MARK_OF_TYRANNY].unscored)
         kept = ladders.kept_ladder("trinket", self.ladder("PALADIN", 2, slot="trinket"))
         self.assertIn(self.LION_HORN, [entry.item_id for entry in kept])
 

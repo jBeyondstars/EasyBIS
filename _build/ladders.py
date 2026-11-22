@@ -239,6 +239,10 @@ def full_ladder(db, cls: str, spec: int, mode: str, slot: str, level: int | None
     daggers = ours and mode == "pvp" and slot in DAGGERS_ONLY.get((cls, spec_def.get("slug")), ())
     # What the weights cannot value (specs.unvalued) is listed whatever they give it: it stands level with the best.
     level_ids = specs.unvalued(db, cls, spec) if ours and ranked is None else frozenset()
+    bonuses = {}
+    if ours and ranked is None and (cls, spec, mode, slot) == ("PALADIN", 2, "pve", "trinket"):
+        bonuses = specs.protection_trinket_bonuses(weights)
+        level_ids = level_ids.difference(bonuses)
 
     entries, seen_ids, weighed = [], set(), {}
     for pool in dict(SLOTS)[slot]:
@@ -266,7 +270,7 @@ def full_ladder(db, cls: str, spec: int, mode: str, slot: str, level: int | None
             sourced = bool(item["groups"] & groups)
             if not sourced and "u" not in item["groups"]:
                 continue
-            value = score(db, item_id, weights, cls, melee) or 0.0
+            value = (score(db, item_id, weights, cls, melee) or 0.0) + bonuses.get(item_id, 0)
             armour_only = gear["armor"] > 0 and not gear["dps"] and not stats
             # A list ranked by simulation also holds what the weights give nothing and the simulator measures: a
             # trinket that is all proc, a weapon a Hunter only holds. The weights say what to list only where they rank.
@@ -294,7 +298,7 @@ def full_ladder(db, cls: str, spec: int, mode: str, slot: str, level: int | None
     if rank_rewards and level == db.meta["cap"]:
         entries = simulated.place(entries, simulated.placements(db, cls, spec, mode, slot))
         if ranked is None:
-            entries = level_with_the_best(entries, specs.unvalued(db, cls, spec))
+            entries = level_with_the_best(entries, level_ids)
         else:
             entries = after_their_anchor(entries, placed)
     return entries

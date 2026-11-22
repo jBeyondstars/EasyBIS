@@ -414,24 +414,26 @@ class AddonTest(unittest.TestCase):
         self.assertEqual(french.ns.SpecName("Feral (Bear)"), "Farouche (Ours)")
 
     def test_an_item_worth_its_effect_is_the_equal_of_the_best_picks(self):
-        """The Lion Horn of Stormwind in a Protection Paladin's trinkets: flag x, no score, tied, never a best pick."""
-        horn, stabilizer, compass = 14557, 272440, 4130
-        game = Game(cls="PALADIN")
+        """Arena Grand Master in a Protection Paladin's trinkets: flag x, no score, tied, never a best pick."""
+        horn, stabilizer, arena, mark, compass = 14557, 272440, 19024, 13966, 4130
+        game = Game(cls="PALADIN", saved="EasyBISDB = { altCount = 6 }")
         ladders_ = game.ns.Ladders
         trinkets = ladders_.For("PALADIN", 2, "pve").trinket
-        self.assertEqual([pick.id for pick in trinkets.best.values()], [stabilizer, compass])
+        self.assertEqual([pick.id for pick in trinkets.best.values()], [horn, stabilizer])
         first = trinkets.alts[1]
-        self.assertEqual(first.id, horn)
+        self.assertEqual(first.id, arena)
+        self.assertTrue(any(pick.id == mark for pick in trinkets.alts.values()))
+        self.assertNotIn(compass, [pick.id for pick in trinkets.best.values()])
         self.assertTrue(ladders_.HasFlag(first.entry, "x"))
         self.assertTrue(ladders_.Unscored(first.entry))
         self.assertTrue(ladders_.IsTie(trinkets, first))
         state = game.lua.table_from({"class": "PALADIN", "spec": 2, "list": "pve"})
-        rows = [row for row in game.ns.Rows.Items(state, True)[0].values() if row.kind == "item" and row.id == horn]
+        rows = [row for row in game.ns.Rows.Items(state, True)[0].values() if row.kind == "item" and row.id == arena]
         self.assertEqual(len(rows), 1)
         self.assertTrue(rows[0].level and rows[0].tie)
         self.assertIsNone(rows[0].gap)
         self.assertIsNone(rows[0].ratio)
-        self.assertIn(("<classicon-paladin> Paladin Protection", "BIS PvE"), game.lines(horn), "a best pick's equal")
+        self.assertIn(("<classicon-paladin> Paladin Protection", "BIS PvE"), game.lines(arena), "a best pick's equal")
 
     def test_a_tooltip_names_the_specs_in_the_order_they_are_listed(self):
         game = Game(cls="DRUID")
