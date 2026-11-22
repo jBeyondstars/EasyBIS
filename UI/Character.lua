@@ -149,7 +149,7 @@ local function CreateCell(parent, mirrored)
     cell.enchant:SetTextColor(ENCHANT[1], ENCHANT[2], ENCHANT[3])
 
     cell:SetScript("OnEnter", CellTooltip)
-    cell:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    cell:SetScript("OnLeave", ns.Tooltip.HideOwned)
     cell:SetScript("OnClick", CellClick)
     return cell
 end
@@ -317,7 +317,7 @@ local function SummaryLine(index)
         GameTooltip:AddLine(L.TIP_OPEN_REPUTATION, MUTED[1], MUTED[2], MUTED[3], true)
         Browser.ShowTooltip()
     end)
-    line:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    line:SetScript("OnLeave", ns.Tooltip.HideOwned)
     return line
 end
 

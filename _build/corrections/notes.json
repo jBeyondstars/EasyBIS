@@ -1,6 +1,354 @@
 {
- "about": "A few words on rankings that surprise, shown by a mark on the item's row (see _build/notes.py). items: the item ids the note is for. specs: the specs it shows for, as CLASS N (left out: every spec). slot: the slot it shows in (left out: any). simulated: true when it speaks of the simulation, and shows only in a list ranked by it. en, fr: the text in each language. Of the notes of an item, the first that fits a row is shown. Every fact is checked first; what an effect is worth is the item measured with and without it on WoWSims Forever 21377c070b (20,000 iterations).",
+ "about": "A few words on rankings that surprise, shown by a mark on the item's row (see _build/notes.py). items: the item ids the note is for. specs: the specs it shows for, as CLASS N (left out: every spec). slot: the slot it shows in (left out: any). simulated: true when it speaks of the simulation, and shows only in a list ranked by it. en, fr: the text in each language. Of the notes of an item, the first that fits a row is shown. list: pve or pvp when the note applies only to that mode.",
  "notes": [
+  {
+   "items": [
+    14557
+   ],
+   "specs": [
+    "PALADIN 2"
+   ],
+   "slot": "trinket",
+   "list": "pve",
+   "en": "The horn’s proc averages about 172 armor against a physical boss.",
+   "fr": "Le proc du cor vaut environ 172 d’armure en moyenne contre un boss physique."
+  },
+  {
+   "items": [
+    13966
+   ],
+   "specs": [
+    "DRUID 2",
+    "PALADIN 2",
+    "WARRIOR 3"
+   ],
+   "slot": "trinket",
+   "list": "pve",
+   "en": "Same 1% dodge as Smotts’ Compass, plus 620 maximum health for 15 seconds on use.",
+   "fr": "Même 1 % d’esquive que la Boussole, avec 620 PV maximum en plus pendant 15 s à l’activation."
+  },
+  {
+   "items": [
+    14557
+   ],
+   "specs": [
+    "DRUID 2"
+   ],
+   "slot": "trinket",
+   "list": "pve",
+   "en": "Against a physical boss, the horn’s proc adds about 196 armor on average in Bear Form.",
+   "fr": "Contre un boss physique, le proc du cor vaut environ 196 d’armure en moyenne en forme d’ours."
+  },
+  {
+   "items": [
+    14557
+   ],
+   "specs": [
+    "WARRIOR 3"
+   ],
+   "slot": "trinket",
+   "list": "pve",
+   "en": "Against a physical boss, the horn’s proc adds about 174 armor on average.",
+   "fr": "Contre un boss physique, le proc du cor vaut environ 174 d’armure en moyenne."
+  },
+  {
+   "items": [
+    272440
+   ],
+   "specs": [
+    "DRUID 2"
+   ],
+   "slot": "trinket",
+   "list": "pve",
+   "en": "The 13 Defense works in Bear Form. A bear cannot block, so the on-use effect adds no mitigation.",
+   "fr": "Les 13 de défense fonctionnent en forme d’ours. L’ours ne peut pas bloquer à l’activation."
+  },
+  {
+   "items": [
+    19024
+   ],
+   "specs": [
+    "PALADIN 2"
+   ],
+   "slot": "trinket",
+   "list": "pve",
+   "en": "Use its shield after Templar’s Bulwark so their absorbs do not overlap.",
+   "fr": "Active son bouclier après le Rempart du templier pour éviter que les deux absorptions se chevauchent."
+  },
+  {
+   "items": [
+    19024
+   ],
+   "specs": [
+    "DRUID 2",
+    "WARRIOR 3"
+   ],
+   "slot": "trinket",
+   "list": "pve",
+   "en": "The absorb helps with a damage spike. Its nine-minute cooldown limits its value in long fights.",
+   "fr": "Son bouclier aide à encaisser un pic de dégâts. Sa recharge de 9 min limite son apport sur la durée."
+  },
+  {
+   "items": [
+    18466
+   ],
+   "specs": [
+    "WARRIOR 3"
+   ],
+   "slot": "trinket",
+   "list": "pve",
+   "en": "Its 30 block value improves Shield Slam threat as well as damage blocked.",
+   "fr": "Ses 30 de blocage augmentent aussi la menace de Heurt de bouclier."
+  },
+  {
+   "items": [
+    2801,
+    12784
+   ],
+   "specs": [
+    "WARRIOR 1"
+   ],
+   "list": "pvp",
+   "slot": "main",
+   "en": "Mortal Strike favors Arcanite Reaper’s harder hits. Hanna swings faster and needs 30 charges to proc.",
+   "fr": "Frappe mortelle profite des gros coups de la Déchireuse. Hanna frappe plus vite et son proc demande 30 charges."
+  },
+  {
+   "items": [
+    21278,
+    15063
+   ],
+   "specs": [
+    "ROGUE 1"
+   ],
+   "slot": "hands",
+   "simulated": true,
+   "en": "With Stormshroud shoulders and pants, the gloves unlock the set’s energy bonus.",
+   "fr": "Avec les épaules et le pantalon Stormshroud, les gants déclenchent le bonus d’énergie du set."
+  },
+  {
+   "items": [
+    276397
+   ],
+   "specs": [
+    "PALADIN 4"
+   ],
+   "slot": "main",
+   "en": "Despite its 68 spell power, its 3.70 swing triggers Seal of Righteousness less often than Hanna’s 2.00 swing.",
+   "fr": "Malgré ses 68 de puissance des sorts, sa vitesse de 3,70 s déclenche moins souvent le Sceau de piété que Hanna à 2,00 s."
+  },
+  {
+   "items": [
+    11815
+   ],
+   "specs": [
+    "PALADIN 4"
+   ],
+   "slot": "trinket",
+   "simulated": true,
+   "en": "The extra attack adds about 6 DPS to Shockadin, versus 9.5 from Weakness Analyzer or Smolderweb’s Eye.",
+   "fr": "L’attaque supplémentaire vaut environ 6 DPS en Shockadin, contre 9,5 pour Weakness Analyzer ou Smolderweb’s Eye."
+  },
+  {
+   "items": [
+    252605
+   ],
+   "specs": [
+    "PALADIN 4"
+   ],
+   "slot": "head",
+   "simulated": true,
+   "en": "Champion of the Light converts 60% of its 38 Intellect into spell damage.",
+   "fr": "Champion de la Lumière convertit 60 % de ses 38 d’Intelligence en dégâts des sorts."
+  },
+  {
+   "items": [
+    6901,
+    274752
+   ],
+   "specs": [
+    "WARLOCK 3"
+   ],
+   "slot": "back",
+   "simulated": true,
+   "en": "With equal Spirit, Sandstorm Cover gives 4 spell damage against Glowing Thresher Cape’s 3.",
+   "fr": "Sandstorm Cover donne 4 dégâts des sorts contre 3 pour Glowing Thresher Cape, à Esprit égal."
+  },
+  {
+   "items": [
+    15062,
+    15063
+   ],
+   "specs": [
+    "HUNTER 2"
+   ],
+   "simulated": true,
+   "en": "Devilsaur leggings and gloves together grant 2% hit. Without the leggings, Trueaim can pull ahead.",
+   "fr": "Les jambières et les gants du diablosaure donnent ensemble 2 % de toucher. Sans les jambières, Trueaim peut passer devant."
+  },
+  {
+   "items": [
+    279262
+   ],
+   "specs": [
+    "PALADIN 2"
+   ],
+   "en": "Its 44 block value complements 2,468 armor and 16 Stamina.",
+   "fr": "Ses 44 de blocage s’ajoutent aux 2 468 d’armure et aux 16 d’Endurance."
+  },
+  {
+   "items": [
+    13255
+   ],
+   "specs": [
+    "HUNTER 1",
+    "HUNTER 2"
+   ],
+   "en": "These gloves give 3% hit with ranged weapons. The gain falls once your shots already reach their hit cap.",
+   "fr": "Ces gants donnent 3 % de toucher aux armes à distance. Leur gain diminue dès que tes tirs atteignent le cap de toucher."
+  },
+  {
+   "items": [
+    252605
+   ],
+   "specs": [
+    "HUNTER 3"
+   ],
+   "simulated": true,
+   "en": "The simulated build takes Careful Aim. Its 38 Intellect contributes to melee and ranged attack power.",
+   "fr": "Le profil simulé prend Visée minutieuse. Ses 38 d’Intelligence contribuent à la puissance d’attaque en mêlée et à distance."
+  },
+  {
+   "items": [
+    279262
+   ],
+   "specs": [
+    "WARRIOR 3"
+   ],
+   "slot": "off",
+   "en": "Its 44 block value, 2,468 armor and 16 Stamina favor mitigation.",
+   "fr": "Ses 44 de blocage, ses 2 468 d’armure et ses 16 d’Endurance favorisent la mitigation."
+  },
+  {
+   "items": [
+    15058,
+    21278,
+    15057
+   ],
+   "specs": [
+    "ROGUE 1"
+   ],
+   "simulated": true,
+   "en": "The three-piece Stormshroud bonus restores energy, worth about 45 DPS in this set.",
+   "fr": "Le bonus de trois pièces Stormshroud rend de l’énergie, soit environ 45 DPS avec cette tenue."
+  },
+  {
+   "items": [
+    15058,
+    21278,
+    15057
+   ],
+   "specs": [
+    "ROGUE 2"
+   ],
+   "simulated": true,
+   "en": "The three-piece Stormshroud bonus restores energy, worth about 27 DPS in this set.",
+   "fr": "Le bonus de trois pièces Stormshroud rend de l’énergie, soit environ 27 DPS avec cette tenue."
+  },
+  {
+   "items": [
+    15058,
+    21278,
+    15057
+   ],
+   "specs": [
+    "ROGUE 3"
+   ],
+   "simulated": true,
+   "en": "The three-piece Stormshroud bonus restores energy, worth about 31 DPS in this set.",
+   "fr": "Le bonus de trois pièces Stormshroud rend de l’énergie, soit environ 31 DPS avec cette tenue."
+  },
+  {
+   "items": [
+    272591,
+    272838,
+    278468,
+    278469
+   ],
+   "specs": [
+    "WARRIOR 3",
+    "PALADIN 2"
+   ],
+   "en": "The score uses the tooltip’s 44 block value. The uncorrected simulator counts 58.",
+   "fr": "Le score utilise les 44 de blocage de l’infobulle. Le simulateur brut en compte 58."
+  },
+  {
+   "items": [
+    18825,
+    18826
+   ],
+   "specs": [
+    "WARRIOR 3",
+    "PALADIN 2"
+   ],
+   "en": "The score uses the tooltip’s 55 block value. The uncorrected simulator counts 73.",
+   "fr": "Le score utilise les 55 de blocage de l’infobulle. Le simulateur brut en compte 73."
+  },
+  {
+   "items": [
+    19321
+   ],
+   "specs": [
+    "WARRIOR 3",
+    "PALADIN 2"
+   ],
+   "en": "The score uses the tooltip’s 66 block value. The uncorrected simulator counts 79.",
+   "fr": "Le score utilise les 66 de blocage de l’infobulle. Le simulateur brut en compte 79."
+  },
+  {
+   "items": [
+    21269
+   ],
+   "specs": [
+    "WARRIOR 3",
+    "PALADIN 2"
+   ],
+   "en": "The score uses the tooltip’s 70 block value. The uncorrected simulator counts 88.",
+   "fr": "Le score utilise les 70 de blocage de l’infobulle. Le simulateur brut en compte 88."
+  },
+  {
+   "items": [
+    21610
+   ],
+   "specs": [
+    "WARRIOR 3",
+    "PALADIN 2"
+   ],
+   "en": "The score uses the tooltip’s 57 block value. The uncorrected simulator counts 75.",
+   "fr": "Le score utilise les 57 de blocage de l’infobulle. Le simulateur brut en compte 75."
+  },
+  {
+   "items": [
+    22198
+   ],
+   "specs": [
+    "WARRIOR 3",
+    "PALADIN 2"
+   ],
+   "en": "The score uses the tooltip’s 48 block value. The uncorrected simulator counts 63.",
+   "fr": "Le score utilise les 48 de blocage de l’infobulle. Le simulateur brut en compte 63."
+  },
+  {
+   "items": [
+    18168
+   ],
+   "specs": [
+    "WARRIOR 3",
+    "PALADIN 2"
+   ],
+   "en": "Its discharge on block generates threat on nearby enemies.",
+   "fr": "Ses décharges au blocage génèrent de la menace sur les ennemis proches."
+  },
   {
    "items": [
     2801,
@@ -183,30 +531,6 @@
    "slot": "main",
    "en": "Its proc needs a melee hit, which a caster does not land: it adds nothing here.",
    "fr": "Son proc demande un coup de mêlée, qu'un lanceur de sorts ne porte pas : il n'ajoute rien ici."
-  },
-  {
-   "items": [
-    4696
-   ],
-   "specs": [
-    "WARLOCK 1"
-   ],
-   "simulated": true,
-   "slot": "off",
-   "en": "Its Use effect is a drink the simulation takes in combat: about 14 DPS too many.",
-   "fr": "Son effet Utiliser est une boisson que la simulation prend en combat : environ 14 DPS de trop."
-  },
-  {
-   "items": [
-    4696
-   ],
-   "specs": [
-    "WARLOCK 3"
-   ],
-   "simulated": true,
-   "slot": "off",
-   "en": "Its Use effect is a drink the simulation takes in combat: about 13 DPS too many.",
-   "fr": "Son effet Utiliser est une boisson que la simulation prend en combat : environ 13 DPS de trop."
   },
   {
    "items": [
@@ -926,45 +1250,6 @@
   },
   {
    "items": [
-    15058,
-    21278,
-    15057
-   ],
-   "specs": [
-    "ROGUE 1"
-   ],
-   "simulated": true,
-   "en": "Its score counts the 3-piece set bonus (4% chance of 30 energy on a melee attack): about 86 DPS with the three pieces. One or two alone do worse than none.",
-   "fr": "Son score compte le bonus 3 pièces du set (4 % de chance de rendre 30 énergie sur une attaque de mêlée) : environ 86 DPS avec les trois pièces. Une ou deux seules font moins bien qu'aucune."
-  },
-  {
-   "items": [
-    15058,
-    21278,
-    15057
-   ],
-   "specs": [
-    "ROGUE 2"
-   ],
-   "simulated": true,
-   "en": "Its score counts the 3-piece set bonus (4% chance of 30 energy on a melee attack): about 30 DPS with the three pieces. One or two alone do worse than none.",
-   "fr": "Son score compte le bonus 3 pièces du set (4 % de chance de rendre 30 énergie sur une attaque de mêlée) : environ 30 DPS avec les trois pièces. Une ou deux seules font moins bien qu'aucune."
-  },
-  {
-   "items": [
-    15058,
-    21278,
-    15057
-   ],
-   "specs": [
-    "ROGUE 3"
-   ],
-   "simulated": true,
-   "en": "Its score counts the 3-piece set bonus (4% chance of 30 energy on a melee attack): about 39 DPS with the three pieces. One or two alone do worse than none.",
-   "fr": "Son score compte le bonus 3 pièces du set (4 % de chance de rendre 30 énergie sur une attaque de mêlée) : environ 39 DPS avec les trois pièces. Une ou deux seules font moins bien qu'aucune."
-  },
-  {
-   "items": [
     17193
    ],
    "specs": [
@@ -1484,24 +1769,6 @@
   },
   {
    "items": [
-    22496,
-    22497,
-    22498,
-    22499,
-    22500,
-    22501,
-    22502,
-    22503
-   ],
-   "specs": [
-    "DRUID 1"
-   ],
-   "simulated": true,
-   "en": "With 6 pieces of Frostfire Regalia, the set's bonus adds about 36 DPS, which this score does not count.",
-   "fr": "Avec 6 pièces de Frostfire Regalia, le bonus du set ajoute environ 36 DPS, que ce score ne compte pas."
-  },
-  {
-   "items": [
     273373,
     273374,
     273375,
@@ -1702,24 +1969,6 @@
    "simulated": true,
    "en": "With 6 pieces of Warlord's Pursuit, the set's bonus adds about 14 DPS, which this score does not count.",
    "fr": "Avec 6 pièces de Warlord's Pursuit, le bonus du set ajoute environ 14 DPS, que ce score ne compte pas."
-  },
-  {
-   "items": [
-    22476,
-    22477,
-    22478,
-    22479,
-    22480,
-    22481,
-    22482,
-    22483
-   ],
-   "specs": [
-    "HUNTER 2"
-   ],
-   "simulated": true,
-   "en": "With 5 pieces of Bonescythe Armor, the set's bonus adds about 18 DPS, which this score does not count.",
-   "fr": "Avec 5 pièces de Bonescythe Armor, le bonus du set ajoute environ 18 DPS, que ce score ne compte pas."
   },
   {
    "items": [
@@ -2463,24 +2712,6 @@
   },
   {
    "items": [
-    22496,
-    22497,
-    22498,
-    22499,
-    22500,
-    22501,
-    22502,
-    22503
-   ],
-   "specs": [
-    "PALADIN 3"
-   ],
-   "simulated": true,
-   "en": "With 6 pieces of Frostfire Regalia, the set's bonus adds about 38 DPS, which this score does not count.",
-   "fr": "Avec 6 pièces de Frostfire Regalia, le bonus du set ajoute environ 38 DPS, que ce score ne compte pas."
-  },
-  {
-   "items": [
     16723,
     16726,
     16727,
@@ -2581,24 +2812,6 @@
    "simulated": true,
    "en": "With 2 pieces of Champion's Raiment, the set's bonus adds about 12 DPS, which this score does not count.",
    "fr": "Avec 2 pièces de Champion's Raiment, le bonus du set ajoute environ 12 DPS, que ce score ne compte pas."
-  },
-  {
-   "items": [
-    22496,
-    22497,
-    22498,
-    22499,
-    22500,
-    22501,
-    22502,
-    22503
-   ],
-   "specs": [
-    "PRIEST 3"
-   ],
-   "simulated": true,
-   "en": "With 6 pieces of Frostfire Regalia, the set's bonus adds about 34 DPS, which this score does not count.",
-   "fr": "Avec 6 pièces de Frostfire Regalia, le bonus du set ajoute environ 34 DPS, que ce score ne compte pas."
   },
   {
    "items": [
@@ -3124,24 +3337,6 @@
   },
   {
    "items": [
-    22496,
-    22497,
-    22498,
-    22499,
-    22500,
-    22501,
-    22502,
-    22503
-   ],
-   "specs": [
-    "SHAMAN 1"
-   ],
-   "simulated": true,
-   "en": "With 6 pieces of Frostfire Regalia, the set's bonus adds about 28 DPS, which this score does not count.",
-   "fr": "Avec 6 pièces de Frostfire Regalia, le bonus du set ajoute environ 28 DPS, que ce score ne compte pas."
-  },
-  {
-   "items": [
     274176,
     274178,
     274179,
@@ -3305,24 +3500,6 @@
   },
   {
    "items": [
-    22496,
-    22497,
-    22498,
-    22499,
-    22500,
-    22501,
-    22502,
-    22503
-   ],
-   "specs": [
-    "SHAMAN 2"
-   ],
-   "simulated": true,
-   "en": "With 6 pieces of Frostfire Regalia, the set's bonus adds about 16 DPS, which this score does not count.",
-   "fr": "Avec 6 pièces de Frostfire Regalia, le bonus du set ajoute environ 16 DPS, que ce score ne compte pas."
-  },
-  {
-   "items": [
     274176,
     274178,
     274179,
@@ -3448,24 +3625,6 @@
    "simulated": true,
    "en": "With 3 pieces of Dreadmist Raiment, the set's bonus adds about 14 DPS, which this score does not count.",
    "fr": "Avec 3 pièces de Dreadmist Raiment, le bonus du set ajoute environ 14 DPS, que ce score ne compte pas."
-  },
-  {
-   "items": [
-    22496,
-    22497,
-    22498,
-    22499,
-    22500,
-    22501,
-    22502,
-    22503
-   ],
-   "specs": [
-    "WARLOCK 1"
-   ],
-   "simulated": true,
-   "en": "With 6 pieces of Frostfire Regalia, the set's bonus adds about 84 DPS, which this score does not count.",
-   "fr": "Avec 6 pièces de Frostfire Regalia, le bonus du set ajoute environ 84 DPS, que ce score ne compte pas."
   },
   {
    "items": [
@@ -3648,24 +3807,6 @@
    "simulated": true,
    "en": "With 3 pieces of Dreadmist Raiment, the set's bonus adds about 14 DPS, which this score does not count.",
    "fr": "Avec 3 pièces de Dreadmist Raiment, le bonus du set ajoute environ 14 DPS, que ce score ne compte pas."
-  },
-  {
-   "items": [
-    22496,
-    22497,
-    22498,
-    22499,
-    22500,
-    22501,
-    22502,
-    22503
-   ],
-   "specs": [
-    "WARLOCK 2"
-   ],
-   "simulated": true,
-   "en": "With 8 pieces of Frostfire Regalia, the set's bonus adds about 16 DPS, which this score does not count.",
-   "fr": "Avec 8 pièces de Frostfire Regalia, le bonus du set ajoute environ 16 DPS, que ce score ne compte pas."
   },
   {
    "items": [
@@ -3862,24 +4003,6 @@
    "simulated": true,
    "en": "With 3 pieces of Dreadmist Raiment, the set's bonus adds about 16 DPS, which this score does not count.",
    "fr": "Avec 3 pièces de Dreadmist Raiment, le bonus du set ajoute environ 16 DPS, que ce score ne compte pas."
-  },
-  {
-   "items": [
-    22496,
-    22497,
-    22498,
-    22499,
-    22500,
-    22501,
-    22502,
-    22503
-   ],
-   "specs": [
-    "WARLOCK 3"
-   ],
-   "simulated": true,
-   "en": "With 6 pieces of Frostfire Regalia, the set's bonus adds about 28 DPS, which this score does not count.",
-   "fr": "Avec 6 pièces de Frostfire Regalia, le bonus du set ajoute environ 28 DPS, que ce score ne compte pas."
   },
   {
    "items": [

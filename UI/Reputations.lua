@@ -541,7 +541,7 @@ local function CreatePiece(parent)
     piece.check:SetSize(18, 18)
     piece.check:SetPoint("TOPRIGHT", 7, 7)
     piece:SetScript("OnEnter", function(self) PieceTooltip(self, self.entry) end)
-    piece:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    piece:SetScript("OnLeave", ns.Tooltip.HideOwned)
     piece:SetScript("OnClick", function(self) PieceClick(self.entry) end)
     return piece
 end
@@ -918,7 +918,7 @@ local function CreateArrow(line, step, name, tip)
         GameTooltip:SetText(tip, 1, 1, 1)
         GameTooltip:Show()
     end)
-    arrow:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    arrow:SetScript("OnLeave", ns.Tooltip.HideOwned)
     return arrow
 end
 
@@ -983,13 +983,13 @@ local function CreateLine(parent)
         GameTooltip:SetText(L.REP_MAP_TIP, 1, 1, 1, 1, true)
         GameTooltip:Show()
     end)
-    line.map:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    line.map:SetScript("OnLeave", ns.Tooltip.HideOwned)
     line.prev = CreateArrow(line, -1, "Prev", L.REP_PAGE_PREV)
     line.prev:SetPoint("RIGHT", line.text, "LEFT", -8, 0)
     line.next = CreateArrow(line, 1, "Next", L.REP_PAGE_NEXT)
     line.next:SetPoint("LEFT", line.text, "RIGHT", 8, 0)
     line:SetScript("OnEnter", LineEnter)
-    line:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    line:SetScript("OnLeave", ns.Tooltip.HideOwned)
     line:SetScript("OnClick", LineClick)
     return line
 end
@@ -1208,7 +1208,7 @@ function ReputationView.Create(parent)
         GameTooltip:SetText(L.REP_WATCH_TIP, 1, 1, 1, 1, true)
         GameTooltip:Show()
     end)
-    view.watch:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    view.watch:SetScript("OnLeave", ns.Tooltip.HideOwned)
 
     view.detail, view.detailChild = Widgets.Scroll(view)
     view.detail:SetPoint("TOPLEFT", LIST_WIDTH + 14, -54)

@@ -1,3 +1,21 @@
+# Easy BIS 1.9.1
+
+## New
+
+- **Shockadin** joins the Paladin specializations. Its two-handed PvE list uses the Holy Shock build from WoWSims Forever. Its separate PvP list gives more weight to armor. Redeemer’s Waistcord is the first pre-raid belt for both factions at rank 6.
+
+## Fixed
+
+- **Arms Warrior PvP.** Two-handed weapons now account for the base damage of a Mortal Strike in a six-second window. At level 60 with the pre-raid, rank-6 filters, Arcanite Reaper moves from 11th to 3rd. Blade of Hanna moves from 4th to 45th.
+- **Tanks.** Shields now include their intrinsic block value as well as any explicit equip bonus.
+- **Group Finder.** EasyBIS uses its own menu buttons and only hides tooltips it owns when a menu or row loses focus.
+- **Item rankings.** Items with an unscored effect show “Situational”. “Tied” is reserved for matching scores.
+- **Tank PvE trinkets.** The Lion Horn of Stormwind and Defender’s Grip Stabilizer lead the pre-raid physical tank lists. Mark of Tyranny ranks above Smotts’ Compass for Protection Paladins, Protection Warriors and Feral Bears. Arena Grand Master is a situational absorb.
+- **Hunter and Rogue.** Hunter ranged attacks benefit from attack power and ranged hit. The Survival PvP list accounts for melee weapon damage. Assassination’s PvP weapon recommendations use daggers for Mutilate.
+- **Warlock.** Lapidis Tankard lost the DPS credited to drinking its beverage in combat. For Destruction, Sandstorm Cover edges ahead of Glowing Thresher Cape.
+- **Availability.** Class-restricted quest rewards and faction variants follow the character. Alterac Valley quest rewards respect the PvP filter, and Sulfuron Hammer requires Molten Core materials. Arathi Basin mail shoulders use the correct item for each faction.
+- **Interface.** Visible filters sit next to one another when switching tabs. Filters and Options use the original WoW styling, footer buttons keep their individual widths, and the auction scan status is vertically centered.
+
 # Easy BIS 1.9.0
 
 ## New

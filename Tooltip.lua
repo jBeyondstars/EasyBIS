@@ -27,6 +27,13 @@ character is, where it is sold and for how much (Reputation.TooltipLines).
 local Tooltip = {}
 ns.Tooltip = Tooltip
 
+-- A delayed leave can arrive after a Blizzard menu has taken the tooltip.
+function Tooltip.HideOwned(owner)
+    if owner and not (GameTooltip.IsForbidden and GameTooltip:IsForbidden()) and GameTooltip:GetOwner() == owner then
+        GameTooltip:Hide()
+    end
+end
+
 local BIS_COLOR = "|cffffd100"
 local ALT_COLOR = "|cffc0c0c0"
 local SEPARATOR = " |cff808080·|r "

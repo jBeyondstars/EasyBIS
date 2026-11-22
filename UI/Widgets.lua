@@ -5,6 +5,7 @@ The window's controls use the game's panel, menu and achievement artwork.
 
   Widgets.Button(parent, text, width)              a panel button
   Widgets.MenuButton(parent, text, width)          the filter button used for the options menu
+  Widgets.FilterLabel(control, text)               a caption above a filter control
   Widgets.Dropdown(parent, label, width)           a labelled dropdown
                                                    :Set(text, active)   active: the filter narrows the list
   Widgets.Segmented(parent, options, get, set)     two or more buttons, one of them lit
@@ -36,7 +37,8 @@ Widgets.FLAT = { bgFile = "Interface\\Buttons\\WHITE8x8", edgeFile = "Interface\
 Widgets.MUTED = { 0.66, 0.66, 0.70 }
 
 local GOLD = { 1, 0.82, 0 }
-local CONTROL_HEIGHT = 22
+local CONTROL_HEIGHT, FILTER_LABEL_HEIGHT = 24, 14
+local CHECK_SIZE = 22
 local SIDE_TAB, SIDE_TAB_GAP, SIDE_TAB_TOP = 32, 17, 36   -- a tab of the window's side, the room under it, the first one's place
 Widgets.SIDE_ROOM = SIDE_TAB + 6   -- what the side tabs take on the window's right
 local CATEGORY_ART = "Interface\\AchievementFrame\\UI-Achievement-Category-"
@@ -93,19 +95,21 @@ end
 local function CategoryTexture(button, layer, art)
     local texture = button:CreateTexture(nil, layer)
     texture:SetTexture(CATEGORY_ART .. art)
-    texture:SetTexCoord(0, 0.6640625, 0, 1)
-    texture:SetPoint("TOPLEFT")
-    texture:SetPoint("BOTTOMRIGHT", 0, -7)
+    texture:SetTexCoord(0, 170 / 256, 0, 1)
     return texture
 end
 
-local function ChoiceButton(parent, text)
+local function ChoiceButton(parent, text, topInset)
     local button = CreateFrame("Button", nil, parent)
     button:SetHeight(CONTROL_HEIGHT)
-    CategoryTexture(button, "BACKGROUND", "Background")
+    local face = CategoryTexture(button, "BACKGROUND", "Background")
+    -- The original art has more shadow below the bevel than above it.
+    face:SetPoint("TOPLEFT", 0, 5 - (topInset or 0))
+    face:SetPoint("BOTTOMRIGHT", 0, -10)
     local highlight = CategoryTexture(button, "HIGHLIGHT", "Highlight")
     highlight:SetBlendMode("ADD")
     button:SetHighlightTexture(highlight)
+    highlight:SetAllPoints(face)
     button.Text = button:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     button.Text:SetPoint("CENTER")
     button.Text:SetText(text)
@@ -132,7 +136,7 @@ function Widgets.ListHighlight(row, layer, alpha)
     return texture
 end
 
--- The badge sits across the corner, not after the button: the credit beside the tabs has no width to spare.
+-- The badge sits across the corner, clear of the tab's caption.
 function Widgets.MarkNew(button, text)
     local badge = CreateFrame("Frame", nil, button, "BackdropTemplate")
     badge:SetBackdrop(Widgets.FLAT)
@@ -147,17 +151,21 @@ function Widgets.MarkNew(button, text)
     button.newBadge = badge
 end
 
+function Widgets.FilterLabel(control, text)
+    local label = control:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    label:SetPoint("TOPLEFT", 2, FILTER_LABEL_HEIGHT)
+    label:SetTextColor(Widgets.MUTED[1], Widgets.MUTED[2], Widgets.MUTED[3])
+    label:SetText(text)
+    return label
+end
+
 function Widgets.Dropdown(parent, label, width)
     local filter = CreateFrame("Frame", nil, parent)
-    filter:SetSize(width, 38)
-    filter.label = filter:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    filter.label:SetPoint("TOPLEFT", 2, 0)
-    filter.label:SetText(label)
+    filter:SetSize(width, CONTROL_HEIGHT + FILTER_LABEL_HEIGHT)
     if MenuUtil then
         local button = CreateFrame("DropdownButton", nil, filter, "WowStyle1DropdownTemplate")
-        button:SetSize(width, 24)
+        button:SetSize(width, CONTROL_HEIGHT)
         button.Text:SetJustifyH("LEFT")
-        -- The stock holder extends past the button. Keep it clear of adjacent filters.
         button.Background:ClearAllPoints()
         button.Background:SetPoint("TOPLEFT", -4, 8)
         button.Background:SetPoint("BOTTOMRIGHT", 4, -9)
@@ -166,6 +174,7 @@ function Widgets.Dropdown(parent, label, width)
         filter.button = Widgets.Button(filter, " ", width)
     end
     filter.button:SetPoint("BOTTOMLEFT", 0, 0)
+    filter.label = Widgets.FilterLabel(filter.button, label)
 
     function filter:Set(text, active)
         if self.button.OverrideText then
@@ -254,7 +263,7 @@ function Widgets.SideTabs(parent, options, get, set)
             GameTooltip:SetText(self.text, 1, 1, 1)
             GameTooltip:Show()
         end)
-        button:SetScript("OnLeave", function() GameTooltip:Hide() end)
+        button:SetScript("OnLeave", ns.Tooltip.HideOwned)
         group.buttons[index] = button
     end
 
@@ -270,7 +279,7 @@ function Widgets.SideTabs(parent, options, get, set)
 end
 
 function Widgets.Toggle(parent, text, get, set)
-    local button = ChoiceButton(parent, text)
+    local button = ChoiceButton(parent, text, 1)   -- align the top bevel with the adjacent footer actions
     button:SetScript("OnClick", function()
         Widgets.Click()
         set(not get())
@@ -286,18 +295,18 @@ end
 
 function Widgets.Check(parent, text, get, set, tip)
     local check = CreateFrame("CheckButton", nil, parent, "UICheckButtonArtTemplate")
-    check:SetHeight(CONTROL_HEIGHT)
+    check:SetHeight(CHECK_SIZE)
     -- All of the label is clickable, so pin the template's art to its left.
     for _, texture in ipairs({ check:GetNormalTexture(), check:GetPushedTexture(),
         check:GetHighlightTexture(), check:GetCheckedTexture(), check:GetDisabledCheckedTexture() }) do
         texture:ClearAllPoints()
-        texture:SetSize(CONTROL_HEIGHT, CONTROL_HEIGHT)
+        texture:SetSize(CHECK_SIZE, CHECK_SIZE)
         texture:SetPoint("LEFT")
     end
     check.text = check:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    check.text:SetPoint("LEFT", CONTROL_HEIGHT, 0)
+    check.text:SetPoint("LEFT", CHECK_SIZE, 0)
     check.text:SetText(text)
-    check:SetWidth(CONTROL_HEIGHT + math.ceil(check.text:GetStringWidth()))
+    check:SetWidth(CHECK_SIZE + math.ceil(check.text:GetStringWidth()))
 
     function check:Refresh()
         local on = get()
@@ -320,7 +329,7 @@ function Widgets.Check(parent, text, get, set, tip)
             GameTooltip:AddLine(tip(), Widgets.MUTED[1], Widgets.MUTED[2], Widgets.MUTED[3], true)
             GameTooltip:Show()
         end)
-        check:SetScript("OnLeave", function() GameTooltip:Hide() end)
+        check:SetScript("OnLeave", ns.Tooltip.HideOwned)
     end
 
     check:Refresh()

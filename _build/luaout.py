@@ -614,6 +614,7 @@ def notes_file(db, all_ladders) -> str:
         "  items      the item ids",
         "  specs      the specs it is for, as CLASS<n>; none: every spec",
         "  slot       the slot it is for; none: any",
+        "  list       pve or pvp; none: either",
         "  simulated  true when it speaks of the simulation: shown only in a list ranked by it",
         "  enUS, frFR the text",
     ))
@@ -624,6 +625,8 @@ def notes_file(db, all_ladders) -> str:
             fields.append("specs = { " + ", ".join(f"{spec.replace(' ', '')} = true" for spec in note["specs"]) + " }")
         if note.get("slot"):
             fields.append(f'slot = "{note["slot"]}"')
+        if note.get("list"):
+            fields.append(f'list = "{note["list"]}"')
         if note.get("simulated"):
             fields.append("simulated = true")
         fields += [f"{code} = {json.dumps(note[key], ensure_ascii=False)}" for key, code in notes.LANGUAGES.items()]

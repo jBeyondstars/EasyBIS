@@ -15,6 +15,7 @@ local enUS = {
     RANK_BIS = "BIS",
     RANK_ALT = "Alt",
     RANK_TIE = "Tied",
+    RANK_SITUATIONAL = "Situational",
     RANK_CUSTOM = "Added",
     RANK_PLACED = "Estimated",
     AH_SCAN = "Scan auctions",
@@ -121,7 +122,7 @@ local enUS = {
     TIP_SCORE_SET = "Score of both hands together: %d%% of the best choice's.",
     TIP_CUSTOM = "Added by hand to this list.",
     TIP_PLACED = "Placed here by hand, without a score of its own.",
-    TIP_LEVEL = "Its effect is not counted in the scores, so it has none: shown level with the best picks.",
+    TIP_LEVEL = "Its effect can change the choice. The score does not measure it.",
     TIP_REMOVE = "Remove from the list",
     -- What the score is, behind the mark over the scores.
     SCORE_COLUMN = "Score",
@@ -138,7 +139,7 @@ local enUS = {
     MINIMAP_DRAG_HINT = "Drag to move this button.",
     NOTICE_HIDE = "Hide this notice. It comes back the next time the window is opened.",
     WHY_TITLE = "About this rank",
-    NOTICE_ITEMS = "I know some items are currently ranked wrong. A fix is on its way and will be out shortly.",
+    NOTICE_ITEMS = "The lists are gradually being improved and corrected through regular updates.",
 
     -- Where items come from
     SRC_quest = "Quest",
@@ -403,6 +404,7 @@ local frFR = {
     CREDIT_SIM = "Listes PvE des spécialisations de dégâts classées avec WoWSims Forever (https://github.com/wowsims/forever)",
 
     RANK_TIE = "Ex æquo",
+    RANK_SITUATIONAL = "Situationnel",
     RANK_CUSTOM = "Ajouté",
     RANK_PLACED = "Estimé",
     AH_SCAN = "Scanner l’HV",
@@ -508,7 +510,7 @@ local frFR = {
     TIP_SCORE_SET = "Score des deux mains réunies : %d %% de celui du meilleur choix.",
     TIP_CUSTOM = "Ajouté à la main dans cette liste.",
     TIP_PLACED = "Placé ici à la main, sans score propre.",
-    TIP_LEVEL = "Son effet n'est pas compté dans les scores, il n'en a donc pas : affiché au niveau des meilleurs choix.",
+    TIP_LEVEL = "Son effet peut changer le choix. Le score ne le mesure pas.",
     TIP_REMOVE = "Retirer de la liste",
     SCORE_COLUMN = "Score",
     SCORE_INFO_TITLE = "Comment cette liste est classée",
@@ -524,7 +526,7 @@ local frFR = {
     MINIMAP_DRAG_HINT = "Faites glisser pour déplacer ce bouton.",
     NOTICE_HIDE = "Masquer ce message. Il revient à la prochaine ouverture de la fenêtre.",
     WHY_TITLE = "À propos de ce rang",
-    NOTICE_ITEMS = "Je suis au courant que certains objets sont actuellement mal classés. Un correctif est en cours et sera publié d'ici peu.",
+    NOTICE_ITEMS = "Les listes sont peu à peu en train d'être améliorées et corrigées avec des mises à jour régulières.",
 
     SRC_quest = "Quête",
     SRC_dungeon = "Donjon",

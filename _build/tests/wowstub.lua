@@ -63,6 +63,7 @@ local function NewWidget(kind, name, template)
     elseif kind == "DropdownButton" then
         widget.Text = NewWidget("FontString")
         widget.Background = NewWidget("Texture")
+        if template == "WowStyle1DropdownTemplate" then widget.Arrow = NewWidget("Texture") end
         widget.scripts.OnMouseDown = function(self, button)
             if button == "LeftButton" then self:OpenMenu() end
         end
@@ -128,6 +129,7 @@ function METHODS:GetPoint(index)
 end
 function METHODS:GetCenter() return 0, 0 end
 function METHODS:GetRight() return self.right end   -- nil until a test places the frame
+function METHODS:GetBottom() return self.bottom end
 function METHODS:SetFocus() self.focused = true end
 function METHODS:ClearFocus() self.focused = false end
 function METHODS:HasFocus() return self.focused == true end
@@ -232,7 +234,12 @@ ShoppingTooltip1 = NewWidget("GameTooltip", "ShoppingTooltip1")
 ShoppingTooltip2 = NewWidget("GameTooltip", "ShoppingTooltip2")
 ShoppingTooltip1.shown, ShoppingTooltip2.shown = false, false
 local function Compare(tooltip)
-    if tooltip.item then ShoppingTooltip1:Show(); ShoppingTooltip2:Show() end
+    if tooltip.item then
+        for _, tip in ipairs({ ShoppingTooltip1, ShoppingTooltip2 }) do
+            tip:SetOwner(tooltip, "ANCHOR_NONE")
+            tip:Show()
+        end
+    end
 end
 GameTooltip.scripts.OnShow = Compare
 function GameTooltip_ShowCompareItem(tooltip) Compare(tooltip) end
@@ -440,7 +447,7 @@ function stub.setupMenu(button, generator)
 end
 
 function stub.openMenu(button)
-    return MenuUtil.CreateContextMenu(button, button.menuGenerator)
+    if button.menuGenerator then return MenuUtil.CreateContextMenu(button, button.menuGenerator) end
 end
 
 ---------------------------------------------------------------------------
@@ -493,6 +500,27 @@ function stub.run(widget, script, ...)
     local handler = widget.scripts[script]
     assert(handler, "the widget has no " .. script .. " script")
     return handler(widget, ...)
+end
+
+function stub.update()
+    for _, frame in ipairs(stub.frames) do
+        if frame:IsShown() and frame.scripts.OnUpdate then frame.scripts.OnUpdate(frame, 0.016) end
+    end
+end
+
+function stub.menuPanel(level)
+    for _, frame in ipairs(stub.frames) do
+        if frame:IsShown() and frame.entries and frame.level == level then return frame end
+    end
+end
+
+function stub.openFilter(button)
+    local panel = stub.menuPanel(1)
+    local script = button.kind == "DropdownButton" and "OnMouseDown" or "OnClick"
+    if panel and panel.anchor == button then stub.run(button, script, "LeftButton") end
+    stub.run(button, script, "LeftButton")
+    panel = stub.menuPanel(1)
+    stub.menu = panel and { items = panel.entries, panel = panel } or nil
 end
 
 function stub.clearChat() stub.chat = {} end
