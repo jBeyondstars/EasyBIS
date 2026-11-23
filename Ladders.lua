@@ -66,13 +66,21 @@ end
 function Ladders.Decode(class)
     local text = ns.data and ns.data.lists and ns.data.lists[class]
     if not text then return nil end
-    local data = { specs = {}, order = {}, lists = {}, measured = {}, contexts = {}, weaponSets = {} }
+    local data = { specs = {}, order = {}, lists = {}, measured = {}, contexts = {}, weaponSets = {}, tankDuels = {} }
     for line in text:gmatch("[^\n]+") do
         local kind, index, first, second, rest = line:match("^(%a)\t(%d+)\t([^\t]*)\t([^\t]*)\t?(.*)$")
         index = tonumber(index)
         if kind == "S" then
             if not data.specs[index] then data.order[#data.order + 1] = index end
             data.specs[index] = { index = index, name = first, role = second, style = rest }
+        elseif kind == "T" and first == "pve" then
+            local values = {}
+            for value in rest:gmatch("%S+") do values[#values + 1] = tonumber(value) end
+            if #values == 8 then
+                data.tankDuels[index] = data.tankDuels[index] or {}
+                data.tankDuels[index][second] = { threat = values[1], mitigation = values[2],
+                    a = { values[3], values[4], values[5] }, h = { values[6], values[7], values[8] } }
+            end
         elseif kind == "M" then
             data.measured[index] = data.measured[index] or {}
             data.measured[index][first] = second
@@ -247,6 +255,58 @@ local function Picks(slot, visible, count)
     return best, alts
 end
 
+-- Only describe a duel when both actual item IDs survive the filters and weapon style.
+local function TankOptions(picks, visible, duel, side)
+    local threat, mitigation
+    for _, pick in ipairs(visible) do
+        if pick.id == duel.threat then threat = pick end
+        if pick.id == duel.mitigation then mitigation = pick end
+    end
+    if not threat or not mitigation or not duel[side] then return end
+    threat.option = { label = ns.L.RANK_THREAT, rival = mitigation.id, delta = duel[side], sign = 1 }
+    mitigation.option = { label = ns.L.RANK_MITIGATION, rival = threat.id, delta = duel[side], sign = -1 }
+    if threat.entry.limit and threat.entry.limit == mitigation.entry.limit then
+        threat.option.exclusive, mitigation.option.exclusive = true, true
+    end
+    picks.options = {}
+    for _, pick in ipairs({ threat, mitigation }) do
+        if pick ~= picks.best[1] and pick ~= picks.best[2] then
+            picks.options[#picks.options + 1] = pick
+        end
+    end
+end
+
+-- A measured option outside the ordinary best picks stays visible at any alternative count.
+-- Keep the scored ladders intact for gear sets, ties and comparisons against the first pick.
+local EMPTY = {}
+function Ladders.DisplayAlts(picks, withAlts)
+    if not picks.options then return withAlts and picks.alts or EMPTY end
+    if not withAlts then return picks.options end
+    local out = {}
+    for _, pick in ipairs(picks.options) do out[#out + 1] = pick end
+    for _, pick in ipairs(picks.alts) do
+        if not pick.option then
+            -- The bear's situational trinket keeps its fourth slot when a duel adds an alternative.
+            local position = #out + 1
+            if Ladders.HasFlag(pick.entry, "f") then position = math.min(position, 4 - #picks.best) end
+            table.insert(out, position, pick)
+        end
+    end
+    return out
+end
+
+function Ladders.OptionNote(option)
+    local delta, sign = option.delta, option.sign
+    local function Signed(value)
+        local text = ("%+.1f"):format(sign * value)
+        if ns.locale == "frFR" then text = text:gsub("%.", ",") end
+        return text
+    end
+    local note = ns.L.TANK_DUEL:format(ns.Items.Name(option.rival),
+        Signed(delta[2]), Signed(delta[3]), Signed(delta[1]))
+    return option.exclusive and (note .. " " .. ns.L.TANK_EXCLUSIVE) or note
+end
+
 -- The picks of every slot for a spec and a list, from decoded data.
 function Ladders.Compute(data, spec, list, filter)
     local ladders = data.lists[spec] and data.lists[spec][list] or {}
@@ -289,9 +349,11 @@ function Ladders.Compute(data, spec, list, filter)
 
     local count = filter.alternatives or ns.ALTERNATIVES
     local result = { twoHand = twoHand, measuredWeaponSet = measuredWeaponSet }
+    local duels = list == "pve" and filter.phase == 0 and data.tankDuels and data.tankDuels[spec]
     for _, slot in ipairs(ns.SLOTS) do
         local best, alts = Picks(slot, visible[slot], count)
         result[slot] = { best = best, alts = alts, other = {} }
+        if duels and duels[slot] then TankOptions(result[slot], visible[slot], duels[slot], filter.side) end
     end
     result.main.other = First(otherMain, 1 + count)
     result.off.other = First(otherOff, 1 + count)

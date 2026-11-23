@@ -13,6 +13,10 @@ local enUS = {
     CREDIT_SIM = "PvE lists of the damage specs ranked with WoWSims Forever (https://github.com/wowsims/forever)",
 
     RANK_BIS = "BIS",
+    RANK_THREAT = "Threat",
+    RANK_MITIGATION = "Mitigation",
+    TANK_EXCLUSIVE = "Equip only one.",
+    TANK_DUEL = "Compared with %s, %s threat/s · %s damage taken/s · %s DPS.",
     RANK_ALT = "Alt",
     RANK_TIE = "Tied",
     RANK_SITUATIONAL = "Situational",
@@ -404,6 +408,10 @@ local frFR = {
     CREDIT_SIM = "Listes PvE des spécialisations de dégâts classées avec WoWSims Forever (https://github.com/wowsims/forever)",
 
     RANK_TIE = "Ex æquo",
+    RANK_THREAT = "Threat",
+    RANK_MITIGATION = "Mitigation",
+    TANK_EXCLUSIVE = "Un seul à équiper.",
+    TANK_DUEL = "Face à %s, %s menace/s · %s dégâts reçus/s · %s DPS.",
     RANK_SITUATIONAL = "Situationnel",
     RANK_CUSTOM = "Ajouté",
     RANK_PLACED = "Estimé",

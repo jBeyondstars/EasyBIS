@@ -89,6 +89,9 @@ local function CellTooltip(cell)
     local side = cell.mirrored and "LEFT" or nil   -- the right column's open toward the model
     if data.id then
         Browser.ItemTooltip(cell, data, side)
+        for _, pick in ipairs(data.tankOptions or {}) do
+            GameTooltip:AddDoubleLine(pick.option.label, ns.Items.Name(pick.id), 1, 0.82, 0, 1, 1, 1)
+        end
         if data.enchant then
             GameTooltip:AddLine(L.TIP_ENCHANT:format(ns.Enchants.Name(data.enchant)),
                 ENCHANT[1], ENCHANT[2], ENCHANT[3], true)

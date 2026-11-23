@@ -138,6 +138,7 @@ end
 -- "BIS", "Tied", "-12%", "Added", "Estimated" (placed, no score of its own); an enchant has no score, so its alternatives read "Alt". A consumable is
 -- the best of its category and nothing more, so it never reads "BIS".
 local function RankText(row)
+    if row.option then return GOLD_TEXT .. row.option.label .. "|r" end
     if row.unranked then return GREY_TEXT .. L.RANK_UNRANKED .. "|r" end
     if row.kind == "consumable" and row.bis then return GOLD_TEXT .. L.RANK_BEST .. "|r" end
     if row.custom then return ns.COLOR .. L.RANK_CUSTOM .. "|r" end
@@ -571,7 +572,9 @@ local function ItemTooltip(owner, data, side)
     if remark then GameTooltip:AddLine(remark, MUTED[1], MUTED[2], MUTED[3], true) end
     local unsure = ns.Reputation.UnknownRemark(data.reputation)
     if unsure then GameTooltip:AddLine(unsure, MUTED[1], MUTED[2], MUTED[3], true) end
-    if data.custom then
+    if data.option then
+        GameTooltip:AddLine(ns.Ladders.OptionNote(data.option), 1, 0.82, 0, true)
+    elseif data.custom then
         GameTooltip:AddLine(L.TIP_CUSTOM, MUTED[1], MUTED[2], MUTED[3], true)
     elseif data.placed then
         GameTooltip:AddLine(L.TIP_PLACED, MUTED[1], MUTED[2], MUTED[3], true)

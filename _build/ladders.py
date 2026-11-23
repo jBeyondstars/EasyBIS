@@ -40,6 +40,7 @@ import ranks
 import reputations
 import relics
 import simulated
+import tank_options
 import situational_gear
 import specs
 
@@ -245,6 +246,18 @@ def _balance_weapon_sets():
     return json.loads(source.read_text(encoding="utf-8"))
 
 
+class ProtectionPaladinWeapons(list):
+    """Keep weighted scores and prefer Arbiter's Blade to the two physical alternatives in pre-raid."""
+
+    def __init__(self, entries):
+        super().__init__(entries)
+        self.pre_raid = [entry for entry in entries if entry.phase == phases.PRE_RAID]
+        first_physical = next((i for i, e in enumerate(self.pre_raid) if e.item_id in (279261, 279259)), len(self.pre_raid))
+        arbiter = next((i for i, e in enumerate(self.pre_raid) if e.item_id == 11784), -1)
+        if arbiter > first_physical:
+            self.pre_raid.insert(first_physical, self.pre_raid.pop(arbiter))
+
+
 class ArmsHelms(list):
     """Keep the raid ranking and recommend one costly hit helm to craft for pre-raid Arms."""
 
@@ -313,6 +326,10 @@ def _ranked_ladder(db, cls: str, spec: int, mode: str, slot: str, level: int | N
     min_score = data["min"].get(profile, 1)
     # The specs a simulator ranked (simulated.py). The site's rule and other levels stay on the weights.
     ours = rank_rewards and level == db.meta["cap"]
+    if (ours and cls == "PALADIN" and spec_def.get("slug") == "protection"
+            and mode == "pve" and slot == "main" and "dps" in weights):
+        spell = weights["dps"] * specs.PALADIN_SPELL_DAMAGE_IN_WEAPON_DPS
+        weights = {**weights, specs.SPELL_POWER: spell, specs.SPELL_DAMAGE: spell, specs.HOLY_DAMAGE: spell}
     ranked = slot_ranking(db, cls, spec, mode, slot) if ours else None
     trinkets = (getattr(db, "pre_raid_trinkets", {}).get((cls, spec), {})
                 if ranked and mode == "pve" and slot == "trinket" else {})
@@ -429,6 +446,8 @@ def _ranked_ladder(db, cls: str, spec: int, mode: str, slot: str, level: int | N
         return feral_gear.PreRaidTrinkets(entries)
     if ours and ranked is None and (cls, spec, mode, slot) == ("DRUID", 2, "pve", "trinket"):
         return feral_gear.BearTrinkets(entries)
+    if ours and (cls, spec, mode, slot) == ("PALADIN", 2, "pve", "main"):
+        return ProtectionPaladinWeapons(entries)
     if ours and (cls, spec, mode, slot) == ("WARRIOR", 1, "pve", "head"):
         return ArmsHelms(entries)
     if ranked and (cls, spec, mode) == ("HUNTER", 1, "pve") and slot in hunter_bm.SLOTS:
@@ -615,9 +634,9 @@ def _annotatable(entries):
     return OptionLadder(entries) if type(entries) is list else entries
 
 
-def kept_ladder(slot: str, ladder: list[Entry]) -> list[Entry]:
+def kept_ladder(slot: str, ladder: list[Entry], retained=()) -> list[Entry]:
     """The part of the ladder the addon needs, whatever it filters on."""
-    kept = _kept_ladder(slot, ladder)
+    kept = _kept_ladder(slot, ladder, retained)
     if hasattr(ladder, "pre_contexts"):
         kept = _annotatable(kept)
         kept.pre_contexts = _keep_contexts(slot, ladder.pre_contexts, pre_raid=True)
@@ -646,21 +665,26 @@ def _keep_contexts(slot, source, pre_raid=False):
     return contexts
 
 
-def _kept_ladder(slot, ladder):
+def _kept_ladder(slot, ladder, retained):
     if isinstance(ladder, hunter_bm.ContextLadder):
         # Older clients read only L rows. Keep every entry their original order needs,
         # as well as all new entries selected by any supported faction or weapon.
         contexts = _keep_contexts(slot, ladder.contexts)
-        ids = {entry.item_id for entry in kept_ladder(slot, list(ladder))}
+        ids = {entry.item_id for entry in kept_ladder(slot, list(ladder), retained)}
         ids.update(e.item_id for rows in contexts.values() for e in rows)
         return hunter_bm.ContextLadder([entry for entry in ladder if entry.item_id in ids], contexts)
     if hasattr(ladder, "pre_raid"):
         ids = {e.item_id for flt in FILTERS for e in _needed(slot, visible(ladder, flt))}
+        ids.update(retained)
+        if isinstance(ladder, ProtectionPaladinWeapons):
+            for side in ("a", "h"):
+                # The pre-raid editor displays ten weapons per faction.
+                ids.update(e.item_id for e in visible(ladder, (side, False, False, phases.PRE_RAID, False))[:10])
         return type(ladder)([e for e in ladder if e.item_id in ids])
     keep = {entry for entry in ladder if entry.preraid_option}
     for flt in FILTERS:
         keep.update(_needed(slot, [entry for entry in ladder if entry.passes(flt)]))
-    return [entry for entry in ladder if entry in keep]
+    return [entry for entry in ladder if entry in keep or entry.item_id in retained]
 
 
 def build_all(db) -> dict:
@@ -669,7 +693,9 @@ def build_all(db) -> dict:
     for cls, data in db.classes.items():
         out[cls] = {}
         for spec in sorted(data["specs"]):
+            duels = tank_options.DUELS.get((cls, spec), {})
             out[cls][spec] = {
-                mode: {slot: kept_ladder(slot, full_ladder(db, cls, spec, mode, slot)) for slot, _ in SLOTS}
+                mode: {slot: kept_ladder(slot, full_ladder(db, cls, spec, mode, slot),
+                                         duels.get(slot, ())[:2] if mode == "pve" else ()) for slot, _ in SLOTS}
                 for mode in MODES}
     return out

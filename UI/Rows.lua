@@ -121,24 +121,28 @@ function Rows.Items(state, withAlts)
             local listed = {}
             for _, pick in ipairs(picks.best) do
                 listed[pick.id] = true
-                Add(slot, pick.id, { bis = true, gap = 0, ratio = 1 })
+                if pick.option then
+                    Add(slot, pick.id, { bis = true, option = pick.option })
+                else
+                    Add(slot, pick.id, { bis = true, gap = 0, ratio = 1 })
+                end
             end
-            if withAlts then
-                for _, pick in ipairs(picks.alts) do
-                    listed[pick.id] = true
-                    if ns.Ladders.HasFlag(pick.entry, "e") then
-                        Add(slot, pick.id, { bis = false, placed = true })
-                    elseif ns.Ladders.HasFlag(pick.entry, "x") then
-                        Add(slot, pick.id, { bis = false, level = true })
-                    elseif ns.Ladders.HasFlag(pick.entry, "g") then
-                        Add(slot, pick.id, { bis = false, estimated = true })
-                    else
-                        local reference = pick.pairedWith and picks.best[2] or top
-                        Add(slot, pick.id, {
-                            bis = false, tie = ns.Ladders.IsTie(picks, pick) or nil,
-                            gap = Gap(pick.score, reference.score), ratio = Ratio(pick.score, reference.score),
-                        })
-                    end
+            for _, pick in ipairs(ns.Ladders.DisplayAlts(picks, withAlts)) do
+                listed[pick.id] = true
+                if pick.option then
+                    Add(slot, pick.id, { bis = false, option = pick.option })
+                elseif ns.Ladders.HasFlag(pick.entry, "e") then
+                    Add(slot, pick.id, { bis = false, placed = true })
+                elseif ns.Ladders.HasFlag(pick.entry, "x") then
+                    Add(slot, pick.id, { bis = false, level = true })
+                elseif ns.Ladders.HasFlag(pick.entry, "g") then
+                    Add(slot, pick.id, { bis = false, estimated = true })
+                else
+                    local reference = pick.pairedWith and picks.best[2] or top
+                    Add(slot, pick.id, {
+                        bis = false, tie = ns.Ladders.IsTie(picks, pick) or nil,
+                        gap = Gap(pick.score, reference.score), ratio = Ratio(pick.score, reference.score),
+                    })
                 end
             end
             if withAlts and picks.other[1] then
@@ -245,6 +249,10 @@ function Rows.Character(state)
         local cell = { kind = "cell", place = place[1], slot = slot, rank = rank, ties = {} }
         if pick then
             cell.id = pick.id
+            cell.option = pick.option
+            if pick.option or (rank == 1 and not (picks.best[2] and picks.best[2].option)) then
+                cell.tankOptions = picks.options
+            end
             cell.source = ns.Sources.Describe(pick.id)
             cell.reputation = ns.Reputation.Requirement(pick.id)
             cell.ties = Ties(picks, rank)

@@ -140,7 +140,7 @@ local function Draw()
         row.data = data
         row.item:SetText(hex .. Name(data, info) .. "|r")
         row.icon:SetTexture(info and info.iconFileID or (GetIcon and GetIcon(id)) or UNKNOWN_ICON)
-        row.rank:SetText(data.bis and ("|cffffd100" .. L.RANK_BIS .. "|r") or data.label)
+        row.rank:SetText(data.option and data.option.label or (data.bis and ("|cffffd100" .. L.RANK_BIS .. "|r") or data.label))
         row.slot:SetText(ns.SlotName(data.slot))
         row.price:SetAmount(data.price)
         row:Show()
@@ -179,7 +179,7 @@ local function Start()
                 order[row.id] = #ids
             end
             if not old or (bis and not old.bis) or (old.custom and not row.custom) then
-                wanted[row.id] = { bis = bis, slot = row.slot, custom = row.custom }
+                wanted[row.id] = { bis = bis, slot = row.slot, custom = row.custom, option = row.option }
             end
         end
     end
@@ -197,7 +197,7 @@ local function Start()
         local old = offers[key.itemID]
         if old and old.price <= price then return end
         local pick = wanted[key.itemID]
-        offers[key.itemID] = { key = key, price = price, link = link, bis = pick.bis, slot = pick.slot,
+        offers[key.itemID] = { key = key, price = price, link = link, bis = pick.bis, slot = pick.slot, option = pick.option,
             label = pick.custom and L.RANK_CUSTOM or L.AH_ALTERNATIVE }
         Draw()
     end, function(complete)

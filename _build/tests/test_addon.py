@@ -23,6 +23,7 @@ sys.path.insert(0, str(BUILD))
 import consumable_lists  # noqa: E402
 import fdb  # noqa: E402
 import ladders  # noqa: E402
+import tank_options  # noqa: E402
 import luaout  # noqa: E402
 import phases  # noqa: E402
 import reputations  # noqa: E402
@@ -60,6 +61,14 @@ def for_list(flt: tuple, mode: str) -> tuple:
     """A filter as it applies to one list: until the player says otherwise the PvP list counts the PvP
     rewards and the PvE list leaves them out."""
     return flt if flt[4] is not None else (*flt[:4], ladders.PVP_REWARDS[mode], *flt[5:])
+
+
+def visible_duel(token, spec, mode, slot, entries, flt):
+    if mode != "pve" or flt[3] != phases.PRE_RAID:
+        return []
+    ids = tank_options.DUELS.get((token, spec), {}).get(slot, ())[:2]
+    by_id = {entry.shown(flt[0]): entry for entry in entries}
+    return [by_id[i] for i in ids] if all(i in by_id for i in ids) else []
 
 
 def toc_files() -> list[Path]:
@@ -134,10 +143,11 @@ class AddonTest(unittest.TestCase):
             and ladders.weapon_lists(visible["main"], visible["off"])[0][0].two_hand
         other_main, other_off = ladders.other_weapons(visible["main"], visible["off"])
         visible["main"], visible["off"] = ladders.weapon_lists(visible["main"], visible["off"])
-        out = {"twoHand": two_hand, "ties": {}}
+        out = {"twoHand": two_hand, "ties": {}, "options": {}}
         for slot, entries in visible.items():
             best, alternatives = ladders.picks(slot, entries, count)
             out[slot] = ([e.shown(side) for e in best], [e.shown(side) for e in alternatives])
+            out["options"][slot] = [e.shown(side) for e in visible_duel(token, spec, mode, slot, entries, flt)]
             # Only equal, comparable scores count as a tie.
             out["ties"][slot] = {e.shown(side) for e in alternatives
                                  if not e.unscored and not e.estimated and any(
@@ -158,7 +168,7 @@ class AddonTest(unittest.TestCase):
                         best, alternatives = picks[slot]
                         for item_id in best:
                             hits.setdefault(item_id, set()).add((token, spec, mode, slot, True))
-                        for item_id in alternatives:
+                        for item_id in (set(alternatives) | set(picks["options"][slot])) - set(best):
                             hits.setdefault(item_id, set()).add(
                                 (token, spec, mode, slot, item_id in picks["ties"][slot]))
                         for item_id in picks["other"].get(slot, []):

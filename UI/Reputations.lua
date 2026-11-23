@@ -807,7 +807,8 @@ local function DetailLines(group, ways)
     if Section("pieces", title, first and (recipes and RecipeIcon(first) or EntryIcon(first))) then
         for _, entry in ipairs(Entries(group)) do
             local standing = entry.requirement.standing
-            local rank = entry.role == "best" and (WHITE .. L.RANK_BIS) or (GREY .. L.RANK_ALT)
+            local rank = entry.option and (WHITE .. entry.option.label)
+                or (entry.role == "best" and (WHITE .. L.RANK_BIS) or (GREY .. L.RANK_ALT))
             Add({ kind = "entry", text = recipes and RecipeName(entry) or EntryName(entry), entry = entry,
                 recipe = recipes, icon = recipes and RecipeIcon(entry) or nil, place = EntryPlace(entry),
                 standing = (Met(group, standing) and GOLD or WHITE) .. Reputation.StandingName(standing) .. "|r",

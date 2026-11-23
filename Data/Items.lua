@@ -3023,6 +3023,7 @@ ns.data.items = [==[
 274652|Wall of Water|d|sn|d^209^Hydromancer Velratha^29.9^0^w
 274654|Sandfury Guillotine|d|n|d^209^Ruuzlu^36.3^0^w
 274655|Peacekeeper Wand|d|n|d^209^Ruuzlu^28.3^0^w
+274658|Dune Hacker|d|n|d^209^Zerillis^50.9^0^w
 274741|Rumpled Kilt|ev|sn|v^265574^Winklespark^1413^62.5^37.6^5445^h^s~r^470^4^Ratchet^f
 274743|Defective Samophlange|ev|sn|v^265574^Winklespark^1413^62.5^37.6^6581^h^s~r^470^5^Ratchet^f
 274746|Sea Giant's Toe Ring|ev|sn|v^265575^Gezzy Gunkgear^1434^28.4^74.8^14775^h^s~r^21^4^Booty Bay^f

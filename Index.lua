@@ -50,11 +50,12 @@ local function ReadClass(class, filter)
             for _, slot in ipairs(ns.SLOTS) do
                 local picks = slots[slot]
                 for _, pick in ipairs(picks.best) do
-                    Add(byItem, pick.id, { class = class, spec = spec, list = list, slot = slot, bis = true })
+                    Add(byItem, pick.id, { class = class, spec = spec, list = list, slot = slot, bis = true,
+                        option = pick.option })
                 end
-                for _, pick in ipairs(picks.alts) do
+                for _, pick in ipairs(ns.Ladders.DisplayAlts(picks, true)) do
                     Add(byItem, pick.id, { class = class, spec = spec, list = list, slot = slot,
-                        bis = ns.Ladders.IsTie(picks, pick) })
+                        bis = ns.Ladders.IsTie(picks, pick), option = pick.option })
                 end
                 -- the weapons of the other style (a one-hander when a two-hander is best) are alternatives too
                 for _, pick in ipairs(picks.other) do

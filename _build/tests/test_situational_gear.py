@@ -169,7 +169,10 @@ class SituationalGearClientTest(unittest.TestCase):
                     game.ns.SetAlternatives(game.ns, count)
                     browser.ShowSlot("trinket")
                     rows = [row for row in browser.window.rowData.values() if row.kind == "item"]
-                    self.assertEqual(len(rows), 1 + count + 2)
+                    # The measured Threat option joins the two existing situational recommendations.
+                    self.assertEqual(len(rows), 1 + count + 3)
+                    self.assertEqual(rows[2].id, 272437)
+                    self.assertEqual(rows[2].option.label, "Threat")
                     self.assertEqual(rows[3].id, 11810)
                     self.assertTrue(rows[3].level)
                     self.assertFalse(rows[3].bis or rows[3].tie)

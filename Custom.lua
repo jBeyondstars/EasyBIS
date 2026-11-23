@@ -101,7 +101,7 @@ local function Listed(class, spec, list, slot, id)
     local slots = ns.Ladders.For(class, spec, list)
     local picks = slots and slots[slot]
     if not picks then return false end
-    for _, group in ipairs({ picks.best, picks.alts, picks.other }) do
+    for _, group in ipairs({ picks.best, ns.Ladders.DisplayAlts(picks, true), picks.other }) do
         for _, pick in ipairs(group) do
             if pick.id == id then return true end
         end

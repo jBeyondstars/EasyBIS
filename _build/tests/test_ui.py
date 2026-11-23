@@ -133,11 +133,19 @@ class WindowTest(unittest.TestCase):
             if only_slot and slot != only_slot:
                 continue
             best, alternatives = ladders.picks(slot, visible[slot], count)
+            duel = test_addon.visible_duel(token, spec, mode, slot, visible[slot], flt)
             for entry in best:
-                rows.append(("item", entry.shown(side), slot, True, 0))
-            for entry in alternatives if alts else []:
+                rows.append(("item", entry.shown(side), slot, True, None if entry in duel else 0))
+            displayed = [e for e in duel if e not in best]
+            if alts:
+                displayed.extend(e for e in alternatives if e not in duel)
+                fourth = next((e for e in displayed if e.fourth_option), None)
+                if fourth:
+                    displayed.remove(fourth)
+                    displayed.insert(3 - len(best), fourth)
+            for entry in displayed:
                 rows.append(("item", entry.shown(side), slot, False,
-                             None if entry.unscored or entry.estimated
+                             None if entry.unscored or entry.estimated or entry in duel
                              else self.gap(entry.stored / 10, best[1 if entry.paired_with else 0].stored / 10)))
             if alts and other.get(slot):
                 rows.append(("note", None, slot, None, None))

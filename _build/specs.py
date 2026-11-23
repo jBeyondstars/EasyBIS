@@ -85,6 +85,10 @@ ATTACK_POWER_PER_DPS = 14   # a white swing's
 # weights for the tank: MainHandDps over AttackPower. ui/specs/warrior/protection/presets.ts: 1.45 / 0.27 and
 # 1.42 / 0.27 (its two builds), 5.3 between them; ui/specs/druid/feral_ep.ts (BearEp): 3.093 / 0.2209, 14.0.
 DPS_IN_ATTACK_POWER = {"WARRIOR": 5.3, "DRUID": 14.0}
+# Protection paladin main hand, WoWSims Forever a73af71451, Sageblade, 2,000 pre-raid boss fights of 180 s.
+# +40 spell damage (generic or Holy) added 31.46/31.23 threat/s for Alliance/Horde.
+# +10 main-hand DPS added 17.45/17.26. One spell damage is thus worth about 0.45 weapon DPS in threat.
+PALADIN_SPELL_DAMAGE_IN_WEAPON_DPS = 0.45
 ARMOR_PER_AGILITY = 2
 RATING_PER_PERCENT = {DODGE: 12, HIT: 10, CRIT: 14, HASTE: 10}
 DODGE_PERCENT_PER_AGILITY = {"DRUID": 0.05, "PALADIN": 0.0506, "WARRIOR": 0.05}

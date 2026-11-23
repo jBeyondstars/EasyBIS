@@ -40,8 +40,11 @@ local SEPARATOR = " |cff808080·|r "
 
 -- How much a spec wants an item for a list: the highest of its hits counts.
 local ADDED, ALT, BIS = 1, 2, 3
+local THREAT, MITIGATION = 4, 5
 
 local function RankText(rank)
+    if rank == THREAT then return BIS_COLOR .. L.RANK_THREAT .. "|r" end
+    if rank == MITIGATION then return BIS_COLOR .. L.RANK_MITIGATION .. "|r" end
     if rank == BIS then return BIS_COLOR .. L.RANK_BIS .. "|r" end
     if rank == ALT then return ALT_COLOR .. L.RANK_ALT .. "|r" end
     return ns.COLOR .. L.RANK_CUSTOM .. "|r"
@@ -82,6 +85,7 @@ function Tooltip.BuildLines(id)
     local perSpec = {}
     for _, hit in ipairs(hits) do
         local rank = hit.custom and ADDED or (hit.bis and BIS or ALT)
+        if hit.option then rank = hit.option.sign == 1 and THREAT or MITIGATION end
         if (not onlyClass or hit.class == onlyClass) and (rank ~= ALT or withAlternatives) and ns:ListShown(hit.list) then
             perSpec[hit.class] = perSpec[hit.class] or {}
             local status = perSpec[hit.class][hit.spec] or {}

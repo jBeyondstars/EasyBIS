@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Atelier BIS · Easy BIS</title><link rel="icon" href="helm.webp"><link rel="stylesheet" href="style.css">
+<script defer src="data.js"></script><script defer src="editor.js"></script>
+</head>
+<body>
+<header><div class="bar"><div class="brand"><img src="helm.webp" alt=""><strong>Easy BIS</strong><span class="brand-context">Éditeur de listes</span></div><div class="actions"><button id="save"><i data-icon="save"></i>Enregistrer</button><button class="primary" id="export"><i data-icon="download"></i>Exporter JSON</button></div></div></header>
+<main>
+<div class="intro"><div><div class="eyebrow"><span class="diamond"></span> World of Warcraft · Forever</div><h1>Atelier de classement</h1><p>Compose ton best-in-slot pour chaque emplacement.</p></div><div class="phase"><span class="diamond"></span> Pré-raid <span> / </span> Niveau 60</div></div>
+<section class="filters" aria-label="Profil de classement">
+<label>Classe<select id="cls"></select></label>
+<div class="spec-field"><div class="spec-labels"><label for="spec">Spécialisation</label><label class="done-toggle" title="Spécialisation terminée pour toutes les factions et tous les modes"><input id="done" type="checkbox" aria-label="Spécialisation terminée"> Done</label></div><select id="spec"></select></div>
+<label>Faction<select id="side"><option value="a">Alliance</option><option value="h">Horde</option></select></label>
+<div class="mode"><span>Mode de jeu</span><div class="seg"><button data-mode="pve"><i data-icon="shield"></i>PvE</button><button data-mode="pvp"><i data-icon="swords"></i>PvP</button></div></div>
+</section>
+<div class="workspace">
+<aside><div class="sectionhead"><i data-icon="grid"></i><h2>Emplacements</h2></div><nav aria-label="Emplacements"></nav><label class="mobile-slot">Emplacement<select id="slot-select"></select></label></aside>
+<section class="ranking" aria-labelledby="slot-name"><div class="rank-head"><div class="slot-title"><span id="slot-image"></span><div><div id="profile-label" class="eyebrow"></div><h2 id="slot-name"></h2></div></div><span id="count"></span></div>
+<p class="hint"><i data-icon="grip"></i>Glisse les objets pour modifier leur rang.</p>
+<div class="tablehead"><span>Rang</span><span>Objet</span><span>Score addon</span><span>Source</span></div>
+<ol id="list"></ol></section></div>
+<footer><span>Easy BIS · Data from <a href="https://foreverdb.net">ForeverDB.net</a></span><span id="status" role="status"></span></footer></main>
+<div id="tip" role="tooltip" hidden></div><div id="toast" role="status" hidden></div>
+</body></html>

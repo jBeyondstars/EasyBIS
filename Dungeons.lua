@@ -160,9 +160,9 @@ function Dungeons.For(state)
         end
     end
 
-    local function Piece(slot, rank, id, best)
-        return { id = id, slot = slot, rank = rank, best = best, owned = ns.Sources.Owned(id),
-            source = ns.Sources.Describe(id) }
+    local function Piece(slot, rank, pick, best)
+        return { id = pick.id, slot = slot, rank = rank, best = best, option = pick.option,
+            owned = ns.Sources.Owned(pick.id), source = ns.Sources.Describe(pick.id) }
     end
 
     for _, place in ipairs(SHEET) do
@@ -170,7 +170,7 @@ function Dungeons.For(state)
         local picks = slots[slot]
         local pick = picks.best[rank]
         if pick then
-            local piece = Piece(slot, rank, pick.id, true)
+            local piece = Piece(slot, rank, pick, true)
             piece.first = rank == 1
             Place(piece)
             model.sheet[#model.sheet + 1] = piece
@@ -192,9 +192,9 @@ function Dungeons.For(state)
             for _, best in ipairs(picks.best) do
                 covered = covered and ns.Sources.Owned(best.id)
             end
-            for index, alt in ipairs(picks.alts) do
-                local piece = Piece(slot, index, alt.id, false)
-                piece.moot = covered
+            for index, alt in ipairs(ns.Ladders.DisplayAlts(picks, withAlts)) do
+                local piece = Piece(slot, index, alt, false)
+                piece.moot = covered and not alt.option
                 piece.first = picks.best[1] == nil and index == 1
                 Place(piece)
                 model.rows[#model.rows + 1] = piece

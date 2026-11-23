@@ -332,10 +332,11 @@ local function FillChip(chip, run, entry)
     chip.icon.border:ClearAllPoints()
     chip.icon.border:SetPoint("LEFT", chip, "LEFT", 2 + inset, 0)
     chip.name:SetText(FillIcon(chip.icon, piece, entry.quest ~= nil))
-    chip.tag:SetShown(not piece.best)
+    chip.tag:SetText(piece.option and piece.option.label or L.RANK_ALT)
+    chip.tag:SetShown(piece.option ~= nil or not piece.best)
     chip.name:ClearAllPoints()
     chip.name:SetPoint("TOPLEFT", chip, "TOPLEFT", ICON + 10, -3)
-    if piece.best then
+    if piece.best and not piece.option then
         chip.name:SetPoint("RIGHT", chip, "RIGHT", -4, 0)
     else
         chip.name:SetPoint("RIGHT", chip.tag, "LEFT", -6, 0)

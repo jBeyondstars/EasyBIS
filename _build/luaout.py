@@ -20,6 +20,7 @@ import reputations
 import ranks
 import runs
 import shockadin
+import tank_options
 import specs
 
 CREDIT = "Data from ForeverDB.net (https://foreverdb.net)"
@@ -231,6 +232,8 @@ def lists_file(db, all_ladders) -> str:
         "  S <spec> <name> <role> <style>      style: any, 2h, dw (dual wield), shield; the S lines of a class are in",
         "                                      the order the addon lists its specs, which is not always the numbers'",
         "  L <spec> <list> <slot> <entries>    list: pve, pvp; entries best first, separated by spaces",
+        "  T <spec> pve <slot> <duel>          threat and mitigation IDs, then DPS, threat/s, damage taken/s deltas",
+        "                                      for Alliance and Horde when equipping the threat item in pre-raid",
         "  F <spec> <list> <slot> pre <entries>   pre-raid recommendations for both factions",
         "  F <spec> <list> <slot> pre:<faction[:companionID]> <entries>   paired pre-raid measurements",
         "      See corrections/caster_trinkets.json and corrections/relics.json for the 2,000-fight trials and revisions.",
@@ -265,6 +268,10 @@ def lists_file(db, all_ladders) -> str:
             modes = all_ladders[cls][spec]
             spec_def = db.classes[cls]["specs"][spec]
             block.append("\t".join(("S", str(spec), spec_def["name"], spec_def["role"], spec_def["style"])))
+            for slot, duel in tank_options.DUELS.get((cls, spec), {}).items():
+                eligible = {entry.item_id for entry in modes["pve"].get(slot, ())}
+                if eligible.issuperset(duel[:2]):
+                    block.append(tank_options.record(spec, slot, duel))
             measured = _measured(db, cls, spec)
             if measured:
                 block.append("\t".join(("M", str(spec), "pve", measured)))

@@ -1,3 +1,9 @@
+# Easy BIS 1.9.5
+
+- **Protection Warrior, Feral Bear and Protection Paladin.** Pre-raid PvE lists label Threat and Mitigation alternatives where a gear swap trades threat for damage reduction. Hover over an option to see the difference for your faction.
+- **Protection Paladin weapons.** Sageblade, Hand of Edward the Odd and Mastersmith's Hammer lead the pre-raid list. Mind Carver is fourth. Arbiter's Blade takes fifth ahead of Greenhammer and Ironwood Blade for its 60 spell power.
+- **Protection Paladin trinkets.** Weakness Analyzer is the third pre-raid recommendation for Threat. Defender's Grip Stabilizer is the Mitigation option. Equip either alongside The Lion Horn of Stormwind.
+
 # Easy BIS 1.9.4
 
 - **Feral Bear PvE.** Force of Will is the fourth pre-raid trinket, just after Arena Grand Master. It appears with the default two alternatives. Its damage reduction is especially useful against packs. Mark of the Chosen is an option for threat.
