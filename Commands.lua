@@ -99,9 +99,13 @@ local function ItemCommand(rest)
     end
 end
 
-local function Links(picks)
+local function Links(picks, rank)
     local links = {}
-    for _, pick in ipairs(picks) do links[#links + 1] = ns.Items.Link(pick.id) end
+    for _, pick in ipairs(picks) do
+        local link = ns.Items.Link(pick.id)
+        local label = pick.option and pick.option.label or rank
+        links[#links + 1] = label and (label .. " " .. link) or link
+    end
     return table.concat(links, " ")
 end
 
@@ -112,7 +116,7 @@ local function ListCommand(rest)
         ns:Print(L.NO_DATA)
         return
     end
-    local wanted = tonumber(rest:match("%d+")) or 1
+    local wanted = ns.ActiveSpec(class, tonumber(rest:match("%d+")) or 1)
     local list = rest:lower():find("pvp", 1, true) and "pvp" or "pve"
     local spec
     for _, candidate in ipairs(specs) do
@@ -132,7 +136,9 @@ local function ListCommand(rest)
     for _, slot in ipairs(ns.SLOTS) do
         local picks = slots[slot]
         local text
-        if picks.best[1] then
+        if picks.options then
+            text = Links(picks.best, L.RANK_BIS)
+        elseif picks.best[1] then
             text = "|cffffd100" .. L.RANK_BIS .. "|r " .. Links(picks.best)
         elseif slot == "off" and slots.twoHand then
             text = L.LIST_TWO_HAND
@@ -140,12 +146,12 @@ local function ListCommand(rest)
             text = L.LIST_EMPTY
         end
         -- the alternatives, then the weapons of the other style
-        local alternatives = Links(picks.alts)
+        local alternatives = Links(ns.Ladders.DisplayAlts(picks, true), picks.options and L.RANK_ALT)
         if picks.other[1] then
             alternatives = (alternatives ~= "" and alternatives .. " " or "") .. Links(picks.other)
         end
         if alternatives ~= "" then
-            text = text .. "  |cffc0c0c0" .. L.RANK_ALT .. "|r " .. alternatives
+            text = text .. "  " .. (picks.options and "" or ("|cffc0c0c0" .. L.RANK_ALT .. "|r ")) .. alternatives
         end
         ns:Print(("  %s: %s"):format(ns.SlotName(slot), text))
     end
@@ -158,7 +164,7 @@ local function AddCommand(rest)
         return
     end
     local text = rest:match("^(.-)%s+[oO][fF][fF]$")
-    local class, spec, list = ns.Browser.Target()
+    local class, spec, list = ns.Browser.AddTarget()
     local _, message = ns.Custom.Submit(class, spec, list, text or rest, text and "off" or nil)
     ns:Print(message)
 end
@@ -168,7 +174,7 @@ local function RemoveCommand(rest)
         ns:Print(L.HELP_REMOVE)
         return
     end
-    local class, spec, list = ns.Browser.Target()
+    local class, spec, list = ns.Browser.AddTarget()
     local _, message = ns.Custom.Withdraw(class, spec, list, rest)
     ns:Print(message)
 end

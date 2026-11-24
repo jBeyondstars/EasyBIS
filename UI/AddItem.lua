@@ -27,7 +27,11 @@ local AddItem = {}
 ns.AddItem = AddItem
 
 local DIALOG_NAME = "EasyBISAddItem"
-local WIDTH, HEIGHT = 400, 136
+local WIDTH, HEIGHT = 420, 178
+local FOOTER = 30             -- the foot, where the dialog says what the last add did
+local PAD = Widgets.DIALOG_PAD
+local ADD_WIDTH = 90
+local ICON = "Interface\\Icons\\INV_Misc_Bag_08"
 
 local dialog
 local shown   -- the window's state
@@ -128,7 +132,7 @@ function AddItem.Submit(text)
     if not dialog or not shown then return false end
     HideSuggestions()
     -- a one-handed weapon goes to the off hand when the window is filtered on that slot
-    local ok, message = ns.Custom.Submit(shown.class, shown.spec, shown.list, text, shown.slot)
+    local ok, message = ns.Custom.Submit(shown.class, shown.spec, shown.itemList or shown.list, text, shown.slot)
     Say(ok, message)
     if ok then dialog.box:SetText("") end
     return ok, message
@@ -147,10 +151,22 @@ local function BuildSuggestions(box)
     suggest:Hide()
     suggest.ids = {}
     suggest:SetPoint("TOPLEFT", box, "BOTTOMLEFT", -6, -2)
-    suggest:SetWidth(WIDTH - 28)
+    suggest:SetWidth(WIDTH - 2 * PAD)
     suggest:SetFrameStrata("FULLSCREEN_DIALOG")
     suggest:SetClampedToScreen(true)
     suggest:EnableMouse(true)
+
+    local function OpaqueInterior(frame)
+        local fill = frame:CreateTexture(nil, "BACKGROUND", nil, -8)
+        fill:SetPoint("TOPLEFT", 3, -3)
+        fill:SetPoint("BOTTOMRIGHT", -3, 3)
+        fill:SetColorTexture(0.05, 0.05, 0.06, 1)
+        return fill
+    end
+    OpaqueInterior(suggest)
+    local tipFill = OpaqueInterior(GameTooltip)
+    tipFill:Hide()
+    GameTooltip:HookScript("OnHide", function() tipFill:Hide() end)
 
     suggest.rows = {}
     for i = 1, SUGGESTIONS do
@@ -182,12 +198,16 @@ local function BuildSuggestions(box)
             GameTooltip:ClearAllPoints()
             GameTooltip:SetPoint("TOPLEFT", suggest, "TOPRIGHT", 4, 0)
             GameTooltip:SetItemByID(self.id)
+            tipFill:Show()
             ns.Browser.ShowTooltip(suggest)   -- the comparison with the gear worn waits for Shift
         end)
-        row:SetScript("OnLeave", function() GameTooltip:Hide() end)
+        row:SetScript("OnLeave", function()
+            tipFill:Hide()
+            ns.Tooltip.HideOwned(suggest)
+        end)
         row:SetScript("OnClick", function(self)
             Widgets.Click()
-            GameTooltip:Hide()
+            ns.Tooltip.HideOwned(suggest)
             AddItem.Submit(tostring(self.id))
             box:SetFocus()
         end)
@@ -200,7 +220,11 @@ local function BuildSuggestions(box)
 
     -- names and colors arrive from the server after the first look
     suggest:SetScript("OnShow", function(self) self:RegisterEvent("GET_ITEM_INFO_RECEIVED") end)
-    suggest:SetScript("OnHide", function(self) self:UnregisterEvent("GET_ITEM_INFO_RECEIVED") end)
+    suggest:SetScript("OnHide", function(self)
+        tipFill:Hide()
+        ns.Tooltip.HideOwned(self)
+        self:UnregisterEvent("GET_ITEM_INFO_RECEIVED")
+    end)
     -- an item the server does not have (success false) leaves the list, which fills up again
     suggest:SetScript("OnEvent", function(self, _, id, success)
         if success == false and id then
@@ -236,37 +260,25 @@ local function OnLink(link)
 end
 
 local function Build()
-    dialog = CreateFrame("Frame", DIALOG_NAME, UIParent, "DialogBorderTemplate")
+    -- the header says what the dialog does, and under it the list it adds to
+    dialog = Widgets.Dialog(DIALOG_NAME, UIParent, WIDTH, FOOTER)
     AddItem.dialog = dialog
-    dialog:Hide()
-    dialog:SetSize(WIDTH, HEIGHT)
-    dialog:SetFrameStrata("DIALOG")
-    dialog:SetToplevel(true)
-    dialog:SetClampedToScreen(true)
-    dialog:EnableMouse(true)
-    table.insert(UISpecialFrames, DIALOG_NAME)
-
-    dialog.title = dialog:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    dialog.title:SetPoint("TOPLEFT", 14, -12)
+    dialog:SetHeight(HEIGHT)
+    dialog:SetIcon(ICON)
     dialog.title:SetText(L.ADD_BUTTON)
+    dialog.target = dialog.sub
 
-    dialog.target = dialog:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    dialog.target:SetPoint("TOPLEFT", dialog.title, "BOTTOMLEFT", 0, -4)
-
-    dialog.hint = dialog:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    dialog.hint:SetPoint("TOPLEFT", dialog.target, "BOTTOMLEFT", 0, -6)
-    dialog.hint:SetWidth(WIDTH - 28)
+    dialog.hint = dialog:CreateFontString(nil, "OVERLAY", ns.Browser.FONTS.text)
+    dialog.hint:SetPoint("TOPLEFT", PAD, -(Widgets.DIALOG_HEADER + 10))
+    dialog.hint:SetWidth(WIDTH - 2 * PAD)
     dialog.hint:SetJustifyH("LEFT")
     dialog.hint:SetTextColor(Widgets.MUTED[1], Widgets.MUTED[2], Widgets.MUTED[3])
     dialog.hint:SetText(L.ADD_HINT)
 
-    local close = CreateFrame("Button", nil, dialog, "UIPanelCloseButton")
-    close:SetPoint("TOPRIGHT", 2, 2)
-
     local box = CreateFrame("EditBox", nil, dialog, "SearchBoxTemplate")
     dialog.box = box
-    box:SetSize(266, 22)
-    box:SetPoint("BOTTOMLEFT", 20, 32)
+    box:SetSize(WIDTH - 2 * PAD - 6 - 10 - ADD_WIDTH, 22)
+    box:SetPoint("BOTTOMLEFT", PAD + 6, FOOTER + 12)   -- the template's art starts left of the box
     box:SetAutoFocus(false)
     box:SetMaxLetters(300)
     box:SetScript("OnEnterPressed", Enter)
@@ -286,16 +298,17 @@ local function Build()
     end)
     BuildSuggestions(box)
 
-    dialog.add = Widgets.Button(dialog, L.ADD_CONFIRM, 90)
+    dialog.add = Widgets.Button(dialog, L.ADD_CONFIRM, ADD_WIDTH)
     dialog.add:SetPoint("LEFT", box, "RIGHT", 10, 0)
     dialog.add:SetScript("OnClick", function()
         Widgets.Click()
         AddItem.Submit(box:GetText())
     end)
 
+    -- what the last add did, in the dialog's foot
     dialog.result = dialog:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    dialog.result:SetPoint("BOTTOMLEFT", 14, 10)
-    dialog.result:SetPoint("RIGHT", -14, 0)
+    dialog.result:SetPoint("LEFT", dialog, "BOTTOMLEFT", PAD, 4 + (FOOTER - 4) / 2)
+    dialog.result:SetWidth(WIDTH - 2 * PAD)
     dialog.result:SetJustifyH("LEFT")
     dialog.result:SetWordWrap(false)
 
@@ -318,7 +331,7 @@ end
 
 function AddItem.Refresh()
     if not dialog or not shown then return end
-    dialog.target:SetText(L.ADD_TARGET:format(ns.Custom.ListText(shown.class, shown.spec, shown.list)))
+    dialog.target:SetText(L.ADD_TARGET:format(ns.Custom.ListText(shown.class, shown.spec, shown.itemList or shown.list)))
 end
 
 function AddItem.Open(state)

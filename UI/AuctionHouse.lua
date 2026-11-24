@@ -106,7 +106,7 @@ local function NewRow(index)
         else GameTooltip:SetItemByID(self.data.key.itemID) end
         GameTooltip:Show()
     end)
-    row:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    row:SetScript("OnLeave", ns.Tooltip.HideOwned)
     row:SetScript("OnClick", function(self)
         local data = self.data
         if C_AuctionHouse.GetItemKeyInfo(data.key) then
@@ -140,7 +140,7 @@ local function Draw()
         row.data = data
         row.item:SetText(hex .. Name(data, info) .. "|r")
         row.icon:SetTexture(info and info.iconFileID or (GetIcon and GetIcon(id)) or UNKNOWN_ICON)
-        row.rank:SetText(data.bis and ("|cffffd100" .. L.RANK_BIS .. "|r") or data.label)
+        row.rank:SetText(data.option and data.option.label or (data.bis and ("|cffffd100" .. L.RANK_BIS .. "|r") or data.label))
         row.slot:SetText(ns.SlotName(data.slot))
         row.price:SetAmount(data.price)
         row:Show()
@@ -179,7 +179,7 @@ local function Start()
                 order[row.id] = #ids
             end
             if not old or (bis and not old.bis) or (old.custom and not row.custom) then
-                wanted[row.id] = { bis = bis, slot = row.slot, custom = row.custom }
+                wanted[row.id] = { bis = bis, slot = row.slot, custom = row.custom, option = row.option }
             end
         end
     end
@@ -197,7 +197,7 @@ local function Start()
         local old = offers[key.itemID]
         if old and old.price <= price then return end
         local pick = wanted[key.itemID]
-        offers[key.itemID] = { key = key, price = price, link = link, bis = pick.bis, slot = pick.slot,
+        offers[key.itemID] = { key = key, price = price, link = link, bis = pick.bis, slot = pick.slot, option = pick.option,
             label = pick.custom and L.RANK_CUSTOM or L.AH_ALTERNATIVE }
         Draw()
     end, function(complete)
@@ -224,9 +224,9 @@ local function BuildBar()
     panel.status = Text(panel, "GameFontHighlightSmall")
     panel.status:SetWordWrap(true)
     panel.status:SetJustifyV("MIDDLE")
-    panel.status:SetHeight(24)
-    panel.status:SetPoint("BOTTOMLEFT", panel.list, "BOTTOMRIGHT", 12, -1)
-    panel.status:SetPoint("BOTTOMRIGHT", panel.scan, "BOTTOMLEFT", -10, -1)
+    panel.status:SetHeight(panel.scan:GetHeight())
+    panel.status:SetPoint("LEFT", panel.list, "RIGHT", 12, 0)
+    panel.status:SetPoint("RIGHT", panel.scan, "LEFT", -10, 0)
     panel.status:SetText(L.AH_IDLE)
     panel.phase = Text(panel, "GameFontHighlightSmall")
     panel.phase:SetTextColor(MUTED[1], MUTED[2], MUTED[3])

@@ -26,8 +26,8 @@ Feral Combat, which its weights, its enchants and its coach all treat as a bear.
    sim/paladin/paladin.go and sim/warrior/warrior.go, the block value and the armor in sim/core/character.go, 14
    attack power per damage per second in sim/core/constants.go, the dodge in sim/core/base_stats.go
    (dodgePerAgility), the ratings in sim/core/base_stats_auto_gen.go, the paw in sim/druid/forms.go and
-   docs/evidence/EV-0041. What these weights still do not count: an item's effect (a proc, a use), and a shield's
-   own block value, which ForeverDB's data lacks.
+   docs/evidence/EV-0041. The weights do not count an item's proc or on-use effect. corrections.complete_shields
+   supplies the intrinsic block value in addition to the equip bonus of shields.
 
 2. The Feral Druid is two specs (split_feral). ForeverDB's stays what it is, the bear, under the name
    "Feral (Bear)" and its number. A new spec, "Feral (Cat)", takes the next number: its PvE weights are the damage
@@ -63,7 +63,12 @@ TANK = "Tank"
 EFFECTS_FILE = Path(__file__).resolve().parent / "corrections" / "effects.json"
 CLASSES_FILE = EFFECTS_FILE.with_name("classes.json")
 HUNTER = "HUNTER"
+MORTAL_STRIKE_COOLDOWN = 6.0
+TWO_HAND_NORMALIZED_SPEED = 3.3
 RANGED_ATTACK_POWER = 39
+# Separate from hit rating: only attacks with ranged weapons benefit. These are the five items in
+# the Hunter's pools with PseudoStatRangedHitPercent in WoWSims Forever 21377c070b, db.json.
+RANGED_HIT_PERCENT = {13255: 3, 17754: 1, 18296: 1, 18388: 1, 22207: 1}
 STRENGTH, AGILITY, STAMINA, INTELLECT, SPIRIT = 4, 3, 7, 5, 6
 DEFENSE, DODGE, HIT, CRIT, HASTE, EXPERTISE, ATTACK_POWER, RANGED_ATTACK_POWER = 12, 13, 31, 32, 36, 37, 38, 39
 SPELL_DAMAGE, SPELL_POWER, BLOCK_VALUE = 42, 45, 48
@@ -76,6 +81,10 @@ ATTACK_POWER_PER_DPS = 14   # a white swing's
 # weights for the tank: MainHandDps over AttackPower. ui/specs/warrior/protection/presets.ts: 1.45 / 0.27 and
 # 1.42 / 0.27 (its two builds), 5.3 between them; ui/specs/druid/feral_ep.ts (BearEp): 3.093 / 0.2209, 14.0.
 DPS_IN_ATTACK_POWER = {"WARRIOR": 5.3, "DRUID": 14.0}
+# Protection paladin main hand, WoWSims Forever a73af71451, Sageblade, 2,000 pre-raid boss fights of 180 s.
+# +40 spell damage (generic or Holy) added 31.46/31.23 threat/s for Alliance/Horde.
+# +10 main-hand DPS added 17.45/17.26. One spell damage is thus worth about 0.45 weapon DPS in threat.
+PALADIN_SPELL_DAMAGE_IN_WEAPON_DPS = 0.45
 ARMOR_PER_AGILITY = 2
 RATING_PER_PERCENT = {DODGE: 12, HIT: 10, CRIT: 14, HASTE: 10}
 DODGE_PERCENT_PER_AGILITY = {"DRUID": 0.05, "PALADIN": 0.0506, "WARRIOR": 0.05}
@@ -89,6 +98,12 @@ CAT_SOURCE = "WoWSims Forever 21377c070b, ui/specs/druid/feral_ep.ts (CatEp)"
 CAT_PVE = {STRENGTH: 0.594, AGILITY: 0.655, ATTACK_POWER: 0.244, HIT: 0.521, CRIT: 0.506, HASTE: 0.393,
            EXPERTISE: 0.490, "dps": 2.142}
 CAT_ROLE = "Melee DPS"
+
+# WoWSims Forever 07648faf, ui/specs/hunter/dps/presets.ts, TurretEpWeights.
+# This ranged preset was measured on Marksmanship. It estimates item stats for
+# SV Turret (builds/sv.siml), which also shoots at 12 yards without melee swings.
+SURVIVAL_TURRET = {AGILITY: 1, INTELLECT: 0.64, RANGED_ATTACK_POWER: 0.34, HIT: 1.26,
+                   CRIT: 0.87, HASTE: 0.75, MANA_PER_5: 0.41, "dps": 3.29}
 
 # The head and leg enchants of Zul'Gurub's class quests, by the item that applies them, and the one class each is
 # for: classAllowlist of the enchants of WoWSims Forever's item database (assets/database/db.json, 21377c070b).
@@ -158,6 +173,8 @@ def ranged_power(db, report: Report) -> None:
     "ranged attack power" and gives "attack power" next to nothing, or nothing: a Drake Fang Talisman's 56 scored 0."""
     for number, spec in db.classes.get(HUNTER, {}).get("specs", {}).items():
         for profile, weights in spec["weights"].items():
+            if spec["role"] == "Ranged DPS" and HIT in weights:
+                weights["ranged_hit"] = weights[HIT] * RATING_PER_PERCENT[HIT]
             if weights.get(RANGED_ATTACK_POWER):
                 melee = spec.setdefault("melee_power", {})   # ForeverDB's own weight, kept: applying twice adds once
                 melee.setdefault(profile, weights.get(ATTACK_POWER, 0))
@@ -211,6 +228,36 @@ def split_feral(db, report: Report) -> None:
     report.bear, report.cat = (DRUID, bear), (DRUID, cat)
 
 
+def split_survival(db) -> None:
+    hunters = db.classes.get(HUNTER, {}).get("specs", {})
+    if any(spec["slug"] == "survival-ranged" for spec in hunters.values()):
+        return
+    melee = next((i for i, spec in hunters.items() if spec["slug"] == "survival" and spec["role"] == "Melee DPS"), None)
+    if melee is None:
+        return
+    ranged = max(hunters) + 1
+    # Preserve saved choices and single-target simulations under the original ID.
+    # The dungeon archive was recorded on SV Turret under that same ID.
+    hunters[melee].update(name="Survival (Melee)", dungeon_profile=None)
+    weights = {}
+    for profile, previous in hunters[melee]["weights"].items():
+        weights[profile] = dict(SURVIVAL_TURRET)
+        if profile != "raid":
+            weights[profile].update({stat: previous[stat] for stat in (STAMINA, "armor") if stat in previous})
+    hunters[ranged] = {"name": "Survival (Ranged)", "slug": "survival-ranged", "role": "Ranged DPS", "style": "any",
+                       "added": True, "weights": weights, "dungeon_profile": melee}
+    per_spec = db.enchants.setdefault(HUNTER, {})
+    marks = next((i for i, spec in hunters.items() if spec["slug"] == "marksmanship"), None)
+    for profile, stats in weights.items():
+        if profile == "pvp":
+            continue
+        enchanted = enchants_for(db, HUNTER, {**stats, ATTACK_POWER: stats[RANGED_ATTACK_POWER]})
+        # Scopes include ranged weapon damage, which the plain stat parser cannot read.
+        if scopes := per_spec.get((marks, profile), {}).get("rng"):
+            enchanted["rng"] = list(scopes)
+        per_spec[ranged, profile] = enchanted
+
+
 def own_enchants(db, report: Report) -> None:
     """Take out of a tank's enchant lists the Zul'Gurub enchants that are another class's (CLASS_ENCHANTS)."""
     for cls, per_spec in db.enchants.items():
@@ -244,7 +291,14 @@ def apply(db) -> Report:
                 if added:
                     weights.update(added)
                     report.completed[cls, number, profile] = added
+    split_survival(db)
     ranged_power(db, report)
+    # Preserve the published DPS weight for a 3.3-second weapon. A two-hander with the same
+    # DPS but a different base damage roll gains or loses that difference on one Mortal Strike.
+    arms = db.classes.get("WARRIOR", {}).get("specs", {}).get(1)
+    if arms and arms.get("slug") == "arms":
+        pvp = arms["weights"]["pvp"]
+        pvp["weapon_hit"] = pvp["dps"] / (MORTAL_STRIKE_COOLDOWN + TWO_HAND_NORMALIZED_SPEED)
     split_feral(db, report)
     paladin = db.classes.get(shockadin.PALADIN, {}).get("specs", {})
     if not any(spec.get("slug") == shockadin.SLUG for spec in paladin.values()):   # applying twice adds it once

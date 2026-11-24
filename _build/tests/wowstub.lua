@@ -63,6 +63,7 @@ local function NewWidget(kind, name, template)
     elseif kind == "DropdownButton" then
         widget.Text = NewWidget("FontString")
         widget.Background = NewWidget("Texture")
+        if template == "WowStyle1DropdownTemplate" then widget.Arrow = NewWidget("Texture") end
         widget.scripts.OnMouseDown = function(self, button)
             if button == "LeftButton" then self:OpenMenu() end
         end
@@ -78,7 +79,7 @@ for _, method in ipairs({
     "SetWordWrap", "SetJustifyH", "SetColorTexture", "SetTexCoord",
     "SetHighlightTexture", "SetScrollChild", "UpdateScrollChildRect", "Raise", "SetAllPoints",
     "SetResizable", "SetResizeBounds", "StartSizing", "SetNormalTexture", "SetPushedTexture", "SetAutoFocus",
-    "SetMaxLetters", "SetBlendMode", "SetDisabledTexture", "SetAtlas", "SetJustifyV",
+    "SetMultiLine", "SetMaxLetters", "SetBlendMode", "SetDisabledTexture", "SetJustifyV", "SetPushedTextOffset",
 }) do
     METHODS[method] = Noop
 end
@@ -88,6 +89,9 @@ function METHODS:SetBackdropBorderColor(r, g, b, a) self.borderColor = { r, g, b
 function METHODS:SetVertexColor(r, g, b, a) self.vertexColor = { r, g, b, a } end
 function METHODS:SetDesaturated(desaturated) self.desaturated = desaturated and true or false end
 function METHODS:SetFontObject(font) self.fontObject = font end
+function METHODS:SetNormalFontObject(font) self.normalFont = font end
+function METHODS:SetDisabledFontObject(font) self.disabledFont = font end
+function METHODS:SetAtlas(atlas) self.atlas = atlas end
 
 -- Model methods (a DressUpModel): what it was asked to show.
 function METHODS:SetUnit(unit) self.unit = unit end
@@ -116,6 +120,7 @@ function METHODS:IsShown() return self.shown end
 
 function METHODS:SetSize(width, height) self.width, self.height = width, height end
 function METHODS:SetWidth(width) self.width = width end
+function METHODS:GetVerticalScroll() return self.verticalScroll or 0 end
 function METHODS:SetVerticalScroll(offset) self.verticalScroll = offset end
 function METHODS:SetHeight(height) self.height = height end
 function METHODS:GetWidth() return self.width or 0 end
@@ -128,6 +133,7 @@ function METHODS:GetPoint(index)
 end
 function METHODS:GetCenter() return 0, 0 end
 function METHODS:GetRight() return self.right end   -- nil until a test places the frame
+function METHODS:GetBottom() return self.bottom end
 function METHODS:SetFocus() self.focused = true end
 function METHODS:ClearFocus() self.focused = false end
 function METHODS:HasFocus() return self.focused == true end
@@ -137,7 +143,13 @@ function METHODS:GetFrameLevel() return self.frameLevel or 1 end
 function METHODS:IsMouseOver() return false end
 function METHODS:IsForbidden() return false end
 function METHODS:SetAlpha(alpha) self.alpha = alpha end
-function METHODS:SetEnabled(enabled) self.enabled = enabled end
+function METHODS:SetEnabled(enabled)
+    local changed = self:IsEnabled() ~= enabled
+    self.enabled = enabled
+    local script = self.scripts[enabled and "OnEnable" or "OnDisable"]
+    if changed and script then script(self) end
+end
+function METHODS:GetButtonState() return self.buttonState or "NORMAL" end
 function METHODS:IsEnabled() return self.enabled ~= false end
 function METHODS:LockHighlight() self.highlightLocked = true end
 function METHODS:UnlockHighlight() self.highlightLocked = false end
@@ -162,6 +174,7 @@ function METHODS:CreateFontString(_, _, fontObject)
     return text
 end
 function METHODS:CreateTexture() return NewWidget("Texture") end
+function METHODS:SetFontString(fontString) self.fontString = fontString end
 function METHODS:GetFontString()
     if not self.fontString then
         self.fontString = NewWidget("FontString")
@@ -440,7 +453,7 @@ function stub.setupMenu(button, generator)
 end
 
 function stub.openMenu(button)
-    return MenuUtil.CreateContextMenu(button, button.menuGenerator)
+    if button.menuGenerator then return MenuUtil.CreateContextMenu(button, button.menuGenerator) end
 end
 
 ---------------------------------------------------------------------------
@@ -493,6 +506,24 @@ function stub.run(widget, script, ...)
     local handler = widget.scripts[script]
     assert(handler, "the widget has no " .. script .. " script")
     return handler(widget, ...)
+end
+
+-- Inspect the entries on the open private panel, as the menu tests do for Blizzard menus.
+function stub.openDropdown(button)
+    stub.menu = nil
+    if not button:IsEnabled() then return end
+    local function OpenPanel()
+        for _, frame in ipairs(stub.frames) do
+            if frame.anchor == button and frame.entries and frame:IsShown() then
+                return { items = frame.entries, panel = frame }
+            end
+        end
+    end
+    stub.menu = OpenPanel()
+    if not stub.menu then
+        stub.run(button, button.kind == "DropdownButton" and "OnMouseDown" or "OnClick", "LeftButton")
+        stub.menu = OpenPanel()
+    end
 end
 
 function stub.clearChat() stub.chat = {} end

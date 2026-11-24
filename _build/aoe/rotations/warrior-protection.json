@@ -1,0 +1,11 @@
+{
+  "type": "TypeAPL",
+  "priorityList": [
+    {"action": {"autocastOtherCooldowns": {}}},
+    {"action": {"castSpell": {"spellId": {"spellId": 2687}}}},
+    {"action": {"castSpell": {"spellId": {"spellId": 11581}}}},
+    {"action": {"castSpell": {"spellId": {"spellId": 20569}}}},
+    {"action": {"castSpell": {"spellId": {"spellId": 23925}}}},
+    {"action": {"castSpell": {"spellId": {"spellId": 11597}}}}
+  ]
+}

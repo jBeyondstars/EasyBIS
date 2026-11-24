@@ -6,6 +6,7 @@ Which specs want an item: what item tooltips need.
   Index.ForItem(id)   { { class, spec, list, slot, bis = true|false, custom = true|nil }, ... } or nil
                       bis: a best pick, or an alternative that scores as much as one
                       custom: added to that list by hand (Custom.lua), not a pick of the data
+  Index.AoeForItem(id)   AoE picks indexed for the active faction and alternative limit
   Index.SpecName(class, spec), Index.SpecCount(class)
   Index.SpecOrder(class)   the class's spec numbers in the order to show them (the data's)
 
@@ -21,6 +22,7 @@ ns.Index = Index
 local WARM_UP_DELAY = 3   -- seconds after login before the first class is read
 
 local byItem = {}     -- [item id] = hits
+local aoeByItem = {}     -- AoE tooltip memberships are separate from Raid and PvP lookups
 local specNames = {}  -- [class] = { [spec] = English name }
 local specOrder = {}  -- [class] = { spec, ... } as the data lists them
 local done = {}       -- [class] = true once read
@@ -45,16 +47,22 @@ local function ReadClass(class, filter)
     specOrder[class] = data.order
     for spec, def in pairs(data.specs) do
         specNames[class][spec] = def.name
+        for slot, samples in pairs(ns.Rows.AoeList(class, spec) or {}) do
+            for rank, sample in ns.Rows.AoePicks(samples, true) do
+                Add(aoeByItem, sample[1], { class = class, spec = spec, slot = slot, bis = rank == 1 })
+            end
+        end
         for _, list in ipairs(ns.LISTS) do
             local slots = ns.Ladders.Compute(data, spec, list, filter)
             for _, slot in ipairs(ns.SLOTS) do
                 local picks = slots[slot]
                 for _, pick in ipairs(picks.best) do
-                    Add(byItem, pick.id, { class = class, spec = spec, list = list, slot = slot, bis = true })
+                    Add(byItem, pick.id, { class = class, spec = spec, list = list, slot = slot, bis = true,
+                        option = pick.option })
                 end
-                for _, pick in ipairs(picks.alts) do
+                for _, pick in ipairs(ns.Ladders.DisplayAlts(picks, true)) do
                     Add(byItem, pick.id, { class = class, spec = spec, list = list, slot = slot,
-                        bis = ns.Ladders.IsTie(picks, pick) })
+                        bis = ns.Ladders.IsTie(picks, pick), option = pick.option })
                 end
                 -- the weapons of the other style (a one-hander when a two-hander is best) are alternatives too
                 for _, pick in ipairs(picks.other) do
@@ -79,6 +87,20 @@ local function Added()
             Add(added, id, { class = class, spec = spec, list = list, slot = slot, bis = false, custom = true })
         end
     end)
+    for _, gear in ipairs(ns.db.gearLists) do
+        if specNames[gear.class] and specNames[gear.class][gear.spec] then
+            local seen = {}
+            for slot, entries in pairs(gear.slots) do
+                for _, entry in ipairs(entries) do
+                    if not seen[entry.id] then
+                        seen[entry.id] = true
+                        Add(added, entry.id, { class = gear.class, spec = gear.spec, list = "gear" .. gear.id,
+                            slot = slot, custom = true, listName = gear.name })
+                    end
+                end
+            end
+        end
+    end
     return added
 end
 
@@ -91,6 +113,11 @@ function Index.ForItem(id)
     for _, hit in ipairs(hits) do all[#all + 1] = hit end
     for _, hit in ipairs(extra) do all[#all + 1] = hit end
     return all
+end
+
+function Index.AoeForItem(id)
+    ReadAll()
+    return aoeByItem[id]
 end
 
 function Index.SpecName(class, spec)
@@ -113,6 +140,7 @@ end
 
 function Index.Reset()
     byItem, specNames, specOrder, done, added = {}, {}, {}, {}, nil
+    aoeByItem = {}
     generation = generation + 1
 end
 

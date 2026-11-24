@@ -1,0 +1,27 @@
+{
+  "type": "TypeAPL",
+  "priorityList": [
+    {"action": {"autocastOtherCooldowns": {}}},
+    {"action": {"castSpell": {"spellId": {"spellId": 20924}}}},
+    {"action": {"castSpell": {"spellId": {"spellId": 24239}}}},
+    {"action": {
+      "condition": {"and": {"vals": [
+        {"auraIsInactive": {"auraId": {"spellId": 20920}}},
+        {"or": {"vals": [
+          {"auraIsInactive": {"auraId": {"spellId": 20293}}},
+          {"cmp": {"op": "OpGe", "lhs": {"auraNumStacks": {"auraId": {"spellId": 1311704}}}, "rhs": {"const": {"val": "1"}}}}
+        ]}}
+      ]}},
+      "castSpell": {"spellId": {"spellId": 20920}}
+    }},
+    {"action": {
+      "condition": {"and": {"vals": [
+        {"auraIsInactive": {"auraId": {"spellId": 20293}}},
+        {"cmp": {"op": "OpGe", "lhs": {"auraNumStacks": {"auraId": {"spellId": 1311703}}}, "rhs": {"const": {"val": "3"}}}}
+      ]}},
+      "castSpell": {"spellId": {"spellId": 20293}}
+    }},
+    {"action": {"castSpell": {"spellId": {"spellId": 10333}}}},
+    {"action": {"castSpell": {"spellId": {"spellId": 20271}}}}
+  ]
+}

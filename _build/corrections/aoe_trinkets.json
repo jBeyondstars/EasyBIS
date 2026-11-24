@@ -1,0 +1,14 @@
+{
+  "evidence": [
+    "GearQuestForever_DRUID/AuditTips.lua (actual Forever tooltip, including the baseline Reed bonus and school-specific critical chances; ItemStats combines some older values).",
+    "AtlasLootContinued_DungeonsAndRaids/data-forever.lua (Jed Runewatcher, Mizzle the Crafty, Bolt); GearQuest Forever quest catalogues and WoWSims quest sources (4974 Horde and 5102 Alliance).",
+    "WoWSims Forever 07648faf (game-file effects, innate critical chances, item level/slot and spell/attack power). No terrain bonus on this pack. For Bolt, the simulator assigns half of discharges to the target."
+  ],
+  "items": {
+    "12930": {"name":"Briarwood Reed","group":"d","level":55,"stats":{"45":15},"pseudoStats":{},"effects":[1301707],"sources":[["d","229","Jed Runewatcher","","0","c"]]},
+    "13965": {"name":"Blackhand's Breadth","group":"Q","level":0,"stats":{},"pseudoStats":{"14":1,"25":1},"effects":[1318944,1318945],"sources":[["q","5102","General Drakkisath's Demise","55","a","c"],["q","4974","For The Horde!","55","h","c"]]},
+    "13968": {"name":"Eye of the Beast","group":"Q","level":0,"stats":{},"pseudoStats":{"15":1},"effects":[1287840],"sources":[["q","5102","General Drakkisath's Demise","55","a","c"],["q","4974","For The Horde!","55","h","c"]]},
+    "18537": {"name":"Counterattack Lodestone","group":"d","level":58,"stats":{"38":30},"pseudoStats":{},"effects":[1302356],"sources":[["d","429","Mizzle the Crafty","","0","c"]]},
+    "280032": {"name":"Bolt's Charged Eyeball","group":"d","level":58,"stats":{},"pseudoStats":{},"effects":[1311505],"sources":[["d","3001","Bolt","","0","c"]]}
+  }
+}

@@ -206,7 +206,7 @@ def build(cache_dir: Path = CACHE, out_dir: Path = OUT, details: bool = False) -
     if reading and reading.specs:
         names = ", ".join(f"{db.classes[cls]['specs'][spec]['name']} {cls.title()}" for cls, spec in sorted(reading.specs))
         print(f"Simulation (WoWSims Forever {reading.commits}, {reading.date}): the PvE lists of {names} are ranked on the "
-              "damage measured, every other list on ForeverDB's weights.")
+              "damage measured. Data/Aoe.lua holds the separate dungeon-pull measurements.")
     placed = [(cls, spec, slot, entry.item_id) for cls, specs in all_ladders.items() for spec, modes in specs.items()
               for slot, entries in modes["pve"].items() for entry in entries if entry.placed]
     if placed:

@@ -1,0 +1,21 @@
+{
+  "type": "TypeAPL",
+  "priorityList": [
+    {"action": {"condition": {"auraIsInactive": {"auraId": {"spellId": 14322}}}, "castSpell": {"spellId": {"spellId": 14322}}}},
+    {"action": {"autocastOtherCooldowns": {}}},
+    {"action": {"condition": {"cmp": {"op": "OpGe", "lhs": {"timeUntilTargetDies": {}}, "rhs": {"const": {"val": "9s"}}}}, "groupReference": {"groupName": "Open pack"}}},
+    {"action": {"groupReference": {"groupName": "Spend mana"}}}
+  ],
+  "groups": [
+    {"name": "Open pack", "actions": [
+      {"action": {"castSpell": {"spellId": {"spellId": 1293527}}}},
+      {"action": {"castSpell": {"spellId": {"spellId": 2643}}}}
+    ]},
+    {"name": "Spend mana", "actions": [
+      {"action": {"condition": {"cmp": {"op": "OpGe", "lhs": {"timeUntilTargetDies": {}}, "rhs": {"const": {"val": "6s"}}}}, "castSpell": {"spellId": {"spellId": 14295}}}},
+      {"action": {"castSpell": {"spellId": {"spellId": 2643}}}},
+      {"action": {"castSpell": {"spellId": {"spellId": 1293527}}}},
+      {"action": {"castSpell": {"spellId": {"spellId": 14287}}}}
+    ]}
+  ]
+}

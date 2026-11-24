@@ -1,5 +1,7 @@
 {
   "captured": "2026-11-14",
+  "data_version": "2026-11-14.852e11f0",
+  "data_revision": "9c9be9c7c5334309f1e60d01691a2b0ddca8aa17",
   "build": "1.60.1.70938",
   "note": "What foreverdb.net/bis showed at level 60, read to check the generator against the site: the top pick's score and the item ids in page order (top pick, then the next two). For rings and trinkets, 'second' is the pick of the second slot. null: the page shows no pick.",
   "pages": [

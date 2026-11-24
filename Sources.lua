@@ -12,9 +12,8 @@ Where an item comes from, in words (its first source in Data\Items.lua).
       percent    the drop chance as text, or ""
       origin     how the data is known: s seen in Forever, c a clue, f the Forever client, k Classic data,
                  t read in QuestieDB, w counted in Forever (Wowhead Forever's loot counts)
-      The source said is the item's first one. Among the sources read in QuestieDB (t), a quest or a
-      vendor of the other faction is passed over when the item has another: a set sold in Ironforge
-      and in Orgrimmar names the vendor of the player's side.
+      The first available source is shown. Quests and QuestieDB vendors of the other faction are
+      passed over when the item has another source for the selected faction.
       profession the profession's English name, for a crafted item
       cost       what the vendor asks in a currency: { item = the currency's item id, amount, beta = true when
                  the price is the beta's and was not read in the game }; nil for anything else
@@ -95,11 +94,6 @@ local PROFESSION_ICONS = {
 
 -- Classic's data and QuestieDB's wear the same sign: known from elsewhere, not confirmed in Forever.
 local ORIGIN_MARKS = { k = "*", c = "?", t = "*" }
-
--- Where a source says which faction it is for: a quest, a vendor. Only QuestieDB's sources are chosen
--- on it: ForeverDB's data marks vendors of Alliance towns as Horde ones (Theramore Pauldrons).
-local SIDE_FIELD = { q = 5, v = 8 }
-local SIDED_ORIGIN = "t"
 
 local STANDINGS = { "Hated", "Hostile", "Unfriendly", "Neutral", "Friendly", "Honored", "Revered", "Exalted" }
 
@@ -186,7 +180,13 @@ end
 local function OwnSource(item)
     local side = ns.PlayerSide and ns.PlayerSide()
     for _, source in ipairs(item.sources) do
-        local wanted = source.label == SIDED_ORIGIN and source[SIDE_FIELD[source.kind] or 0]
+        local wanted
+        if source.kind == "q" then
+            wanted = source[5]
+        elseif source.kind == "v" and source.label == "t" then
+            -- Only QuestieDB's vendor factions are reliable (e.g. the Theramore Pauldrons vendor).
+            wanted = source[8]
+        end
         if not wanted or wanted == "" or wanted == side then return source end
     end
     return item.sources[1]
@@ -428,9 +428,10 @@ function Sources.CostLine(cost)
 end
 
 -- Whether the player has the item, worn, in the bags or in the bank.
-local function Owned(id)
+local function Owned(id, copy)
+    local required = copy or 1
     local IsWorn = (C_Item and C_Item.IsEquippedItem) or IsEquippedItem
-    if IsWorn then
+    if required == 1 and IsWorn then
         local ok, worn = pcall(IsWorn, id)
         if ok and worn == true then return true end
     end
@@ -438,7 +439,7 @@ local function Owned(id)
     if not GetCount then return false end
     local ok, count = pcall(GetCount, id, true)
     count = ok and Count(count) or nil
-    return count ~= nil and count > 0
+    return count ~= nil and count >= required
 end
 
 Sources.Owned = Owned

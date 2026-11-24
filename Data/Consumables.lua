@@ -177,6 +177,29 @@ U	3	pvp	combat	9036
 C	3	pvp	healing	18253::16000 13446::14000 17348::11200
 C	3	pvp	mana	13444::18000 18253::16000 13443::12000
 C	3	pvp	bandage	14530::20000 14529::13600 8545::11040
+U	4	pve	flask	13510 13511 13513
+C	4	pve	elixir	13452::494 250328::410 250337::404
+U	4	pve	elixir	9088 250329
+C	4	pve	food	250069::200 250072::200 12212::150 18045::150
+C	4	pve	scroll	10309::170 10308::102
+C	4	pve	weapon	20748::61 20747::41 20745::20
+C	4	pve	combat	250943::272 250942::190
+U	4	pve	combat	9036
+C	4	pve	healing	18253::16000 13446::14000 9144::7500
+C	4	pve	mana	13444::18000 18253::16000 13443::12000
+C	4	pve	bandage	14530::20000 14529::13600 8545::11040
+C	4	pvp	flask	274273::270 274274::270 274275::270 274276::270
+U	4	pvp	flask	13510 13511 13513
+C	4	pvp	elixir	13452::494 250328::410 250337::404
+U	4	pvp	elixir	9088 250335
+C	4	pvp	food	21023::225 250069::200 250072::200
+C	4	pvp	scroll	10309::170 10307::144 10308::102
+C	4	pvp	weapon	20748::61 20747::41 20745::20
+C	4	pvp	combat	13455::600 250943::272 250942::190
+U	4	pvp	combat	9036
+C	4	pvp	healing	18253::16000 13446::14000 17348::11200
+C	4	pvp	mana	13444::18000 18253::16000 13443::12000
+C	4	pvp	bandage	14530::20000 14529::13600 8545::11040
 ]==],
 MAGE = [==[
 C	1	pve	flask	13512::1500 274273::30 274274::30 274275::30 274276::30
@@ -746,6 +769,7 @@ ns.data.consumableInfo = [==[
 10308|Scroll of Intellect IV|+16 Intellect|Vendor: Professor Thaddeus Paleo (Elwynn Forest)|f|
 10309|Scroll of Agility IV|+17 Agility|Vendor: Professor Thaddeus Paleo (Elwynn Forest)|f|
 10310|Scroll of Strength IV|+17 Strength|Vendor: Professor Thaddeus Paleo (Elwynn Forest)|f|
+12212|Jungle Stew|+15 Agility; Restores 1338 health|Cooking 175: recipe sold by Corporal Bluth (Stranglethorn Vale)|f|
 12404|Dense Sharpening Stone|+8 Weapon Damage|Blacksmithing 230: from a trainer|f|
 12643|Dense Weightstone|+8 Weapon Damage|Blacksmithing 230: from a trainer|f|
 13442|Mighty Rage Potion|+60 Strength; +60 Rage|Alchemy 255: recipe drops from Blackrock Slayer|f|
@@ -777,12 +801,14 @@ ns.data.consumableInfo = [==[
 14530|Heavy Runecloth Bandage|Restores 2000 health|First Aid 290: from a trainer|f|
 17222|Spider Sausage|+15 Stamina; Restores 1338 health|Cooking 200: from a trainer|f|
 17348|Major Healing Draught|Restores 980 to 1260 health; usable only in PvP Battlegrounds|Vendor: Bryanna Embreeze (The Barrens)|f|only:PvP Battlegrounds
+18045|Tender Wolf Steak|+15 Agility; Restores 1338 health|Cooking 225: recipe sold by Dirge Quikcleave (Tanaris)|f|
 18253|Major Rejuvenation Potion|Restores 1440 to 1760 health; Restores 1440 to 1760 mana|Alchemy 300: recipe drops from Magmadar|f|
 18262|Elemental Sharpening Stone|+2% Critical Strike|Blacksmithing 300: recipe drops from Magmadar|f|
 18294|Draught of Greater Water Breathing|Allows the Imbiber to breathe water|Alchemy 215: from a trainer|f|
 20002|Greater Dreamless Sleep Potion|Puts the imbiber in a dreamless sleep; During that time the imbiber heals 2100 health and 2100 mana|Alchemy 275: recipe sold by Rin'wosho the Trader (Stranglethorn Vale)|f|
 20008|Living Action Potion|Makes you immune to Stun and Movement Impairing effects; Also removes existing Stun and Movement Impairing effects|Alchemy 285: recipe sold by Rin'wosho the Trader (Stranglethorn Vale)|f|
 20452|Smoked Desert Dumplings|+20 Strength; Restores 2065 health|Cooking 325: recipe from the quest Desert Recipe (Silithus)|f|
+20745|Minor Mana Oil|+10 Healing; +5 Mana per 5 sec|Enchanting 150: recipe sold by Crate of Enchanting Supplies (Redridge Mountains)|f|
 20746|Lesser Wizard Oil|+16 Spell Damage and Healing|Enchanting 200: recipe sold by Crate of Enchanting Supplies (Redridge Mountains)|f|
 20747|Lesser Mana Oil|+20 Healing; +10 Mana per 5 sec|Enchanting 250: recipe sold by Kania (Silithus)|f|
 20748|Brilliant Mana Oil|+30 Healing; +15 Mana per 5 sec|Enchanting 300: recipe sold by Rin'wosho the Trader (Stranglethorn Vale)|f|

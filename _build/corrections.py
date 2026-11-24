@@ -72,6 +72,8 @@ GAME_FILE = FILE.with_name("game.json")
 SOURCES_FILE = FILE.with_name("sources.json")
 DROPS_FILE = FILE.with_name("drops.json")
 COSTS_FILE = FILE.with_name("costs.json")
+SHIELDS_FILE = FILE.with_name("shields.json")
+ARMS_WEAPONS_FILE = FILE.with_name("arms_weapons.json")
 ABOUT = ("Weapon stats read in the game with the EasyBIS_Capture tool (_build/capture_addon), laid over "
          "ForeverDB's data by _build/corrections.py. Written by `python build.py --import-capture`: do not edit.")
 
@@ -85,6 +87,25 @@ DPS_TOLERANCE = 0.06  # the data keeps one decimal
 ALLIANCE_FACTIONS = frozenset({"2799"})   # Theramore Expeditionary Force
 
 
+def complete_weapon_hits(db) -> None:
+    """The level-60 Arms PvP model needs the tooltip's base damage per swing."""
+    for item, values in json.loads(ARMS_WEAPONS_FILE.read_text(encoding="utf-8"))["items"].items():
+        gear = db.gear.get(int(item))
+        low, high, speed = values
+        if gear and gear["inv"] == 17 and abs((low + high) / (2 * speed) - gear["dps"]) <= DPS_TOLERANCE:
+            gear["weapon_hit"] = tuple(values)
+
+
+def complete_shields(db) -> None:
+    """Add the shield's intrinsic block to stat 48 when ForeverDB only counts its equip bonus.
+    The recorded bonus guards both an already complete value and a later change in the upstream data."""
+    values = json.loads(SHIELDS_FILE.read_text(encoding="utf-8"))["items"]
+    for item, (base, bonus) in values.items():
+        gear = db.gear.get(int(item))
+        if gear and gear["inv"] == 14 and gear["stats"].get(48, 0) == bonus:
+            gear["stats"][48] = base + bonus
+
+
 def assign_sides(db) -> list[int]:
     """ForeverDB's data leaves the pieces of Theramore Expeditionary Force to both sides, and marks their vendor
     as a Horde one, while the vendor is friendly to the Alliance alone and every quest of the faction is an
@@ -96,6 +117,42 @@ def assign_sides(db) -> list[int]:
             item["side"] = "a"
             changed.append(item_id)
     return changed
+
+
+def pair_basin_mail_shoulders(db) -> None:
+    """The Arathi Basin mail pauldrons convert into one another on a faction change."""
+    for item_id, side, twin in ((20056, "a", 20203), (20203, "h", 20056)):
+        item = db.items.get(item_id)
+        if item and twin in db.items and item.get("side") in ("", side) and item.get("twin") in (None, twin):
+            item.update(side=side, twin=twin)
+
+
+# Each item binds on pickup. The quests carry a faction in WoWSims' Forever database.
+# The three honor quartermasters sell their listed IDs inside their own faction's hall.
+# Source references and the date checked are in docs/audit-forever/factions.md.
+FACTION_REWARDS = (
+    ("h", "v", 12793, (272578, 272589)),
+    ("a", "v", 12781, (272698, 272699)),
+    ("a", "v", 12777, (272716, 272717, 272738, 272739, 272740, 272741, 272828, 273325)),
+    ("a", "q", 92458, (279839,)),
+    ("a", "q", 94927, (275025,)),
+    ("a", "q", 94984, (279854,)),
+    ("a", "q", 95064, (274959,)),
+    ("a", "q", 95925, (279912,)),
+    ("a", "q", 96609, (276903, 276904)),
+)
+
+
+def assign_reward_sides(db) -> None:
+    """Use the verified faction while the bound item still has only the documented source."""
+    for side, kind, source_id, rewards in FACTION_REWARDS:
+        for item_id in rewards:
+            item = db.items.get(item_id)
+            if not item or item["side"] or item["twin"]:
+                continue
+            sources = {(src[0].lower(), src[1]) for src in item["sources"]}
+            if sources == {(kind, str(source_id))}:
+                item["side"] = side
 
 
 @dataclass

@@ -9,6 +9,7 @@ what the generator's rules give.
 from __future__ import annotations
 
 import dataclasses
+import json
 import math
 import re
 import sys
@@ -76,10 +77,269 @@ def look(control) -> str:
 
 
 def open_dropdown(game, button):
-    if button.kind == "DropdownButton":
-        game.stub.run(button, "OnMouseDown", "LeftButton")
-    else:
-        game.stub.run(button, "OnClick")
+    game.stub.openDropdown(button)
+
+
+@unittest.skipIf(lupa is None, "lupa is not installed")
+class ItemScenarioLabelTest(unittest.TestCase):
+    def test_dungeon_button_fits_its_label_in_both_locales(self):
+        for locale in ("enUS", "frFR"):
+            with self.subTest(locale=locale):
+                game = Game(locale=locale, cls="MAGE")
+                game.ns.Browser.Open()
+                scenario = game.ns.Browser.window.scenario
+                self.assertTrue(scenario.shown)
+                self.assertEqual([button.Text.text for button in scenario.buttons.values()], ["Raid", "AoE / Dungeons"])
+                self.assertIsNone(scenario.summary)
+                button = scenario.buttons[2]
+                self.assertGreater(button.width, button.Text.GetStringWidth(button.Text))
+
+
+@unittest.skipIf(lupa is None, "lupa is not installed")
+class CustomGearListTest(unittest.TestCase):
+    def test_tooltip_shows_each_named_list_and_follows_edits(self):
+        game = Game(locale="frFR", cls="ROGUE")
+        custom = game.ns.Custom
+        one = custom.CreateList("ROGUE", 1, "Donjons")
+        two = custom.CreateList("ROGUE", 1, "Sortie du jeudi")
+        item = 990001
+        game.stub.equipLocs[item] = "INVTYPE_FINGER"
+        self.assertFalse(game.lines(item))
+        custom.Add("ROGUE", 1, one, item)
+        equipment = [{}] * 10 + [{"id": item}, {"id": item}]
+        custom.Import("ROGUE", 1, two, json.dumps({"player": {"equipment": {"items": equipment}}}))
+        labels = [line[1] for line in game.tooltip(item) if len(line) == 2]
+        self.assertEqual(labels, ["Liste perso : Donjons", "Liste perso : Sortie du jeudi"])
+        custom.Remove("ROGUE", 1, one, item)
+        self.assertEqual([right for _, right in game.lines(item)], ["Liste perso : Sortie du jeudi"])
+        custom.Import("ROGUE", 1, two, '{"player":{"equipment":{"items":[{"id":42}]}}}')
+        self.assertFalse(game.lines(item))
+
+    def test_create_add_import_and_switch_lists(self):
+        game = Game(cls="ROGUE")
+        browser, stub = game.ns.Browser, game.stub
+        browser.Open()
+        window = browser.window
+        self.assertEqual(label(window.newList), "+")
+        stub.run(window.newList, "OnClick")
+        dialog = game.lua.globals().EasyBISGearDialog
+        dialog.box.SetText(dialog.box, "My setup")
+        stub.run(dialog.submit, "OnClick")
+        gear = game.ns.db.gearLists[1]
+        self.assertTrue(window.empty.shown)
+        self.assertEqual(window.scenario.buttons[3].Text.text, "My setup")
+        stub.equipLocs[990001] = "INVTYPE_HEAD"
+        stub.run(window.add, "OnClick")
+        self.assertTrue(game.ns.AddItem.Submit("990001")[0])
+        self.assertEqual(gear.slots.head[1].id, 990001)
+
+        ids = [226829, 15411, 15058, 272414, 226825, 226830, 21278, 272395, 15057,
+               226831, 19325, 272408, 11815, 22321, 1728, 871, 18323]
+        items = [{"id": item_id} for item_id in ids]
+        items[14]["enchant"] = 1900
+        export = {"player": {"itemSwap": {"items": [{"id": 42}]}, "equipment": {"items": items}}}
+        stub.run(window["import"], "OnClick")
+        dialog.box.SetText(dialog.box, json.dumps(export, indent=2))
+        stub.run(dialog.submit, "OnClick")
+        self.assertFalse(dialog.shown)
+        self.assertEqual(gear.slots.head[1].id, ids[0])
+        self.assertEqual(gear.slots.main[1].enchant, 1900)
+        main = next(row for row in window.rows.values() if row.shown and row.data.slot == "main")
+        tooltip = game.lua.globals().GameTooltip
+        tooltip.SetHyperlink = game.lua.eval("function(self, link) self.link = link end")
+        stub.run(main, "OnEnter")
+        self.assertEqual(tooltip.link, "item:1728:1900")
+        self.assertEqual(gear.slots.off[1].id, 871)
+        self.assertEqual([e.id for e in gear.slots.finger.values()], ids[10:12])
+        self.assertEqual([e.id for e in gear.slots.trinket.values()], ids[12:14])
+        self.assertEqual(sum(len(entries) for entries in gear.slots.values()), 17)
+        for invalid in ("{", '{"player":{"equipment":{"items":{}}}}',
+                        '{"player":{"equipment":{"items":[{},{"id":-1}]}}}'):
+            self.assertIsNone(game.ns.Custom.Import(gear["class"], gear.spec, "gear1", invalid)[0])
+            self.assertEqual(gear.slots.off[1].id, 871)
+        items[10] = {}
+        items[15] = items[14]
+        self.assertEqual(game.ns.Custom.Import(gear["class"], gear.spec, "gear1", json.dumps(export)), 16)
+        self.assertEqual(gear.slots.finger[1].id, ids[11])
+        off = next(row for row in window.rows.values() if row.shown and row.data.slot == "off")
+        stub.run(off.remove, "OnClick")
+        self.assertIsNone(gear.slots.off)
+        self.assertEqual(gear.slots.main[1].id, 1728)
+        stub.run(window.scenario.buttons[1], "OnClick")
+        self.assertFalse(window["import"].shown)
+        stub.run(window.scenario.buttons[3], "OnClick")
+        self.assertTrue(window["import"].shown)
+        self.assertIn("My setup", game.slash("add 990001")[0])
+        self.assertEqual(gear.slots.head[2].id, 990001)
+        self.assertIn("My setup", game.slash("remove 990001")[0])
+        self.assertEqual(len(gear.slots.head), 1)
+
+    def test_named_tabs_remain_accessible_across_pages(self):
+        game = Game(cls="ROGUE")
+        browser = game.ns.Browser
+        browser.Open()
+        for name in ("First", "Second", "Third", "Fourth"):
+            game.ns.Custom.CreateList(browser.state["class"], browser.state.spec, name)
+        browser.Open()
+        window = browser.window
+        self.assertEqual(window.scenario.buttons[4].Text.text, "Second")
+        self.assertEqual(window.scenario.buttons[5].Text.text, "Third")
+        game.stub.run(window.scenario.next, "OnClick")
+        self.assertEqual(window.scenario.buttons[3].Text.text, "Fourth")
+        self.assertEqual(browser.state.itemList, "gear4")
+        game.stub.run(window.scenario.previous, "OnClick")
+        self.assertEqual(browser.state.itemList, "gear1")
+
+    def test_drag_named_tabs_to_a_position_or_an_adjacent_page(self):
+        game = Game(cls="ROGUE")
+        browser, stub, custom = game.ns.Browser, game.stub, game.ns.Custom
+        browser.Open()
+        spec = browser.state.spec
+        for cls, name in (("ROGUE", "A"), ("MAGE", "Other"), ("ROGUE", "B"),
+                          ("ROGUE", "C"), ("ROGUE", "D")):
+            custom.CreateList(cls, spec, name)
+        browser.Open()
+        group = browser.window.scenario
+        tabs = group.buttons
+
+        def names():
+            return [gear.name for gear in game.ns.db.gearLists.values()]
+
+        def drag(source, target=None):
+            stub.run(source, "OnDragStart")
+            if target is not None:
+                target.IsMouseOver = game.lua.eval("function() return true end")
+            stub.run(source, "OnUpdate")
+            self.assertEqual(group.dropMarker.shown, target is not None)
+            stub.run(source, "OnDragStop")
+            self.assertFalse(group.dropMarker.shown)
+            if target is not None:
+                target.IsMouseOver = None
+
+        drag(tabs[3])
+        self.assertEqual(names(), ["A", "Other", "B", "C", "D"])
+        drag(tabs[3], tabs[5])
+        self.assertEqual(names(), ["B", "Other", "C", "A", "D"])
+        self.assertEqual(browser.state.itemList, "gear1")
+        drag(tabs[5], group.next)
+        self.assertEqual(names(), ["B", "Other", "C", "D", "A"])
+        self.assertEqual(tabs[3].Text.text, "A")
+        drag(tabs[3], group.previous)
+        drag(tabs[5], tabs[3])
+        self.assertEqual(names(), ["A", "Other", "B", "C", "D"])
+
+    def test_dungeons_track_multiple_lists_in_both_views(self):
+        game = Game(cls="ROGUE")
+        ns, stub = game.ns, game.stub
+        ns.Browser.Open()
+        state = ns.Browser.state
+        custom = ns.Custom.CreateList("ROGUE", state.spec, "Farm")
+        other = ns.Custom.CreateList("ROGUE", state.spec, "Another")
+        for key in (custom, other):
+            ns.Custom.Import("ROGUE", state.spec, key, '{"player":{"equipment":{"items":[{"id":12587}]}}}')
+        ns.Browser.ShowDungeons()
+        view = ns.DungeonView.view
+        open_dropdown(game, view.tracked.button)
+        menu = stub.menu
+        self.assertTrue(find(menu, "Raid").selected())
+        self.assertFalse(find(menu, "Farm").selected())
+        for name in ("Raid", "Farm", "Another"):
+            find(menu, name).pick()
+        self.assertEqual(view.model.tracked, 2)
+        self.assertEqual(len(view.model.rows), 1)
+        self.assertEqual((view.model.rows[1].id, view.model.need), (12587, 1))
+        ns.SetOption(ns, "dungeonGrid", True)
+        self.assertEqual(view.rows[1].piece.id, 12587)
+        stub.run(view.rows[1], "OnClick")
+        self.assertEqual(state.itemList, custom)
+        ns.Browser.ShowDungeons()
+        self.assertEqual(view.model.tracked, 2)
+        open_dropdown(game, view.tracked.button)
+        for name in ("Farm", "Another"):
+            find(stub.menu, name).pick()
+        self.assertEqual(len(view.model.rows), 0)
+        self.assertIn("Select a list", view.summary.text)
+        find(stub.menu, "AoE").pick()
+        self.assertGreater(len(view.model.rows), 0)
+        self.assertTrue(all(p.list == "aoe" for p in view.model.rows.values()))
+        find(stub.menu, "PvP").pick()
+        self.assertEqual(view.model.tracked, 2)
+
+    def test_dungeons_restore_selections_by_spec_and_ignore_removed_lists(self):
+        saved = """EasyBISCharDB = {class="ROGUE",spec=1,list="pve",dungeonLists={
+            ["ROGUE:1"]={gear1=true,gear7=true}, ["ROGUE:2"]={} }}
+            EasyBISDB = {gearLists={{name="Farm",class="ROGUE",spec=1,slots={
+                finger={{id=19325},{id=19325}}}}}}"""
+        game = Game(saved=saved, cls="ROGUE")
+        ns = game.ns
+        game.stub.itemCounts[19325] = 1
+        ns.Browser.Open()
+        ns.Browser.ShowDungeons()
+        view = ns.DungeonView.view
+        self.assertEqual(view.model.tracked, 1)
+        self.assertEqual([bool(p.owned) for p in view.model.rows.values()], [True, False])
+        ns.Custom.RenameList("ROGUE", 1, "gear1", "Solo")
+        self.assertEqual(label(view.tracked), "Solo")
+        self.assertEqual(ns.Dungeons.For(game.lua.table_from({"class": "ROGUE", "spec": 2, "list": "pve"})).tracked, 0)
+        ns.Custom.DeleteList("ROGUE", 1, "gear1")
+        self.assertEqual(view.model.tracked, 0)
+
+    def test_manage_named_tabs_and_keep_legacy_selections(self):
+        saved = """EasyBISCharDB = {class="ROGUE",spec=1,list="pve",gearList="gear3"}
+            EasyBISDB = {gearLists={
+                {class="ROGUE",spec=1,name="First",slots={}},
+                {class="MAGE",spec=1,name="Other",slots={}},
+                {class="ROGUE",spec=1,name="Last",slots={head={{id=990001}}}}}}"""
+        game = Game(saved=saved, cls="ROGUE")
+        browser, stub = game.ns.Browser, game.stub
+        browser.Open()
+        tabs = browser.window.scenario.buttons
+
+        def choose(button, action):
+            stub.run(button, "OnMouseDown", "RightButton")
+            open_dropdown(game, button)
+            panel = stub.menu.panel
+            row = next(row for row in panel.rows.values() if row.shown and row.entry.text == action)
+            stub.run(row, "OnClick")
+
+        self.assertEqual(browser.state.itemList, "gear3")
+        choose(tabs[4], "Move left")
+        self.assertEqual([tab.Text.text for tab in (tabs[3], tabs[4])], ["Last", "First"])
+        self.assertEqual(browser.state.itemList, "gear3")
+        self.assertEqual(game.ns.db.gearLists[2].name, "Other")
+        choose(tabs[3], "Move right")
+        choose(tabs[4], "Rename")
+        dialog = game.lua.globals().EasyBISGearDialog
+        self.assertEqual(dialog.box.text, "Last")
+        dialog.box.SetText(dialog.box, "First")
+        stub.run(dialog.submit, "OnClick")
+        self.assertTrue(dialog.shown)
+        self.assertEqual(tabs[4].Text.text, "Last")
+        dialog.box.SetText(dialog.box, "New name")
+        stub.run(dialog.submit, "OnClick")
+        self.assertEqual(tabs[4].Text.text, "New name")
+        self.assertIn("New name", game.lines(990001)[0][1])
+        choose(tabs[4], "Delete")
+        self.assertIn("New name", dialog.hint.text)
+        stub.run(dialog.cancel, "OnClick")
+        self.assertEqual(browser.state.itemList, "gear3")
+        choose(tabs[4], "Delete")
+        stub.run(dialog.submit, "OnClick")
+        self.assertFalse(game.lines(990001))
+        self.assertFalse(tabs[4].shown)
+        self.assertEqual(browser.state.itemList, "pve")
+        self.assertEqual(game.ns.Custom.CreateList("ROGUE", 1, "Replacement"), "gear4")
+
+    def test_saved_custom_selection_is_scoped_to_its_spec(self):
+        saved = """EasyBISCharDB = {class="ROGUE", spec=1, list="pve", gearList="gear1"}
+            EasyBISDB = { gearLists = {{name="My gear", class="ROGUE", spec=1,
+                slots={main={{id=1728, enchant=1900}}}}} }"""
+        game = Game(saved=saved, cls="ROGUE")
+        game.ns.Browser.Open()
+        window = game.ns.Browser.window
+        self.assertTrue(window["import"].shown)
+        self.assertEqual(window.rowData[2].id, 1728)
+        self.assertIsNone(game.ns.Custom.GearList("ROGUE", 2, "gear1"))
 
 
 @unittest.skipIf(lupa is None, "lupa is not installed")
@@ -129,9 +389,16 @@ class WindowTest(unittest.TestCase):
             if only_slot and slot != only_slot:
                 continue
             best, alternatives = ladders.picks(slot, visible[slot], count)
+            options = test_addon.visible_duel(token, spec, mode, flt, slot, visible[slot])
             for entry in best:
-                rows.append(("item", entry.shown(side), slot, True, 0))
+                item = entry.shown(side)
+                rows.append(("item", item, slot, True, None if item in options else 0))
+            for item in options:
+                if not any(entry.shown(side) == item for entry in best):
+                    rows.append(("item", item, slot, False, None))
             for entry in alternatives if alts else []:
+                if entry.shown(side) in options:
+                    continue
                 rows.append(("item", entry.shown(side), slot, False,
                              None if entry.unscored or entry.estimated
                              else self.gap(entry.stored / 10, best[0].stored / 10)))
@@ -638,6 +905,32 @@ class WindowTest(unittest.TestCase):
         other = self.open(cls="MAGE", saved="EasyBISCharDB = { class = 'MAGE', spec = 4, list = 'pve' }")
         self.assertEqual(other.ns.Browser.state.spec, 1)
 
+    def test_filter_alignment_across_tabs(self):
+        for client in ("", OLD_CLIENT):
+            game = self.open(saved=client)
+            window = game.ns.Browser.window
+            same = game.lua.eval("rawequal")
+            height = window.spec.button.height
+            for control in (window.list.buttons[1], window.list.buttons[2], window.phase.button,
+                            window.slot.button, window.source.button, window.zone.button, window.reputation.button,
+                            window.alts, window.options, window.add, *window.tabs.buttons.values()):
+                self.assertEqual(control.height, height)
+            caption = list(window.spec.label.points[1].values())
+            self.assertEqual(list(window.list.label.points[1].values()), caption)
+            for tab, visible in ((2, ("phase", "slot", "reputation")), (3, ("list", "phase")),
+                                 (1, ("list", "phase", "slot", "source", "zone", "reputation"))):
+                game.stub.run(window.tabs.buttons[tab], "OnClick")
+                previous = window.spec
+                right = window.spec.points[1][2] + window.spec.width
+                for key in visible:
+                    control = window[key]
+                    point = control.points[1]
+                    self.assertTrue(control.shown and same(point[2], previous), key)
+                    self.assertEqual((point[1], point[3], point[4], point[5]), ("BOTTOMLEFT", "BOTTOMRIGHT", 8, 0))
+                    right += point[4] + control.width
+                    previous = control
+                self.assertLessEqual(right, window.width - 8)
+
     def test_list_buttons(self):
         game = self.open(saved=ENHANCEMENT)
         window = game.ns.Browser.window
@@ -964,7 +1257,7 @@ class WindowTest(unittest.TestCase):
         self.assertEqual(texts(menu), ["Options", "BIS lines in item tooltips", "Tooltips show my class only",
                                        "Tooltips show alternatives too", "Reputation needed in item tooltips",
                                        "Items with no known source",
-                                       "Only items seen in Forever", "PvP rewards", "Alternatives per slot",
+                                       "PvP rewards", "Alternatives per slot",
                                        "Faction", "Compact rows", "Short reputation lines", "Minimap button",
                                        "Auction house tab"])
         tooltips = find(menu, "BIS lines")
@@ -1992,7 +2285,7 @@ class WindowTest(unittest.TestCase):
         game.stub.run(window.tabs.buttons[2], "OnClick")
         state, gated = game.ns.Browser.state, []
         for cls in test_addon.CLASSES:
-            for spec in range(1, int(game.ns.Index.SpecCount(cls)) + 1):
+            for spec in game.ns.Index.SpecOrder(cls).values():
                 if not gated:
                     state["class"], state.spec = cls, spec
                     game.ns.SetOption(game.ns, "listAlts", False)
@@ -2194,7 +2487,7 @@ class WindowTest(unittest.TestCase):
         rep = game.ns.Reputation
         artisans = 0
         for cls in test_addon.CLASSES:
-            for spec in range(1, int(game.ns.Index.SpecCount(cls)) + 1):
+            for spec in game.ns.Index.SpecOrder(cls).values():
                 for mode in ("pve", "pvp"):
                     needs = rep.Needs(cls, spec, mode)
                     for group in needs.own.values():
@@ -2374,7 +2667,7 @@ class WindowTest(unittest.TestCase):
         rep, state = game.ns.Reputation, game.ns.Browser.state
         factions = lambda: {group.factionID for group in rep.Needs(state["class"], state.spec, state.list).own.values()}
         spec = next((cls, spec, mode) for cls in test_addon.CLASSES
-                    for spec in range(1, int(game.ns.Index.SpecCount(cls)) + 1) for mode in ("pve", "pvp")
+                    for spec in game.ns.Index.SpecOrder(cls).values() for mode in ("pve", "pvp")
                     if 2799 in {g.factionID for g in rep.Needs(cls, spec, mode).own.values()})
         state["class"], state.spec, state.list = spec
         game.stub.run(game.ns.Browser.window.tabs.buttons[5], "OnClick")
@@ -2394,7 +2687,7 @@ class WindowTest(unittest.TestCase):
         game = self.open(cls="MAGE")
         rep, state = game.ns.Reputation, game.ns.Browser.state
         found = next((cls, spec, mode, group.factionID) for cls in test_addon.CLASSES
-                     for spec in range(1, int(game.ns.Index.SpecCount(cls)) + 1) for mode in ("pve", "pvp")
+                     for spec in game.ns.Index.SpecOrder(cls).values() for mode in ("pve", "pvp")
                      for group in rep.Needs(cls, spec, mode).own.values()
                      if len(rep.Ways(group.factionID, cls).quests) > 20)
         cls, state.spec, state.list, faction = found
@@ -2733,12 +3026,31 @@ class WindowTest(unittest.TestCase):
             self.assertEqual((bool(frame.zoneBack.shown), bool(frame.zoneMark.shown)), (zoned, zoned), frame.data.id)
         game.stub.run(marked[0], "OnEnter")
 
-    def test_the_five_tabs_leave_the_credit_its_room(self):
+    def test_footer_tabs_actions_and_credit_fit(self):
         for locale in ("enUS", "frFR"):
             game = self.open(locale=locale)
             window = game.ns.Browser.window
             self.assertEqual(len(window.tabs.buttons), 5)
-            self.assertLess(window.tabs.width, 400, locale)
+            self.assertEqual(window.options.width, 88)
+            self.assertEqual(window.alts.Text.fontObject, "GameFontNormalSmall")
+            self.assertEqual(window.add.template, "UIPanelButtonTemplate")
+            for name in ("spec", "phase", "slot", "source", "zone", "reputation"):
+                self.assertEqual(window[name].button.template, "WowStyle1DropdownTemplate")
+            self.assertEqual(window.options.template, "WowStyle1FilterDropdownTemplate")
+            open_dropdown(game, window.spec.button)
+            self.assertTrue(game.stub.menu.panel.shown)
+            open_dropdown(game, window.options)
+            self.assertEqual(game.stub.menu.panel.rows[1].label.text, window.options.Text.text)
+            tabs_right = window.tabs.points[1][2] + window.tabs.width
+            actions_width = window.add.width + window.alts.width + window.options.width + 2 * 8
+            self.assertLess(tabs_right, window.width + window.options.points[1][2] - actions_width, locale)
+            anchor = window.credit.points[1]
+            self.assertEqual(anchor[1], "BOTTOM")
+            row_bottom = window.tabs.points[1][3]
+            self.assertLess(anchor[3] + window.credit.GetStringHeight(window.credit), row_bottom)
+            badge = window.tabs.buttons[5].newBadge
+            badge_top = row_bottom + window.tabs.height + badge.points[1][5] + badge.height / 2
+            self.assertLessEqual(badge_top, window.inset.points[2][3])
 
     def test_the_new_tabs_are_marked_new(self):
         for locale in ("enUS", "frFR"):
@@ -2754,7 +3066,7 @@ class WindowTest(unittest.TestCase):
                 game.stub.run(tab, "OnClick")
                 self.assertTrue(tab.highlightLocked)
                 self.assertTrue(tab.newBadge.shown, "the badge stays on the open tab")
-                self.assertEqual(tab.newBadge.points[1][3], "TOPRIGHT", "on the corner, so the credit keeps its room")
+                self.assertEqual(tab.newBadge.points[1][3], "TOPRIGHT", "on the corner, clear of the caption")
             # the dungeons, on the window's side
             self.assertIsNone(window.pages.buttons[1].newBadge, locale)
             self.assertEqual(window.pages.buttons[2].newBadge.text.text, "New", locale)
@@ -2791,7 +3103,7 @@ class WindowTest(unittest.TestCase):
         self.assertTrue(game.ns.DungeonView.view.shown)
         for hidden in (window.tabs, window.scroll, window.slot, window.reputation, window.add):
             self.assertFalse(hidden.shown)
-        for kept in (window.spec, window.list, window.listLabel, window.phase, window.alts, window.options, window.credit):
+        for kept in (window.spec, game.ns.DungeonView.view.tracked, window.phase, window.alts, window.options, window.credit):
             self.assertTrue(kept.shown)
         game.stub.run(dungeons, "OnClick")   # the tab already open: nothing changes
         self.assertEqual(state.page, "dungeons")
@@ -2868,7 +3180,8 @@ class WindowTest(unittest.TestCase):
         self.assertTrue(window.pages.buttons[2].checked.shown)
         for hidden in (window.slot, window.source, window.zone, window.reputation, window.add, window.scroll, window.tabs):
             self.assertFalse(hidden.shown)
-        for kept in (window.spec, window.list, window.phase, window.alts):
+        self.assertFalse(window.list.shown)
+        for kept in (window.spec, view.tracked, window.phase, window.alts):
             self.assertTrue(kept.shown)
 
         model = view.model

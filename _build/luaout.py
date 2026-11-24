@@ -8,9 +8,14 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import aoe_eligibility as aoe_rules
+import aoe_combined
+import simulate_aoe
 import consumable_lists
 import consumables
+import hashlib
 import json
+import math
 
 import ladders
 import notes
@@ -20,6 +25,7 @@ import ranks
 import runs
 import shockadin
 import specs
+import tank_options
 
 CREDIT = "Data from ForeverDB.net (https://foreverdb.net)"
 ENCHANTS_PER_SLOT = 3
@@ -219,6 +225,8 @@ def lists_file(db, all_ladders) -> str:
         "  S <spec> <name> <role> <style>      style: any, 2h, dw (dual wield), shield; the S lines of a class are in",
         "                                      the order the addon lists its specs, which is not always the numbers'",
         "  L <spec> <list> <slot> <entries>    list: pve, pvp; entries best first, separated by spaces",
+        "  T <spec> pve <slot> <duel>          threat and mitigation IDs, then DPS, threat/s, damage taken/s deltas",
+        "                                      for Alliance and Horde when equipping the threat item in pre-raid",
         "  M <spec> <list> <date>              that list is ranked by simulation, measured on that day; the others are",
         "                                      ranked on the stat weights",
         "An entry is id:score*10:flags:twin:limit:rank, empty fields at the end left out.",
@@ -246,6 +254,10 @@ def lists_file(db, all_ladders) -> str:
             modes = all_ladders[cls][spec]
             spec_def = db.classes[cls]["specs"][spec]
             block.append("\t".join(("S", str(spec), spec_def["name"], spec_def["role"], spec_def["style"])))
+            for slot, duel in tank_options.DUELS.get((cls, spec), {}).items():
+                eligible = {entry.item_id for entry in modes["pve"].get(slot, ())}
+                if eligible.issuperset(duel[:2]):
+                    block.append(tank_options.record(spec, slot, duel))
             measured = _measured(db, cls, spec)
             if measured:
                 block.append("\t".join(("M", str(spec), "pve", measured)))
@@ -254,6 +266,10 @@ def lists_file(db, all_ladders) -> str:
                     entries = modes[mode][slot]
                     if entries:
                         block.append("\t".join(("L", str(spec), mode, slot, " ".join(map(encode_entry, entries)))))
+                        if (cls, spec, mode, slot) == ("PALADIN", 2, "pve", "main"):
+                            pre = ladders.paladin_pre_raid_main(entries)
+                            if pre:
+                                block.append("F\t2\tpve\tmain\tpre\t" + " ".join(map(encode_entry, pre)))
         lines.append(f"{cls} = {_block(block)},")
     lines.append("}")
     return "\n".join(lines) + "\n"
@@ -304,10 +320,10 @@ def _wing_rows(db, bosses: dict) -> list[str]:
     return rows
 
 
-def items_file(db, all_ladders) -> str:
+def items_file(db, all_ladders, extra_ids=()) -> str:
     rows, instances, bosses, quests = [], set(), {}, {}
     places = getattr(db, "quest_places", None) or {}
-    for item_id in sorted(shown_ids(all_ladders)):
+    for item_id in sorted(shown_ids(all_ladders).union(extra_ids)):
         item = db.items.get(item_id)
         if item is None:
             continue  # a twin ForeverDB has no line for: the addon falls back to the game's own item data
@@ -478,9 +494,9 @@ def enchants_file(db, all_ladders) -> str:
     return "\n".join(lines) + "\n"
 
 
-def reputation_file(db, all_ladders, reading: dict) -> str:
+def reputation_file(db, all_ladders, reading: dict, extra_ids=()) -> str:
     """The reputations the listed items and enchants ask for, and what is known of how to earn them."""
-    shown = shown_ids(all_ladders)
+    shown = shown_ids(all_ladders).union(extra_ids)
     enchants = {enchant for specs in (db.enchants or {}).values() for lists in specs.values()
                 for entries in lists.values() for enchant, _ in entries}
     vendors = reputations.faction_vendors(reading, shown)
@@ -614,20 +630,30 @@ def notes_file(db, all_ladders) -> str:
         "  items      the item ids",
         "  specs      the specs it is for, as CLASS<n>; none: every spec",
         "  slot       the slot it is for; none: any",
+        "  list       pve or pvp; none: either",
         "  simulated  true when it speaks of the simulation: shown only in a list ranked by it",
         "  enUS, frFR the text",
     ))
     lines.append("ns.data.notes = {")
-    for note in notes.shown(db, shown_ids(all_ladders)):
+    specific = notes.shown(db, shown_ids(all_ladders)) + notes.simulation_limits(db, all_ladders)
+    for note in specific:
         fields = ["items = { " + ", ".join(map(str, note["items"])) + " }"]
         if note.get("specs"):
             fields.append("specs = { " + ", ".join(f"{spec.replace(' ', '')} = true" for spec in note["specs"]) + " }")
         if note.get("slot"):
             fields.append(f'slot = "{note["slot"]}"')
+        if note.get("list"):
+            fields.append(f'list = "{note["list"]}"')
         if note.get("simulated"):
             fields.append("simulated = true")
         fields += [f"{code} = {json.dumps(note[key], ensure_ascii=False)}" for key, code in notes.LANGUAGES.items()]
         lines.append("    { " + ", ".join(fields) + " },")
+    lines.append("}")
+    lines.append("-- Paired PvE trials by profile and slot: measured id:rival id:swap DPS*100:fixed stats DPS*100:iterations:status.")
+    lines.append("ns.data.comparisons = {")
+    for (cls, spec, slot), rows in sorted(notes.comparisons(db, all_ladders, specific).items()):
+        values = " ".join(":".join(map(str, row)) for row in rows)
+        lines.append(f'    {cls}{spec}_{slot} = " {values}",')
     lines.append("}")
     return "\n".join(lines) + "\n"
 
@@ -650,18 +676,271 @@ def meta_file(db) -> str:
     return "\n".join(lines) + "\n"
 
 
+def _aoe_controls(key, record, profile, iterations):
+    controls = record.get("scalingControls", {})
+    if set(controls) != set(profile["races"]):
+        raise ValueError(f"{key}: missing faction scaling controls")
+    positive, neutral = aoe_rules.STAT_CONTROLS[key]
+    for side, control in controls.items():
+        stats = control["stats"]
+        if (control["iterations"] != min(2000, iterations) or control["iterations"] < 2
+                or control["bonus"] != aoe_rules.CONTROL_BONUS or control["emptySlot"] not in profile["slots"]
+                or set(stats) != {positive, neutral} or stats[neutral] != {"gain": 0, "se": 0}
+                or not all(math.isfinite(stats[positive][k]) for k in ("gain", "se"))
+                or not stats[positive]["gain"] > 3 * stats[positive]["se"] >= 0):
+            raise ValueError(f"{key} {side}: invalid scaling control")
+
+
+def aoe_file(db, archive, directory=None) -> tuple[str, set[int]]:
+    """The measured pre-raid comparisons, keyed by spec and actual faction. No raid-score fallback."""
+    if archive["mode"] != "aoe" or archive.get("metric") != "packDamage":
+        raise ValueError("Expected total damage measurements for one AOE pack")
+    if archive["iterations"] < 20000:
+        raise ValueError("AOE publication requires 20000 iterations per equipment configuration")
+    fight = archive["encounter"]
+    targets = fight["targets"]
+    schedule = archive["schedule"]
+    if fight != simulate_aoe.encounter() or schedule != {
+            "packs": 1, "perPack": len(targets), "seconds": fight["duration"], "travel": 0}:
+        raise ValueError("AOE measurements must cover the configured single pack")
+    packs, size = schedule["packs"], len(targets)
+    lines = _header(db, "AOE comparisons. Total damage gained per pack and paired standard error against the slot reference.",
+                    (f"WoWSims Forever {archive['wowsims']}, {archive['iterations']} iterations per set.",))
+    lines += [f"ns.data.aoe = {{ targets = {size}, level = {targets[0]['level']}, "
+              f"seconds = {fight['duration']}, lists = {{"]
+    used = set()
+    directory = directory or simulate_aoe.PROFILES
+    encounter_source = (directory / "dungeon_target.go").read_text(encoding="utf-8")
+    if archive.get("encounterAiSha256") != hashlib.sha256(encounter_source.encode()).hexdigest():
+        raise ValueError("AOE archive uses a different dungeon encounter implementation")
+    profiles = {}
+    display_specs = aoe_rules.dungeon_specializations(db)
+    expected = set(display_specs)
+    for path in directory.glob("*.json"):
+        profile = json.loads(path.read_text(encoding="utf-8"))
+        key = f"{profile['class']} {profile['spec']}"
+        if key not in expected:
+            continue
+        if key not in aoe_rules.STAT_CONTROLS or key in profiles:
+            raise ValueError(f"{key}: missing candidate rules or duplicate profile")
+        aoe_rules.validate_profile_selection(profile)
+        profiles[key] = (path.name, profile)
+    if set(profiles) != expected or set(archive["specs"]) != expected:
+        raise ValueError("AOE archive does not cover the configured specializations")
+    reference_ids = {str(i) for _, p in profiles.values() for i in simulate_aoe.references.comparison_ids(p)}
+    if set(archive.get("comparisonNames", {})) != reference_ids:
+        raise ValueError("AOE archive is missing reference item names or includes obsolete ones")
+    for key, record in sorted(archive["specs"].items()):
+        filename, profile = profiles[key]
+        if not {*simulate_aoe.ARMOR_SLOTS, "finger", "trinket", "main", "ranged"}.issubset(profile["slots"]):
+            raise ValueError(f"{key}: incomplete slot coverage")
+        if "weaponSets" in profile:
+            import aoe_weapons
+            aoe_weapons.validate_availability(db, profile)
+        profile = aoe_combined.measured_profile(profile, record, directory)
+        if record["profile"] != filename or set(record["factions"]) != set(profile["races"]):
+            raise ValueError(f"{key}: stale profile or incomplete faction coverage")
+        _aoe_controls(key, record, profile, archive["iterations"])
+        cls, spec = key.split()
+        for side, slots in sorted(record["factions"].items()):
+            if set(slots) != set(profile["slots"]):
+                raise ValueError(f"{key} {side}: incomplete slot coverage")
+            if "weaponSets" in profile:
+                aoe_weapons.validate_rows(profile, slots["main"], slots.get("off"))
+            lines.append(f'    ["{cls}:{display_specs[key]}:{side}"] = {{')
+            for slot, result in slots.items():
+                if sorted(entry["id"] for entry in result["items"]) != sorted(profile["slots"][slot]):
+                    raise ValueError(f"{key} {side} {slot}: measured candidates differ from the profile")
+                checks = dict(profile["damageChecks"])
+                if profile.get("requiredPet"):
+                    checks[profile["requiredPet"]] = 1
+                for action, minimum in checks.items():
+                    hits = result.get("baselineTargetsHitPerPack", {}).get(action, [])
+                    available = size - 1 if action.endswith(":secondary") else size
+                    if len(hits) != packs or any(type(n) is not int or not minimum <= n <= available for n in hits):
+                        raise ValueError(f"{key} {side} {slot}: missing pack damage from {action}")
+                weapon = slot in ("main", "off")
+                eligible = None if weapon else aoe_rules.candidates_for_slot(db, profile, slot, side)
+                lines.append(f"        {slot} = {{")
+                if slot in simulate_aoe.PAIRED_SLOTS:
+                    partner = simulate_aoe.references.paired_item(profile, side, slot)
+                    if (not partner or result.get("pairedItem") != partner or partner in profile["slots"][slot]
+                            or not simulate_aoe.references.allows_side(partner, side, {}, db.items.get(partner, {}))):
+                        raise ValueError(f"{key} {side} {slot}: incorrect fixed companion")
+                    lines.append(f"            pairedItem = {partner},")
+                if slot in profile.get("comparisonItems", {}):
+                    benchmark = profile["comparisonItems"][slot]
+                    if result.get("comparisonItem") != benchmark or not benchmark:
+                        raise ValueError(f"{key} {side} {slot}: incorrect comparison item")
+                    import aoe_ranged
+                    aoe_ranged.validate_client(profile, benchmark, db.gear[benchmark])
+                    lines.append(f"            comparisonItem = {benchmark},")
+                if weapon:
+                    import aoe_weapons
+                    pair = profile.get("referenceWeapons")
+                    if not pair or result.get("referenceWeapons") != pair:
+                        raise ValueError(f"{key} {side}: incorrect reference weapon set")
+                    lines.append(f"            referenceWeapons = {{{pair[0]}, {pair[1]}}},")
+                previous = math.inf
+                seen = set()
+                for entry in result["items"]:
+                    item_id = entry["id"]
+                    if item_id in ladders.DISQUALIFIED_ITEMS or entry.get("partner") in ladders.DISQUALIFIED_ITEMS:
+                        continue
+                    if (item_id in seen or not math.isfinite(entry["gain"]) or entry["gain"] > previous
+                            or not math.isfinite(entry["se"]) or entry["se"] < 0):
+                        raise ValueError(f"{key} {side} {slot}: invalid measurement order or score for {item_id}")
+                    if eligible is not None and item_id not in eligible:
+                        raise ValueError(f"{key} {side} {slot}: {item_id} outside the pre-raid comparison")
+                    if item_id in aoe_rules.PASSIVE_ITEM_ACTIVATIONS and entry.get("usesPerRun") != 0:
+                        raise ValueError(f"{key} {side}: utility activation in damage comparison for {item_id}")
+                    if slot in simulate_aoe.PAIRED_SLOTS:
+                        import aoe_jewelry
+                        aoe_jewelry.validate_pair_ids(slot, item_id, partner, db.items.get(item_id, {}).get("limit"),
+                                                      db.items.get(partner, {}).get("limit"))
+                        if slot == "trinket":
+                            aoe_jewelry.validate_row(item_id, entry, item_id in profile.get("routeOnlyTrinkets", ()))
+                    stats = archive.get("itemStats", {}).get(str(item_id))
+                    if weapon:
+                        other = entry["partner"]
+                        pair = [item_id, other] if slot == "main" else [other, item_id]
+                        if pair not in profile["weaponSets"]:
+                            raise ValueError(f"{key} {side} {slot}: untested weapon pair {pair}")
+                        aoe_weapons.validate_client(db, profile, slot, item_id, stats)
+                        aoe_weapons.validate_pair_client(db, profile, *pair)
+                    else:
+                        aoe_rules.validate_sources(profile, item_id, stats, db.gear[item_id]["stats"], slot)
+                        if slot == "ranged":
+                            import aoe_ranged
+                            aoe_ranged.validate_client(profile, item_id, db.gear[item_id])
+                    for spell, minimum in profile.get("itemDamageChecks", {}).get(str(item_id), {}).items():
+                        hits = entry.get("targetsHitPerPack", {}).get(spell, [])
+                        if (len(hits) != packs or not 1 <= minimum <= size or
+                                any(type(n) is not int or not 0 <= n <= size for n in hits) or max(hits) < minimum):
+                            raise ValueError(f"{key} {side}: missing item damage from {item_id} spell {spell}")
+                    used.add(item_id)
+                    seen.add(item_id)
+                    previous = entry["gain"]
+                    shares = sorted(entry["schoolPct"].items(), key=lambda pair: -pair[1])
+                    if any(not 0 <= pct <= 100 for _, pct in shares) or not math.isclose(
+                            sum(pct for _, pct in shares), 100, abs_tol=0.01):
+                        raise ValueError(f"Invalid damage by school for item {item_id}")
+                    schools = ", ".join(f"{{{json.dumps(school)}, {pct}}}" for school, pct in shares)
+                    pet = entry.get("petPct")
+                    if (profile.get("requiredPet") and pet is None) or (pet is not None and not 0 < pet <= 100):
+                        raise ValueError(f"Invalid pet damage share for item {item_id}")
+                    fields = [str(item_id), str(entry["gain"]), str(entry["se"]), f"{{{schools}}}"]
+                    if pet is not None:
+                        fields.append(str(pet))
+                    if entry.get("usesPerRun", 0) > 0:
+                        passive = entry["passiveGain"]
+                        if not math.isfinite(passive):
+                            raise ValueError(f"Invalid damage gain with unused item {item_id}")
+                        if pet is None:
+                            fields.append("nil")
+                        fields.append(str(passive))
+                    elif "activeGain" in entry:
+                        if not math.isfinite(entry["activeGain"]) or entry.get("passiveGain") != entry["gain"]:
+                            raise ValueError(f"Invalid passive ranking for item {item_id}")
+                        while len(fields) < 6:
+                            fields.append("nil")
+                        fields.append(str(entry["activeGain"]))
+                    if "useAfterSeconds" in entry:
+                        after = entry["useAfterSeconds"]
+                        if type(after) is not int or not 0 < after < fight["duration"]:
+                            raise ValueError(f"Invalid activation time for item {item_id}")
+                        while len(fields) < 7:
+                            fields.append("nil")
+                        fields.append(str(after))
+                    if weapon:
+                        while len(fields) < 8:
+                            fields.append("nil")
+                        fields.append(str(entry["partner"]))
+                        if entry.get("activatedWeapons"):
+                            activations = entry["activatedWeapons"]
+                            if not set(activations).issubset({item_id, entry["partner"]}) or 0 in activations:
+                                raise ValueError(f"Invalid activation for weapon pair containing {item_id}")
+                            fields.append("activated = {" + ", ".join(map(str, activations)) + "}")
+                    lines.append("            {" + ", ".join(fields) + "},")
+                lines.append("        },")
+            lines.append("    },")
+    lines.append("} }")
+    if archive.get("comparisonNames"):
+        lines.append("ns.data.aoe.referenceNames = {")
+        for item_id, name in sorted(archive["comparisonNames"].items(), key=lambda pair: int(pair[0])):
+            lines.append(f"    [{int(item_id)}] = {json.dumps(name, ensure_ascii=False)},")
+        lines.append("}")
+    return "\n".join(lines) + "\n", used
+
+
+def _aoe_lua(value):
+    if isinstance(value, dict):
+        return "{" + ", ".join(f"[{_aoe_lua(k)}] = {_aoe_lua(v)}" for k, v in value.items()) + "}"
+    if isinstance(value, (list, tuple)):
+        return "{" + ", ".join(_aoe_lua(v) for v in value) + "}"
+    if type(value) is str:
+        return json.dumps(value, ensure_ascii=False)
+    if type(value) is int:
+        return str(value)
+    if type(value) is float and math.isfinite(value):
+        return format(value, ".12g")
+    raise ValueError(f"Invalid AOE Lua value {value!r}")
+
+
+def combined_aoe_file(db, short, route, directory=None, priorities=None) -> tuple[str, set[int]]:
+    # Retain all publication checks for pre-raid equipment, faction, schools and
+    # the historical pack before using it as one component of the score.
+    _, used = aoe_file(db, short, directory)
+    combined = aoe_combined.rankings(short, route, directory, priorities)
+    lines = _header(db, "AOE rankings. Weapons include curated placements.",
+                    ("Each row starts with item ID, score (%) and conservative SE (percentage points).",
+                     f"WoWSims Forever {short['wowsims']}."))
+    fight = short["encounter"]
+    lines += [f"ns.data.aoe = {{ targets = {len(fight['targets'])}, level = {fight['targets'][0]['level']}, "
+              f"seconds = {fight['duration']}, shortWeight = 0.5, routeWeight = 0.5,",
+              f"    shortIterations = {short['iterations']}, routeIterations = {route['iterations']},",
+              "    route = " + _aoe_lua(route["schedule"]) + ", lists = {"]
+    display_specs = aoe_rules.dungeon_specializations(db)
+    for key, factions in combined.items():
+        cls, spec = key.split()
+        for side, slots in sorted(factions.items()):
+            lines.append(f'    ["{cls}:{display_specs[key]}:{side}"] = {{')
+            for slot, result in sorted(slots.items()):
+                lines.append(f"        {slot} = {{")
+                for field, value in result.items():
+                    if field != "items":
+                        lines.append(f"            {field} = {_aoe_lua(value)},")
+                for row in result["items"]:
+                    positions = ("id", "score", "scoreSE")
+                    fields = [_aoe_lua(row[k]) for k in positions]
+                    fields.extend(f"{k} = {_aoe_lua(v)}" for k, v in row.items() if k not in positions)
+                    lines.append("            {" + ", ".join(fields) + "},")
+                lines.append("        },")
+            lines.append("    },")
+    lines.append("} }")
+    lines.append("ns.data.aoe.referenceNames = {")
+    for iid, name in sorted(short["comparisonNames"].items(), key=lambda pair: int(pair[0])):
+        lines.append(f"    [{int(iid)}] = {_aoe_lua(name)},")
+    lines.append("}")
+    return "\n".join(lines) + "\n", used
+
+
 def write_all(db, all_ladders, out_dir) -> dict[str, int]:
     """Write the data files; returns {file name: size in bytes}."""
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
+    archive = json.loads((Path(__file__).parent / "corrections" / "aoe.json").read_text(encoding="utf-8"))
+    dungeon = json.loads((Path(__file__).parent / "corrections" / "aoe_dungeon.json").read_text(encoding="utf-8"))
+    aoe, aoe_items = combined_aoe_file(db, archive, dungeon)
     files = {
         "Meta.lua": meta_file(db),
         "Lists.lua": lists_file(db, all_ladders),
-        "Items.lua": items_file(db, all_ladders),
+        "Aoe.lua": aoe,
+        "Items.lua": items_file(db, all_ladders, aoe_items),
         "Enchants.lua": enchants_file(db, all_ladders),
         "Consumables.lua": consumables_file(db),
         "Names.lua": names_file(db),
-        "Reputation.lua": reputation_file(db, all_ladders, reputations.load()),
+        "Reputation.lua": reputation_file(db, all_ladders, reputations.load(), aoe_items),
         "Notes.lua": notes_file(db, all_ladders),
     }
     sizes = {}

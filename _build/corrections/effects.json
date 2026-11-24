@@ -30,7 +30,7 @@
    "roles": [
     "Tank"
    ],
-   "effect": "Classic's deals damage to the attackers on a block; WoWSims Forever's database has no effect for it and the game was not read: to check. The score counts its armor and its stamina alone."
+   "effect": "Forever tooltip: a block releases a damaging charge against nearby enemies, with a chance to damage the shield, on a 1 s cooldown. The tank weights count armor, stamina and block value; the damage from the discharge is not included."
   },
   "18348": {
    "name": "Quel'Serrar",

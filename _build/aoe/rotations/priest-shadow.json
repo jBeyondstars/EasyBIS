@@ -1,0 +1,18 @@
+{
+  "type": "TypeAPL",
+  "priorityList": [
+    {"action": {"autocastOtherCooldowns": {}}},
+    {
+      "action": {
+        "multidot": {
+          "spellId": {"spellId": 10894},
+          "maxDots": 4,
+          "maxOverlap": {"const": {"val": "0s"}}
+        }
+      }
+    },
+    {"action": {"castSpell": {"spellId": {"spellId": 10947}}}},
+    {"action": {"castSpell": {"spellId": {"spellId": 1309636}}}},
+    {"action": {"castSpell": {"spellId": {"spellId": 18807}}}}
+  ]
+}

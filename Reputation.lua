@@ -543,9 +543,11 @@ function Reputation.Needs(class, spec, list, phase, side)
     local slots = Picks(class, spec, list, phase, side)
     for _, slot in ipairs(slots and ns.SLOTS or {}) do
         for _, role in ipairs(ROLES) do
-            for _, pick in ipairs(slots[slot][role[1]]) do
+            local picks = slots[slot]
+            local group = role[1] == "alts" and ns.Ladders.DisplayAlts(picks, true) or picks[role[1]]
+            for _, pick in ipairs(group) do
                 local requirement = Reputation.Requirement(pick.id, side)
-                if requirement then Add(requirement, { id = pick.id, slot = slot, role = role[2] }) end
+                if requirement then Add(requirement, { id = pick.id, slot = slot, role = role[2], option = pick.option }) end
             end
         end
     end

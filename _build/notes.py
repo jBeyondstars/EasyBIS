@@ -6,16 +6,21 @@ speed, an effect the simulator lacks. corrections/notes.json holds those facts, 
 checked against the game data or the simulator before it is written down. A note is for every spec or the ones it
 names, for any slot or one (a weapon's proc is not worth the same in each hand), and the first of an item's notes
 that fits a row is the one shown.
+
+Paired PvE swaps are a final fallback. The CLI imports the run logs into corrections/comparisons.json and
+the build checks the original profile, score difference, stat inversion and exact measured faction id.
 """
 
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 
 import ladders
 
 FILE = Path(__file__).resolve().parent / "corrections" / "notes.json"
+COMPARISONS = FILE.with_name("comparisons.json")
 LANGUAGES = {"en": "enUS", "fr": "frFR"}   # the file's key -> the game's locale code
 SLOTS = frozenset(slot for slot, _ in ladders.SLOTS)
 
@@ -41,7 +46,9 @@ def check(db, notes: list[dict]) -> None:
                 raise ValueError(f"{where}: no spec {spec!r}")
         if note.get("slot") is not None and note["slot"] not in SLOTS:
             raise ValueError(f"{where}: no slot {note['slot']!r}")
-        unknown = set(note) - {"items", "specs", "slot", "simulated", *LANGUAGES}
+        if note.get("list") is not None and note["list"] not in ladders.MODES:
+            raise ValueError(f"{where}: no list {note['list']!r}")
+        unknown = set(note) - {"items", "specs", "slot", "list", "simulated", *LANGUAGES}
         if unknown:
             raise ValueError(f"{where}: unknown field {sorted(unknown)}")
 
@@ -57,3 +64,160 @@ def shown(db, shown_ids: set[int], notes: list[dict] | None = None) -> list[dict
             raise ValueError(f"notes.json, note {number}: none of {note['items']} is in a list")
         out.append({**note, "items": items})
     return out
+
+
+def simulation_limits(db, all_ladders) -> list[dict]:
+    """Fallbacks for partial measures that can have a numeric score, scoped to the original run."""
+    messages = {
+        "without_effect": (
+            "The simulator lacks an effect on this item. Its contribution in play may differ from the listed score.",
+            "Le simulateur omet un effet de cet objet. Sa contribution en jeu peut différer du score affiché."),
+        "assumed_rate": (
+            "The proc rate is uncertain. The recorded ranking uses the simulator's assumption or its result with the proc disabled.",
+            "La fréquence du proc est incertaine. Le classement utilise l’hypothèse du simulateur ou sa mesure avec le proc désactivé."),
+    }
+    result = []
+    if not db.simulated:
+        return result
+    for (cls, spec), measured in sorted(db.simulated.specs.items()):
+        entries = all_ladders.get(cls, {}).get(spec, {}).get("pve", {})
+        side = measured.record.get("side")
+        for field, (en, fr) in messages.items():
+            flagged = set(measured.record.get(field, ()))
+            items = set()
+            for ladder in entries.values():
+                for entry in ladder:
+                    observed = entry.shown(side) if side else entry.item_id
+                    if (observed or entry.item_id) in flagged:
+                        items.add(entry.item_id)
+                        if entry.twin:
+                            items.add(entry.twin)
+            if items:
+                result.append({"items": sorted(items), "specs": [f"{cls} {spec}"], "simulated": True, "en": en, "fr": fr})
+    return result
+
+
+def profile_key(record: dict) -> str:
+    """The exact reference set, race, faction and fight length used for the paired substitutions."""
+    profile = {key: record.get(key) for key in ("name", "race", "side", "seconds", "reference", "date")}
+    return hashlib.sha256(json.dumps(profile, sort_keys=True).encode()).hexdigest()
+
+
+def import_trials(pairs, batches, reading, revision):
+    """Cross-check the original inversion keys before accepting any longer rerun of the same trial."""
+    trials = {}
+    for runs, batch in batches:
+        for key, trial in batch.items():
+            cls, spec, mode, slot, canonical, actual = key.split("/")
+            identity = [trial["item"], trial["rival"]]
+            if (mode != "pve" or slot not in SLOTS or int(actual) != identity[0]
+                    or identity[0] == identity[1] or pairs.get(key, [])[:2] != identity):
+                raise ValueError(f"Trial differs from the original item pair: {key}")
+            count = trial.get("iterations", runs)
+            if key in trials and count < trials[key][-1]:
+                continue
+            dps, error = trial["dps_se"]["item"]
+            stats, _ = trial["dps_se"]["all_stats"]
+            trials[key] = [int(canonical), *identity, pairs[key][2], dps, error, stats, count]
+    missing = pairs.keys() - trials.keys()
+    if missing:
+        raise ValueError(f"Missing {len(missing)} paired trials, including {min(missing)}")
+    profiles, groups = {}, {}
+    for key, row in sorted(trials.items()):
+        cls, spec, _, slot, *_ = key.split("/")
+        profile = f"{cls} {spec}"
+        record = reading.specs[cls, int(spec)].record
+        if (record.get("wowsims") or reading.commit) != revision:
+            raise ValueError(f"{profile} uses another simulator revision")
+        if profile not in profiles:
+            profiles[profile] = profile_key(record)
+        groups.setdefault(f"{profile} {slot}", []).append(row)
+    return {"wowsims": revision, "profiles": profiles,
+            "columns": ["pool_id", "measured_id", "rival_id", "archived_dps_difference",
+                        "swap_dps", "paired_standard_error", "fixed_stats_dps", "iterations"], "groups": groups}
+
+
+def comparisons(db, all_ladders, specific, source=None):
+    """Only direct item measures whose published inversion still stands. Identify a rival's model limits."""
+    if not db.simulated:
+        return {}
+    if source is None:
+        source = json.loads(COMPARISONS.read_text(encoding="utf-8"))
+    out = {}
+    for group, rows in source["groups"].items():
+        cls, number, slot = group.split()
+        spec = int(number)
+        profile = f"{cls} {spec}"
+        measured = db.simulated.specs.get((cls, spec))
+        kept = all_ladders.get(cls, {}).get(spec, {}).get("pve", {}).get(slot, ())
+        if not kept or not measured or slot not in measured.slots:
+            continue
+        record = measured.record
+        if ((record.get("wowsims") or db.simulated.commit) != source["wowsims"]
+                or profile_key(record) != source["profiles"][profile]):
+            continue
+        covered = {item for note in specific if profile in note.get("specs", (profile,))
+                   and note.get("slot", slot) == slot and note.get("list", "pve") == "pve" for item in note["items"]}
+        visible = {entry.item_id for entry in kept}
+        eligible = [row for row in rows if row[0] in visible and row[1] not in covered]
+        if not eligible:
+            continue
+        # A compared item can lie below the displayed alternatives. Verify both against the current full ladder.
+        ranked = measured.slots[slot]
+        missing_effect = set(record.get("without_effect", ()))
+        assumed_rate = set(record.get("assumed_rate", ()))
+        actuals = {}
+        for entry in ladders.full_ladder(db, cls, spec, "pve", slot):
+            actual = entry.shown(record.get("side", "a")) or entry.item_id
+            if ranked.measured(entry.item_id) and not entry.unscored and not entry.random:
+                actuals[actual] = entry
+        weights = db.classes[cls]["specs"][spec]["weights"]["raid"]
+
+        def points(entry):
+            return ladders.score(db, entry.item_id, weights, cls, melee=cls == "HUNTER" and spec == 3) or 0
+
+        for canonical, actual, rival, archived, dps, error, stats, count in eligible:
+            left, right = actuals.get(actual), actuals.get(rival)
+            if (not left or not right or left.item_id != canonical or left.two_hand != right.two_hand
+                    or actual in missing_effect or actual in assumed_rate):
+                continue
+            if ranked.scores[canonical] - ranked.scores[right.item_id] != archived:
+                continue
+            if archived * (points(left) - points(right)) >= -0.001:
+                continue
+            status = "n" if abs(dps) <= 2 * error else "r" if dps * archived < 0 else "c"
+            if rival in missing_effect:
+                status += "m"
+            if rival in assumed_rate:
+                status += "a"
+            # The game loads one string per slot. Hundredths suffice for tooltip text.
+            out.setdefault((cls, spec, slot), []).append((actual, rival, round(dps * 100),
+                                                         round(stats * 100), count, status))
+    return out
+
+
+if __name__ == "__main__":
+    import argparse
+    import simulated
+
+    parser = argparse.ArgumentParser(description="Refresh paired PvE comparisons from the original keys and trial logs.")
+    parser.add_argument("pairs", type=Path, help="Original key -> [item id, rival id, published DPS difference]")
+    parser.add_argument("all", type=Path, help="All paired trials at 500 iterations")
+    parser.add_argument("ablation", type=Path, help="Reruns at 5,000 iterations")
+    parser.add_argument("recheck", type=Path, help="Reruns at 20,000 iterations")
+    parser.add_argument("--revision", required=True, help="WoWSims revision used to run these trials")
+    parser.add_argument("--archive", type=Path, default=simulated.FILE, help="simulated.json used to run these trials")
+    parser.add_argument("--out", type=Path, default=COMPARISONS)
+    args = parser.parse_args()
+
+    def read(path):
+        return json.loads(path.read_text(encoding="utf-8-sig"))
+
+    source = import_trials(read(args.pairs), [(500, read(args.all)), (5000, read(args.ablation)),
+                                              (20000, read(args.recheck))], simulated.load(args.archive), args.revision)
+    # Keep each slot on a separate line so that rerunning a single profile produces a small diff.
+    groups = source.pop("groups")
+    header = json.dumps(source, indent=1)[:-2] + ',\n "groups": {\n'
+    lines = [f'  "{key}": ' + json.dumps(sorted(rows), separators=(",", ":")) for key, rows in groups.items()]
+    args.out.write_bytes((header + ",\n".join(lines) + "\n }\n}\n").encode("utf-8"))
+    print(f"{sum(map(len, groups.values()))} paired observations, {len(groups)} slots")

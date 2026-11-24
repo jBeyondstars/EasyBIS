@@ -1,0 +1,892 @@
+{
+  "date": "2026-11-22",
+  "wowsims_commit": "a73af7145111ce19c621e3b5f678553adf326907",
+  "repository": "https://github.com/wowsims/forever",
+  "weapon_file": "../../_build/corrections/arms_weapons.json",
+  "conditions": {
+    "target": "WoWSims humanoid target, level 60, armor 3500, block value 0. No PvP-specific opponent script.",
+    "attacker": "Level 60 Orc Arms warrior, Battle stance. Same gear except the test weapon. No weapon enchant, consumables, raid buffs, activated items, preloaded procs, or changes to target state.",
+    "samples_per_weapon_per_spell": 100000,
+    "seed": 4242,
+    "results": "Conditional samples of direct normal hits and critical hits after mitigation. OutcomeHit and OutcomeCrit only. No swing timer, proc activation, cumulative damage, or win rate. For Overpower the conditional strike assumes availability after a dodge. SE is standard error of each sample mean. CritChance is the raw probability reported by spell.PhysicalCritChance on this attack table; the combat roll itself can also miss or be avoided.",
+    "reproduction": "With a built WoWSims checkout on the given revision (including generated proto Go and database binaries), write repro_go to strikes.go and simulation_input to warrior.json. From the module root run go run -tags=with_db /path/to/strikes.go /path/to/warrior.json.",
+    "source": [
+      "https://github.com/wowsims/forever/blob/a73af7145111ce19c621e3b5f678553adf326907/sim/warrior/talents_arms.go",
+      "https://github.com/wowsims/forever/blob/a73af7145111ce19c621e3b5f678553adf326907/sim/warrior/overpower.go",
+      "https://github.com/wowsims/forever/blob/a73af7145111ce19c621e3b5f678553adf326907/sim/core/attack.go",
+      "https://github.com/wowsims/forever/blob/a73af7145111ce19c621e3b5f678553adf326907/sim/core/spelldata/spell.go",
+      "https://github.com/wowsims/forever/blob/a73af7145111ce19c621e3b5f678553adf326907/sim/core/spell_result.go",
+      "https://github.com/wowsims/forever/blob/a73af7145111ce19c621e3b5f678553adf326907/sim/core/spell_outcome.go",
+      "https://github.com/wowsims/forever/blob/a73af7145111ce19c621e3b5f678553adf326907/sim/core/spell_resistances.go",
+      "https://github.com/wowsims/forever/blob/a73af7145111ce19c621e3b5f678553adf326907/sim/common/forever/items_weapons.go"
+    ]
+  },
+  "rank_scenario": {
+    "specialization": "WARRIOR 1 Arms",
+    "mode": "pvp",
+    "phase": "pre-raid",
+    "level": 60,
+    "pvp_rewards": true,
+    "pvp_rank_cap": 6,
+    "include_unknown_sources": false,
+    "seen_only": false,
+    "eligible_items": {
+      "Alliance": 390,
+      "Horde": 387
+    },
+    "ranks_before_after_same_both_factions": {
+      "2801": [
+        4,
+        45
+      ],
+      "12784": [
+        11,
+        3
+      ],
+      "279260": [
+        1,
+        1
+      ],
+      "19323": [
+        3,
+        2
+      ],
+      "18538": [
+        2,
+        8
+      ],
+      "12592": [
+        7,
+        6
+      ],
+      "280018": [
+        5,
+        9
+      ]
+    },
+    "previous_ladders_ref": "af5c74c8582d7e93b872aa1b7b9b02a7a77be5a1",
+    "new_model": "6 seconds of white swings plus one Mortal Strike for the weapon damage component; ordinary PvP stat weights still apply."
+  },
+  "source_catalog": {
+    "unique_item_ids": 494,
+    "raw_foreverdb_class_pool_2h": 483,
+    "wowsims_primary": 319,
+    "wowsims_leftover": 171,
+    "wowsims_urls": [
+      "https://github.com/wowsims/forever/blob/a73af7145111ce19c621e3b5f678553adf326907/assets/database/db.json",
+      "https://github.com/wowsims/forever/blob/a73af7145111ce19c621e3b5f678553adf326907/assets/database/leftover_db.json"
+    ],
+    "complementary_item_pages": [
+      "https://www.wowhead.com/forever/item=13817/tapered-greatsword",
+      "https://www.wowhead.com/forever/item=13819/balanced-war-axe",
+      "https://www.wowhead.com/forever/item=13821/bulky-maul",
+      "https://www.wowhead.com/forever/item=211941/windwalkers-yari"
+    ]
+  },
+  "simulation_input": {
+    "raid": {
+      "parties": [
+        {
+          "players": [
+            {
+              "name": "Arms",
+              "class": "ClassWarrior",
+              "dpsWarrior": {
+                "options": {
+                  "classOptions": {
+                    "defaultStance": "WarriorStanceBattle",
+                    "startingRage": 50,
+                    "stanceSnapshot": false,
+                    "useBattleShout": false,
+                    "queueDelay": 250
+                  }
+                }
+              },
+              "profession1": "Engineering",
+              "profession2": "Blacksmithing",
+              "reactionTimeMs": 100,
+              "distanceFromTarget": 25,
+              "talentsString": "30303213132215201-55050000002-2",
+              "race": "RaceOrc",
+              "rotation": {},
+              "equipment": {
+                "items": [
+                  {
+                    "id": 12640,
+                    "enchant": 2543
+                  },
+                  {
+                    "id": 15411,
+                    "enchant": 0
+                  },
+                  {
+                    "id": 271955,
+                    "enchant": 0
+                  },
+                  {
+                    "id": 13340,
+                    "enchant": 7667
+                  },
+                  {
+                    "id": 252484,
+                    "enchant": 1891
+                  },
+                  {
+                    "id": 13400,
+                    "enchant": 1885
+                  },
+                  {
+                    "id": 271940,
+                    "enchant": 8207
+                  },
+                  {
+                    "id": 272403,
+                    "enchant": 0
+                  },
+                  {
+                    "id": 22385,
+                    "enchant": 2543
+                  },
+                  {
+                    "id": 12555,
+                    "enchant": 1887
+                  },
+                  {
+                    "id": 275981,
+                    "enchant": 0
+                  },
+                  {
+                    "id": 272408,
+                    "enchant": 0
+                  },
+                  {
+                    "id": 11815,
+                    "enchant": 0
+                  },
+                  {
+                    "id": 19120,
+                    "enchant": 0
+                  },
+                  {
+                    "id": 2801
+                  },
+                  {},
+                  {
+                    "id": 18323,
+                    "enchant": 0
+                  }
+                ]
+              }
+            }
+          ],
+          "buffs": {}
+        },
+        {},
+        {},
+        {},
+        {}
+      ],
+      "buffs": {},
+      "debuffs": {}
+    }
+  },
+  "repro_go": "package main\n\nimport (\n\t\"encoding/json\"\n\t\"fmt\"\n\t\"github.com/wowsims/forever/sim\"\n\t\"github.com/wowsims/forever/sim/core\"\n\t\"github.com/wowsims/forever/sim/core/proto\"\n\t\"github.com/wowsims/forever/sim/core/simsignals\"\n\t\"github.com/wowsims/forever/sim/core/spelldata\"\n\t\"github.com/wowsims/forever/sim/core/stats\"\n\t\"google.golang.org/protobuf/encoding/protojson\"\n\t\"math\"\n\t\"os\"\n)\n\ntype Dist struct {\n\tCount              int\n\tMean, SE, Min, Max float64\n}\n\nfunc dist(xs []float64) Dist {\n\td := Dist{Count: len(xs), Min: math.Inf(1)}\n\tfor _, x := range xs {\n\t\td.Mean += x\n\t\td.Min = math.Min(d.Min, x)\n\t\td.Max = math.Max(d.Max, x)\n\t}\n\td.Mean /= float64(d.Count)\n\tfor _, x := range xs {\n\t\td.SE += (x - d.Mean) * (x - d.Mean)\n\t}\n\td.SE = math.Sqrt(d.SE / (float64(d.Count) * float64(d.Count-1)))\n\treturn d\n}\n\ntype Result struct {\n\tWeaponID, SpellID                                                                                   int32\n\tBaseMin, BaseMax, Speed, AP, FlatAt60, NormalizedSpeed, CritMultiplier, CritChance, ArmorMultiplier float64\n\tHit, Crit                                                                                           Dist\n}\n\nfunc run(base []byte, id int32) []Result {\n\tr := &proto.RaidSimRequest{}\n\tif err := protojson.Unmarshal(base, r); err != nil {\n\t\tpanic(err)\n\t}\n\tr.Raid.Parties[0].Players[0].Equipment.Items[14].Id = id\n\tt := core.FreshDefaultTargetConfig()\n\tt.Level = 60\n\tt.Name = \"Humanoid level 60, 3500 armor\"\n\tt.MobType = proto.MobType_MobTypeHumanoid\n\tt.Stats[stats.Armor] = 3500\n\tt.Stats[stats.BlockValue] = 0\n\tr.Encounter = &proto.Encounter{Duration: 30, Targets: []*proto.Target{t}}\n\tr.SimOptions = &proto.SimOptions{RandomSeed: 4242, Iterations: 1}\n\ts := core.NewSim(r, simsignals.CreateSignals())\n\ts.Reset()\n\twar := s.Raid.Parties[0].Players[0].GetCharacter()\n\ttarget := s.Encounter.AllTargetUnits[0]\n\tat := war.AttackTables[target.UnitIndex]\n\twep := war.AutoAttacks.MH()\n\tresults := []Result{}\n\tfor _, spellID := range []int32{21553, 11585} {\n\t\trow := spelldata.MustFind(spellID)\n\t\tspell := war.GetSpell(core.ActionID{SpellID: spellID})\n\t\tif spell == nil {\n\t\t\tpanic(fmt.Sprintf(\"missing %v\", spellID))\n\t\t}\n\t\tap := spell.MeleeAttackPower(target)\n\t\tr := Result{WeaponID: id, SpellID: spellID, BaseMin: wep.BaseDamageMin, BaseMax: wep.BaseDamageMax, Speed: wep.SwingSpeed, AP: ap, NormalizedSpeed: wep.NormalizedSwingSpeed, FlatAt60: row.WeaponStrike(s, spell, 0, 0), CritMultiplier: spell.CritDamageMultiplier(at), CritChance: spell.PhysicalCritChance(at), ArmorMultiplier: at.GetArmorDamageModifier(spell)}\n\t\tvar hits, crits []float64\n\t\ts.Reseed(4242)\n\t\tfor range 100000 {\n\t\t\td := row.WeaponStrike(s, spell, war.MHNormalizedWeaponDamage(s, ap), 0)\n\t\t\tres := spell.CalcDamage(s, target, d, spell.OutcomeMeleeWeaponSpecialHitAndCrit)\n\t\t\tswitch res.Outcome {\n\t\t\tcase core.OutcomeHit:\n\t\t\t\thits = append(hits, res.Damage)\n\t\t\tcase core.OutcomeCrit:\n\t\t\t\tcrits = append(crits, res.Damage)\n\t\t\t}\n\t\t\tspell.DisposeResult(res)\n\t\t}\n\t\tr.Hit = dist(hits)\n\t\tr.Crit = dist(crits)\n\t\tresults = append(results, r)\n\t}\n\treturn results\n}\nfunc main() {\n\tsim.RegisterAll()\n\tbs, err := os.ReadFile(os.Args[1])\n\tif err != nil {\n\t\tpanic(err)\n\t}\n\tresults := []Result{}\n\tfor _, id := range []int32{2801, 12784, 19169, 19323, 279260, 280018, 12592, 18830, 18538, 21134, 1263, 271924} {\n\t\tresults = append(results, run(bs, id)...)\n\t}\n\tout, _ := json.MarshalIndent(results, \"\", \"  \")\n\tfmt.Println(string(out))\n}\n",
+  "measurements": [
+    {
+      "WeaponID": 2801,
+      "SpellID": 21553,
+      "BaseMin": 96,
+      "BaseMax": 145,
+      "Speed": 2,
+      "AP": 848,
+      "FlatAt60": 160,
+      "NormalizedSpeed": 3.3,
+      "CritMultiplier": 2.2,
+      "CritChance": 0.2275,
+      "ArmorMultiplier": 0.61111111,
+      "Hit": {
+        "Count": 73386,
+        "Mean": 311.20177201,
+        "SE": 0.0338988,
+        "Min": 295.31283468,
+        "Max": 327.05302352
+      },
+      "Crit": {
+        "Count": 21554,
+        "Mean": 684.30408123,
+        "SE": 0.13693104,
+        "Min": 649.68893754,
+        "Max": 719.50904566
+      },
+      "weapon": "Blade of Hanna",
+      "spell": "Mortal Strike"
+    },
+    {
+      "WeaponID": 2801,
+      "SpellID": 11585,
+      "BaseMin": 96,
+      "BaseMax": 145,
+      "Speed": 2,
+      "AP": 848,
+      "FlatAt60": 35,
+      "NormalizedSpeed": 3.3,
+      "CritMultiplier": 2.2,
+      "CritChance": 0.7275,
+      "ArmorMultiplier": 0.61111111,
+      "Hit": {
+        "Count": 27179,
+        "Mean": 230.27877069,
+        "SE": 0.05565146,
+        "Min": 214.34194802,
+        "Max": 246.0752411
+      },
+      "Crit": {
+        "Count": 72821,
+        "Mean": 506.52408506,
+        "SE": 0.07473836,
+        "Min": 471.55021967,
+        "Max": 541.37873515
+      },
+      "weapon": "Blade of Hanna",
+      "spell": "Overpower"
+    },
+    {
+      "WeaponID": 12784,
+      "SpellID": 21553,
+      "BaseMin": 153,
+      "BaseMax": 256,
+      "Speed": 3.8,
+      "AP": 910,
+      "FlatAt60": 160,
+      "NormalizedSpeed": 3.3,
+      "CritMultiplier": 2.2,
+      "CritChance": 0.2775,
+      "ArmorMultiplier": 0.61111111,
+      "Hit": {
+        "Count": 68592,
+        "Mean": 375.12020224,
+        "SE": 0.0737399,
+        "Min": 341.70319769,
+        "Max": 408.42237013
+      },
+      "Crit": {
+        "Count": 26348,
+        "Mean": 824.53892038,
+        "SE": 0.26023988,
+        "Min": 751.74850893,
+        "Max": 898.51322601
+      },
+      "weapon": "Arcanite Reaper",
+      "spell": "Mortal Strike"
+    },
+    {
+      "WeaponID": 12784,
+      "SpellID": 11585,
+      "BaseMin": 153,
+      "BaseMax": 256,
+      "Speed": 3.8,
+      "AP": 910,
+      "FlatAt60": 35,
+      "NormalizedSpeed": 3.3,
+      "CritMultiplier": 2.2,
+      "CritChance": 0.7775,
+      "ArmorMultiplier": 0.61111111,
+      "Hit": {
+        "Count": 22198,
+        "Mean": 294.25885172,
+        "SE": 0.12968504,
+        "Min": 260.73378286,
+        "Max": 327.43846016
+      },
+      "Crit": {
+        "Count": 77802,
+        "Mean": 647.12264911,
+        "SE": 0.15191703,
+        "Min": 573.60997953,
+        "Max": 720.39236923
+      },
+      "weapon": "Arcanite Reaper",
+      "spell": "Overpower"
+    },
+    {
+      "WeaponID": 19169,
+      "SpellID": 21553,
+      "BaseMin": 187,
+      "BaseMax": 282,
+      "Speed": 3.5,
+      "AP": 848,
+      "FlatAt60": 160,
+      "NormalizedSpeed": 3.3,
+      "CritMultiplier": 2.2,
+      "CritChance": 0.2775,
+      "ArmorMultiplier": 0.61111111,
+      "Hit": {
+        "Count": 68592,
+        "Mean": 385.08230905,
+        "SE": 0.06801252,
+        "Min": 354.26079999,
+        "Max": 415.79790079
+      },
+      "Crit": {
+        "Count": 26348,
+        "Mean": 846.51190678,
+        "SE": 0.24002707,
+        "Min": 779.37511952,
+        "Max": 914.74063527
+      },
+      "weapon": "Nightfall",
+      "spell": "Mortal Strike"
+    },
+    {
+      "WeaponID": 19169,
+      "SpellID": 11585,
+      "BaseMin": 187,
+      "BaseMax": 282,
+      "Speed": 3.5,
+      "AP": 848,
+      "FlatAt60": 35,
+      "NormalizedSpeed": 3.3,
+      "CritMultiplier": 2.2,
+      "CritChance": 0.7775,
+      "ArmorMultiplier": 0.61111111,
+      "Hit": {
+        "Count": 22198,
+        "Mean": 304.21234713,
+        "SE": 0.11961242,
+        "Min": 273.29116711,
+        "Max": 334.81489861
+      },
+      "Crit": {
+        "Count": 77802,
+        "Mean": 669.03950987,
+        "SE": 0.14011765,
+        "Min": 601.2365622,
+        "Max": 736.61837794
+      },
+      "weapon": "Nightfall",
+      "spell": "Overpower"
+    },
+    {
+      "WeaponID": 19323,
+      "SpellID": 21553,
+      "BaseMin": 152,
+      "BaseMax": 255,
+      "Speed": 3.6,
+      "AP": 884,
+      "FlatAt60": 160,
+      "NormalizedSpeed": 3.3,
+      "CritMultiplier": 2.2,
+      "CritChance": 0.2475,
+      "ArmorMultiplier": 0.64896755,
+      "Hit": {
+        "Count": 71470,
+        "Mean": 393.44149947,
+        "SE": 0.07668762,
+        "Min": 357.96686817,
+        "Max": 428.8190867
+      },
+      "Crit": {
+        "Count": 23470,
+        "Mean": 864.81717728,
+        "SE": 0.29293181,
+        "Min": 787.52867531,
+        "Max": 943.38501202
+      },
+      "weapon": "The Unstoppable Force",
+      "spell": "Mortal Strike"
+    },
+    {
+      "WeaponID": 19323,
+      "SpellID": 11585,
+      "BaseMin": 152,
+      "BaseMax": 255,
+      "Speed": 3.6,
+      "AP": 884,
+      "FlatAt60": 35,
+      "NormalizedSpeed": 3.3,
+      "CritMultiplier": 2.2,
+      "CritChance": 0.7475,
+      "ArmorMultiplier": 0.64896755,
+      "Hit": {
+        "Count": 25191,
+        "Mean": 307.58564418,
+        "SE": 0.12923029,
+        "Min": 271.98164888,
+        "Max": 342.81847434
+      },
+      "Crit": {
+        "Count": 74809,
+        "Mean": 676.40948626,
+        "SE": 0.16452334,
+        "Min": 598.35501577,
+        "Max": 754.23011987
+      },
+      "weapon": "The Unstoppable Force",
+      "spell": "Overpower"
+    },
+    {
+      "WeaponID": 279260,
+      "SpellID": 21553,
+      "BaseMin": 162,
+      "BaseMax": 244,
+      "Speed": 3.3,
+      "AP": 884,
+      "FlatAt60": 160,
+      "NormalizedSpeed": 3.3,
+      "CritMultiplier": 2.2,
+      "CritChance": 0.2775,
+      "ArmorMultiplier": 0.61111111,
+      "Hit": {
+        "Count": 68592,
+        "Mean": 370.16698856,
+        "SE": 0.05870555,
+        "Min": 343.56315969,
+        "Max": 396.67939407
+      },
+      "Crit": {
+        "Count": 26348,
+        "Mean": 813.78977277,
+        "SE": 0.20718126,
+        "Min": 755.84012482,
+        "Max": 872.68193841
+      },
+      "weapon": "Forest Defender's Axe",
+      "spell": "Mortal Strike"
+    },
+    {
+      "WeaponID": 279260,
+      "SpellID": 11585,
+      "BaseMin": 162,
+      "BaseMax": 244,
+      "Speed": 3.3,
+      "AP": 884,
+      "FlatAt60": 35,
+      "NormalizedSpeed": 3.3,
+      "CritMultiplier": 2.2,
+      "CritChance": 0.7775,
+      "ArmorMultiplier": 0.61111111,
+      "Hit": {
+        "Count": 22198,
+        "Mean": 289.28303313,
+        "SE": 0.1032444,
+        "Min": 262.59317248,
+        "Max": 315.69786704
+      },
+      "Crit": {
+        "Count": 77802,
+        "Mean": 636.22617169,
+        "SE": 0.12094366,
+        "Min": 577.70152212,
+        "Max": 694.55740518
+      },
+      "weapon": "Forest Defender's Axe",
+      "spell": "Overpower"
+    },
+    {
+      "WeaponID": 280018,
+      "SpellID": 21553,
+      "BaseMin": 142,
+      "BaseMax": 214,
+      "Speed": 3.3,
+      "AP": 896,
+      "FlatAt60": 160,
+      "NormalizedSpeed": 3.3,
+      "CritMultiplier": 2.2,
+      "CritChance": 0.2375,
+      "ArmorMultiplier": 0.64896755,
+      "Hit": {
+        "Count": 72394,
+        "Mean": 377.83195873,
+        "SE": 0.05325781,
+        "Min": 353.03346805,
+        "Max": 402.56123246
+      },
+      "Crit": {
+        "Count": 22546,
+        "Mean": 830.67515834,
+        "SE": 0.2089512,
+        "Min": 776.67472393,
+        "Max": 885.6228428
+      },
+      "weapon": "Hammer of Thundering Hooves",
+      "spell": "Mortal Strike"
+    },
+    {
+      "WeaponID": 280018,
+      "SpellID": 11585,
+      "BaseMin": 142,
+      "BaseMax": 214,
+      "Speed": 3.3,
+      "AP": 896,
+      "FlatAt60": 35,
+      "NormalizedSpeed": 3.3,
+      "CritMultiplier": 2.2,
+      "CritChance": 0.7375,
+      "ArmorMultiplier": 0.64896755,
+      "Hit": {
+        "Count": 26154,
+        "Mean": 291.90416985,
+        "SE": 0.08856563,
+        "Min": 267.04735148,
+        "Max": 316.56435568
+      },
+      "Crit": {
+        "Count": 73846,
+        "Mean": 642.08523,
+        "SE": 0.11579273,
+        "Min": 587.50094949,
+        "Max": 696.46218731
+      },
+      "weapon": "Hammer of Thundering Hooves",
+      "spell": "Overpower"
+    },
+    {
+      "WeaponID": 12592,
+      "SpellID": 21553,
+      "BaseMin": 166,
+      "BaseMax": 250,
+      "Speed": 3.5,
+      "AP": 848,
+      "FlatAt60": 160,
+      "NormalizedSpeed": 3.3,
+      "CritMultiplier": 2.2,
+      "CritChance": 0.2275,
+      "ArmorMultiplier": 0.61111111,
+      "Hit": {
+        "Count": 73386,
+        "Mean": 367.89560008,
+        "SE": 0.05811223,
+        "Min": 340.65742182,
+        "Max": 395.0691741
+      },
+      "Crit": {
+        "Count": 21554,
+        "Mean": 808.78777644,
+        "SE": 0.23473892,
+        "Min": 749.44753011,
+        "Max": 869.13914403
+      },
+      "weapon": "Blackblade of Shahram",
+      "spell": "Mortal Strike"
+    },
+    {
+      "WeaponID": 12592,
+      "SpellID": 11585,
+      "BaseMin": 166,
+      "BaseMax": 250,
+      "Speed": 3.5,
+      "AP": 848,
+      "FlatAt60": 35,
+      "NormalizedSpeed": 3.3,
+      "CritMultiplier": 2.2,
+      "CritChance": 0.7275,
+      "ArmorMultiplier": 0.61111111,
+      "Hit": {
+        "Count": 27179,
+        "Mean": 287.00775657,
+        "SE": 0.0954025,
+        "Min": 259.68748912,
+        "Max": 314.08742012
+      },
+      "Crit": {
+        "Count": 72821,
+        "Mean": 631.26413221,
+        "SE": 0.1281229,
+        "Min": 571.30893439,
+        "Max": 691.01496094
+      },
+      "weapon": "Blackblade of Shahram",
+      "spell": "Overpower"
+    },
+    {
+      "WeaponID": 18830,
+      "SpellID": 21553,
+      "BaseMin": 235,
+      "BaseMax": 353,
+      "Speed": 3.8,
+      "AP": 900,
+      "FlatAt60": 160,
+      "NormalizedSpeed": 3.3,
+      "CritMultiplier": 2.2,
+      "CritChance": 0.2875,
+      "ArmorMultiplier": 0.61111111,
+      "Hit": {
+        "Count": 67630,
+        "Mean": 431.57467535,
+        "SE": 0.08503632,
+        "Min": 393.29413185,
+        "Max": 469.72968864
+      },
+      "Crit": {
+        "Count": 27310,
+        "Mean": 948.68544069,
+        "SE": 0.29325809,
+        "Min": 865.24877876,
+        "Max": 1033.38699832
+      },
+      "weapon": "Grand Marshal's Sunderer",
+      "spell": "Mortal Strike"
+    },
+    {
+      "WeaponID": 18830,
+      "SpellID": 11585,
+      "BaseMin": 235,
+      "BaseMax": 353,
+      "Speed": 3.8,
+      "AP": 900,
+      "FlatAt60": 35,
+      "NormalizedSpeed": 3.3,
+      "CritMultiplier": 2.2,
+      "CritChance": 0.7875,
+      "ArmorMultiplier": 0.61111111,
+      "Hit": {
+        "Count": 21204,
+        "Mean": 350.73841826,
+        "SE": 0.15184775,
+        "Min": 312.32512587,
+        "Max": 388.74407657
+      },
+      "Crit": {
+        "Count": 78796,
+        "Mean": 771.32875515,
+        "SE": 0.17299757,
+        "Min": 687.11030172,
+        "Max": 855.26876758
+      },
+      "weapon": "Grand Marshal's Sunderer",
+      "spell": "Overpower"
+    },
+    {
+      "WeaponID": 18538,
+      "SpellID": 21553,
+      "BaseMin": 128,
+      "BaseMax": 193,
+      "Speed": 2.7,
+      "AP": 868,
+      "FlatAt60": 160,
+      "NormalizedSpeed": 3.3,
+      "CritMultiplier": 2.2,
+      "CritChance": 0.2975,
+      "ArmorMultiplier": 0.61111111,
+      "Hit": {
+        "Count": 66635,
+        "Mean": 340.18157454,
+        "SE": 0.04718751,
+        "Min": 319.09559832,
+        "Max": 361.19993045
+      },
+      "Crit": {
+        "Count": 28305,
+        "Mean": 747.99115713,
+        "SE": 0.15872217,
+        "Min": 702.01124652,
+        "Max": 794.6297573
+      },
+      "weapon": "Treant's Bane",
+      "spell": "Mortal Strike"
+    },
+    {
+      "WeaponID": 18538,
+      "SpellID": 11585,
+      "BaseMin": 128,
+      "BaseMax": 193,
+      "Speed": 2.7,
+      "AP": 868,
+      "FlatAt60": 35,
+      "NormalizedSpeed": 3.3,
+      "CritMultiplier": 2.2,
+      "CritChance": 0.7975,
+      "ArmorMultiplier": 0.61111111,
+      "Hit": {
+        "Count": 20257,
+        "Mean": 259.30967739,
+        "SE": 0.08556886,
+        "Min": 238.13245887,
+        "Max": 280.22033247
+      },
+      "Crit": {
+        "Count": 79743,
+        "Mean": 570.2522558,
+        "SE": 0.09473186,
+        "Min": 523.87258449,
+        "Max": 616.50224789
+      },
+      "weapon": "Treant's Bane",
+      "spell": "Overpower"
+    },
+    {
+      "WeaponID": 21134,
+      "SpellID": 21553,
+      "BaseMin": 242,
+      "BaseMax": 364,
+      "Speed": 3.5,
+      "AP": 918,
+      "FlatAt60": 160,
+      "NormalizedSpeed": 3.3,
+      "CritMultiplier": 2.2,
+      "CritChance": 0.287,
+      "ArmorMultiplier": 0.61111111,
+      "Hit": {
+        "Count": 67677,
+        "Mean": 440.15796944,
+        "SE": 0.08789297,
+        "Min": 400.57702118,
+        "Max": 479.60361378
+      },
+      "Crit": {
+        "Count": 27263,
+        "Mean": 967.5197589,
+        "SE": 0.30341692,
+        "Min": 881.27119252,
+        "Max": 1055.10901274
+      },
+      "weapon": "Dark Edge of Insanity",
+      "spell": "Mortal Strike"
+    },
+    {
+      "WeaponID": 21134,
+      "SpellID": 11585,
+      "BaseMin": 242,
+      "BaseMax": 364,
+      "Speed": 3.5,
+      "AP": 918,
+      "FlatAt60": 35,
+      "NormalizedSpeed": 3.3,
+      "CritMultiplier": 2.2,
+      "CritChance": 0.787,
+      "ArmorMultiplier": 0.61111111,
+      "Hit": {
+        "Count": 21253,
+        "Mean": 359.33023288,
+        "SE": 0.1568197,
+        "Min": 319.60812422,
+        "Max": 398.61754782
+      },
+      "Crit": {
+        "Count": 78747,
+        "Mean": 790.2018946,
+        "SE": 0.17891551,
+        "Min": 703.13272943,
+        "Max": 876.99148228
+      },
+      "weapon": "Dark Edge of Insanity",
+      "spell": "Overpower"
+    },
+    {
+      "WeaponID": 1263,
+      "SpellID": 21553,
+      "BaseMin": 158,
+      "BaseMax": 238,
+      "Speed": 3.5,
+      "AP": 848,
+      "FlatAt60": 160,
+      "NormalizedSpeed": 3.3,
+      "CritMultiplier": 2.2,
+      "CritChance": 0.2875,
+      "ArmorMultiplier": 0.61111111,
+      "Hit": {
+        "Count": 67630,
+        "Mean": 361.42809413,
+        "SE": 0.05765174,
+        "Min": 335.47518329,
+        "Max": 387.29589975
+      },
+      "Crit": {
+        "Count": 27310,
+        "Mean": 794.61377653,
+        "SE": 0.19881904,
+        "Min": 738.0465481,
+        "Max": 852.03856136
+      },
+      "weapon": "Brain Hacker",
+      "spell": "Mortal Strike"
+    },
+    {
+      "WeaponID": 1263,
+      "SpellID": 11585,
+      "BaseMin": 158,
+      "BaseMax": 238,
+      "Speed": 3.5,
+      "AP": 848,
+      "FlatAt60": 35,
+      "NormalizedSpeed": 3.3,
+      "CritMultiplier": 2.2,
+      "CritChance": 0.7875,
+      "ArmorMultiplier": 0.61111111,
+      "Hit": {
+        "Count": 21204,
+        "Mean": 280.54805166,
+        "SE": 0.10294763,
+        "Min": 254.50514156,
+        "Max": 306.31459966
+      },
+      "Crit": {
+        "Count": 78796,
+        "Mean": 617.00519499,
+        "SE": 0.11728649,
+        "Min": 559.90793842,
+        "Max": 673.91367799
+      },
+      "weapon": "Brain Hacker",
+      "spell": "Overpower"
+    },
+    {
+      "WeaponID": 271924,
+      "SpellID": 21553,
+      "BaseMin": 133,
+      "BaseMax": 201,
+      "Speed": 3.1,
+      "AP": 914,
+      "FlatAt60": 160,
+      "NormalizedSpeed": 3.3,
+      "CritMultiplier": 2.2,
+      "CritChance": 0.2775,
+      "ArmorMultiplier": 0.61111111,
+      "Hit": {
+        "Count": 68592,
+        "Mean": 351.4199731,
+        "SE": 0.04868265,
+        "Min": 329.35826135,
+        "Max": 373.40587034
+      },
+      "Crit": {
+        "Count": 26348,
+        "Mean": 772.64495372,
+        "SE": 0.17180885,
+        "Min": 724.58914811,
+        "Max": 821.48235938
+      },
+      "weapon": "Rebels' Rugged Reaper",
+      "spell": "Mortal Strike"
+    },
+    {
+      "WeaponID": 271924,
+      "SpellID": 11585,
+      "BaseMin": 133,
+      "BaseMax": 201,
+      "Speed": 3.1,
+      "AP": 914,
+      "FlatAt60": 35,
+      "NormalizedSpeed": 3.3,
+      "CritMultiplier": 2.2,
+      "CritChance": 0.7775,
+      "ArmorMultiplier": 0.61111111,
+      "Hit": {
+        "Count": 22198,
+        "Mean": 270.52094772,
+        "SE": 0.08561731,
+        "Min": 248.38789255,
+        "Max": 292.42593194
+      },
+      "Crit": {
+        "Count": 77802,
+        "Mean": 594.98313278,
+        "SE": 0.10029474,
+        "Min": 546.45049655,
+        "Max": 643.35537518
+      },
+      "weapon": "Rebels' Rugged Reaper",
+      "spell": "Overpower"
+    }
+  ]
+}

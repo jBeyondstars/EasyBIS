@@ -17,7 +17,7 @@ What the window lists, as plain tables: the frames only draw them.
                    estimated  true for an alternative whose score is no full measure (flag g): it keeps its
                             place, and has no gap and no ratio, so the window shows nothing for its score
                    level    true for an item whose effect the weights cannot count (flag x): no score of its
-                            own, so no gap and no ratio; it is a tie of the best picks
+                            own, so it has no gap, ratio or measured tie
                    placed   true for an item the data placed from a close spec's simulation (flag e): no
                             score of its own, so no gap and no ratio either
                { kind = "note", slot, text }   a line of plain text between rows
@@ -73,7 +73,12 @@ end
 local function OtherScores(slots, slot, pick)
     local main, off = slots.main, slots.off
     if slots.twoHand then
-        local partner = ns.Ladders.Lead(slot == "main" and off.other or main.other)
+        local partner
+        if pick.partialSet ~= nil then
+            partner = pick.partner
+        else
+            partner = ns.Ladders.Lead(slot == "main" and off.other or main.other)
+        end
         return pick.score + (partner and partner.score or 0), main.best[1].score,
             pick.entry.score10 + (partner and partner.entry.score10 or 0), main.best[1].entry.score10
     end
@@ -93,6 +98,96 @@ local function PassesReputation(row, wanted)
     return ns.Reputation.Reachable(row.reputation) == (wanted == "ok")
 end
 
+local function AddItem(all, facets, slot, id, row)
+    local source = row.custom and not ns.Items.Get(id) and ns.Sources.Manual() or ns.Sources.Describe(id)
+    facets.sources[source.category] = true
+    if source.zone then facets.zones[source.zone] = true end
+    row.kind, row.id, row.slot, row.source = "item", id, slot, source
+    row.reputation = ns.Reputation.Requirement(id)
+    all[#all + 1] = row
+end
+
+local function FilterItems(all, facets, state)
+    if not state.source and not state.zone and not state.reputation then return all, facets end
+    local rows = {}
+    for _, row in ipairs(all) do
+        if row.kind == "item"
+            and (not state.source or row.source.category == state.source)
+            and (not state.zone or row.source.zone == state.zone)
+            and PassesReputation(row, state.reputation) then
+            rows[#rows + 1] = row
+        end
+    end
+    return rows, facets
+end
+
+function Rows.AoeList(class, spec)
+    return ns.data.aoe.lists[class .. ":" .. spec .. ":" .. ns.PlayerSide()]
+end
+
+-- Each slot is ranked after applying the source-evidence preference.
+function Rows.AoePicks(tested, withAlternatives)
+    local limit = 1 + (withAlternatives and ns.Alternatives() or 0)
+    local seenOnly = ns:GetOption("seenOnly")
+    local index, shown = 0, 0
+    return function()
+        while shown < limit and index < #tested do
+            index = index + 1
+            local sample = tested[index]
+            if not seenOnly or ns.Items.Get(sample[1]).flags:find("s", 1, true) then
+                shown = shown + 1
+                return shown, sample
+            end
+        end
+    end
+end
+
+function Rows.Aoe(state)
+    local all, facets = {}, { sources = {}, zones = {} }
+    local slots = Rows.AoeList(state.class, state.spec) or {}
+    local withAlternatives = ns:GetOption("listAlts")
+    for _, slot in ipairs(ns.SLOTS) do
+        local tested = slots[slot]
+        if tested and (not state.slot or state.slot == slot) then
+            for rank, sample in Rows.AoePicks(tested, withAlternatives) do
+                AddItem(all, facets, slot, sample[1], {
+                    bis = rank == 1,
+                    gain = sample[2], se = sample[3], weaponPartner = sample.partner,
+                    weaponPriority = sample.weaponPriority, weaponBasePoints = sample.weaponBasePoints,
+                    weaponBonusPoints = sample.weaponBonusPoints, weaponRotationPoints = sample.weaponRotationPoints,
+                    pointStat = tested.pointStat,
+                    shortGain = sample.shortGain, routeGain = sample.routeGain,
+                    shortAverageGain = sample.shortAverageGain, routeAverageGain = sample.routeAverageGain,
+                    cooldownSeconds = sample.cooldownSeconds,
+                    shortRank = sample.shortRank, routeRank = sample.routeRank,
+                    shortBaseline = tested.shortBaseline, routeBaseline = tested.routeBaseline,
+                    routePackDamage = sample.routePackDamage, routeBaselinePackDamage = tested.routeBaselinePackDamage,
+                    schools = sample.shortSchools, petPct = sample.shortPetPct,
+                    passiveGain = sample.shortPassiveGain, activeGain = sample.shortActiveGain,
+                    useAfter = sample.shortUseAfter, routeActivated = sample.routeActivated,
+                    routeUsePack = sample.routeUsePack, routeUseAfter = sample.routeUseAfter,
+                    pairedItem = tested.pairedItem, comparisonItem = tested.comparisonItem,
+                    referenceWeapons = tested.referenceWeapons, activatedWeapons = sample.shortActivated,
+                })
+            end
+        end
+    end
+    return FilterItems(all, facets, state)
+end
+
+function Rows.Gear(state)
+    local all, facets = {}, { sources = {}, zones = {} }
+    local gear = ns.Custom.GearList(state.class, state.spec, state.itemList)
+    for _, slot in ipairs(ns.SLOTS) do
+        if not state.slot or state.slot == slot then
+            for index, entry in ipairs(gear.slots[slot] or {}) do
+                AddItem(all, facets, slot, entry.id, { custom = true, gearIndex = index, enchantId = entry.enchant })
+            end
+        end
+    end
+    return FilterItems(all, facets, state)
+end
+
 function Rows.Items(state, withAlts)
     local all, facets = {}, { sources = {}, zones = {} }
     local slots = ns.Ladders.For(state.class, state.spec, state.list)
@@ -100,13 +195,8 @@ function Rows.Items(state, withAlts)
     if withAlts == nil then withAlts = ns:GetOption("listAlts") end
 
     local function Add(slot, id, row)
-        local source = row.custom and not ns.Items.Get(id) and ns.Sources.Manual() or ns.Sources.Describe(id)
-        facets.sources[source.category] = true
-        if source.zone then facets.zones[source.zone] = true end
-        row.kind, row.id, row.slot, row.source = "item", id, slot, source
-        row.reputation = ns.Reputation.Requirement(id)
         row.why = ns.Notes.For(id, state.class, state.spec, state.list, slot)
-        all[#all + 1] = row
+        AddItem(all, facets, slot, id, row)
     end
 
     for _, slot in ipairs(ns.SLOTS) do
@@ -116,23 +206,28 @@ function Rows.Items(state, withAlts)
             local listed = {}
             for _, pick in ipairs(picks.best) do
                 listed[pick.id] = true
-                Add(slot, pick.id, { bis = true, gap = 0, ratio = 1 })
+                if pick.option then
+                    Add(slot, pick.id, { bis = true, option = pick.option })
+                else
+                    Add(slot, pick.id, { bis = true, gap = 0, ratio = 1 })
+                end
             end
-            if withAlts then
-                for _, pick in ipairs(picks.alts) do
-                    listed[pick.id] = true
-                    if ns.Ladders.HasFlag(pick.entry, "e") then
-                        Add(slot, pick.id, { bis = false, placed = true })
-                    elseif ns.Ladders.HasFlag(pick.entry, "x") then
-                        Add(slot, pick.id, { bis = false, tie = true, level = true })
-                    elseif ns.Ladders.HasFlag(pick.entry, "g") then
-                        Add(slot, pick.id, { bis = false, estimated = true })
-                    else
-                        Add(slot, pick.id, {
-                            bis = false, tie = ns.Ladders.IsTie(picks, pick) or nil,
-                            gap = Gap(pick.score, top.score), ratio = Ratio(pick.score, top.score),
-                        })
-                    end
+            for _, pick in ipairs(ns.Ladders.DisplayAlts(picks, withAlts)) do
+                listed[pick.id] = true
+                if pick.option then
+                    Add(slot, pick.id, { bis = false, option = pick.option })
+                elseif ns.Ladders.HasFlag(pick.entry, "e") then
+                    Add(slot, pick.id, { bis = false, placed = true })
+                elseif ns.Ladders.HasFlag(pick.entry, "x") then
+                    Add(slot, pick.id, { bis = false, level = true })
+                elseif ns.Ladders.HasFlag(pick.entry, "g") then
+                    Add(slot, pick.id, { bis = false, estimated = true })
+                else
+                    local reference = pick.pairedWith and picks.best[2] or top
+                    Add(slot, pick.id, {
+                        bis = false, tie = ns.Ladders.IsTie(picks, pick) or nil,
+                        gap = Gap(pick.score, reference.score), ratio = Ratio(pick.score, reference.score),
+                    })
                 end
             end
             if withAlts and picks.other[1] then
@@ -142,9 +237,12 @@ function Rows.Items(state, withAlts)
                     if ns.Ladders.HasFlag(pick.entry, "e") then
                         Add(slot, pick.id, { bis = false, other = true, placed = true })
                     elseif ns.Ladders.HasFlag(pick.entry, "x") then
-                        Add(slot, pick.id, { bis = false, other = true, tie = true, level = true })
-                    elseif ns.Ladders.HasFlag(pick.entry, "g") then
+                        Add(slot, pick.id, { bis = false, other = true, level = true })
+                    elseif ns.Ladders.HasFlag(pick.entry, "g") or pick.partialSet then
                         Add(slot, pick.id, { bis = false, other = true, estimated = true })
+                    elseif slots.measuredWeaponSet then
+                        -- The full enchanted sets decided the style. Individual slot scores use a different baseline.
+                        Add(slot, pick.id, { bis = false, other = true })
                     else
                         local score, reference, score10, reference10 = OtherScores(slots, slot, pick)
                         Add(slot, pick.id, {
@@ -165,17 +263,7 @@ function Rows.Items(state, withAlts)
         end
     end
 
-    if not state.source and not state.zone and not state.reputation then return all, facets end
-    local rows = {}
-    for _, row in ipairs(all) do
-        if row.kind == "item"
-            and (not state.source or row.source.category == state.source)
-            and (not state.zone or row.source.zone == state.zone)
-            and PassesReputation(row, state.reputation) then
-            rows[#rows + 1] = row
-        end
-    end
-    return rows, facets
+    return FilterItems(all, facets, state)
 end
 
 function Rows.Grouped(rows)
@@ -186,7 +274,7 @@ function Rows.Grouped(rows)
         if group ~= last then
             last = group
             grouped[#grouped + 1] = {
-                kind = "header", group = group, scored = not (enchant or consumable) or nil,
+                kind = "header", group = group, scored = not (enchant or consumable or row.gearIndex or row.gain) or nil,
                 text = (consumable and ns.Consumables.KeyName(group))
                     or (enchant and ns.Enchants.KeyName(group)) or ns.SlotName(group),
             }
@@ -214,7 +302,7 @@ local SHEET = {
 local function Ties(picks, rank)
     local pick, ties = picks.best[rank], {}
     local second = picks.best[2]
-    if rank == 1 and second and second.entry.score10 == pick.entry.score10 then return ties end
+    if rank == 1 and second and ns.Ladders.IsTie({ best = { pick } }, second) then return ties end
     for _, alt in ipairs(picks.alts) do
         if ns.Ladders.IsTie({ best = { pick } }, alt) then ties[#ties + 1] = alt.id end
     end
@@ -236,6 +324,10 @@ function Rows.Character(state)
         local cell = { kind = "cell", place = place[1], slot = slot, rank = rank, ties = {} }
         if pick then
             cell.id = pick.id
+            cell.option = pick.option
+            if pick.option or (rank == 1 and not (picks.best[2] and picks.best[2].option)) then
+                cell.tankOptions = picks.options
+            end
             cell.source = ns.Sources.Describe(pick.id)
             cell.reputation = ns.Reputation.Requirement(pick.id)
             cell.ties = Ties(picks, rank)

@@ -83,7 +83,7 @@ RAID_CRAFTS = _by_id({
            "Dark Iron Boots", "Dark Iron Bracers", "Dark Iron Destroyer", "Dark Iron Gauntlets", "Dark Iron Helm",
            "Dark Iron Leggings", "Dark Iron Reaver", "Fiery Chain Girdle", "Fiery Chain Shoulders",
            "Chromatic Gauntlets", "Corehound Belt", "Corehound Boots", "Lava Belt", "Molten Belt", "Molten Helm",
-           "Wild Growth Spaulders", "Core Marksman Rifle",
+           "Wild Growth Spaulders", "Core Marksman Rifle", "Sulfuron Hammer",  # eight Sulfuron Ingots
            "Flarecore Gloves", "Flarecore Leggings", "Flarecore Mantle", "Flarecore Robe", "Flarecore Wraps"),
     # Bloodvine, Souldarite, Primal Bat and Tiger Leather
     "zg": ("Bloodvine Boots", "Bloodvine Leggings", "Bloodvine Vest",

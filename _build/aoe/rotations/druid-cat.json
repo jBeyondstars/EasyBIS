@@ -1,0 +1,36 @@
+{
+  "type": "TypeAPL",
+  "priorityList": [
+    {"action": {"autocastOtherCooldowns": {}}},
+    {
+      "action": {
+        "multidot": {
+          "spellId": {"spellId": 9904},
+          "maxDots": 4,
+          "maxOverlap": {"const": {"val": "0s"}}
+        },
+        "condition": {
+          "cmp": {
+            "op": "OpGe",
+            "lhs": {"remainingTime": {}},
+            "rhs": {"const": {"val": "6s"}}
+          }
+        }
+      }
+    },
+    {
+      "action": {
+        "castSpell": {"spellId": {"spellId": 22829}},
+        "condition": {
+          "cmp": {
+            "op": "OpGe",
+            "lhs": {"currentComboPoints": {}},
+            "rhs": {"const": {"val": "4"}}
+          }
+        }
+      }
+    },
+    {"action": {"castSpell": {"spellId": {"spellId": 9830}}}},
+    {"action": {"castSpell": {"spellId": {"spellId": 9850}}}}
+  ]
+}

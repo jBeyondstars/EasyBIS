@@ -68,6 +68,7 @@ local DEFAULTS = {
     dungeonGrid = false,   -- the Dungeons tab: a line per piece and a column per dungeon, instead of a band per dungeon
     window = {},           -- where the window was left: point, relativePoint, x, y
     windowHeight = 0,      -- its height once resized (0: not resized)
+    gearLists = {},        -- named equipment lists, in tab order
     custom = {},           -- the items added by hand (Custom.lua)
 }
 
@@ -89,13 +90,27 @@ ns.db = Merge({}, DEFAULTS)
 -- lists are for when it is not the character's.
 ns.char = {}
 
+-- Saved lists use stable IDs. Hunter 3 is the archived melee Survival profile.
+function ns.ActiveSpec(class, spec)
+    if class == "HUNTER" and spec == 3 then return 4 end
+    return spec
+end
+
 local function InitDB()
     if type(EasyBISDB) ~= "table" then EasyBISDB = {} end
     -- version 1.1.0 kept one answer for both lists: it becomes the PvE list's
     if type(EasyBISDB.pvpRewards) == "boolean" then EasyBISDB.pvpRewards = { pve = EasyBISDB.pvpRewards } end
     ns.db = Merge(EasyBISDB, DEFAULTS)
+    -- Older characters saved "gearN" using the original array position.
+    local last = ns.db.lastGearId or 0
+    for i, gear in ipairs(ns.db.gearLists) do
+        gear.id = gear.id or i
+        last = math.max(last, gear.id)
+    end
+    ns.db.lastGearId = last
     if type(EasyBISCharDB) ~= "table" then EasyBISCharDB = {} end
     ns.char = EasyBISCharDB
+    ns.char.spec = ns.ActiveSpec(ns.char.class or ns.PlayerClass(), ns.char.spec)
 end
 
 function ns:GetOption(key)

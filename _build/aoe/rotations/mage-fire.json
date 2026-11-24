@@ -1,0 +1,17 @@
+{
+  "type": "TypeAPL",
+  "priorityList": [
+    {"action": {"castSpell": {"spellId": {"spellId": 11129}}}},
+    {"action": {"autocastOtherCooldowns": {}}},
+    {"action": {
+      "condition": {"and": {"vals": [
+        {"cmp": {"op": "OpGe", "lhs": {"remainingTime": {}}, "rhs": {"const": {"val": "5s"}}}},
+        {"cmp": {"op": "OpLe", "lhs": {"dotRemainingTime": {"spellId": {"spellId": 10216, "tag": 1}}}, "rhs": {"const": {"val": "2.5s"}}}}
+      ]}},
+      "castSpell": {"spellId": {"spellId": 10216}}
+    }},
+    {"action": {"castSpell": {"spellId": {"spellId": 13021}}}},
+    {"action": {"castSpell": {"spellId": {"spellId": 10161}}}},
+    {"action": {"castSpell": {"spellId": {"spellId": 10202}}}}
+  ]
+}

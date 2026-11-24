@@ -104,9 +104,9 @@ local function Create()
     button:SetScript("OnMouseUp", function() icon:SetPoint("TOPLEFT", 7, -5) end)
     button:SetScript("OnClick", function() ns.Browser.Toggle() end)
     button:SetScript("OnEnter", ShowTooltip)
-    button:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    button:SetScript("OnLeave", ns.Tooltip.HideOwned)
     button:SetScript("OnDragStart", function(self)
-        GameTooltip:Hide()
+        ns.Tooltip.HideOwned(self)
         self:SetScript("OnUpdate", OnDragUpdate)
     end)
     button:SetScript("OnDragStop", function(self)
@@ -143,13 +143,18 @@ end)
 -- The entry in the game's addon menu: same tooltip
 ---------------------------------------------------------------------------
 
+local compartmentTip
 function EasyBIS_OnCompartmentEnter(_, menuButton)
-    GameTooltip:SetOwner(menuButton, "ANCHOR_LEFT")
-    GameTooltip:SetText(L.ADDON_TITLE, 1, 0.82, 0)
-    GameTooltip:AddLine(L.TAGLINE, 1, 1, 1, true)
-    GameTooltip:Show()
+    if not compartmentTip then
+        compartmentTip = CreateFrame("GameTooltip", "EasyBISCompartmentTooltip", UIParent, "GameTooltipTemplate")
+        compartmentTip:SetFrameStrata("TOOLTIP")
+    end
+    compartmentTip:SetOwner(menuButton, "ANCHOR_LEFT")
+    compartmentTip:SetText(L.ADDON_TITLE, 1, 0.82, 0)
+    compartmentTip:AddLine(L.TAGLINE, 1, 1, 1, true)
+    compartmentTip:Show()
 end
 
-function EasyBIS_OnCompartmentLeave()
-    GameTooltip:Hide()
+function EasyBIS_OnCompartmentLeave(_, menuButton)
+    if compartmentTip and compartmentTip:GetOwner() == menuButton then compartmentTip:Hide() end
 end

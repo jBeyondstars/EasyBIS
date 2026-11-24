@@ -279,7 +279,7 @@ class AuctionTest(unittest.TestCase):
 
             -- another class: a scan in progress stops, the next one looks for that spec's gear
             click(p.scan); tick(); assert(p.scan.text == ns.L.AH_STOP)
-            stub.run(p.spec.button, "OnMouseDown", "LeftButton")
+            stub.openDropdown(p.spec.button)
             local fury = entry(stub.menu, "Warrior").items[2]
             assert(not fury.selected()); fury.pick(); assert(fury.selected())
             local class, spec, list = ns.Browser.Target()

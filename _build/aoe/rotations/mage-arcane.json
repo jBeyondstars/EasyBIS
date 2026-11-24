@@ -1,0 +1,12 @@
+{
+  "type": "TypeAPL",
+  "priorityList": [
+    {"action": {"autocastOtherCooldowns": {}}},
+    {"action": {"castSpell": {"spellId": {"spellId": 12043}}}},
+    {"action": {
+      "condition": {"auraIsActive": {"auraId": {"spellId": 12043}}},
+      "castSpell": {"spellId": {"spellId": 10216}}
+    }},
+    {"action": {"castSpell": {"spellId": {"spellId": 10202}}}}
+  ]
+}

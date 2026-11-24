@@ -37,7 +37,7 @@ Which dungeons to run for a spec's best picks: what the Dungeons tab draws (UI\D
 
 A run is a dungeon, or the wing of one that is run on its own. The alternatives come with the option
 "listAlts", as in the other tabs; they count in nothing: the numbers are the best picks'. The weapons of
-the style that lost (Ladders: other) and the items added by hand are not listed.
+the style that lost (Ladders: other) are omitted. Hand-added and named-list items are tracked goals.
 
 Nothing here says how many runs it takes: a drop rate is a boss's, and who wins the roll is nobody's to say.
 ]]
@@ -45,11 +45,11 @@ Nothing here says how many runs it takes: a drop rate is a boss's, and who wins 
 local Dungeons = {}
 ns.Dungeons = Dungeons
 
--- The game's character sheet without the shirt and the tabard: slot, rank (UI\Rows.lua).
+-- Slot order and number of positions on the character sheet.
 local SHEET = {
     { "head", 1 }, { "neck", 1 }, { "shoulder", 1 }, { "back", 1 }, { "chest", 1 }, { "wrist", 1 },
     { "hands", 1 }, { "waist", 1 }, { "legs", 1 }, { "feet", 1 },
-    { "finger", 1 }, { "finger", 2 }, { "trinket", 1 }, { "trinket", 2 },
+    { "finger", 2 }, { "trinket", 2 },
     { "main", 1 }, { "off", 1 }, { "ranged", 1 },
 }
 
@@ -115,11 +115,86 @@ local function Percent(drops)
     return (1 - miss) * 100
 end
 
+function Dungeons.Lists(state)
+    local lists = { { key = "pve", name = ns.L.LIST_RAID } }
+    if ns.Rows.AoeList(state.class, state.spec) then
+        lists[#lists + 1] = { key = "aoe", name = ns.L.LIST_AOE }
+    end
+    lists[#lists + 1] = { key = "pvp", name = ns.ListName("pvp") }
+    for _, gear in ipairs(ns.db.gearLists) do
+        if gear.class == state.class and gear.spec == state.spec then
+            lists[#lists + 1] = { key = "gear" .. gear.id, name = gear.name, gear = gear }
+        end
+    end
+    return lists
+end
+
+function Dungeons.Selection(state)
+    local saved = ns.char.dungeonLists
+    return saved and saved[state.class .. ":" .. state.spec] or { [state.list] = true }
+end
+
+function Dungeons.ToggleList(state, key)
+    local selection = Dungeons.Selection(state)
+    selection[key] = not selection[key] or nil
+    ns.char.dungeonLists = ns.char.dungeonLists or {}
+    ns.char.dungeonLists[state.class .. ":" .. state.spec] = selection
+end
+
+-- Combine goals by slot. Preserve two copies requested by one loadout, and promote
+-- an alternative to a goal when another selected list calls for that item.
+local function TrackedSlots(state, withAlts)
+    local slots, count = {}, 0
+    for _, slot in ipairs(ns.SLOTS) do slots[slot] = { best = {}, alts = {}, copies = {}, seenAlt = {} } end
+    local selection = Dungeons.Selection(state)
+    for _, list in ipairs(Dungeons.Lists(state)) do
+        if selection[list.key] then
+            local ladder, aoe
+            if list.key == "aoe" then aoe = ns.Rows.AoeList(state.class, state.spec)
+            elseif not list.gear then ladder = ns.Ladders.For(state.class, state.spec, list.key) end
+            if ladder or aoe or list.gear then count = count + 1 end
+            if count == 1 then slots.twoHand = ladder and ladder.twoHand else slots.twoHand = nil end
+            for _, slot in ipairs(ns.SLOTS) do
+                local merged, copies = slots[slot], {}
+                local function Add(id, best, option)
+                    local pick = { id = id, list = list.key, option = option }
+                    if best then
+                        copies[id] = (copies[id] or 0) + 1
+                        if copies[id] > (merged.copies[id] or 0) then
+                            pick.copy = copies[id]
+                            merged.copies[id] = copies[id]
+                            table.insert(merged.best, pick)
+                        end
+                    elseif not merged.seenAlt[id] then
+                        merged.seenAlt[id] = true
+                        table.insert(merged.alts, pick)
+                    end
+                end
+                if list.gear then
+                    for _, entry in ipairs(list.gear.slots[slot] or {}) do Add(entry.id, true) end
+                elseif aoe then
+                    for rank, sample in ns.Rows.AoePicks(aoe[slot] or {}, withAlts) do Add(sample[1], rank == 1) end
+                elseif ladder then
+                    local picks = ladder[slot]
+                    for _, pick in ipairs(picks.best) do Add(pick.id, true, pick.option) end
+                    for _, id in ipairs(ns.Custom.List(state.class, state.spec, list.key, slot)) do
+                        if not copies[id] then Add(id, true) end
+                    end
+                    if withAlts then
+                        for _, pick in ipairs(ns.Ladders.DisplayAlts(picks, true)) do Add(pick.id, false, pick.option) end
+                    end
+                end
+            end
+        end
+    end
+    return slots, count
+end
+
 function Dungeons.For(state)
     local model = { runs = {}, sheet = {}, rows = {}, elsewhere = {}, need = 0, got = 0, dungeons = 0 }
-    local slots = ns.Ladders.For(state.class, state.spec, state.list)
-    if not slots then return model end
-    local withAlts = ns:GetOption("listAlts")
+    local slots, tracked = TrackedSlots(state, ns:GetOption("listAlts"))
+    model.tracked = tracked
+    if tracked == 0 then return model end
     local byKey, counts = {}, {}
 
     local function Place(piece)
@@ -160,47 +235,52 @@ function Dungeons.For(state)
         end
     end
 
-    local function Piece(slot, rank, id, best)
-        return { id = id, slot = slot, rank = rank, best = best, owned = ns.Sources.Owned(id),
-            source = ns.Sources.Describe(id) }
+    local function Piece(slot, rank, pick, best)
+        return { id = pick.id, slot = slot, rank = rank, best = best, option = pick.option, list = pick.list,
+            owned = ns.Sources.Owned(pick.id, pick.copy),
+            source = ns.Items.Get(pick.id) and ns.Sources.Describe(pick.id) or ns.Sources.Manual() }
     end
 
-    for _, place in ipairs(SHEET) do
-        local slot, rank = place[1], place[2]
+    local function Slot(slot, capacity)
         local picks = slots[slot]
-        local pick = picks.best[rank]
-        if pick then
-            local piece = Piece(slot, rank, pick.id, true)
-            piece.first = rank == 1
-            Place(piece)
-            model.sheet[#model.sheet + 1] = piece
-            model.rows[#model.rows + 1] = piece
-            if not piece.runs then
-                local category = piece.source.category
-                counts[category] = (counts[category] or 0) + 1
-            elseif piece.owned then
-                model.got = model.got + 1
-            else
-                model.need = model.need + 1
-            end
-        else
-            model.sheet[#model.sheet + 1] = { slot = slot, rank = rank, twoHand = slot == "off" and slots.twoHand or nil }
-        end
-        -- after the slot's last best pick, its alternatives
-        if withAlts and rank == math.max(1, #picks.best) then
-            local covered = picks.best[1] ~= nil
-            for _, best in ipairs(picks.best) do
-                covered = covered and ns.Sources.Owned(best.id)
-            end
-            for index, alt in ipairs(picks.alts) do
-                local piece = Piece(slot, index, alt.id, false)
-                piece.moot = covered
-                piece.first = picks.best[1] == nil and index == 1
+        for rank = 1, math.max(capacity, #picks.best) do
+            local pick = picks.best[rank]
+            if pick then
+                local piece = Piece(slot, rank, pick, true)
+                piece.first = rank == 1
                 Place(piece)
+                model.sheet[#model.sheet + 1] = piece
                 model.rows[#model.rows + 1] = piece
+                if not piece.runs then
+                    local category = piece.source.category
+                    local entry = counts[category] or { category = category, count = 0, list = piece.list }
+                    entry.count = entry.count + 1
+                    counts[category] = entry
+                elseif piece.owned then
+                    model.got = model.got + 1
+                else
+                    model.need = model.need + 1
+                end
+            else
+                table.insert(model.sheet, { slot = slot, rank = rank, twoHand = slot == "off" and slots.twoHand or nil })
+            end
+        end
+        local covered = picks.best[1] ~= nil
+        for _, best in ipairs(picks.best) do covered = covered and ns.Sources.Owned(best.id, best.copy) end
+        local rank = 0
+        for _, alt in ipairs(picks.alts) do
+            if not picks.copies[alt.id] then
+                rank = rank + 1
+                local piece = Piece(slot, rank, alt, false)
+                piece.moot = covered and not alt.option
+                piece.first = not picks.best[1] and rank == 1
+                Place(piece)
+                table.insert(model.rows, piece)
             end
         end
     end
+
+    for _, place in ipairs(SHEET) do Slot(place[1], place[2]) end
 
     for _, run in ipairs(model.runs) do
         if run.need > 0 then model.dungeons = model.dungeons + 1 end
@@ -222,7 +302,7 @@ function Dungeons.For(state)
     end)
     for _, category in ipairs(ns.Sources.CATEGORIES) do
         if counts[category] then
-            model.elsewhere[#model.elsewhere + 1] = { category = category, count = counts[category] }
+            model.elsewhere[#model.elsewhere + 1] = counts[category]
         end
     end
     return model

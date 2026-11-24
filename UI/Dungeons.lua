@@ -64,7 +64,7 @@ local GRID_HEAD = 58          -- the columns' names, on two lines where a column
 local GRID_NAME = 250         -- the piece's column
 local GRID_ROW = 28
 local GRID_ICON = 22
-local COLUMN_MIN, COLUMN_MAX, COLUMN_GAP = 30, 66, 3
+local COLUMN_MAX, COLUMN_GAP = 66, 3
 local ELSE_ROOM = 150         -- what the last column keeps at least
 local CROWDED = 8             -- runs: past that many, the names and the last column give up some room
 local DIM = 0.45              -- a piece the player has, an alternative that has had its day, a line of no dungeon
@@ -196,7 +196,7 @@ local function PieceClick(piece)
     if not piece then return end
     if piece.id and Browser.ModifiedClick(piece.id) then return end
     Widgets.Click()
-    Browser.ShowSlot(piece.slot)
+    Browser.ShowSlot(piece.slot, piece.list)
 end
 
 ---------------------------------------------------------------------------
@@ -246,16 +246,16 @@ local function CreateTile(parent)
         if piece and piece.order then Light(piece.order[1], piece.slot) end
         PieceTooltip(self, piece)
     end)
-    tile:SetScript("OnLeave", function()
+    tile:SetScript("OnLeave", function(self)
         Light(nil)
-        GameTooltip:Hide()
+        ns.Tooltip.HideOwned(self)
     end)
     tile:SetScript("OnClick", function(self) PieceClick(self.piece) end)
     return tile
 end
 
 local function LayoutStrip(model)
-    local x = 2
+    local x, y = 2, 0
     for index, cell in ipairs(model.sheet) do
         local tile = view.tiles[index]
         if not tile then
@@ -265,6 +265,7 @@ local function LayoutStrip(model)
         if index > 1 then
             x = x + TILE + ((cell.rank == 1 and (cell.slot == "finger" or cell.slot == "main")) and TILE_BREAK or TILE_GAP)
         end
+        if x + TILE > WIDTH then x, y = 2, y + STRIP end
         tile.piece = cell
         FillIcon(tile.icon, cell)
         local key = cell.order and cell.order[1]
@@ -285,10 +286,11 @@ local function LayoutStrip(model)
         tile:SetAlpha(tile.rest)
         tile.glow:Hide()
         tile:ClearAllPoints()
-        tile:SetPoint("TOPLEFT", view.runsPane, "TOPLEFT", x, -4)
+        tile:SetPoint("TOPLEFT", view.runsPane, "TOPLEFT", x, -4 - y)
         tile:Show()
     end
     for index = #model.sheet + 1, #view.tiles do view.tiles[index]:Hide() end
+    return y + STRIP
 end
 
 ---------------------------------------------------------------------------
@@ -315,9 +317,9 @@ local function CreateChip(lane)
         Light(self.run.key, self.entry.piece.slot)
         PieceTooltip(self, self.entry.piece)
     end)
-    chip:SetScript("OnLeave", function()
+    chip:SetScript("OnLeave", function(self)
         Light(nil)
-        GameTooltip:Hide()
+        ns.Tooltip.HideOwned(self)
     end)
     chip:SetScript("OnClick", function(self) PieceClick(self.entry.piece) end)
     return chip
@@ -332,10 +334,11 @@ local function FillChip(chip, run, entry)
     chip.icon.border:ClearAllPoints()
     chip.icon.border:SetPoint("LEFT", chip, "LEFT", 2 + inset, 0)
     chip.name:SetText(FillIcon(chip.icon, piece, entry.quest ~= nil))
-    chip.tag:SetShown(not piece.best)
+    chip.tag:SetText(piece.option and piece.option.label or L.RANK_ALT)
+    chip.tag:SetShown(piece.option ~= nil or not piece.best)
     chip.name:ClearAllPoints()
     chip.name:SetPoint("TOPLEFT", chip, "TOPLEFT", ICON + 10, -3)
-    if piece.best then
+    if piece.best and not piece.option then
         chip.name:SetPoint("RIGHT", chip, "RIGHT", -4, 0)
     else
         chip.name:SetPoint("RIGHT", chip.tag, "LEFT", -6, 0)
@@ -437,7 +440,7 @@ local function CreateElsewhere(parent)
     button.text:SetPoint("LEFT", 4, 0)
     button:SetScript("OnClick", function(self)
         Widgets.Click()
-        Browser.ShowSource(self.category)
+        Browser.ShowSource(self.category, self.list)
     end)
     button:SetScript("OnEnter", function(self)
         Browser.PlaceTooltip(self)
@@ -445,7 +448,7 @@ local function CreateElsewhere(parent)
         GameTooltip:AddLine(L.DUN_TIP_ELSEWHERE, MUTED[1], MUTED[2], MUTED[3], true)
         Browser.ShowTooltip()
     end)
-    button:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    button:SetScript("OnLeave", ns.Tooltip.HideOwned)
     return button
 end
 
@@ -467,7 +470,7 @@ local function LayoutElsewhere(model, offset)
             button = CreateElsewhere(view.runsPane)
             view.elsewhere[index] = button
         end
-        button.category = entry.category
+        button.category, button.list = entry.category, entry.list
         button.text:SetText(ns.Sources.IconText(entry.category) .. " " .. WHITE .. entry.count .. "|r "
             .. GREY .. ns.Sources.CategoryName(entry.category) .. "|r")
         local width = math.ceil(button.text:GetStringWidth()) + 10
@@ -483,8 +486,10 @@ end
 
 -- The set, the runs, the rest. Returns the height of it all.
 local function LayoutRuns(model)
-    LayoutStrip(model)
-    local offset = STRIP
+    local offset = LayoutStrip(model)
+    view.strip:ClearAllPoints()
+    view.strip:SetPoint("TOPLEFT", 0, -(offset - 6))
+    view.strip:SetPoint("TOPRIGHT", 0, -(offset - 6))
     for index, run in ipairs(model.runs) do
         local lane = view.lanes[index]
         if not lane then
@@ -500,7 +505,7 @@ local function LayoutRuns(model)
     for index = #model.runs + 1, #view.lanes do view.lanes[index]:Hide() end
     -- no run at all: the sentence that says so takes the room of two
     local none = model.runs[1] == nil
-    view.empty:SetShown(none)
+    view.empty:SetShown(none and model.tracked > 0)
     if none then
         view.empty:ClearAllPoints()
         view.empty:SetPoint("TOP", view.runsPane, "TOP", 0, -(offset + 34))
@@ -521,7 +526,7 @@ local function Columns(count)
     local name, rest = GRID_NAME, ELSE_ROOM
     if count > CROWDED then name, rest = GRID_NAME - 40, ELSE_ROOM - 30 end
     local width = math.floor((WIDTH - name - rest) / math.max(1, count)) - COLUMN_GAP
-    return math.max(COLUMN_MIN, math.min(COLUMN_MAX, width)), name
+    return math.max(1, math.min(COLUMN_MAX, width)), name
 end
 
 local function ColumnLeft(index, width, name)
@@ -552,7 +557,7 @@ local function CreateHeader(parent)
         if self.run.noWing then GameTooltip:AddLine(L.DUN_NO_WING, MUTED[1], MUTED[2], MUTED[3], true) end
         Browser.ShowTooltip()
     end)
-    header:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    header:SetScript("OnLeave", ns.Tooltip.HideOwned)
     return header
 end
 
@@ -588,7 +593,7 @@ local function CreateRow(parent)
     row.where:SetTextColor(MUTED[1], MUTED[2], MUTED[3])
     row.cells = {}
     row:SetScript("OnEnter", function(self) PieceTooltip(self, self.piece) end)
-    row:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    row:SetScript("OnLeave", ns.Tooltip.HideOwned)
     row:SetScript("OnClick", function(self) PieceClick(self.piece) end)
     return row
 end
@@ -638,6 +643,8 @@ local function FillRow(row, piece, model, width, name)
             cell.back:Show()
             cell.check:SetShown(piece.owned == true)
             cell.text:SetShown(not piece.owned)
+            cell.text:SetWidth(width)
+            cell.text:SetWordWrap(false)
             cell.text:SetText(CellText(entry))
             cell.run = run
         end
@@ -719,6 +726,8 @@ end
 
 -- "8 best picks to farm  ·  6 dungeons  ·  2 already yours"
 local function Summary(model)
+    if model.tracked == 0 then return L.DUN_SELECT_LIST end
+    if #model.rows == 0 then return L.NO_ROWS end
     if model.need == 0 and model.got == 0 then return "" end
     local separator = GREY .. "  ·  |r"
     local got = model.got > 0 and (GREY .. L.DUN_GOT:format(model.got) .. "|r") or nil
@@ -757,6 +766,28 @@ function DungeonView.Create(parent)
         function() return ns:GetOption("dungeonGrid") and "grid" or "runs" end,
         function(value) ns:SetOption("dungeonGrid", value == "grid") end)
     view.mode:SetPoint("RIGHT", view, "TOPRIGHT", -2, -HEAD / 2 + 2)
+
+    view.tracked = Widgets.Dropdown(view, L.DUN_TRACKED, 160)
+    ns.Menu.Attach(view.tracked.button, function()
+        local state = view.state
+        local entries = {}
+        for _, list in ipairs(Dungeons.Lists(state)) do
+            local key = list.key
+            entries[#entries + 1] = { kind = "checkbox", text = list.name,
+                selected = function() return Dungeons.Selection(state)[key] == true end,
+                pick = function()
+                    Dungeons.ToggleList(state, key)
+                    DungeonView.Update(state)
+                end }
+        end
+        return entries
+    end, true)
+    view.tracked:SetPoint("BOTTOMRIGHT", view.mode, "BOTTOMLEFT", -12, 0)
+    view.tracked.label:ClearAllPoints()
+    view.tracked.label:SetPoint("RIGHT", view.tracked.button, "LEFT", -8, 0)
+    view.summary:SetPoint("RIGHT", view.tracked.label, "LEFT", -12, 0)
+    view.summary:SetJustifyH("LEFT")
+    view.summary:SetWordWrap(false)
 
     -- the columns' names stay in place while the lines scroll
     view.gridHead = CreateFrame("Frame", nil, view)
@@ -807,11 +838,19 @@ function DungeonView.Update(state)
 
     local grid = ns:GetOption("dungeonGrid")
     view.grid = grid
+    local caption = L.DUN_LIST_COUNT:format(model.tracked)
+    if model.tracked == 1 then
+        local selection = Dungeons.Selection(state)
+        for _, list in ipairs(Dungeons.Lists(state)) do
+            if selection[list.key] then caption = list.name; break end
+        end
+    end
+    view.tracked:Set(caption, model.tracked > 0)
     view.summary:SetText(Summary(model))
     view.mode:Refresh()
-    view.gridHead:SetShown(grid)
-    view.runsPane:SetShown(not grid)
-    view.gridPane:SetShown(grid)
+    view.gridHead:SetShown(grid and model.tracked > 0)
+    view.runsPane:SetShown(not grid and model.tracked > 0)
+    view.gridPane:SetShown(grid and model.tracked > 0)
     view.scroll:ClearAllPoints()
     view.scroll:SetPoint("TOPLEFT", view, "TOPLEFT", 0, -(HEAD + (grid and GRID_HEAD or 0)))
     view.scroll:SetPoint("BOTTOMRIGHT", view, "BOTTOMRIGHT", -BAR_ROOM, 0)

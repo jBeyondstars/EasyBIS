@@ -1,0 +1,25 @@
+{
+  "type": "TypeAPL",
+  "priorityList": [
+    {"action": {"condition": {"auraIsInactive": {"auraId": {"spellId": 14322}}}, "castSpell": {"spellId": {"spellId": 14322}}}},
+    {"action": {"autocastOtherCooldowns": {}}},
+    {"action": {
+      "condition": {"and": {"vals": [
+        {"cmp": {"lhs": {"numberTargets": {}}, "op": "OpGe", "rhs": {"const": {"val": "2"}}}},
+        {"cmp": {"lhs": {"timeUntilTargetDies": {}}, "op": "OpGe", "rhs": {"const": {"val": "9s"}}}}
+      ]}},
+      "castSpell": {"spellId": {"spellId": 2643}}
+    }},
+    {"action": {"condition": {"cmp": {"lhs": {"timeUntilTargetDies": {}}, "op": "OpGe", "rhs": {"const": {"val": "6s"}}}}, "castSpell": {"spellId": {"spellId": 14295}}}},
+    {"action": {
+      "condition": {"and": {"vals": [
+        {"cmp": {"lhs": {"numberTargets": {}}, "op": "OpEq", "rhs": {"const": {"val": "1"}}}},
+        {"not": {"val": {"dotIsActive": {"spellId": {"spellId": 13555}}}}},
+        {"cmp": {"lhs": {"timeUntilTargetDies": {}}, "op": "OpGe", "rhs": {"const": {"val": "8s"}}}}
+      ]}},
+      "castSpell": {"spellId": {"spellId": 13555}}
+    }},
+    {"action": {"castSpell": {"spellId": {"spellId": 2643}}}},
+    {"action": {"castSpell": {"spellId": {"spellId": 14287}}}}
+  ]
+}

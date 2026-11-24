@@ -23,6 +23,9 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 import corrections
+import aoe_eligibility
+import aoe_jewelry
+import aoe_ranged
 import runs
 import simulated
 import specs
@@ -133,12 +136,19 @@ def load(data_dir, corrected: bool = True) -> Database:
         corrections.apply(db, corrections.load())
         corrections.include(db)
         corrections.align(db, corrections.load_game())
+        corrections.complete_shields(db)
+        corrections.complete_weapon_hits(db)
         corrections.fill(db, corrections.load_sources())
         corrections.confirm(db, corrections.load_drops())
         corrections.price(db, corrections.load_costs())
         corrections.assign_sides(db)
+        corrections.pair_basin_mail_shoulders(db)
+        corrections.assign_reward_sides(db)
         db.quest_places = runs.quest_places(db, runs.load_quests())
         db.specs = specs.apply(db)
+        aoe_ranged.include_relics(db)
+        aoe_jewelry.include_trinkets(db)
+        aoe_eligibility.include_darkmantle(db)
         db.simulated = simulated.load() if simulated.IN_USE else simulated.Reading()
     return db
 

@@ -19,9 +19,9 @@ The Easy BIS window: the best gear of a spec, slot by slot.
            The Character tab shows the best pick of every slot as a character sheet instead
            (UI\Character.lua), the Reputations tab what the spec needs of each faction
            (UI\Reputations.lua): both follow the spec, the list and the phase, and have no other filter.
-  bottom   Items / Enchants / Character / Consumables / Reputations, the data's credit, "Add an item"
-           (UI\AddItem.lua), the alternatives switch and the options menu. The grip in the corner changes the
-           window's height.
+  bottom   Items / Enchants / Character / Consumables / Reputations, "Add an item" (UI\AddItem.lua),
+           the alternatives switch and the options menu. The data credit sits below this row. The grip
+           in the corner changes the window's height.
   side     two tabs down the right edge, as the game's professions have them: the lists (all of the above),
            and the dungeons, which dungeons hold the spec's best picks (UI\Dungeons.lua). The dungeons take
            the whole middle and follow the spec, the list, the phase and the alternatives switch; the tabs
@@ -66,6 +66,7 @@ local NOTICE = "NOTICE_ITEMS"
 local NOTICE_HEIGHT, NOTICE_GAP = 24, 4   -- its band, and the room between it and the list
 local NOTICE_MARK = "|TInterface\\DialogFrame\\UI-Dialog-Icon-AlertNew:16:16:0:0|t "
 local FILTERS, INSET_BOTTOM = 70, 58   -- what the filters and the footer take of the window's height
+local FOOTER_BUTTON_BOTTOM = 24   -- room for the credit below and the corner badge above
 local NOTICE_CLOSE = "Interface\\Buttons\\UI-StopButton"   -- the cross that puts the notice away
 local noticeShown = NOTICE ~= nil   -- false once its cross is clicked, until the window is opened again
 
@@ -137,10 +138,12 @@ end
 -- "BIS", "Tied", "-12%", "Added", "Estimated" (placed, no score of its own); an enchant has no score, so its alternatives read "Alt". A consumable is
 -- the best of its category and nothing more, so it never reads "BIS".
 local function RankText(row)
+    if row.option then return GOLD_TEXT .. row.option.label .. "|r" end
     if row.unranked then return GREY_TEXT .. L.RANK_UNRANKED .. "|r" end
     if row.kind == "consumable" and row.bis then return GOLD_TEXT .. L.RANK_BEST .. "|r" end
     if row.custom then return ns.COLOR .. L.RANK_CUSTOM .. "|r" end
     if row.placed then return GREY_TEXT .. L.RANK_PLACED .. "|r" end
+    if row.level then return GREY_TEXT .. L.RANK_SITUATIONAL .. "|r" end
     if row.estimated then return "" end   -- its score is no full measure: no figure is shown for it
     if row.bis then return GOLD_TEXT .. L.RANK_BIS .. "|r" end
     if row.tie then return GOLD_TEXT .. L.RANK_TIE .. "|r" end
@@ -186,6 +189,26 @@ function Browser.Target()
     return SavedChoice()
 end
 
+function Browser.AddTarget()
+    local class, spec, list = Browser.Target()
+    if state.page == "lists" and state.tab == "items" and list == "pve"
+        and ns.Custom.GearList(class, spec, ns.char.gearList) then
+        return class, spec, ns.char.gearList
+    end
+    return class, spec, list
+end
+
+-- The Items preview shares the PvE choice with the other tabs, which use the full gear set.
+local function ItemList(list)
+    local _, _, target = Browser.AddTarget()
+    if target ~= list then return target end
+    if state.page == "lists" and state.tab == "items" and list == "pve" and ns.char.aoe == true
+        and ns.Rows.AoeList(state.class, state.spec) then
+        return "aoe"
+    end
+    return list
+end
+
 ---------------------------------------------------------------------------
 -- Menus: a list of choices, some with children. Without the game's menu
 -- API, each click moves to the next choice.
@@ -198,28 +221,23 @@ local function Flatten(choices, into)
     return into
 end
 
-local function FillChoices(parent, list, current, choose, close)
+local function ChoiceEntries(list, current, choose)
+    local entries = {}
     for _, choice in ipairs(list) do
         if choice.children then
-            FillChoices(parent:CreateButton(choice.text), choice.children, current, choose, close)
+            entries[#entries + 1] = { text = choice.text, items = ChoiceEntries(choice.children, current, choose) }
         else
-            parent:CreateRadio(choice.text,
-                function() return current() == choice.value end,
-                function()
-                    choose(choice.value)
-                    return close
-                end)
+            entries[#entries + 1] = { kind = "radio", text = choice.text,
+                selected = function() return current() == choice.value end,
+                pick = function() choose(choice.value) end }
         end
     end
+    return entries
 end
 
 local function SetupChoices(button, choices, current, choose)
-    if button.SetupMenu then
-        local close = MenuResponse and MenuResponse.Close
-        button:SetupMenu(function(_, root)
-            if root.SetScrollMode then root:SetScrollMode(420) end
-            FillChoices(root, choices(), current, choose, close)
-        end)
+    if MenuUtil then
+        ns.Menu.Attach(button, function() return ChoiceEntries(choices(), current, choose) end)
         return
     end
     button:SetScript("OnClick", function()
@@ -276,8 +294,11 @@ end
 
 local function SlotChoices()
     local choices = { { text = L.ALL_SLOTS, value = ALL } }
+    local measured = ItemList(state.list) == "aoe" and (ns.Rows.AoeList(state.class, state.spec) or {})
     for _, slot in ipairs(ns.SLOTS) do
-        choices[#choices + 1] = { text = ns.SlotName(slot), value = slot }
+        if not measured or measured[slot] or state.slot == slot then
+            choices[#choices + 1] = { text = ns.SlotName(slot), value = slot }
+        end
     end
     return choices
 end
@@ -459,7 +480,7 @@ local function CreateNotice(parent, text)
         GameTooltip:SetText(L.NOTICE_HIDE, 1, 1, 1, 1, true)
         GameTooltip:Show()
     end)
-    notice.close:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    notice.close:SetScript("OnLeave", ns.Tooltip.HideOwned)
     return notice
 end
 
@@ -480,23 +501,30 @@ end
 -- show it only while Shift is held, as the game does without that option.
 local COMPARISONS = { "ShoppingTooltip1", "ShoppingTooltip2" }
 local tipOwner   -- the part of the window the tooltip was last set for
+local shiftWatch = CreateFrame("Frame")
+shiftWatch:Hide()
 
 local function OursShown()
-    return tipOwner ~= nil and GameTooltip:IsShown() and GameTooltip:GetOwner() == tipOwner
+    return tipOwner ~= nil and not (GameTooltip.IsForbidden and GameTooltip:IsForbidden())
+        and GameTooltip:IsShown() and GameTooltip:GetOwner() == tipOwner
 end
 
 local function ShiftDown() return IsShiftKeyDown ~= nil and IsShiftKeyDown() == true end
 
+local function IsOurComparison(tip)
+    return tip and not (tip.IsForbidden and tip:IsForbidden()) and tip:IsShown() and tip:GetOwner() == GameTooltip
+end
+
 local function HideComparison()
     for _, name in ipairs(COMPARISONS) do
         local tip = _G[name]
-        if tip and tip:IsShown() then tip:Hide() end
+        if IsOurComparison(tip) then tip:Hide() end
     end
 end
 
 local function ComparisonShown()
     local tip = _G[COMPARISONS[1]]
-    return tip ~= nil and tip:IsShown() == true
+    return IsOurComparison(tip)
 end
 
 -- Shift pressed or let go over a tooltip of the window: the comparison follows.
@@ -509,12 +537,18 @@ local function FollowShift()
     end
 end
 
--- the game may set the comparison again while its tooltip refreshes
-GameTooltip:HookScript("OnUpdate", function()
-    if OursShown() and not ShiftDown() then HideComparison() end
+-- Blizzard can refresh the comparison while the row is hovered. Watch only
+-- during that hover, without installing an update script on the shared tooltip.
+shiftWatch:SetScript("OnUpdate", function(self)
+    if not OursShown() then
+        tipOwner = nil
+        self:Hide()
+    elseif not ShiftDown() then
+        HideComparison()
+    end
 end)
-local shiftWatch = CreateFrame("Frame")
-shiftWatch:RegisterEvent("MODIFIER_STATE_CHANGED")
+shiftWatch:SetScript("OnShow", function(self) self:RegisterEvent("MODIFIER_STATE_CHANGED") end)
+shiftWatch:SetScript("OnHide", function(self) self:UnregisterEvent("MODIFIER_STATE_CHANGED") end)
 shiftWatch:SetScript("OnEvent", FollowShift)
 
 -- The tooltip opens beside the window, level with its top, on the side that has room: it stays put
@@ -538,12 +572,29 @@ end
 local function ShowTooltip(owner)
     if owner then tipOwner = owner end
     GameTooltip:Show()
+    if not OursShown() then return end
+    shiftWatch:Show()
     if ShiftDown() then FollowShift() else HideComparison() end
+end
+
+local function AoeItemName(id)
+    local name = ns.Items.Name(id)
+    local references = ns.data.aoe.referenceNames
+    return (name == "#" .. id and references and references[id]) or name
+end
+
+local function WeaponPair(main, off)
+    local name = AoeItemName(main)
+    return off ~= 0 and (name .. " + " .. AoeItemName(off)) or name
 end
 
 local function ItemTooltip(owner, data, side)
     PlaceTooltip(owner, side)
-    pcall(GameTooltip.SetItemByID, GameTooltip, data.id)
+    if data.enchantId and data.enchantId > 0 then
+        pcall(GameTooltip.SetHyperlink, GameTooltip, ("item:%d:%d"):format(data.id, data.enchantId))
+    else
+        pcall(GameTooltip.SetItemByID, GameTooltip, data.id)
+    end
     if GameTooltip:NumLines() == 0 then GameTooltip:SetText(ns.Items.Name(data.id), 1, 1, 1) end
     -- what a row shortens or leaves to a picture, in full
     local source = data.source
@@ -559,7 +610,22 @@ local function ItemTooltip(owner, data, side)
     if remark then GameTooltip:AddLine(remark, MUTED[1], MUTED[2], MUTED[3], true) end
     local unsure = ns.Reputation.UnknownRemark(data.reputation)
     if unsure then GameTooltip:AddLine(unsure, MUTED[1], MUTED[2], MUTED[3], true) end
-    if data.custom then
+    if data.gain then
+        GameTooltip:AddLine(RankText(data) .. " AoE/Dung", 1, 1, 1)
+        if data.referenceWeapons then
+            local main, off = data.id, data.weaponPartner
+            if data.slot == "off" then main, off = off, main end
+            GameTooltip:AddLine(L.AOE_WEAPONS:format(WeaponPair(main, off)), MUTED[1], MUTED[2], MUTED[3], true)
+            GameTooltip:AddLine(L.AOE_REFERENCE:format(WeaponPair(data.referenceWeapons[1], data.referenceWeapons[2])),
+                MUTED[1], MUTED[2], MUTED[3], true)
+        elseif data.comparisonItem then
+            GameTooltip:AddLine(L.AOE_REFERENCE:format(AoeItemName(data.comparisonItem)), MUTED[1], MUTED[2], MUTED[3], true)
+        elseif data.pairedItem then
+            GameTooltip:AddLine(L.AOE_FIXED_PAIR:format(AoeItemName(data.pairedItem)), MUTED[1], MUTED[2], MUTED[3], true)
+        end
+    elseif data.option then
+        GameTooltip:AddLine(ns.Ladders.OptionNote(data.option), 1, 0.82, 0, true)
+    elseif data.custom then
         GameTooltip:AddLine(L.TIP_CUSTOM, MUTED[1], MUTED[2], MUTED[3], true)
     elseif data.placed then
         GameTooltip:AddLine(L.TIP_PLACED, MUTED[1], MUTED[2], MUTED[3], true)
@@ -596,8 +662,19 @@ end
 -- What a score is in that list, a line each: measured by the simulator for the lists the data says so of
 -- (Ladders.Measured), with the fight simulated; the weighted stats for the others.
 function Browser.ScoreInfo(class, spec, list)
+    if list == "aoe" then
+        local aoe = ns.data.aoe
+        local route = aoe.route
+        local lastPack = route.packs[3].health
+        local group = L.AOE_ROUTE_GROUP:format(route.packs[1].health[1], lastPack[#lastPack], route.partyDps)
+        if route.manaBetweenPacks == "full" then group = group .. " " .. L.AOE_ROUTE_MANA end
+        return { L.AOE_SCORE, L.AOE_FIGHT:format(aoe.targets, aoe.level, aoe.seconds), L.AOE_ROUTE_FIGHT, group }
+    end
     if ns.Ladders.Measured(class, spec, list) then
         return { L.SCORE_INFO_SIM, L.SCORE_INFO_FIGHT, L.SCORE_INFO_GAP_SIM }
+    end
+    if class == "HUNTER" and ns.Index.SpecName(class, spec) == "Survival (Ranged)" then
+        return { L.SCORE_INFO_SURVIVAL_RANGED, L.SCORE_INFO_GAP }
     end
     return { L.SCORE_INFO_WEIGHTS, L.SCORE_INFO_GAP }
 end
@@ -605,7 +682,7 @@ end
 local function ScoreTooltip(owner)
     PlaceTooltip(owner)
     GameTooltip:SetText(L.SCORE_INFO_TITLE, 1, 0.82, 0)
-    for index, line in ipairs(Browser.ScoreInfo(state.class, state.spec, state.list)) do
+    for index, line in ipairs(Browser.ScoreInfo(state.class, state.spec, ItemList(state.list))) do
         if index > 1 then GameTooltip:AddLine(" ") end
         if index == 1 then
             GameTooltip:AddLine(line, 1, 1, 1, true)
@@ -724,7 +801,7 @@ local function CreateRow(parent)
     end)
     row.why:SetScript("OnLeave", function(self)
         self.icon:SetAlpha(0.75)
-        GameTooltip:Hide()
+        ns.Tooltip.HideOwned(self)
     end)
     row.why:Hide()
 
@@ -765,7 +842,7 @@ local function CreateRow(parent)
     end)
     row.info:SetScript("OnLeave", function(self)
         self.icon:SetAlpha(0.75)
-        GameTooltip:Hide()
+        ns.Tooltip.HideOwned(self)
     end)
     row.info:Hide()
 
@@ -793,18 +870,18 @@ local function CreateRow(parent)
         local data = self.row.data
         if not data or not data.custom then return end
         Widgets.Click()
-        ns.Custom.Remove(state.class, state.spec, state.list, data.id)
+        ns.Custom.Remove(state.class, state.spec, ItemList(state.list), data.id, data.slot, data.gearIndex)
     end)
     row.remove:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
         GameTooltip:SetText(L.TIP_REMOVE)
         GameTooltip:Show()
     end)
-    row.remove:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    row.remove:SetScript("OnLeave", ns.Tooltip.HideOwned)
     row.remove:Hide()
 
     row:SetScript("OnEnter", RowTooltip)
-    row:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    row:SetScript("OnLeave", ns.Tooltip.HideOwned)
     row:SetScript("OnClick", RowClick)
     return row
 end
@@ -983,7 +1060,11 @@ local function FillRow(row, data)
         row.icon:SetTexture(texture or (GetIcon and GetIcon(data.id)) or UNKNOWN_ICON)
         row.name:SetText(QualityHex(quality) .. (name or ns.Items.Name(data.id)) .. "|r"
             .. ns.Reputation.UnknownMark(data.reputation))
-        row.sub:SetText(TypeLine(data.slot, subType, equipLoc, classID, subclassID, compact))
+        if data.weaponPartner and data.weaponPartner > 0 then
+            row.sub:SetText(L.AOE_WITH:format(AoeItemName(data.weaponPartner)))
+        else
+            row.sub:SetText(TypeLine(data.slot, subType, equipLoc, classID, subclassID, compact))
+        end
         local source = data.source
         local category, line, mark = ns.Sources.CategoryName(source.category), ns.Sources.Line(source), Mark(source.origin)
         SetIcon(row.sourceIcon, ns.Sources.Icon(source.category, source.profession))
@@ -1063,55 +1144,48 @@ end
 -- number of alternatives a slot lists, and the faction the lists are for.
 local OPTION_GROUPS = {
     { "tooltip", "onlyMyClass", "alternatives", "repTooltip" },
-    { "unsourced", "seenOnly" },
+    { "unsourced" },
     { "compact", "repCompact", "minimap", "auctionTab" },
 }
 
-local function FillOptionsMenu(_, root)
-    local refresh = MenuResponse and MenuResponse.Refresh
-    root:CreateTitle(L.OPTIONS)
+local function OptionEntries()
+    local entries = { { kind = "title", text = L.OPTIONS } }
+    local function Submenu(text)
+        local items = {}
+        entries[#entries + 1] = { kind = "button", text = text, items = items }
+        return items
+    end
     for index, group in ipairs(OPTION_GROUPS) do
-        if index > 1 and root.CreateDivider then root:CreateDivider() end
+        if index > 1 then entries[#entries + 1] = { kind = "divider" } end
         for _, option in ipairs(group) do
-            root:CreateCheckbox(L["OPT_" .. option],
-                function() return ns:GetOption(option) end,
-                function()
-                    ns:SetOption(option, not ns:GetOption(option))
-                    return refresh
-                end)
+            entries[#entries + 1] = { kind = "checkbox", text = L["OPT_" .. option],
+                selected = function() return ns:GetOption(option) end,
+                pick = function() ns:SetOption(option, not ns:GetOption(option)) end }
         end
         if index == 2 then
-            local rewards = root:CreateButton(L.OPT_PVP_REWARDS)
+            local rewards = Submenu(L.OPT_PVP_REWARDS)
             for _, list in ipairs(ns.LISTS) do
-                rewards:CreateCheckbox(L.OPT_PVP_LIST:format(ns.ListName(list)),
-                    function() return ns:PvPRewards(list) end,
-                    function()
-                        ns:SetPvPRewards(list, not ns:PvPRewards(list))
-                        return refresh
-                    end)
+                rewards[#rewards + 1] = { kind = "checkbox", text = L.OPT_PVP_LIST:format(ns.ListName(list)),
+                    selected = function() return ns:PvPRewards(list) end,
+                    pick = function() ns:SetPvPRewards(list, not ns:PvPRewards(list)) end }
             end
-            local counts = root:CreateButton(L.OPT_ALT_COUNT)
+            local counts = Submenu(L.OPT_ALT_COUNT)
             for count = ns.ALTERNATIVES, ns.MaxAlternatives() do
-                counts:CreateRadio(tostring(count),
-                    function() return ns.Alternatives() == count end,
-                    function()
-                        ns:SetAlternatives(count)
-                        return refresh
-                    end)
+                counts[#counts + 1] = { kind = "radio", text = tostring(count),
+                    selected = function() return ns.Alternatives() == count end,
+                    pick = function() ns:SetAlternatives(count) end }
             end
             -- the faction the lists are for: the character's, or the other one to see what it would wear
-            local sides = root:CreateButton(L.OPT_SIDE)
+            local sides = Submenu(L.OPT_SIDE)
             for _, side in ipairs({ "a", "h" }) do
                 local name = L["SIDE_" .. side]
-                sides:CreateRadio(side == ns.CharacterSide() and L.OPT_SIDE_OWN:format(name) or name,
-                    function() return ns.PlayerSide() == side end,
-                    function()
-                        ns:SetSide(side)
-                        return refresh
-                    end)
+                sides[#sides + 1] = { kind = "radio", text = side == ns.CharacterSide() and L.OPT_SIDE_OWN:format(name) or name,
+                    selected = function() return ns.PlayerSide() == side end,
+                    pick = function() ns:SetSide(side) end }
             end
         end
     end
+    return entries
 end
 
 -- A new spec or list, picked in the window or in the auction house's tab.
@@ -1141,20 +1215,137 @@ function Browser.SpecFilter(parent)
 end
 
 function Browser.ListFilter(parent)
-    local filter = Widgets.Segmented(parent,
-        { { value = "pve", text = L.LIST_PVE }, { value = "pvp", text = L.LIST_PVP } },
-        function() return select(3, Browser.Target()) end,
+    local choices = { { value = "pve", text = L.TAB_PVE }, { value = "pvp", text = L.TAB_PVP } }
+    local filter = Widgets.Segmented(parent, choices,
+        function()
+            local _, _, list = Browser.Target()
+            return list
+        end,
         function(value)
             local class, spec = Browser.Target()
             SetTarget(class, spec, value)
         end)
     filter:Layout(50)
-    -- level with a dropdown's label when their bottoms are
-    filter.label = filter:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    filter.label:SetPoint("TOPLEFT", 2, 16)
-    filter.label:SetTextColor(MUTED[1], MUTED[2], MUTED[3])
-    filter.label:SetText(L.FILTER_LIST)
+    filter.label = Widgets.FilterLabel(filter, L.FILTER_LIST)
     return filter
+end
+
+local TABS_PER_PAGE = 3
+
+local function GearDropTarget(source)
+    local group = window.scenario
+    for i = 3, #group.buttons do
+        local tab = group.buttons[i]
+        if tab ~= source and tab:IsShown() and tab:IsMouseOver() then return tab, tab.value, i > source.tabIndex end
+    end
+    for _, arrow in ipairs({ group.previous, group.next }) do
+        if arrow.dropTarget and arrow:IsShown() and arrow:IsMouseOver() then
+            return arrow, arrow.dropTarget.value, arrow == group.next
+        end
+    end
+end
+
+local function MarkGearDrop(source)
+    local target, _, after = GearDropTarget(source)
+    local marker = window.scenario.dropMarker
+    if target then
+        local side = after and "RIGHT" or "LEFT"
+        marker:ClearAllPoints()
+        marker:SetPoint("TOP" .. side, target, "TOP" .. side, 0, 0)
+        marker:SetPoint("BOTTOM" .. side, target, "BOTTOM" .. side, 0, 0)
+        marker:Show()
+    else
+        marker:Hide()
+    end
+end
+
+local function EndGearDrag(source)
+    source:SetScript("OnUpdate", nil)
+    source.dragKey = nil
+    window.scenario.dropMarker:Hide()
+end
+
+local function SetupGearTab(button)
+    button.tabIndex = #window.scenario.buttons
+    button:RegisterForDrag("LeftButton")
+    button:SetScript("OnDragStart", function(self)
+        self.dragKey = self.value
+        ns.Tooltip.HideOwned(self)
+        self:SetScript("OnUpdate", MarkGearDrop)
+    end)
+    button:SetScript("OnDragStop", function(self)
+        local key = self.dragKey
+        local _, target = GearDropTarget(self)
+        EndGearDrag(self)
+        if key and key == self.value and target and ns.Custom.MoveListTo(state.class, state.spec, key, target) then
+            ns.char.gearList = key
+            Refresh()
+        end
+    end)
+    button:HookScript("OnHide", EndGearDrag)
+    button:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_TOP")
+        GameTooltip:SetText(ns.Custom.GearList(state.class, state.spec, self.value).name)
+        GameTooltip:AddLine(L.GEAR_MANAGE_HINT)
+        GameTooltip:Show()
+    end)
+    button:SetScript("OnLeave", ns.Tooltip.HideOwned)
+    ns.Menu.Attach(button, function()
+        local class, spec, key = state.class, state.spec, button.value
+        ns.char.gearList = key
+        Refresh()
+        local entries = {
+            { text = L.GEAR_RENAME, pick = function() ns.GearDialog.Open(state, "rename") end },
+        }
+        for _, step in ipairs({ -1, 1 }) do
+            if ns.Custom.Neighbor(class, spec, key, step) then
+                entries[#entries + 1] = { text = step == -1 and L.GEAR_LEFT or L.GEAR_RIGHT,
+                    pick = function() ns.Custom.MoveList(class, spec, key, step) end }
+            end
+        end
+        entries[#entries + 1] = { text = L.GEAR_DELETE, pick = function() ns.GearDialog.Open(state, "delete") end }
+        return entries
+    end, false, "RightButton")
+end
+
+local function LayoutScenarios(selected)
+    local group = window.scenario
+    local choices, page = {}, 1
+    for _, list in ipairs(ns.db.gearLists) do
+        if list.class == state.class and list.spec == state.spec then
+            local key = "gear" .. list.id
+            choices[#choices + 1] = { value = key, text = list.name }
+            if key == selected then page = math.ceil(#choices / TABS_PER_PAGE) end
+        end
+    end
+    local first = (page - 1) * TABS_PER_PAGE + 1
+    group.previous.dropTarget = choices[first - 1]
+    group.next.dropTarget = choices[first + TABS_PER_PAGE]
+    group.previous.target = choices[first - TABS_PER_PAGE]
+    group.next.target = choices[first + TABS_PER_PAGE]
+    for _, arrow in ipairs({ group.previous, group.next }) do
+        arrow:SetShown(#choices > TABS_PER_PAGE)
+        arrow:SetEnabled(arrow.target ~= nil)
+    end
+    for i = 1, TABS_PER_PAGE do
+        local option, button = choices[first + i - 1], group.buttons[i + 2]
+        if option then
+            if not button then
+                button = group:AddOption(option)
+                SetupGearTab(button)
+            end
+            button.value = option.value
+            button.Text:SetText(option.text)
+            button.Text:SetWordWrap(false)
+            button.Text:SetWidth(math.min(130, button.Text:GetStringWidth()))
+            button:Show()
+        elseif button then
+            button:Hide()
+        end
+    end
+    group.buttons[2]:SetShown(ns.Rows.AoeList(state.class, state.spec) ~= nil)
+    group:Layout(nil, 20)
+    group:Refresh()
 end
 
 local function Build()
@@ -1168,15 +1359,12 @@ local function Build()
     window.spec:SetPoint("TOPLEFT", 66, -26)
     window.list = Browser.ListFilter(window)
     window.listLabel = window.list.label
-    window.list:SetPoint("BOTTOMLEFT", window.spec, "BOTTOMRIGHT", 8, 0)
 
     -- Not the window's own: the phase is the character's, and tooltips follow it too.
     window.phase = Widgets.Dropdown(window, L.FILTER_PHASE, 100)
-    window.phase:SetPoint("BOTTOMLEFT", window.list, "BOTTOMRIGHT", 8, 0)
     SetupChoices(window.phase.button, PhaseChoices, ns.Phase, function(value) ns:SetPhase(value) end)
 
     window.slot = Widgets.Dropdown(window, L.FILTER_SLOT, 104)
-    window.slot:SetPoint("BOTTOMLEFT", window.phase, "BOTTOMRIGHT", 8, 0)
     SetupChoices(window.slot.button,
         function() return state.tab == "consumables" and CategoryChoices() or SlotChoices() end,
         function()
@@ -1189,19 +1377,17 @@ local function Build()
         end)
 
     window.source = Widgets.Dropdown(window, L.FILTER_SOURCE, 104)
-    window.source:SetPoint("BOTTOMLEFT", window.slot, "BOTTOMRIGHT", 8, 0)
     SetupChoices(window.source.button, function() return SourceChoices(window.facets) end,
         function() return state.source or ALL end, Choose("source"))
 
     window.zone = Widgets.Dropdown(window, L.FILTER_ZONE, 112)
-    window.zone:SetPoint("BOTTOMLEFT", window.source, "BOTTOMRIGHT", 8, 0)
     SetupChoices(window.zone.button, function() return ZoneChoices(window.facets) end,
         function() return state.zone or ALL end, Choose("zone"))
 
     window.reputation = Widgets.Dropdown(window, L.FILTER_REPUTATION, 110)
-    window.reputation:SetPoint("BOTTOMLEFT", window.zone, "BOTTOMRIGHT", 8, 0)
     SetupChoices(window.reputation.button, ReputationChoices,
         function() return state.reputation or ALL end, Choose("reputation"))
+    window.filters = { window.list, window.phase, window.slot, window.source, window.zone, window.reputation }
 
     -- On every tab: the items, the enchants, the character sheet and the tooltips all follow it. The filters
     -- fill their row, so it sits in the window's title bar.
@@ -1220,10 +1406,10 @@ local function Build()
         window.notice = CreateNotice(window, L[NOTICE])
         window.notice:SetPoint("TOPLEFT", 8, -FILTERS)
         window.notice:SetPoint("TOPRIGHT", -8, -FILTERS)
-        window.notice.close:SetScript("OnClick", function()
+        window.notice.close:SetScript("OnClick", function(self)
             Widgets.Click()
             noticeShown = false
-            GameTooltip:Hide()
+            ns.Tooltip.HideOwned(self)
             PlaceNotice()
             Refresh()
         end)
@@ -1233,6 +1419,49 @@ local function Build()
     local inset = CreateInset(window)
     window.inset = inset
     PlaceNotice()
+    window.scenario = Widgets.Segmented(inset,
+        { { value = "pve", text = L.LIST_RAID }, { value = "aoe", text = L.LIST_AOE } },
+        function() return ItemList(state.list) end,
+        function(value)
+            ns.char.gearList = ns.Custom.GearList(state.class, state.spec, value) and value or nil
+            ns.char.aoe = value == "aoe"
+            Refresh()
+        end)
+    -- A separate frame keeps the drop marker above the tab artwork.
+    local marker = CreateFrame("Frame", nil, window.scenario)
+    marker:SetWidth(3)
+    marker:SetFrameLevel(window.scenario:GetFrameLevel() + 4)
+    local line = marker:CreateTexture(nil, "OVERLAY")
+    line:SetAllPoints(marker)
+    line:SetColorTexture(1, 0.82, 0, 1)
+    marker:Hide()
+    window.scenario.dropMarker = marker
+    window.scenario:Layout(nil, 20)
+    window.scenario:SetPoint("TOPLEFT", inset, "TOPLEFT", 8, -5)
+    window.newList = Widgets.ChoiceButton(inset, "+")
+    window.newList:SetWidth(44)
+    window.newList:SetPoint("LEFT", window.scenario, "RIGHT", 4, 0)
+    window.newList:SetScript("OnClick", function()
+        Widgets.Click()
+        ns.GearDialog.Open(state, "create", function(key)
+            ns.char.gearList = key
+            Refresh()
+        end)
+    end)
+    local function TurnPage(button)
+        Widgets.Click()
+        ns.char.gearList = button.target.value
+        Refresh()
+    end
+    window.scenario.next = Widgets.Button(window.scenario, ">", 26)
+    window.scenario.next:SetPoint("TOPRIGHT", inset, "TOPRIGHT", -8, -5)
+    window.scenario.previous = Widgets.Button(window.scenario, "<", 26)
+    window.scenario.previous:SetPoint("RIGHT", window.scenario.next, "LEFT", -2, 0)
+    window.scenario.next:SetScript("OnClick", TurnPage)
+    window.scenario.previous:SetScript("OnClick", TurnPage)
+    window.import = Widgets.Button(inset, L.GEAR_IMPORT)
+    window.import:SetPoint("LEFT", window.newList, "RIGHT", 6, 0)
+    window.import:SetScript("OnClick", function() ns.GearDialog.Open(state, "import") end)
     local template = HasTemplate("ScrollFrameTemplate") and "ScrollFrameTemplate" or "UIPanelScrollFrameTemplate"
     window.scroll = CreateFrame("ScrollFrame", nil, inset, template)
     window.scroll:SetPoint("TOPLEFT", 6, -6)
@@ -1242,10 +1471,10 @@ local function Build()
     window.scroll:SetScrollChild(window.child)
     window.rows = {}
     window.empty = inset:CreateFontString(nil, "OVERLAY", "GameFontDisable")
-    window.empty:SetPoint("TOP", 0, -40)
+    window.empty:SetPoint("TOP", window.scroll, "TOP", 0, -34)
     window.empty:SetText(L.NO_ROWS)
 
-    -- Footer, left to right: the four tabs, the credit, "add an item", the alternatives, the options
+    -- Footer tabs and actions share a row, with the data credit underneath.
     window.tabs = Widgets.Segmented(window,
         {
             { value = "items", text = L.TAB_ITEMS },
@@ -1259,9 +1488,9 @@ local function Build()
             state.tab = value
             Refresh()
         end)
-    window.tabs:Layout(nil, 10)   -- five tabs: narrower each, so the credit keeps its room
+    window.tabs:Layout(nil, 10)
     Widgets.MarkNew(window.tabs.buttons[5], L.TAB_NEW)
-    window.tabs:SetPoint("BOTTOMLEFT", 10, 28)
+    window.tabs:SetPoint("BOTTOMLEFT", 10, FOOTER_BUTTON_BOTTOM)
 
     -- Down the right edge: the lists, and the dungeons
     window.pages = Widgets.SideTabs(window,
@@ -1278,9 +1507,9 @@ local function Build()
     if window.SetClampRectInsets then window:SetClampRectInsets(0, Widgets.SIDE_ROOM, 0, 0) end   -- they stay on the screen
 
     window.options = Widgets.MenuButton(window, L.OPTIONS, 88)
-    window.options:SetPoint("BOTTOMRIGHT", -28, 28)
-    if window.options.SetupMenu then
-        window.options:SetupMenu(FillOptionsMenu)
+    window.options:SetPoint("BOTTOMRIGHT", -28, FOOTER_BUTTON_BOTTOM)
+    if MenuUtil then
+        ns.Menu.Attach(window.options, OptionEntries, true)
     else
         window.options:Hide()
     end
@@ -1294,12 +1523,12 @@ local function Build()
     window.add:SetPoint("RIGHT", window.alts, "LEFT", -8, 0)
     window.add:SetScript("OnClick", function()
         Widgets.Click()
+        ns.GearDialog.Close()
         ns.AddItem.Open(state)
     end)
 
     window.credit = window:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    window.credit:SetPoint("LEFT", window.tabs, "RIGHT", 10, 0)
-    window.credit:SetPoint("RIGHT", window.add, "LEFT", -10, 0)
+    window.credit:SetPoint("BOTTOM", 0, 9)
     window.credit:SetJustifyH("CENTER")
     window.credit:SetWordWrap(false)
     window.credit:SetTextColor(MUTED[1], MUTED[2], MUTED[3])
@@ -1310,6 +1539,7 @@ local function Build()
     window:SetScript("OnHide", function(self)
         self:UnregisterEvent("GET_ITEM_INFO_RECEIVED")
         ns.AddItem.Close()
+        ns.GearDialog.Close()
         if NOTICE and not noticeShown then   -- put away with its cross: back for the next time the window opens
             noticeShown = true
             PlaceNotice()
@@ -1333,14 +1563,23 @@ Refresh = function()
     local tab = not dungeons and state.tab or nil
     local items, character, consumables = tab == "items", tab == "character", tab == "consumables"
     local enchants, reputations = tab == "enchants", tab == "reputations"
+    state.itemList = ItemList(state.list)
+    local aoe = state.itemList == "aoe"
+    local gear = ns.Custom.GearList(state.class, state.spec, state.itemList)
+    ns.GearDialog.Check(state, items and state.list == "pve")
+    if not items or aoe then ns.AddItem.Close() end
     local rows, facets = {}, { sources = {}, zones = {} }
     if items then
-        rows, facets = ns.Rows.Items(state)
+        if aoe and state.slot == "off" and not ns.Rows.AoeList(state.class, state.spec).off then
+            state.slot = "main"
+        end
+        local itemRows = gear and ns.Rows.Gear or aoe and ns.Rows.Aoe or ns.Rows.Items
+        rows, facets = itemRows(state)
         -- a source or a zone the new spec, list or slot does not have: back to "all"
         if (state.source and not facets.sources[state.source]) or (state.zone and not facets.zones[state.zone]) then
             if state.source and not facets.sources[state.source] then state.source = nil end
             if state.zone and not facets.zones[state.zone] then state.zone = nil end
-            rows, facets = ns.Rows.Items(state)
+            rows, facets = itemRows(state)
         end
     elseif consumables then
         -- a category the new spec or list does not have: back to "all"
@@ -1371,14 +1610,36 @@ Refresh = function()
     -- the spec, the list and the phase apply to them. The dungeons have every slot too, and the alternatives
     -- when asked for.
     local listed = items or enchants or consumables
-    window.listLabel:SetShown(not enchants)
-    window.list:SetShown(not enchants)
+    window.listLabel:SetShown(not enchants and not dungeons)
+    window.list:SetShown(not enchants and not dungeons)
+    local showScenario = items and state.list == "pve"
+    window.newList:SetShown(showScenario)
+    window.import:SetShown(gear ~= nil)
+    window.scenario:SetShown(showScenario)
+    if showScenario then LayoutScenarios(state.itemList) end
+    if window.scenario.visible ~= showScenario then
+        window.scenario.visible = showScenario
+        window.scroll:ClearAllPoints()
+        local top = showScenario and (-window.scenario:GetHeight() - 10) or -6
+        window.scroll:SetPoint("TOPLEFT", window.inset, "TOPLEFT", 6, top)
+        window.scroll:SetPoint("BOTTOMRIGHT", window.inset, "BOTTOMRIGHT", -28, 6)
+    end
     window.slot:SetShown(listed)
     window.source:SetShown(items)
     window.zone:SetShown(items)
     window.reputation:SetShown(items or enchants)
-    window.add:SetShown(items)
-    window.alts:SetShown(listed or dungeons)
+    local previous = window.spec
+    for _, filter in ipairs(window.filters) do
+        if filter:IsShown() then
+            filter:ClearAllPoints()
+            filter:SetPoint("BOTTOMLEFT", previous, "BOTTOMRIGHT", 8, 0)
+            previous = filter
+        end
+    end
+    window.add:SetShown(items and not aoe)
+    window.alts:SetShown((listed or dungeons) and not gear)
+    local unmeasuredSlot = aoe and state.slot and not ns.Rows.AoeList(state.class, state.spec)[state.slot]
+    window.empty:SetText(gear and not next(gear.slots) and L.GEAR_EMPTY or unmeasuredSlot and L.AOE_NO_SLOT or L.NO_ROWS)
     window.tabs:SetShown(not dungeons)
 
     window.list:Refresh()
@@ -1410,15 +1671,22 @@ Refresh = function()
     if listed then LayoutRows(ns.Rows.Grouped(rows)) end
 end
 
-function Browser.ShowSlot(slot)
-    -- the filters off: the piece clicked must be in the list
-    state.page, state.tab, state.slot, state.source, state.zone, state.reputation = "lists", "items", slot, nil, nil, nil
+local function ShowRankedItems(slot, source, list)
+    ns.char.gearList = ns.Custom.GearList(state.class, state.spec, list) and list or nil
+    -- A link from the character sheet or dungeon rankings opens its matching list.
+    if list then state.list = list == "pvp" and "pvp" or "pve" end
+    if state.list == "pve" then ns.char.aoe = list == "aoe" end
+    state.page, state.tab, state.slot, state.source, state.zone, state.reputation = "lists", "items", slot, source, nil, nil
+    if list then SaveState() end
     Refresh()
 end
 
-function Browser.ShowSource(category)
-    state.page, state.tab, state.slot, state.source, state.zone, state.reputation = "lists", "items", nil, category, nil, nil
-    Refresh()
+function Browser.ShowSlot(slot, list)
+    ShowRankedItems(slot, nil, list)
+end
+
+function Browser.ShowSource(category, list)
+    ShowRankedItems(nil, category, list)
 end
 
 function Browser.ShowReputation(factionID, artisan)
@@ -1469,5 +1737,6 @@ ns:On("REPUTATION_CHANGED", function() Refresh() end)
 
 -- The entry in the game's addon menu (see the toc).
 function EasyBIS_OnCompartmentClick()
-    Browser.Toggle()
+    -- Let Blizzard finish picking and dismissing the compartment entry first.
+    C_Timer.After(0, Browser.Toggle)
 end
