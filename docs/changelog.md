@@ -1,3 +1,8 @@
+# Easy BIS 1.9.6
+
+- **Alliance battleground reputations.** If your Reputations tab was missing rewards, reinstalling this package restores the requirements for 11 Alterac Valley items and 15 Warsong Gulch items. For Discipline Priests in PvP, Lei of the Lifegiver appears under Stormpike Guard at Exalted.
+- The 1.9.5 release ZIP already contained these entries. The release tests now check each listed item against the source catalogue for both Alliance and Horde, including its required standing and vendor.
+
 # Easy BIS 1.9.5
 
 - **Protection Warrior, Feral Bear and Protection Paladin.** Pre-raid PvE lists label Threat and Mitigation alternatives where a gear swap trades threat for damage reduction. Hover over an option to see the difference for your faction.

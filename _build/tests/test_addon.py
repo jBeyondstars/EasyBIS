@@ -1058,16 +1058,21 @@ class AddonTest(unittest.TestCase):
 
     def test_reputation_requirements_follow_the_data(self):
         game = Game()
-        text = (ADDON / "Data" / "Reputation.lua").read_text(encoding="utf-8")
-        block = re.search(r"items = \[==\[\n(.*?)\]==\]", text, re.S).group(1)
-        records = [line.split("|") for line in block.splitlines()]
-        self.assertTrue(records)
+        records = reputations.load()["items"]
         rep = game.ns.Reputation
-        for fields in records:
-            item_id, side = int(fields[0]), fields[1]
-            found = rep.Requirement(item_id, side or "a")
-            self.assertEqual((found.factionID, found.standing, found.kind),
-                             (int(fields[2]), int(fields[3]), fields[4]), fields)
+        for line in game.ns.data["items"].splitlines():
+            item_id = int(line.split("|", 1)[0])
+            by_side = {row["side"]: row for row in records.get(item_id, ())}
+            for side in ("a", "h"):
+                expected = by_side.get(side, by_side.get(""))
+                found = rep.Requirement(item_id, side)
+                if expected is None:
+                    self.assertIsNone(found, (item_id, side))
+                    continue
+                self.assertIsNotNone(found, (item_id, side))
+                self.assertEqual((found.factionID, found.standing, found.kind, found.vendor),
+                                 (expected["faction"], expected["standing"], expected["kind"], expected.get("vendor")),
+                                 (item_id, side))
         self.assertIsNone(rep.Requirement(EYE_OF_REND, "a"))
         self.assertIsNone(rep.EnchantRequirement("no such enchant"))
 
