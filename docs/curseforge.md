@@ -16,7 +16,7 @@ Easy BIS is a BIS list for every class and spec: the best-in-slot (BIS) item of 
 
 ## Dungeons
 
-![The dungeons, by dungeon](https://raw.githubusercontent.com/jBeyondstars/EasyBIS/main/docs/screenshots/dungeons.png)
+![Warrior Fury tracking two gear lists in the By dungeon view](https://raw.githubusercontent.com/jBeyondstars/EasyBIS/main/docs/screenshots/dungeons.png)
 
 The **Dungeons** tab shows which dungeons to run for your spec's best picks, each dungeon in its own colour. It is the second tab on the window's right side.
 
