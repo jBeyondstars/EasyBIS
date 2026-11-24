@@ -1162,7 +1162,21 @@ local function OptionEntries()
                 selected = function() return ns:GetOption(option) end,
                 pick = function() ns:SetOption(option, not ns:GetOption(option)) end }
         end
-        if index == 2 then
+        if index == 1 then
+            local lists = Submenu(L.OPT_TOOLTIP_LISTS)
+            local function AddList(key, label)
+                lists[#lists + 1] = { kind = "checkbox", text = label,
+                    selected = function() return ns:ListShown(key) end,
+                    pick = function() ns:SetListShown(key, not ns:ListShown(key)) end }
+            end
+            AddList("pve", L.LIST_RAID)
+            AddList("aoe", L.LIST_AOE)
+            AddList("pvp", L.LIST_PVP)
+            for _, gear in ipairs(ns.db.gearLists) do
+                local spec = ns.SpecName(ns.Index.SpecName(gear.class, gear.spec) or "")
+                AddList("gear" .. gear.id, gear.name .. " (" .. ns.ClassName(gear.class) .. " " .. spec .. ")")
+            end
+        elseif index == 2 then
             local rewards = Submenu(L.OPT_PVP_REWARDS)
             for _, list in ipairs(ns.LISTS) do
                 rewards[#rewards + 1] = { kind = "checkbox", text = L.OPT_PVP_LIST:format(ns.ListName(list)),

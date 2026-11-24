@@ -32,7 +32,10 @@ class AoeTooltipTest(unittest.TestCase):
         game.slash("faction horde")
         self.assertEqual(game.lines(910001), [])
         self.assertTrue(game.lines(910005))
-        ns.db.lists.pve = False
+        ns.SetListShown(ns, "pve", False)
+        ns.SetListShown(ns, "pvp", False)
+        self.assertTrue(game.lines(910005))
+        ns.SetListShown(ns, "aoe", False)
         self.assertEqual(game.lines(910005), [])
 
     def test_raid_and_dungeon_labels_when_both_apply(self):
@@ -43,6 +46,8 @@ class AoeTooltipTest(unittest.TestCase):
         ns.Index.Reset()
         self.assertIn(("<classicon-shaman> Shaman Enhancement", "BIS Raid · BIS AoE/Dung"),
                       game.lines(helm))
+        ns.SetListShown(ns, "aoe", False)
+        self.assertIn(("<classicon-shaman> Shaman Enhancement", "BIS PvE"), game.lines(helm))
 
 
 if __name__ == "__main__":

@@ -62,7 +62,7 @@ local DEFAULTS = {
     minimap = true,        -- the button on the minimap
     minimapAngle = 215,    -- where it sits around the minimap, in degrees
     auctionTab = true,     -- the EasyBis tab of the auction house
-    lists = { pve = true, pvp = true }, -- the lists tooltips read
+    lists = { pve = true, pvp = true, aoe = true }, -- tooltip visibility, also keyed by "gearN" for named lists
     compact = true,        -- the window: an item or a consumable on one line instead of two
     listAlts = true,       -- the window: the alternatives too, not only the best picks
     dungeonGrid = false,   -- the Dungeons tab: a line per piece and a column per dungeon, instead of a band per dungeon
@@ -100,11 +100,16 @@ local function InitDB()
     if type(EasyBISDB) ~= "table" then EasyBISDB = {} end
     -- version 1.1.0 kept one answer for both lists: it becomes the PvE list's
     if type(EasyBISDB.pvpRewards) == "boolean" then EasyBISDB.pvpRewards = { pve = EasyBISDB.pvpRewards } end
+    -- The old PvE tooltip switch also hid AoE and all existing named lists.
+    local lists = EasyBISDB.lists
+    local migrateHiddenPvE = type(lists) == "table" and lists.pve == false and lists.aoe == nil
     ns.db = Merge(EasyBISDB, DEFAULTS)
+    if migrateHiddenPvE then lists.aoe = false end
     -- Older characters saved "gearN" using the original array position.
     local last = ns.db.lastGearId or 0
     for i, gear in ipairs(ns.db.gearLists) do
         gear.id = gear.id or i
+        if migrateHiddenPvE then lists["gear" .. gear.id] = false end
         last = math.max(last, gear.id)
     end
     ns.db.lastGearId = last
@@ -127,6 +132,12 @@ end
 
 function ns:ListShown(list)
     return self.db.lists[list] ~= false
+end
+
+function ns:SetListShown(list, shown)
+    if self:ListShown(list) == shown then return end
+    self.db.lists[list] = shown
+    self:Fire("OPTION_CHANGED", "lists", self.db.lists)
 end
 
 -- Whether a list ("pve", "pvp") counts the PvP rewards: the PvP list does and the PvE list does not, until

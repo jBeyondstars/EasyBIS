@@ -1,3 +1,8 @@
+# Easy BIS 1.10.1
+
+- **Item tooltips.** Under Options → Lists shown in tooltips, choose which Raid, AoE / Dungeons, PvP and custom lists appear when you hover over an item. If several lists contain the same item, you can hide each one independently.
+- Tooltip preferences are shared across characters. Renaming or moving a custom list preserves its tooltip setting.
+
 # Easy BIS 1.10.0
 
 - **Custom lists and WoWSims Forever import.** Create named gear lists for each class and specialization under Items → PvE. Add items individually or import a Gear-only JSON export to replace the selected list's items and enchants. Drag tabs to reorder them, or right-click to rename, move or delete a list.

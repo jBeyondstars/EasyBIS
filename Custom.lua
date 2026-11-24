@@ -112,6 +112,7 @@ function Custom.DeleteList(class, spec, key)
     local gear, index = Custom.GearList(class, spec, key)
     if not gear then return false end
     table.remove(ns.db.gearLists, index)
+    ns.db.lists[key] = nil
     if ns.char.gearList == key then ns.char.gearList = nil end
     ns:Fire("CUSTOM_CHANGED")
     return true

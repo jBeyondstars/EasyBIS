@@ -110,8 +110,20 @@ class CustomGearListTest(unittest.TestCase):
         custom.Import("ROGUE", 1, two, json.dumps({"player": {"equipment": {"items": equipment}}}))
         labels = [line[1] for line in game.tooltip(item) if len(line) == 2]
         self.assertEqual(labels, ["Liste perso : Donjons", "Liste perso : Sortie du jeudi"])
+        game.ns.Browser.Open()
+        open_dropdown(game, game.ns.Browser.window.options)
+        lists = find(game.stub.menu, "Listes affichées dans les infobulles")
+        for name in ("Raid", "AoE / Dungeons", "JcJ"):
+            find(lists, name).pick()
+        hidden = find(lists, "Sortie du jeudi")
+        hidden.pick()
+        self.assertFalse(hidden.selected())
+        self.assertEqual([right for _, right in game.lines(item)], ["Liste perso : Donjons"])
+        custom.RenameList("ROGUE", 1, two, "Jeudi")
         custom.Remove("ROGUE", 1, one, item)
-        self.assertEqual([right for _, right in game.lines(item)], ["Liste perso : Sortie du jeudi"])
+        self.assertEqual(game.tooltip(item), [])
+        hidden.pick()
+        self.assertEqual([right for _, right in game.lines(item)], ["Liste perso : Jeudi"])
         custom.Import("ROGUE", 1, two, '{"player":{"equipment":{"items":[{"id":42}]}}}')
         self.assertFalse(game.lines(item))
 
@@ -1301,7 +1313,7 @@ class WindowTest(unittest.TestCase):
         menu = game.stub.menu
         self.assertEqual(texts(menu), ["Options", "BIS lines in item tooltips", "Tooltips show my class only",
                                        "Tooltips show alternatives too", "Reputation needed in item tooltips",
-                                       "Items with no known source",
+                                       "Lists shown in tooltips", "Items with no known source",
                                        "PvP rewards", "Alternatives per slot",
                                        "Faction", "Compact rows", "Short reputation lines", "Minimap button",
                                        "Auction house tab"])

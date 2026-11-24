@@ -758,25 +758,17 @@ class AddonTest(unittest.TestCase):
 
     def test_whole_class_line_drops_the_spec_names(self):
         """When every spec of a class has the same status, the line names the class alone."""
-        game = Game()
-        hits = self.expected_hits(default_filter())
-        found = None
-        for item_id, wanted in hits.items():
-            per_class = {}
-            for token, spec, mode, _, bis in wanted:
-                per_class.setdefault(token, {}).setdefault(spec, {})
-                per_class[token][spec][mode] = per_class[token][spec].get(mode, False) or bis
-            for token, specs in per_class.items():
-                if (len(specs) == len(self.db.classes[token]["specs"])
-                        and len({tuple(sorted(status.items())) for status in specs.values()}) == 1):
-                    found = (item_id, token)
-                    break
-            if found:
-                break
-        self.assertIsNotNone(found, "no item is wanted the same way by every spec of a class")
-        item_id, token = found
-        lefts = [left for left, _ in game.lines(item_id) if token.capitalize() in left]
-        self.assertEqual(lefts, [f"<classicon-{token.lower()}> {token.capitalize()}"])
+        game = Game(cls="ROGUE")
+        item = 990001
+        game.stub.equipLocs[item] = "INVTYPE_HEAD"
+        for spec in (1, 2, 3):
+            game.ns.Custom.Add("ROGUE", spec, "pve", item)
+        game.ns.data.aoe.lists["ROGUE:2:a"] = game.lua.eval("{head = {{990001}}}")
+        game.ns.Index.Reset()
+        self.assertEqual([left for left, _ in game.lines(item)],
+                         ["<classicon-rogue> Rogue Assassination, Subtlety", "<classicon-rogue> Rogue Combat"])
+        game.ns.SetListShown(game.ns, "aoe", False)
+        self.assertEqual(game.lines(item), [("<classicon-rogue> Rogue", "Added PvE")])
 
     # -- items added by hand ------------------------------------------------------------------
 

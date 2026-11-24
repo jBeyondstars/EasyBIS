@@ -71,14 +71,13 @@ end
 
 function Tooltip.BuildLines(id)
     local hits = ns.Index.ForItem(id)
-    local aoeHits = ns:ListShown("pve") and ns.Index.AoeForItem(id)
+    local aoeHits = ns:ListShown("aoe") and ns.Index.AoeForItem(id)
     if not hits and not aoeHits then return {} end
 
     local lists = {}
     for _, list in ipairs(ns.LISTS) do
         if ns:ListShown(list) then lists[#lists + 1] = list end
     end
-    if not lists[1] then return {} end
 
     local onlyClass = ns:GetOption("onlyMyClass") and ns.PlayerClass() or nil
     local withAlternatives = ns:GetOption("alternatives")
@@ -88,8 +87,8 @@ function Tooltip.BuildLines(id)
     for _, hit in ipairs(hits or {}) do
         local rank = hit.custom and ADDED or (hit.bis and BIS or ALT)
         if hit.option then rank = hit.option.sign == 1 and THREAT or MITIGATION end
-        local showClass = not onlyClass or hit.class == onlyClass
-        if hit.listName and showClass and ns:ListShown("pve") then
+        local shown = ns:ListShown(hit.list) and (not onlyClass or hit.class == onlyClass)
+        if shown and hit.listName then
             local r, g, b = ns.ClassColor(hit.class)
             local icon = ns.ClassIcon(hit.class)
             local classSpec = ns.ClassName(hit.class) .. " " .. ns.SpecName(ns.Index.SpecName(hit.class, hit.spec))
@@ -97,7 +96,7 @@ function Tooltip.BuildLines(id)
                 left = (icon ~= "" and icon .. " " or "") .. classSpec,
                 right = L.GEAR_MEMBERSHIP:format(hit.listName), r = r, g = g, b = b,
             }
-        elseif not hit.listName and showClass and (rank ~= ALT or withAlternatives) and ns:ListShown(hit.list) then
+        elseif shown and (rank ~= ALT or withAlternatives) then
             perSpec[hit.class] = perSpec[hit.class] or {}
             local status = perSpec[hit.class][hit.spec] or {}
             perSpec[hit.class][hit.spec] = status
