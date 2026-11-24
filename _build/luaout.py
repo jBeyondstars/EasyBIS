@@ -17,6 +17,7 @@ import hashlib
 import json
 import math
 
+import hunter_bm
 import ladders
 import notes
 import phases
@@ -24,8 +25,8 @@ import reputations
 import ranks
 import runs
 import shockadin
-import specs
 import tank_options
+import specs
 
 CREDIT = "Data from ForeverDB.net (https://foreverdb.net)"
 ENCHANTS_PER_SLOT = 3
@@ -69,8 +70,12 @@ def encode_entry(entry: ladders.Entry) -> str:
     flags += "p" if entry.pvp else ""
     flags += "v" if entry.honor else ""
     flags += "e" if entry.placed else ""
-    flags += "x" if entry.level else ""
+    flags += "x" if entry.level or entry.pvp_utility else ""
+    flags += "j" if entry.pvp_utility else ""
+    flags += "f" if entry.fourth_option else ""
+    flags += "k" if entry.preraid_option else ""
     flags += "g" if entry.estimated else ""
+    flags += "b" if entry.alternative_only else ""
     flags += str(entry.phase) if entry.phase else ""
     limit = entry.limit or ""
     if not limit.isalnum() and limit:
@@ -150,6 +155,11 @@ def _simulated_note(db) -> list:
              f"reference set,",
              f"measured with WoWSims Forever {reading.commits} (https://github.com/wowsims/forever, MIT License), not "
              "ForeverDB's weights. See _build/simulated.py."]
+    if ("HUNTER", 1) in reading.specs and hunter_bm.read():
+        armor = ", ".join(s for s, _ in ladders.SLOTS if s in hunter_bm.read()["slots"] and s not in ("main", "off"))
+        lines.append(f"Beast Mastery Hunter uses separate Dwarf and Orc measurements for {armor} and both "
+                     "weapon slots, with the actual main-hand weapon for each off-hand score. "
+                     f"See _build/hunter_bm.py (WoWSims {hunter_bm.read()['wowsims'][:10]}).")
     waiting = {key: slots for key, slots in reading.placed.items() if key not in reading.specs and key[0] in db.classes}
     if waiting:
         count = sum(len(entries) for slots in waiting.values() for entries in slots.values())
@@ -220,6 +230,8 @@ def _enchants_note(db) -> list:
 
 
 def lists_file(db, all_ladders) -> str:
+    contextual = any(hasattr(entries, "contexts") for specs in all_ladders.values() for modes in specs.values()
+                     for slots in modes.values() for entries in slots.values())
     lines = _header(db, f"Best-in-slot ladders at level {db.meta['cap']}, one text block per class.", (
         *_corrections_note(db),
         "  S <spec> <name> <role> <style>      style: any, 2h, dw (dual wield), shield; the S lines of a class are in",
@@ -227,6 +239,12 @@ def lists_file(db, all_ladders) -> str:
         "  L <spec> <list> <slot> <entries>    list: pve, pvp; entries best first, separated by spaces",
         "  T <spec> pve <slot> <duel>          threat and mitigation IDs, then DPS, threat/s, damage taken/s deltas",
         "                                      for Alliance and Horde when equipping the threat item in pre-raid",
+        "  F <spec> <list> <slot> pre <entries>   pre-raid recommendations for both factions",
+        "  F <spec> <list> <slot> pre:<faction[:companionID]> <entries>   paired pre-raid measurements",
+        "      See corrections/caster_trinkets.json and corrections/relics.json for the 2,000-fight trials and revisions.",
+        "  F <spec> <list> <slot> situational <entries>   additional pre-raid options",
+        *(("  F <spec> <list> <slot> <faction[:companionID]> <entries>    scores by faction and equipped companion",
+           "                                      (main-hand weapon, first ring or first trinket)") if contextual else ()),
         "  M <spec> <list> <date>              that list is ranked by simulation, measured on that day; the others are",
         "                                      ranked on the stat weights",
         "An entry is id:score*10:flags:twin:limit:rank, empty fields at the end left out.",
@@ -241,6 +259,7 @@ def lists_file(db, all_ladders) -> str:
         "           no score of its own, the addon shows it level with the best picks, never as one, and prints no figure,",
         "         g ranked by simulation on a score that is no full measure (a random bonus, an effect or a proc rate the",
         "           simulator lacks): it keeps its rank, and the addon shows no score for it,",
+        *(("         b a partial faction-specific measure retained as an alternative only,",) if contextual else ()),
         "         a digit: the content phase the item needs (none: before the raids, 1: Forever's first raids,",
         "         9: a raid known from Classic data only); see _build/phases.py",
         "  limit: only one item of that category can be worn (rings and trinkets)",
@@ -266,10 +285,22 @@ def lists_file(db, all_ladders) -> str:
                     entries = modes[mode][slot]
                     if entries:
                         block.append("\t".join(("L", str(spec), mode, slot, " ".join(map(encode_entry, entries)))))
-                        if (cls, spec, mode, slot) == ("PALADIN", 2, "pve", "main"):
-                            pre = ladders.paladin_pre_raid_main(entries)
-                            if pre:
-                                block.append("F\t2\tpve\tmain\tpre\t" + " ".join(map(encode_entry, pre)))
+                    if getattr(entries, "pre_raid", None):
+                        block.append("\t".join(("F", str(spec), mode, slot, "pre", " ".join(map(encode_entry, entries.pre_raid)))))
+                    if getattr(entries, "options", None):
+                        block.append("\t".join(("F", str(spec), mode, slot, "situational", " ".join(map(encode_entry, entries.options)))))
+                    if slot == "main":
+                        for entry in entries:
+                            for side, one, off in entry.pre_raid_weapon_sets:
+                                # W rows select only a previously tested complete pre-raid matchup.
+                                key = f"{side}:{entry.shown(side)}:{one}:{off}"
+                                block.append("\t".join(("W", str(spec), mode, key)))
+                    for (side, companion), rows in getattr(entries, "contexts", {}).items():
+                        context = f"{side}:{companion}" if companion else side
+                        block.append("\t".join(("F", str(spec), mode, slot, context, " ".join(map(encode_entry, rows)))))
+                    for (side, companion), rows in getattr(entries, "pre_contexts", {}).items():
+                        context = f"pre:{side}:{companion}" if companion else f"pre:{side}"
+                        block.append("\t".join(("F", str(spec), mode, slot, context, " ".join(map(encode_entry, rows)))))
         lines.append(f"{cls} = {_block(block)},")
     lines.append("}")
     return "\n".join(lines) + "\n"
@@ -288,7 +319,9 @@ def shown_ids(all_ladders) -> set[int]:
         for modes in specs.values():
             for slots in modes.values():
                 for entries in slots.values():
-                    for entry in entries:
+                    extra = getattr(entries, "options", ())
+                    measured = getattr(entries, "pre_contexts", {})
+                    for entry in (*entries, *extra, *(e for rows in measured.values() for e in rows)):
                         ids.add(entry.item_id)
                         if entry.twin:
                             ids.add(entry.twin)
@@ -635,8 +668,7 @@ def notes_file(db, all_ladders) -> str:
         "  enUS, frFR the text",
     ))
     lines.append("ns.data.notes = {")
-    specific = notes.shown(db, shown_ids(all_ladders)) + notes.simulation_limits(db, all_ladders)
-    for note in specific:
+    for note in notes.shown(db, shown_ids(all_ladders)):
         fields = ["items = { " + ", ".join(map(str, note["items"])) + " }"]
         if note.get("specs"):
             fields.append("specs = { " + ", ".join(f"{spec.replace(' ', '')} = true" for spec in note["specs"]) + " }")
@@ -648,12 +680,6 @@ def notes_file(db, all_ladders) -> str:
             fields.append("simulated = true")
         fields += [f"{code} = {json.dumps(note[key], ensure_ascii=False)}" for key, code in notes.LANGUAGES.items()]
         lines.append("    { " + ", ".join(fields) + " },")
-    lines.append("}")
-    lines.append("-- Paired PvE trials by profile and slot: measured id:rival id:swap DPS*100:fixed stats DPS*100:iterations:status.")
-    lines.append("ns.data.comparisons = {")
-    for (cls, spec, slot), rows in sorted(notes.comparisons(db, all_ladders, specific).items()):
-        values = " ".join(":".join(map(str, row)) for row in rows)
-        lines.append(f'    {cls}{spec}_{slot} = " {values}",')
     lines.append("}")
     return "\n".join(lines) + "\n"
 
@@ -785,7 +811,8 @@ def aoe_file(db, archive, directory=None) -> tuple[str, set[int]]:
                 seen = set()
                 for entry in result["items"]:
                     item_id = entry["id"]
-                    if item_id in ladders.DISQUALIFIED_ITEMS or entry.get("partner") in ladders.DISQUALIFIED_ITEMS:
+                    if (item_id in aoe_combined.ARCHIVED_ONLY_ITEMS or item_id in ladders.DISQUALIFIED_ITEMS
+                            or entry.get("partner") in ladders.DISQUALIFIED_ITEMS):
                         continue
                     if (item_id in seen or not math.isfinite(entry["gain"]) or entry["gain"] > previous
                             or not math.isfinite(entry["se"]) or entry["se"] < 0):

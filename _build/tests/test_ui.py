@@ -77,7 +77,7 @@ def look(control) -> str:
 
 
 def open_dropdown(game, button):
-    game.stub.openDropdown(button)
+    game.stub.openFilter(button)
 
 
 @unittest.skipIf(lupa is None, "lupa is not installed")
@@ -265,6 +265,26 @@ class CustomGearListTest(unittest.TestCase):
         find(stub.menu, "PvP").pick()
         self.assertEqual(view.model.tracked, 2)
 
+    def test_tracked_weapon_in_different_hands_counts_once(self):
+        saved = """EasyBISCharDB = {class="ROGUE",spec=1,list="pve",dungeonLists={
+            ["ROGUE:1"]={gear1=true,gear2=true}}}
+            EasyBISDB = {gearLists={
+                {name="Main",class="ROGUE",spec=1,slots={main={{id=12590}}}},
+                {name="Off",class="ROGUE",spec=1,slots={off={{id=12590}}}}}}"""
+        game = Game(saved=saved, cls="ROGUE")
+        game.ns.Browser.Open()
+        game.ns.Browser.ShowDungeons()
+        model = game.ns.DungeonView.view.model
+        self.assertEqual([piece.id for piece in model.rows.values()], [12590])
+        self.assertEqual((model.need, model.got), (1, 0))
+        self.assertEqual([(run.total, run.entries[1].piece.id) for run in model.runs.values()], [(1, 12590)])
+        view = game.ns.DungeonView.view
+        chips = [chip.entry.piece.id for lane in view.lanes.values() if lane.shown
+                 for chip in lane.chips.values() if chip.shown]
+        self.assertEqual(chips, [12590])
+        game.ns.SetOption(game.ns, "dungeonGrid", True)
+        self.assertEqual([row.piece.id for row in view.rows.values() if row.shown], [12590])
+
     def test_dungeons_restore_selections_by_spec_and_ignore_removed_lists(self):
         saved = """EasyBISCharDB = {class="ROGUE",spec=1,list="pve",dungeonLists={
             ["ROGUE:1"]={gear1=true,gear7=true}, ["ROGUE:2"]={} }}
@@ -361,26 +381,33 @@ class WindowTest(unittest.TestCase):
         alts: False with the alternatives switched off. count: the alternatives a slot lists."""
         flt = for_list(flt or default_filter(), mode)
         side = flt[0]
-        visible = {slot: [e for e in self.kept[token][spec][mode][slot] if e.passes(flt)]
-                   for slot, _ in ladders.SLOTS}
-        two = [e for e in visible["main"] if e.two_hand]
-        one = [e for e in visible["main"] if not e.two_hand]
+        slots = self.kept[token][spec][mode]
+        visible = ladders.visible_slots(slots, flt)
         lead = ladders.lead   # a placed item (flag e) is never a best pick
-        two_hand = bool(two) and (not one or lead(two).stored >= lead(one).stored
-                                  + (lead(visible["off"]).stored if visible["off"] else 0))
         shown = 1 + count
-        other = {slot: entries[:shown] for slot, entries in
-                 zip(("main", "off"), ladders.other_weapons(visible["main"], visible["off"]))}
+        other_main, other_off = ladders.other_weapons(visible["main"], visible["off"])
+        other = {"main": other_main[:shown], "off": other_off[:shown]}
         visible["main"], visible["off"] = ladders.weapon_lists(visible["main"], visible["off"])
+        first = lead(visible["main"])
+        two_hand = bool(first and first.two_hand)
+        one, off = lead(other_main), lead(other_off)
+        measured_set = (two_hand and first.weapon_set_side == side and one and off
+                        and (side, one.shown(side), off.shown(side)) in first.pre_raid_weapon_sets)
 
         def other_gap(slot, entry) -> int | None:
             """A set against a set: one-hander + off hand against the two-hander, or the reverse. A placed
             item has no score of its own, so no gap; nor has one whose score is no full measure."""
-            if entry.unscored or entry.estimated:
+            if measured_set or entry.unscored or entry.estimated:
                 return None
             best_main, best_off = lead(visible["main"]), [lead(visible["off"])] if visible["off"] else []
             if two_hand:
                 partner = [lead(other["off" if slot == "main" else "main"])] if other["off" if slot == "main" else "main"] else []
+                if slot == "main" and hasattr(slots["off"], "contexts"):
+                    main = entry.shown(side)
+                    if (side, main) not in slots["off"].contexts:
+                        return None
+                    valid = ladders.visible(slots["off"], flt, main)
+                    partner = [lead(valid)] if valid and lead(valid) else []
                 return self.gap(entry.stored / 10 + (partner[0].stored / 10 if partner else 0), best_main.stored / 10)
             return self.gap(entry.stored / 10, best_main.stored / 10 + (best_off[0].stored / 10 if best_off else 0))
 
@@ -389,19 +416,20 @@ class WindowTest(unittest.TestCase):
             if only_slot and slot != only_slot:
                 continue
             best, alternatives = ladders.picks(slot, visible[slot], count)
-            options = test_addon.visible_duel(token, spec, mode, flt, slot, visible[slot])
+            duel = test_addon.visible_duel(token, spec, mode, slot, visible[slot], flt)
             for entry in best:
-                item = entry.shown(side)
-                rows.append(("item", item, slot, True, None if item in options else 0))
-            for item in options:
-                if not any(entry.shown(side) == item for entry in best):
-                    rows.append(("item", item, slot, False, None))
-            for entry in alternatives if alts else []:
-                if entry.shown(side) in options:
-                    continue
+                rows.append(("item", entry.shown(side), slot, True, None if entry in duel else 0))
+            displayed = [e for e in duel if e not in best]
+            if alts:
+                displayed.extend(e for e in alternatives if e not in duel)
+                fourth = next((e for e in displayed if e.fourth_option), None)
+                if fourth:
+                    displayed.remove(fourth)
+                    displayed.insert(3 - len(best), fourth)
+            for entry in displayed:
                 rows.append(("item", entry.shown(side), slot, False,
-                             None if entry.unscored or entry.estimated
-                             else self.gap(entry.stored / 10, best[0].stored / 10)))
+                             None if entry.unscored or entry.estimated or entry in duel
+                             else self.gap(entry.stored / 10, best[1 if entry.paired_with else 0].stored / 10)))
             if alts and other.get(slot):
                 rows.append(("note", None, slot, None, None))
                 for entry in other[slot]:
@@ -731,6 +759,18 @@ class WindowTest(unittest.TestCase):
         self.assertEqual(frames[position - 1].data.kind, "header")
         self.assertEqual(frames[position - 1].header.text, "Off hand")
 
+    def test_balance_compares_enchanted_weapon_sets_without_showing_a_false_score_gap(self):
+        game = self.open(saved="EasyBISCharDB = { class = 'DRUID', spec = 1, list = 'pve' }")
+        frames = {frame.data.id: frame for frame in self.all_frames(game) if frame.data.kind == "item"}
+        self.assertTrue(frames[13937].data.bis)
+        for item in (2243, 18316):
+            row = frames[item]
+            self.assertTrue(row.data.other)
+            self.assertIsNone(row.data.gap)
+            self.assertIsNone(row.data.ratio)
+            self.assertFalse(row.data.tie)
+            self.assertEqual(strip_colors(row.rank.text), game.ns.L.RANK_ALT)
+
     def test_both_weapon_styles_are_listed(self):
         game = Game(cls="MAGE", saved=FIRE_MAGE + " " + WITH_PVP)   # the Mageblade is a PvP reward
         game.stub.itemNames[MAGEBLADE] = "Grand Marshal's Mageblade"
@@ -800,13 +840,13 @@ class WindowTest(unittest.TestCase):
         self.assertTrue(compare.shown, "Shift already held: the comparison comes with the tooltip")
         game.stub.shift = False
         compare.Show(compare)
-        game.stub.run(tooltip, "OnUpdate")
+        game.stub.update()
         self.assertFalse(compare.shown, "the game setting it again does not last")
         game.stub.run(row, "OnLeave")
         self.assertFalse(tooltip.shown)
         compare.Show(compare)
         game.stub.fire("MODIFIER_STATE_CHANGED", "LSHIFT", 0)
-        game.stub.run(tooltip, "OnUpdate")
+        game.stub.update()
         self.assertTrue(compare.shown, "another addon's tooltip keeps its comparison")
         compare.Hide(compare)
 
@@ -1039,13 +1079,18 @@ class WindowTest(unittest.TestCase):
         game = self.open(saved=ENHANCEMENT)
         window = game.ns.Browser.window
         self.assertFalse(window.empty.shown)
-        game.ns.SetOption(game.ns, "seenOnly", True)
-        find_slot = "ranged"   # an Enhancement Shaman has no ranged pick
-        game.ns.Browser.state.slot = find_slot
-        game.ns.SetOption(game.ns, "seenOnly", False)
+        open_dropdown(game, window.source.button)
+        find(game.stub.menu, "Crafted").pick()
+        self.assertGreater(len(window.rowData), 0)
+        open_dropdown(game, window.zone.button)
+        find(game.stub.menu, "Blackrock Spire").pick()
         self.assertEqual(len(window.rowData), 0)
         self.assertTrue(window.empty.shown)
         self.assertEqual(window.empty.text, "Nothing matches these filters.")
+        open_dropdown(game, window.source.button)
+        find(game.stub.menu, "All").pick()
+        self.assertGreater(len(window.rowData), 0)
+        self.assertFalse(window.empty.shown)
 
     # -- enchants -----------------------------------------------------------------------------
 
@@ -1364,10 +1409,68 @@ class WindowTest(unittest.TestCase):
     def test_addon_menu_entry(self):
         game = Game()
         game.lua.globals().EasyBIS_OnCompartmentClick()
+        self.assertIsNone(game.ns.Browser.window)
+        game.stub.runTimers()
         self.assertTrue(game.ns.Browser.window.shown)
-        game.lua.globals().EasyBIS_OnCompartmentEnter(None, game.lua.globals().UIParent)
-        self.assertEqual(game.lua.globals().GameTooltip.text, "Easy BIS")
-        game.lua.globals().EasyBIS_OnCompartmentLeave()
+        owner = game.lua.globals().UIParent
+        game.lua.globals().EasyBIS_OnCompartmentEnter(None, owner)
+        tip = game.lua.globals().EasyBISCompartmentTooltip
+        self.assertEqual(tip.text, "Easy BIS")
+        self.assertFalse(game.lua.globals().GameTooltip.shown)
+        game.lua.globals().EasyBIS_OnCompartmentLeave(None, owner)
+        self.assertFalse(tip.shown)
+
+    def test_filters_use_their_own_buttons_and_dismiss_on_outside_click(self):
+        game = self.open(saved=ENHANCEMENT + """
+            MenuUtil.CreateContextMenu = function() error("used Blizzard's menu") end
+            C_LFGList = { Search = function() error("unexpected LFG search") end }
+        """)
+        window = game.ns.Browser.window
+        game.stub.run(window.spec.button, "OnMouseDown", "LeftButton")
+        root = game.stub.menuPanel(1)
+        warrior = next(row for row in root.rows.values() if "Warrior" in plain(row.entry.text))
+        game.stub.run(warrior, "OnEnter")
+        sub = game.stub.menuPanel(2)
+        fury = next(row for row in sub.rows.values() if row.entry.text == "Fury")
+        game.stub.run(fury, "OnClick")
+        self.assertEqual(game.ns.Browser.Target(), ("WARRIOR", 2, "pve"))
+        self.assertFalse(root.shown)
+        self.assertFalse(sub.shown)
+
+        game.stub.run(window.options, "OnMouseDown", "LeftButton")
+        row = next(row for row in root.rows.values() if row.entry and row.entry.text == game.ns.L.OPT_tooltip)
+        game.stub.run(row, "OnClick")
+        self.assertFalse(game.ns.db.tooltip)
+        self.assertFalse(row.mark.shown)
+        self.assertTrue(root.shown)
+        game.stub.fire("GLOBAL_MOUSE_DOWN", "LeftButton")
+        self.assertFalse(root.shown)
+        self.assertIsNone(game.stub.menu, "the shared menu manager received an Easy BIS entry")
+
+    def test_blizzard_can_take_the_tooltip_before_our_row_gets_its_leave(self):
+        game = self.open(saved=ENHANCEMENT + """
+            local update = function() end
+            GameTooltip:SetScript("OnUpdate", update)
+            function BlizzardTooltipUpdateIntact() return GameTooltip:GetScript("OnUpdate") == update end
+        """)
+        shared = game.lua.globals()
+        row = self.frames(game)[0]
+        game.stub.run(row, "OnEnter")
+        tip, compare = shared.GameTooltip, shared.ShoppingTooltip1
+        foreign = shared.CreateFrame("Button")
+        tip.SetOwner(tip, foreign, "ANCHOR_RIGHT")
+        tip.SetText(tip, "LFG category")
+        tip.Show(tip)
+        compare.SetOwner(compare, foreign, "ANCHOR_NONE")
+        compare.Show(compare)
+        game.stub.run(row, "OnLeave")
+        shared.EasyBIS_OnCompartmentLeave(None, row)
+        game.stub.fire("MODIFIER_STATE_CHANGED", "LSHIFT", 0)
+        game.stub.update()
+        self.assertTrue(shared.BlizzardTooltipUpdateIntact())
+        self.assertTrue(tip.shown)
+        self.assertEqual(tip.text, "LFG category")
+        self.assertTrue(compare.shown)
 
     # -- sources ------------------------------------------------------------------------------
 
@@ -1558,8 +1661,8 @@ class WindowTest(unittest.TestCase):
         self.assertEqual(tiny.ns.Browser.window.height, 620, "a height too small to use is not restored")
 
     def test_notice_under_the_filters(self):
-        """A known problem awaits its fix: a band says so between the filters and the list, on every page."""
-        for locale, word in (("enUS", "items"), ("frFR", "objets")):
+        """The update notice appears between the filters and the list on every page."""
+        for locale, word in (("enUS", "regular updates"), ("frFR", "mises à jour régulières")):
             game = self.open(locale=locale)
             window = game.ns.Browser.window
             notice = window.notice
@@ -2201,9 +2304,12 @@ class WindowTest(unittest.TestCase):
         self.assertEqual(free.height, ROW)
 
     def test_a_faction_nobody_knows_how_to_earn(self):
-        """The Watchers' rings stay in the list, a grey "?" after their name that the tooltip explains."""
+        """The unknown-source filter admits the rings and preserves their standing and its tooltip."""
         game = self.open(cls="PRIEST")   # Discipline: a healer's list, which stays on the weights
         window = game.ns.Browser.window
+        self.assertFalse(any(row.data.kind == "item" and row.data.reputation
+                             and row.data.reputation.factionID == 2819 for row in self.frames(game)))
+        game.ns.SetOption(game.ns, "unsourced", True)
         rows = self.frames(game)
         watchers = [row for row in rows if row.data.kind == "item" and row.data.reputation
                     and row.data.reputation.factionID == 2819]
@@ -2226,7 +2332,7 @@ class WindowTest(unittest.TestCase):
         game.stub.run(window.tabs.buttons[3], "OnClick")
         cells = [cell for cell in game.ns.Character.view.cells.values() if cell.data and cell.data.id]
         marked = [cell for cell in cells if cell.data.reputation and cell.data.reputation.factionID == 2819]
-        self.assertTrue(marked, "a Watchers ring is the Arcane sheet's best ring before the raids")
+        self.assertTrue(marked, "the Discipline sheet admits its Watchers ring when unknown sources are shown")
         self.assertTrue(all(" |cff808080?|r" in cell.name.text for cell in marked))
         self.assertFalse(any("|cff808080?|r" in cell.name.text for cell in cells if cell not in marked))
 
@@ -2506,7 +2612,7 @@ class WindowTest(unittest.TestCase):
     def shown_pieces(self, token, spec, count) -> tuple[set, set]:
         """(shown, best): the items a PvE list shows with that many alternatives, and its best picks."""
         flt = for_list(default_filter(), "pve")
-        visible = {slot: [e for e in self.kept[token][spec]["pve"][slot] if e.passes(flt)] for slot, _ in ladders.SLOTS}
+        visible = ladders.visible_slots(self.kept[token][spec]["pve"], flt)
         visible["main"], visible["off"] = ladders.weapon_lists(visible["main"], visible["off"])
         shown, best = set(), set()
         for slot, _ in ladders.SLOTS:
@@ -3498,20 +3604,25 @@ class WindowTest(unittest.TestCase):
                 self.assertEqual(row.used, len(list(row.piece.order.values())) if row.piece.order else 0)
 
     def test_dungeons_say_a_quest(self):
-        game, view = self.open_dungeons(saved=self.DISCIPLINE)
+        game, view = self.open_dungeons(saved=self.DISCIPLINE, alts=True)
         rose = self.chip_of(view, "Penelope's Rose")
         self.assertEqual(rose.run.key, "289")
+        self.assertFalse(rose.entry.piece.best)
         self.assertTrue(rose.icon.quest.shown, "the game's quest mark on the piece")
         self.assertIn("AvailableQuestIcon", rose.sub.text)
         self.assertEqual(plain(rose.sub.text), "Kirtonos the Herald", "the quest's title in place of a boss, and no rate")
         self.assertIsNone(rose.entry.percent)
         lane = next(lane for lane in self.lanes(view) if lane.run.key == "289")
-        self.assertEqual(rose.run.need, sum(1 for chip in self.chips(lane) if chip.entry.piece.best),
-                         "a quest's reward counts as a piece to get there")
+        self.assertEqual(rose.run.alts, sum(1 for chip in self.chips(lane) if not chip.entry.piece.best),
+                         "a recommended quest alternative counts in its dungeon")
         game.stub.run(rose, "OnEnter")
         said = [plain(line[1]) for line in game.lua.globals().GameTooltip.lines.values()]
         self.assertIn("Scholomance - reward of the quest Kirtonos the Herald. One run is enough.", said)
-        tile = next(tile for tile in view.tiles.values() if tile.piece.id == rose.entry.piece.id)
+        self.assertNotIn(rose.entry.piece.id, [tile.piece.id for tile in view.tiles.values()])
+        # Every class's Royal Seal has the same name. The priest's quest awards item 18469.
+        best_quest = next(chip for run in self.lanes(view) for chip in self.chips(run) if chip.entry.piece.id == 18469)
+        self.assertTrue(best_quest.entry.quest and best_quest.entry.piece.best)
+        tile = next(tile for tile in view.tiles.values() if tile.piece.id == best_quest.entry.piece.id)
         self.assertFalse(tile.grey or tile.icon.art.desaturated, "a dungeon's piece in the set")
         # in the grid: the quest mark in the run's cell
         game.stub.run(view.mode.buttons[2], "OnClick")

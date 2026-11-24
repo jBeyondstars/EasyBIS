@@ -245,7 +245,12 @@ ShoppingTooltip1 = NewWidget("GameTooltip", "ShoppingTooltip1")
 ShoppingTooltip2 = NewWidget("GameTooltip", "ShoppingTooltip2")
 ShoppingTooltip1.shown, ShoppingTooltip2.shown = false, false
 local function Compare(tooltip)
-    if tooltip.item then ShoppingTooltip1:Show(); ShoppingTooltip2:Show() end
+    if tooltip.item then
+        for _, tip in ipairs({ ShoppingTooltip1, ShoppingTooltip2 }) do
+            tip:SetOwner(tooltip, "ANCHOR_NONE")
+            tip:Show()
+        end
+    end
 end
 GameTooltip.scripts.OnShow = Compare
 function GameTooltip_ShowCompareItem(tooltip) Compare(tooltip) end
@@ -506,6 +511,27 @@ function stub.run(widget, script, ...)
     local handler = widget.scripts[script]
     assert(handler, "the widget has no " .. script .. " script")
     return handler(widget, ...)
+end
+
+function stub.update()
+    for _, frame in ipairs(stub.frames) do
+        if frame:IsShown() and frame.scripts.OnUpdate then frame.scripts.OnUpdate(frame, 0.016) end
+    end
+end
+
+function stub.menuPanel(level)
+    for _, frame in ipairs(stub.frames) do
+        if frame:IsShown() and frame.entries and frame.level == level then return frame end
+    end
+end
+
+function stub.openFilter(button)
+    local panel = stub.menuPanel(1)
+    local script = button.kind == "DropdownButton" and "OnMouseDown" or "OnClick"
+    if panel and panel.anchor == button then stub.run(button, script, "LeftButton") end
+    stub.run(button, script, "LeftButton")
+    panel = stub.menuPanel(1)
+    stub.menu = panel and { items = panel.entries, panel = panel } or nil
 end
 
 -- Inspect the entries on the open private panel, as the menu tests do for Blizzard menus.

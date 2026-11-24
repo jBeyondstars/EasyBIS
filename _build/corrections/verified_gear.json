@@ -1,0 +1,376 @@
+{
+ "about": "Verified permanent stats only, checked against Forever tooltip dataEnv 16 and WoWSims Forever at 3289d8314fec155f97c79b08ab0dff85b5555e68 (1.60.1.71037). Each stat field records [old, new]. Stat 40 is feral attack power, and 124 is all resistances. Zone bonuses are excluded. See docs/audit-forever/soins-et-jcj.json.",
+ "items": {
+  "19101": {
+   "name": "Whiteout Staff",
+   "fields": {
+    "5": [
+     16,
+     25
+    ]
+   },
+   "source": "https://www.wowhead.com/forever/item=19101"
+  },
+  "19102": {
+   "name": "Crackling Staff",
+   "fields": {
+    "7": [
+     0,
+     25
+    ],
+    "45": [
+     99,
+     74
+    ]
+   },
+   "source": "https://www.wowhead.com/forever/item=19102"
+  },
+  "19120": {
+   "name": "Rune of the Guard Captain",
+   "fields": {
+    "38": [
+     0,
+     14
+    ]
+   },
+   "source": "https://www.wowhead.com/forever/item=19120"
+  },
+  "21407": {
+   "name": "Mace of Unending Life",
+   "fields": {
+    "40": [
+     0,
+     140
+    ]
+   },
+   "source": "https://www.wowhead.com/forever/item=21407"
+  },
+  "21565": {
+   "name": "Rune of Perfection",
+   "fields": {
+    "47": [
+     0,
+     3
+    ]
+   },
+   "source": "https://www.wowhead.com/forever/item=21565"
+  },
+  "21566": {
+   "name": "Rune of Perfection",
+   "fields": {
+    "47": [
+     0,
+     2
+    ]
+   },
+   "source": "https://www.wowhead.com/forever/item=21566"
+  },
+  "21567": {
+   "name": "Rune of Duty",
+   "fields": {
+    "124": [
+     0,
+     3
+    ]
+   },
+   "source": "https://www.wowhead.com/forever/item=21567"
+  },
+  "21568": {
+   "name": "Rune of Duty",
+   "fields": {
+    "124": [
+     0,
+     2
+    ]
+   },
+   "source": "https://www.wowhead.com/forever/item=21568"
+  },
+  "22333": {
+   "name": "Hammer of Divine Might",
+   "weapon": [53.1, 66, 99, 2.1],
+   "fields": {
+    "41": [
+     0,
+     135
+    ],
+    "42": [
+     0,
+     45
+    ]
+   },
+   "source": "https://www.wowhead.com/forever/item=22333"
+  },
+  "22632": {
+   "name": "Atiesh, Greatstaff of the Guardian",
+   "fields": {
+    "40": [
+     0,
+     420
+    ]
+   },
+   "source": "https://www.wowhead.com/forever/item=22632"
+  },
+  "226985": {
+   "name": "Soulforge Wristguards",
+   "fields": {
+    "4": [
+     8,
+     0
+    ],
+    "5": [
+     5,
+     8
+    ],
+    "45": [
+     0,
+     6
+    ]
+   },
+   "source": "https://www.wowhead.com/forever/item=226985"
+  },
+  "226986": {
+   "name": "Soulforge Waistguard",
+   "fields": {
+    "4": [
+     13,
+     0
+    ],
+    "5": [
+     10,
+     13
+    ],
+    "45": [
+     0,
+     12
+    ]
+   },
+   "source": "https://www.wowhead.com/forever/item=226986"
+  },
+  "226987": {
+   "name": "Soulforge Pauldrons",
+   "fields": {
+    "4": [
+     12,
+     0
+    ],
+    "5": [
+     8,
+     12
+    ],
+    "45": [
+     0,
+     9
+    ]
+   },
+   "source": "https://www.wowhead.com/forever/item=226987"
+  },
+  "226988": {
+   "name": "Soulforge Legguards",
+   "fields": {
+    "4": [
+     16,
+     0
+    ],
+    "5": [
+     14,
+     16
+    ],
+    "45": [
+     0,
+     16
+    ]
+   },
+   "source": "https://www.wowhead.com/forever/item=226988"
+  },
+  "226989": {
+   "name": "Soulforge Faceguard",
+   "fields": {
+    "4": [
+     18,
+     0
+    ],
+    "5": [
+     11,
+     18
+    ],
+    "45": [
+     0,
+     13
+    ]
+   },
+   "source": "https://www.wowhead.com/forever/item=226989"
+  },
+  "226990": {
+   "name": "Soulforge Handguards",
+   "fields": {
+    "4": [
+     11,
+     0
+    ],
+    "5": [
+     10,
+     11
+    ],
+    "45": [
+     0,
+     12
+    ]
+   },
+   "source": "https://www.wowhead.com/forever/item=226990"
+  },
+  "226991": {
+   "name": "Soulforge Sabatons",
+   "fields": {
+    "4": [
+     12,
+     0
+    ],
+    "5": [
+     7,
+     12
+    ],
+    "45": [
+     0,
+     8
+    ]
+   },
+   "source": "https://www.wowhead.com/forever/item=226991"
+  },
+  "226992": {
+   "name": "Soulforge Chestguards",
+   "fields": {
+    "4": [
+     18,
+     0
+    ],
+    "5": [
+     12,
+     18
+    ],
+    "45": [
+     0,
+     14
+    ]
+   },
+   "source": "https://www.wowhead.com/forever/item=226992"
+  },
+  "270275": {
+   "name": "Cleansed Vilebranch Medallion",
+   "fields": {
+    "38": [
+     0,
+     14
+    ]
+   },
+   "source": "https://www.wowhead.com/forever/item=270275"
+  },
+  "271903": {
+   "name": "Enriched Seal",
+   "fields": {
+    "43": [
+     0,
+     5
+    ]
+   },
+   "source": "https://www.wowhead.com/forever/item=271903"
+  },
+  "271904": {
+   "name": "Volunteer's Lucky Seal",
+   "fields": {
+    "124": [
+     0,
+     3
+    ]
+   },
+   "source": "https://www.wowhead.com/forever/item=271904"
+  },
+  "271905": {
+   "name": "Enriched Seal",
+   "fields": {
+    "43": [
+     0,
+     3
+    ]
+   },
+   "source": "https://www.wowhead.com/forever/item=271905"
+  },
+  "271906": {
+   "name": "Volunteer's Lucky Seal",
+   "fields": {
+    "124": [
+     0,
+     4
+    ]
+   },
+   "source": "https://www.wowhead.com/forever/item=271906"
+  },
+  "272059": {
+   "name": "Darkspear Voodoo Seal",
+   "fields": {
+    "43": [
+     0,
+     3
+    ]
+   },
+   "source": "https://www.wowhead.com/forever/item=272059"
+  },
+  "272060": {
+   "name": "Relentless Raider's Seal",
+   "fields": {
+    "124": [
+     0,
+     4
+    ]
+   },
+   "source": "https://www.wowhead.com/forever/item=272060"
+  },
+  "272061": {
+   "name": "Darkspear Voodoo Seal",
+   "fields": {
+    "43": [
+     0,
+     5
+    ]
+   },
+   "source": "https://www.wowhead.com/forever/item=272061"
+  },
+  "272062": {
+   "name": "Relentless Raider's Seal",
+   "fields": {
+    "124": [
+     0,
+     3
+    ]
+   },
+   "source": "https://www.wowhead.com/forever/item=272062"
+  },
+  "279863": {
+   "name": "Black Horn Necklace",
+   "fields": {
+    "41": [
+     0,
+     11
+    ],
+    "42": [
+     0,
+     4
+    ]
+   },
+   "source": "https://www.wowhead.com/forever/item=279863"
+  },
+  "284097": {
+   "name": "Everstaring Abomination Eye",
+   "fields": {
+    "6": [
+     14,
+     6
+    ]
+   },
+   "source": "https://www.wowhead.com/forever/item=284097"
+  }
+ },
+ "random_suffix": [
+  12960,
+  22225
+ ]
+}

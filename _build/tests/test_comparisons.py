@@ -40,9 +40,12 @@ class ComparisonTest(unittest.TestCase):
         row = [16463, 16571, 13255, 10.5, 12.319, 1.523, 23.795, 500]
         source = {"wowsims": "21377c070b", "profiles": {"HUNTER 1": notes.profile_key(profile)},
                   "groups": {"HUNTER 1 hands": [row]}}
-        tree = {"HUNTER": {1: {"pve": {"hands": self.hands}}}}
+        slot = {"hands": self.hands}
+        tree = {"HUNTER": {1: {"pve": slot}}}
         def values(specific=()):
             return notes.comparisons(self.db, tree, specific, source)
+        self.assertFalse(values(), "an archived duel cannot explain a faction-specific replacement")
+        slot["hands"] = list(self.hands)  # the canonical ladder that used the archived scores
         self.assertEqual(values(), {("HUNTER", 1, "hands"): [(16571, 13255, 1232, 2380, 500, "c")]})
         self.assertTrue(values([{"items": [16463]}]), "an editorial note for the other faction is separate")
         self.assertTrue(values([{"items": [16571], "list": "pvp"}]))
@@ -51,6 +54,11 @@ class ComparisonTest(unittest.TestCase):
             self.assertFalse(values())
         with patch.dict(profile, {"without_effect": [13255], "assumed_rate": [13255]}):
             self.assertEqual(values()[("HUNTER", 1, "hands")][0][-1], "cma")
+        # An inconclusive swap only warrants a tooltip if the model has a known limitation.
+        source["groups"]["HUNTER 1 hands"] = [row[:4] + [0.2] + row[5:]]
+        self.assertFalse(values())
+        with patch.dict(profile, {"without_effect": [13255]}):
+            self.assertEqual(values()[("HUNTER", 1, "hands")][0][-1], "nm")
         for column, invalid in ((0, 999), (1, 16463), (2, 999), (3, -10.5)):
             with self.subTest(column=column):
                 source["groups"]["HUNTER 1 hands"] = [row[:column] + [invalid] + row[column + 1:]]
@@ -63,30 +71,29 @@ class ComparisonTest(unittest.TestCase):
         self.assertFalse(values())
 
     @unittest.skipIf(lupa is None, "lupa is not installed")
-    def test_tooltip_uses_locale_slot_measure_and_editorial_priority(self):
-        for locale, fixed, noise, reversal in (("frFR", "+23,80", "deux erreurs standard", "inverse l’ordre"),
-                                                ("enUS", "+23.80", "two standard errors", "reverses the listed order")):
-            game = Game(locale=locale)
-            game.ns.data.comparisons = game.lua.table_from({
-                "HUNTER1_hands": " 16571:13255:1232:2380:500:c 911:13255:-2:0:20000:nma 912:13255:-12:-5:5000:r",
-                "WARRIOR1_main": " 647:13255:1232:2380:500:c",
-                "HUNTER1_main": " 911:13255:500:600:500:c",
-                "SHAMAN3_hands": " 911:13255:500:600:500:c"})
-            note = game.ns.Notes.For
-            result = note(16571, "HUNTER", 1, "pve", "hands")
-            self.assertIn(game.ns.Items.Name(13255), result)
-            self.assertIn(fixed, result)
-            self.assertIn(noise, note(911, "HUNTER", 1, "pve", "hands"))
-            self.assertIn("incertaine" if locale == "frFR" else "uncertain proc rate",
-                          note(911, "HUNTER", 1, "pve", "hands"))
-            self.assertIn("omet un effet" if locale == "frFR" else "omits an effect",
-                          note(911, "HUNTER", 1, "pve", "hands"))
-            self.assertIn(reversal, note(912, "HUNTER", 1, "pve", "hands"))
-            self.assertNotIn(fixed, note(647, "WARRIOR", 1, "pve", "main"), "the editorial text wins")
-            for args in ((16463, "HUNTER", 1, "pve", "hands"), (911, "HUNTER", 1, "pvp", "hands"),
-                         (911, "HUNTER", 1, "pve", "head"), (911, "HUNTER", 1, "pve"),
-                         (911, "SHAMAN", 3, "pve", "hands")):
-                self.assertIsNone(note(*args))
+    def test_archived_duels_never_create_tooltips_in_either_language(self):
+        for locale in ("frFR", "enUS"):
+            with self.subTest(locale=locale):
+                game = Game(locale=locale)
+                self.assertIsNone(game.ns.data.comparisons)
+                # Even data from a prior build must not turn a duel into a tooltip.
+                game.ns.data.comparisons = game.lua.table_from({
+                    "HUNTER1_hands": " 911:13255:-2:0:20000:nma 912:13255:-12:-5:5000:r"
+                                     " 913:13255:2:3:2000:n 914:13255:4:3:2000:ca 915:13255:12:12:500:c",
+                })
+                for item in range(911, 916):
+                    self.assertIsNone(game.ns.Notes.For(item, "HUNTER", 1, "pve", "hands"))
+                self.assertIn("200", game.ns.Notes.For(647, "WARRIOR", 1, "pve", "main"))
+
+    @unittest.skipIf(lupa is None, "lupa is not installed")
+    def test_destruction_shoulders_show_their_gaps_without_circular_notes(self):
+        for locale in ("frFR", "enUS"):
+            with self.subTest(locale=locale):
+                game = Game(locale=locale, cls="WARLOCK", saved="EasyBISDB = { altCount = 6 }")
+                state = game.lua.table_from({"class": "WARLOCK", "spec": 3, "list": "pve", "slot": "shoulder"})
+                rows, _ = game.ns.Rows.Items(state)
+                shoulders = {row.id: (row.gap, row.why) for row in rows.values() if row.id in (19059, 18681)}
+                self.assertEqual(shoulders, {19059: (-11, None), 18681: (-15, None)})
 
 
 if __name__ == "__main__":

@@ -145,7 +145,8 @@ end
 -- an alternative to a goal when another selected list calls for that item.
 local function TrackedSlots(state, withAlts)
     local slots, count = {}, 0
-    for _, slot in ipairs(ns.SLOTS) do slots[slot] = { best = {}, alts = {}, copies = {}, seenAlt = {} } end
+    local goalCopies, seenAlt = {}, {}
+    for _, slot in ipairs(ns.SLOTS) do slots[slot] = { best = {}, alts = {} } end
     local selection = Dungeons.Selection(state)
     for _, list in ipairs(Dungeons.Lists(state)) do
         if selection[list.key] then
@@ -154,19 +155,21 @@ local function TrackedSlots(state, withAlts)
             elseif not list.gear then ladder = ns.Ladders.For(state.class, state.spec, list.key) end
             if ladder or aoe or list.gear then count = count + 1 end
             if count == 1 then slots.twoHand = ladder and ladder.twoHand else slots.twoHand = nil end
+            local copies = {}
             for _, slot in ipairs(ns.SLOTS) do
-                local merged, copies = slots[slot], {}
+                local merged, slotGoals = slots[slot], {}
                 local function Add(id, best, option)
                     local pick = { id = id, list = list.key, option = option }
                     if best then
+                        slotGoals[id] = true
                         copies[id] = (copies[id] or 0) + 1
-                        if copies[id] > (merged.copies[id] or 0) then
+                        if copies[id] > (goalCopies[id] or 0) then
                             pick.copy = copies[id]
-                            merged.copies[id] = copies[id]
+                            goalCopies[id] = copies[id]
                             table.insert(merged.best, pick)
                         end
-                    elseif not merged.seenAlt[id] then
-                        merged.seenAlt[id] = true
+                    elseif not seenAlt[id] then
+                        seenAlt[id] = true
                         table.insert(merged.alts, pick)
                     end
                 end
@@ -178,7 +181,7 @@ local function TrackedSlots(state, withAlts)
                     local picks = ladder[slot]
                     for _, pick in ipairs(picks.best) do Add(pick.id, true, pick.option) end
                     for _, id in ipairs(ns.Custom.List(state.class, state.spec, list.key, slot)) do
-                        if not copies[id] then Add(id, true) end
+                        if not slotGoals[id] then Add(id, true) end
                     end
                     if withAlts then
                         for _, pick in ipairs(ns.Ladders.DisplayAlts(picks, true)) do Add(pick.id, false, pick.option) end
@@ -187,12 +190,12 @@ local function TrackedSlots(state, withAlts)
             end
         end
     end
-    return slots, count
+    return slots, count, goalCopies
 end
 
 function Dungeons.For(state)
     local model = { runs = {}, sheet = {}, rows = {}, elsewhere = {}, need = 0, got = 0, dungeons = 0 }
-    local slots, tracked = TrackedSlots(state, ns:GetOption("listAlts"))
+    local slots, tracked, goalCopies = TrackedSlots(state, ns:GetOption("listAlts"))
     model.tracked = tracked
     if tracked == 0 then return model end
     local byKey, counts = {}, {}
@@ -269,7 +272,7 @@ function Dungeons.For(state)
         for _, best in ipairs(picks.best) do covered = covered and ns.Sources.Owned(best.id, best.copy) end
         local rank = 0
         for _, alt in ipairs(picks.alts) do
-            if not picks.copies[alt.id] then
+            if not goalCopies[alt.id] then
                 rank = rank + 1
                 local piece = Piece(slot, rank, alt, false)
                 piece.moot = covered and not alt.option

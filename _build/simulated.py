@@ -76,12 +76,15 @@ class Reading:
     date: str = ""
     specs: dict = field(default_factory=dict)    # (class token, spec index) -> SpecRanking
     placed: dict = field(default_factory=dict)   # (class token, spec index) -> {slot: [Placement]}, placed.json
+    by_faction: dict = field(default_factory=dict)  # (class token, spec index) -> slot -> faction -> measurements
+    faction_revisions: frozenset = frozenset()
 
     @property
     def commits(self) -> str:
         """The commits that measured the specs, the file's own last: one, or several while the specs are measured
         again a few at a time. A spec's record names its own ("wowsims"); one that names none has the file's."""
         found = {ranking.record.get("wowsims") or self.commit for ranking in self.specs.values()}
+        found.update(self.faction_revisions)
         return " and ".join(sorted(found, key=lambda commit: (commit == self.commit, commit))) or self.commit
 
 
@@ -120,7 +123,28 @@ def load(path=FILE, placed_path=PLACED) -> Reading:
     for key, record in data.get("specs", {}).items():
         token, spec = key.split()
         specs[token, int(spec)] = parse_spec(record)
-    return Reading(commit=data.get("wowsims", ""), date=data.get("date", ""), specs=specs, placed=placed)
+    calibrated_path = path.with_name("dps_by_faction.json")
+    calibrated = json.loads(calibrated_path.read_text(encoding="utf-8")) if calibrated_path.is_file() else {}
+    by_faction = {}
+    revisions = set()
+    for key, profile in calibrated.get("profiles", {}).items():
+        token, spec = key.split()
+        by_faction[token, int(spec)] = profile["slots"]
+        revisions.update(profile.get("wowsims_by_slot", {}).values())
+        for contexts in profile.get("wowsims_by_item", {}).values():
+            for items in contexts.values():
+                revisions.update(items.values())
+        revision = profile.get("wowsims") or calibrated.get("wowsims")
+        if revision:
+            revisions.add(revision)
+    for spec, school in ((1, "arcane"), (3, "frost")):
+        chest = path.with_name(f"mage_{school}_chest.json")
+        if chest.is_file() and ("MAGE", spec) in specs:
+            calibration = json.loads(chest.read_text(encoding="utf-8"))
+            by_faction.setdefault(("MAGE", spec), {})["chest"] = calibration["chest"]
+            revisions.add(calibration["engine"])
+    return Reading(commit=data.get("wowsims", ""), date=data.get("date", ""), specs=specs, placed=placed,
+                   by_faction=by_faction, faction_revisions=frozenset(revisions))
 
 
 def save(commit: str, date: str, records: dict, path=FILE) -> None:

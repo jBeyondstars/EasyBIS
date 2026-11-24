@@ -38,8 +38,10 @@ import ladders  # noqa: E402
 import luaout  # noqa: E402
 import notes  # noqa: E402
 import phases  # noqa: E402
+import pvp_insignia  # noqa: E402
 import ranks  # noqa: E402
 import questie  # noqa: E402
+import relics  # noqa: E402
 import reputations  # noqa: E402
 import runs  # noqa: E402
 import shockadin  # noqa: E402
@@ -149,13 +151,22 @@ class GeneratorTest(unittest.TestCase):
             self.assertEqual((ours[number]["name"], ours[number]["role"], ours[number]["style"]),
                              (spec["name"], spec["role"], spec["style"]), f"ForeverDB's spec {number} is left as it is")
             self.assertNotIn("added", ours[number])
-        for number in (1, 3):   # Holy and Retribution: the Shockadin's neighbours, weights and all
-            self.assertEqual(ours[number], theirs[number])
+        for number in (1, 3):
+            expected = copy.deepcopy(theirs[number])
+            if number == 1:
+                # Holy adds a one-handed mace, held tome and two caster trinkets.
+                expected["pools"] = {"mh": [(22315, 56)], "oh": [(22319, 56)],
+                                     "trinket": [(12930, 55), (13968, 55)]}
+            pvp = expected["weights"]["pvp"]
+            if specs.ATTACK_POWER in pvp:
+                pvp[specs.HUMANOID_ATTACK_POWER] = pvp[specs.ATTACK_POWER]
+            self.assertEqual(ours[number], expected)
         added = ours[4]
         self.assertEqual((added["name"], added["role"], added["style"], added["slug"]),
                          ("Shockadin", "Melee DPS", "2h", "shockadin"))
         self.assertTrue(added["added"])
-        self.assertEqual(added["weights"], {"lvl": shockadin.PVE, "raid": shockadin.PVE, "pvp": shockadin.PVP})
+        pvp = {**shockadin.PVP, specs.HUMANOID_ATTACK_POWER: shockadin.PVP[specs.ATTACK_POWER]}
+        self.assertEqual(added["weights"], {"lvl": shockadin.PVE, "raid": shockadin.PVE, "pvp": pvp})
         self.assertEqual([number for number, spec in ours.items() if spec.get("added")], [4])
 
     def test_the_shockadins_weights_are_the_simulators(self):
@@ -181,8 +192,8 @@ class GeneratorTest(unittest.TestCase):
         self.assertEqual(pvp["armor"], 0.05)
         flt = ("a", False, False, phases.CURRENT, True, None)
         waists = [e.item_id for e in self.full[*self.SHOCKADIN, "pvp", "waist"] if e.passes(flt) and not e.rank]
-        redeemer, vindicator, archmage = 272405, 272404, 18405
-        self.assertEqual(waists[:3], [redeemer, vindicator, archmage])
+        redeemer, soulforge, vindicator, archmage = 272405, 226986, 272404, 18405
+        self.assertEqual(waists[:4], [redeemer, soulforge, vindicator, archmage])
         self.assertAlmostEqual(pvp[31], (ep[31] - shockadin.EP_HOLY_SPELL_HIT) / ep[45], places=3)
 
     def test_the_shockadin_changes_no_other_list(self):
@@ -206,7 +217,13 @@ class GeneratorTest(unittest.TestCase):
             self.assertTrue(main)
             self.assertTrue(all(entry.two_hand for entry in main), f"{mode}: a one-hander in the main hand")
             self.assertEqual(off, [], f"{mode}: an off hand")
-            self.assertEqual(self.full[*self.SHOCKADIN, mode, "ranged"], [], "ForeverDB's data has no libram")
+            librams = self.full[*self.SHOCKADIN, mode, "ranged"]
+            self.assertTrue(librams, mode)
+            expected = relics.read()["profiles"]["PALADIN 4"][mode]
+            self.assertEqual({entry.item_id for entry in librams}, set(expected))
+            for entry in librams:
+                gear = self.db.gear[entry.item_id]
+                self.assertEqual((gear["inv"], gear["kind"]), (28, "4.7"), "a libram can be worn with a two-hander")
 
     def test_the_shockadin_borrows_the_caster_pieces_a_paladin_can_wear(self):
         """ForeverDB pools for a Paladin what a healer, a tank or a melee fighter wears. WoWSims' own set for the Holy
@@ -226,8 +243,17 @@ class GeneratorTest(unittest.TestCase):
             self.assertNotIn(bonescythe, ids)
         borrowed = self.db.classes[cls]["specs"][spec]["pools"]
         self.assertEqual({pool for pool in borrowed if pool in ("mh", "2h", "oh", "ranged")}, set())
-        for other in (1, 2, 3):   # the Paladin's other lists are ForeverDB's pools, as before
+        self.assertTrue({(12930, 55), (13968, 55)}.issubset(borrowed["trinket"]))
+        holy = self.db.classes[cls]["specs"][1]["pools"]
+        self.assertEqual(set(holy), {"mh", "oh", "trinket"})
+        for mode in ladders.MODES:
+            self.assertIn(22315, {entry.item_id for entry in self.full[cls, 1, mode, "main"]})
+            self.assertIn(22319, {entry.item_id for entry in self.full[cls, 1, mode, "off"]})
+            self.assertTrue(all(entry.two_hand for entry in self.full[cls, spec, mode, "main"]))
+            self.assertEqual(self.full[cls, spec, mode, "off"], [])
+        for other in (2, 3):
             self.assertNotIn("pools", self.db.classes[cls]["specs"][other])
+        for other in (1, 2, 3):
             self.assertNotIn(leggings, {entry.item_id for entry in self.full[cls, other, "pve", "legs"]})
 
     def test_hand_of_justice_is_not_a_shockadins(self):
@@ -252,9 +278,13 @@ class GeneratorTest(unittest.TestCase):
 
     def test_the_shockadins_pvp_list_is_ranked_on_its_weights(self):
         cls, spec = self.SHOCKADIN
-        for mode, weights in (("pvp", shockadin.PVP),):
+        pvp = {**shockadin.PVP, specs.HUMANOID_ATTACK_POWER: shockadin.PVP[specs.ATTACK_POWER]}
+        for mode, weights in (("pvp", pvp),):
             for slot, _ in ladders.SLOTS:
                 for entry in self.full[cls, spec, mode, slot]:
+                    if entry.pvp_utility:
+                        self.assertEqual((slot, entry.item_id), ("trinket", pvp_insignia.ALLIANCE))
+                        continue
                     if entry.level:
                         continue   # Hand of Justice: no score of its own, level with the best (specs.unvalued)
                     self.assertAlmostEqual(entry.score, ladders.score(self.db, entry.item_id, weights, cls),
@@ -311,7 +341,7 @@ class GeneratorTest(unittest.TestCase):
                                          ["S", "4", "Shockadin", "Melee DPS", "2h"]])
         slots = {(fields[2], fields[3]) for fields in (line.split("\t") for line in block.split("\n"))
                  if fields[0] == "L" and fields[1] == "4"}
-        core = [slot for slot, _ in ladders.SLOTS if slot not in ("off", "ranged")]
+        core = [slot for slot, _ in ladders.SLOTS if slot != "off"]
         self.assertEqual(slots, {(mode, slot) for mode in ladders.MODES for slot in core})
         self.assertIn("M\t4\t", block, "its PvE list is ranked by simulation")
         self.assertIn("-- Added to ForeverDB's specs: Shockadin Paladin, spec 4", text)
@@ -399,10 +429,19 @@ class GeneratorTest(unittest.TestCase):
         """A PvP-rank reward is an item like any other, in the PvE list too: it is ranked on its stats.
         Only the site's rule (rank_rewards=False) leaves it out of PvE."""
         rewards = {"pve": set(), "pvp": set()}
+        unconfirmed_relics = {int(key): record for key, record in relics.read()["items"].items()
+                              if record.get("unconfirmed_access")}
         for (token, spec, mode, slot), ladder in self.full.items():
             for entry in ladder:
-                groups = self.db.items[entry.item_id]["groups"]
-                self.assertEqual(entry.unsourced, not (groups - {"u"}), f"{token} {spec} {mode} {slot}: {entry.item_id}")
+                item = self.db.items[entry.item_id]
+                groups = item["groups"]
+                relic = unconfirmed_relics.get(entry.item_id)
+                # A documented craft can still lack an obtainable formula or reagent.
+                incomplete_craft = relic is not None and all(source in relic["sources"] for source in item["sources"])
+                missing_source = not (groups - {"u"}) or reputations.unconfirmed_watcher_ring(item) or incomplete_craft
+                if incomplete_craft:
+                    self.assertEqual(entry.phase, phases.LATER)
+                self.assertEqual(entry.unsourced, missing_source, f"{token} {spec} {mode} {slot}: {entry.item_id}")
                 if groups == {"p"}:
                     rewards[mode].add(entry.item_id)
         self.assertTrue(rewards["pve"], "no PvP-rank reward is in a PvE list")
@@ -427,8 +466,7 @@ class GeneratorTest(unittest.TestCase):
     def test_kept_ladder_shows_what_the_full_one_would(self):
         """Under every filter the addon can apply, the shortened ladder gives the same picks."""
         def shown(ladder_of, token, spec, mode, flt):
-            visible = {slot: [e for e in ladder_of(token, spec, mode, slot) if e.passes(flt)]
-                       for slot, _ in ladders.SLOTS}
+            visible = ladders.visible_slots({slot: ladder_of(token, spec, mode, slot) for slot, _ in ladders.SLOTS}, flt)
             others = [entries[:1 + ladders.ALTERNATIVES]
                       for entries in ladders.other_weapons(visible["main"], visible["off"])]
             visible["main"], visible["off"] = ladders.weapon_lists(visible["main"], visible["off"])
@@ -703,30 +741,54 @@ class GeneratorTest(unittest.TestCase):
     # -- the two weapon styles ---------------------------------------------------------------
 
     def test_other_weapons_are_the_style_that_lost(self):
+        # Derive the expected winner from the paired DPS observations, independently of
+        # the generator's per-entry weapon-set flags and the W rows it emits for Lua.
+        source = BUILD / "corrections" / "balance_weapon_sets.json"
+        controls = json.loads(source.read_text(encoding="utf-8"))
+        observed = {(side, staff, main, off): (gain, error)
+                    for side, rows in controls["by_side"].items() for staff, main, off, gain, error in rows}
+        self.assertTrue(observed)
+        enchants = luaout.best_enchants(self.enchant_ladder("DRUID", 1), phases.PRE_RAID)
+        self.assertIn(controls["spellblasting"], enchants["w2h"])
+        compared = set()
         seen = {"one": 0, "two": 0, "none": 0}
         for token, data in self.db.classes.items():
             for spec in data["specs"]:
                 for mode in ladders.MODES:
                     for flt in ladders.FILTERS:
-                        main = [e for e in self.full[(token, spec, mode, "main")] if e.passes(flt)]
-                        off = [e for e in self.full[(token, spec, mode, "off")] if e.passes(flt)]
+                        slots = ladders.visible_slots({s: self.full[token, spec, mode, s] for s in ("main", "off")}, flt)
+                        main, off = slots["main"], slots["off"]
                         best_main, best_off = ladders.weapon_lists(main, off)
                         other_main, other_off = ladders.other_weapons(main, off)
                         self.assertFalse(set(best_main) & set(other_main))
+                        two = ladders.lead([e for e in main if e.two_hand])
+                        one = ladders.lead([e for e in main if not e.two_hand])
+                        if two and one:
+                            partner = ladders.lead([e for e in off if e.item_id != one.item_id])
+                            expect_two = two.stored >= one.stored + (partner.stored if partner else 0)
+                            if partner and (token, spec, mode, flt[3]) == ("DRUID", 1, "pve", phases.PRE_RAID):
+                                side = flt[0]
+                                key = (side, two.shown(side), one.shown(side), partner.shown(side))
+                                if key in observed:
+                                    gain, error = observed[key]
+                                    self.assertGreater(gain, 2 * error, key)
+                                    expect_two = True
+                                    compared.add(key)
+                            self.assertEqual(best_main[0].two_hand, expect_two, (token, spec, mode, flt))
                         if not other_main:
                             self.assertEqual(other_off, [])
                             seen["none"] += 1
                         elif best_main[0].two_hand:
                             self.assertTrue(all(not e.two_hand for e in other_main))
                             self.assertEqual(best_off, [])
-                            self.assertNotIn(other_main[0].item_id, [e.item_id for e in other_off])
-                            self.assertGreaterEqual(best_main[0].stored, other_main[0].stored
-                                                    + (off[0].stored if off else 0))
+                            if one:
+                                self.assertNotIn(one.item_id, [e.item_id for e in other_off])
                             seen["one"] += 1
                         else:
                             self.assertTrue(all(e.two_hand for e in other_main))
                             self.assertEqual(other_off, [])
                             seen["two"] += 1
+        self.assertEqual(compared, set(observed), "every measured faction and equipment set was exercised")
         self.assertTrue(all(seen.values()), f"a case never came up: {seen}")
 
     def test_files_keep_the_credit_line(self):
@@ -867,13 +929,15 @@ class GeneratorTest(unittest.TestCase):
         self.assertGreater(sum(1 for level in levels if level >= 50), 1000)
 
     def test_the_capture_reads_the_pools_weapons(self):
-        ids = capture.weapon_ids(self.published)
+        catalog = fdb.load_for_capture(CACHE)
+        ids = capture.weapon_ids(catalog)
         self.assertEqual(ids, sorted(set(ids)))
         self.assertGreater(len(ids), 1000)
         for item_id in ids:
-            self.assertIn(self.published.gear[item_id]["inv"], corrections.WEAPONS)
+            self.assertIn(catalog.gear[item_id]["inv"], corrections.WEAPONS)
+        self.assertIn(22315, ids)
         ranked = {entry.item_id for (_, _, _, slot), ladder in self.full.items() if slot == "main" for entry in ladder}
-        read = set(ids) | set(capture.capture_ids(self.published)["unlisted"])   # the weapons added from the game
+        read = set(ids) | set(capture.capture_ids(catalog)["unlisted"])   # the weapons added from the game
         read |= set(corrections.HAND_LISTED)   # ... and the ones written by hand, under the level the capture reads from
         self.assertLessEqual(ranked, read, "a main-hand entry of a ladder is not on the capture's list")
 
@@ -897,14 +961,27 @@ class GeneratorTest(unittest.TestCase):
         """Flag g: an entry of a list ranked by simulation whose score the file does not hold as a full measure."""
         reading = self.db.simulated
         flagged = plain = 0
+        catalog = relics.read()
         for (token, spec, mode, slot), ladder in self.full.items():
-            ranking = reading.specs.get((token, spec)) if mode == "pve" else None
-            slot_ranking = ranking.slots.get(slot) if ranking else None
+            slot_ranking = ladders.slot_ranking(self.db, token, spec, mode, slot)
+            profile = catalog["profiles"].get(f"{token} {spec}", {}) if slot == "ranged" else {}
             for entry in ladder:
-                expected = slot_ranking is not None and not slot_ranking.measured(entry.item_id) and not entry.placed
+                key = str(entry.item_id)
+                if profile and entry.item_id in profile[mode]:
+                    # The relic trials measure A/H separately. Spell-specific alternatives have no numerical score.
+                    trials = profile.get("dps", {}).get(key) if mode == "pve" else None
+                    self.assertEqual(entry.unscored, trials is None)
+                    if trials:
+                        for (side, _), rows in ladder.contexts.items():
+                            row = next(other for other in rows if other.item_id == entry.item_id)
+                            self.assertEqual(row.score, simulated.rounded(trials[side][0]))
+                            self.assertFalse(row.estimated)
+                    expected = False
+                else:
+                    expected = slot_ranking is not None and not slot_ranking.measured(entry.item_id) and not entry.placed
                 self.assertEqual(entry.estimated, expected, (token, spec, mode, slot, entry.item_id))
-                self.assertEqual("g" in luaout.encode_entry(entry).split(":")[2:3][0] if entry.estimated else False,
-                                 entry.estimated)
+                flags = luaout.encode_entry(entry).split(":")[2:3]
+                self.assertEqual(any("g" in field for field in flags), entry.estimated)
                 flagged += entry.estimated
                 plain += not entry.estimated
         self.assertGreater(flagged, 0)
@@ -937,8 +1014,10 @@ class GeneratorTest(unittest.TestCase):
         if not game.build:
             self.skipTest("the game was not read yet (corrections/game.json)")
         pooled = {item_id for data in self.db.classes.values() for pool in data["pools"].values() for item_id, _ in pool}
+        spec_items = {item_id for data in self.db.classes.values() for spec in data["specs"].values()
+                      for pool in spec.get("pools", {}).values() for item_id, _ in pool}
         absent = set(corrections.load_game()["absent"])
-        self.assertFalse(pooled & absent, "an item the game does not have is still in a pool")
+        self.assertFalse((pooled | spec_items) & absent, "an item the game does not have is still in a pool")
         self.assertLessEqual(set(game.dropped), absent)
         settled = set(self.db.confirmed.settled)
         self.assertTrue(settled and settled <= set(game.added))
@@ -957,21 +1036,14 @@ class GeneratorTest(unittest.TestCase):
         self.assertFalse(shown & absent, "an item the game does not have is in a list, or is a list item's twin")
         self.assertTrue(shown & set(game.added), "no added piece makes a list")
 
-        before = fdb.load(CACHE, corrected=False)
-        corrections.apply(before, corrections.load())   # the weapons' stats, not the game's items
-        corrections.complete_shields(before)   # compare the same block values on both sides of the item-presence check
-        corrections.complete_weapon_hits(before)
-        corrections.include(before)   # ... and the pieces written by hand, which no capture says anything of
-        corrections.fill(before, corrections.load_sources())   # ... and the sources read in QuestieDB
-        corrections.confirm(before, corrections.load_drops())  # ... and the bosses counted in Forever, a source too
-        corrections.price(before, corrections.load_costs())    # ... and who the neutral vendors sell to
-        # ... and what the simulator ranked; placed.json is made on the corrected lists, so both sides leave it out
+        # Run the normal build on both sides so their acquisition rules, candidate pools and phase-specific
+        # measurements agree. The only input withheld from the control is the client item-presence capture.
+        with mock.patch.object(corrections, "load_game", return_value={}):
+            before = fdb.load(CACHE)
+        self.assertFalse(before.aligned.added or before.aligned.dropped)
+        # placed.json was calibrated on the corrected lists.
         unplaced = dataclasses.replace(self.db.simulated, placed={})
         before.simulated = unplaced
-        corrections.assign_sides(before)   # ... and the side of Theramore's pieces
-        corrections.pair_basin_mail_shoulders(before)
-        corrections.assign_reward_sides(before)
-        fdb.specs.apply(before)   # ... and the tanks' weights and the Feral cat: the same items, ranked another way
         was = ladders.build_all(before)
         after = copy.copy(self.db)
         after.simulated = unplaced
@@ -1012,14 +1084,39 @@ class GeneratorTest(unittest.TestCase):
         holds no such item."""
         held = 0
         for (token, spec, mode, slot), ladder in self.full.items():
-            weights = self.db.classes[token]["specs"][spec]["weights"][ladders.MODES[mode]]
-            ranking = simulated.ranking(self.db, token, spec, mode, slot)
-            melee = (token, mode) == ("HUNTER", "pvp") and self.db.classes[token]["specs"][spec]["role"] == ladders.MELEE
+            profile = self.db.classes[token]["specs"][spec]
+            weights = profile["weights"][ladders.MODES[mode]]
+            if slot == "trinket" and profile["role"] in {"Caster DPS", "Healer"} and 32 in weights:
+                weights = {fdb.caster_gear.SPELL_CRIT_RATING: weights[32], **weights}
+            ranking = ladders.slot_ranking(self.db, token, spec, mode, slot)
+            melee = (token, mode) == ("HUNTER", "pvp") and profile["role"] == ladders.MELEE
+            trinkets = self.db.pre_raid_trinkets.get((token, spec), {}).get(slot, {}) if mode == "pve" else {}
+            relics = (fdb.relics.read()["profiles"].get(f"{token} {spec}", {}).get("dps", {})
+                      if (mode, slot) == ("pve", "ranged") else {})
             for entry in ladder:
-                if ladders.score(self.db, entry.item_id, weights, token, melee) or entry.level:
+                if ladders.score(self.db, entry.item_id, weights, token, melee) or entry.level or entry.pvp_utility:
                     continue   # entry.level: what the weights cannot value, listed by hand (specs.unvalued)
-                self.assertIsNotNone(ranking, f"{token} {spec} {mode} {slot}: {entry.item_id} weighs nothing")
-                self.assertTrue(ranking.scores.get(entry.item_id, 0) > 0 or entry.item_id in self.db.placed, entry.item_id)
+                label = f"{token} {spec} {mode} {slot}: {entry.item_id}"
+                if not (ranking and (ranking.scores.get(entry.item_id, 0) > 0 or entry.item_id in self.db.placed)):
+                    # These substitutions have their own faction tables. Check the score in the phase
+                    # and on the character to which the measurement applies.
+                    self.assertTrue(trinkets or relics, f"{label} has neither weight nor a simulation")
+                    for side in ("a", "h"):
+                        actual = entry.shown(side)
+                        if not actual:
+                            continue
+                        if trinkets:
+                            gain, _, iterations, model = trinkets[side][str(actual)]
+                            self.assertEqual((iterations, model), (2000, "measured"), label)
+                            phase = phases.PRE_RAID
+                        else:
+                            gain, _ = relics[str(actual)][side]
+                            phase = phases.LATER
+                        visible = ladders.visible(ladder, (side, True, False, phase, True, None))
+                        shown = next((e for e in visible if e.shown(side) == actual), None)
+                        self.assertIsNotNone(shown, (label, side, phase))
+                        self.assertFalse(shown.unscored, (label, side))
+                        self.assertEqual(shown.score, simulated.rounded(gain), (label, side))
                 held += 1
         self.assertGreater(held, 20)
 
@@ -1040,13 +1137,14 @@ class GeneratorTest(unittest.TestCase):
             held.append((token, spec, mode, slot))
             at = ids.index(heart)
             self.assertEqual((mode, slot), ("pve", "trinket"))
-            self.assertIsNotNone(simulated.ranking(self.db, token, spec, mode, slot), "a list on the weights does not hold it")
+            self.assertIsNotNone(ladders.slot_ranking(self.db, token, spec, mode, slot), "a list on the weights does not hold it")
             self.assertEqual(ids[at - 1], justice)
             self.assertTrue(ladder[at].placed and not ladder[at].estimated)
             self.assertEqual(ladder[at].score, ladder[at - 1].score)
             best, _ = ladders.picks(slot, ladder)
             self.assertNotIn(heart, [entry.item_id for entry in best])
         self.assertIn(("ROGUE", 2, "pve", "trinket"), held)
+        self.assertIn(("DRUID", 4, "pve", "trinket"), held)
         self.assertGreaterEqual(len(held), 6)
 
         entry = lambda item_id, score: dataclasses.replace(self.full["ROGUE", 2, "pve", "trinket"][0], item_id=item_id, score=score)
@@ -1075,17 +1173,19 @@ class GeneratorTest(unittest.TestCase):
         db = types.SimpleNamespace(simulated=types.SimpleNamespace(specs={("ROGUE", 2): record}))
         limits = notes.simulation_limits(db, {"ROGUE": {2: {"pve": {"head": [entry]}}}})
         self.assertEqual(len(limits), 1)
-        self.assertEqual(limits[0]["items"], [101, 202])
+        self.assertEqual(limits[0]["items"], [202])
         self.assertEqual(limits[0]["specs"], ["ROGUE 2"])
         self.assertTrue(limits[0]["simulated"])
 
     def test_the_notes_file_holds_what_was_written_by_hand(self):
-        """Data/Notes.lua holds corrections/notes.json note by note, in both languages, as the build left it."""
-        written = notes.load()
-        self.assertTrue(written, "corrections/notes.json holds no note")
+        """The shipped file includes the item, relic and situational notes in both languages."""
+        written = notes.shown(self.db, luaout.shown_ids(self.kept))
+        self.assertTrue(written)
         text = luaout.notes_file(self.db, self.kept)
         self.assertEqual(text, (BUILD.parent / "Data" / "Notes.lua").read_text(encoding="utf-8"),
                          "Data/Notes.lua is not what the build writes: run _build/build.py")
+        self.assertEqual(text.count("    { items = { "), len(written))
+        self.assertNotIn("ns.data.comparisons", text)
         for note in written:
             for key in notes.LANGUAGES:
                 self.assertIn(json.dumps(note[key], ensure_ascii=False), text)
@@ -1096,6 +1196,22 @@ class GeneratorTest(unittest.TestCase):
         self.assertIn("simulated = true", destiny)
         self.assertIn('enUS = "Its proc, 200 Strength', destiny)
         self.assertIn('frFR = "Son proc, 200 de Force', destiny)
+
+    def test_watcher_standings_are_preserved_with_unconfirmed_sources(self):
+        watchers = {item_id: item for item_id, item in self.db.items.items() if item["limit"] == "WatchersRing"}
+        self.assertEqual(len(watchers), 16)
+        levels = [item["sources"][0][2] for item in watchers.values()]
+        self.assertEqual([levels.count(str(level)) for level in range(4, 8)], [4, 4, 4, 4])
+        for item in watchers.values():
+            self.assertTrue(reputations.unconfirmed_watcher_ring(item))
+            self.assertFalse(reputations.unconfirmed_watcher_ring(dict(item, flags=item["flags"] + "s")))
+            self.assertFalse(reputations.unconfirmed_watcher_ring(dict(item, groups={"e", "v"})))
+        rings = [entry for entry in self.full["PRIEST", 1, "pve", "finger"] if entry.item_id in watchers]
+        self.assertTrue(rings)
+        for ring in rings:
+            for side in ("a", "h"):
+                self.assertFalse(ring.passes((side, False, False, phases.PRE_RAID)))
+                self.assertTrue(ring.passes((side, True, False, phases.PRE_RAID)))
 
     def test_reputation_file_matches_the_reading(self):
         """Data/Reputation.lua says what corrections/reputations.json holds, for the items the lists show."""
@@ -1485,6 +1601,8 @@ class SpecsTest(unittest.TestCase):
                                 weights["ranged_hit"] = 10 * weights[31]
                             if weights.get(39):
                                 weights[38] = round(weights.get(38, 0) + weights[39], 3)
+                    if specs.ATTACK_POWER in expected["pvp"]:
+                        expected["pvp"].setdefault(specs.HUMANOID_ATTACK_POWER, expected["pvp"][specs.ATTACK_POWER])
                     self.assertEqual(self.db.classes[token]["specs"][number]["weights"], expected,
                                      f"{token} {spec['name']}")
 
@@ -1573,7 +1691,8 @@ class SpecsTest(unittest.TestCase):
             for mode in ladders.MODES:
                 ladder = self.ladder(token, number, mode, "trinket")
                 level = [entry for entry in ladder if entry.level]
-                self.assertEqual({entry.item_id for entry in level}, trinkets, f"{token} {mode}")
+                expected = {self.ARENA_GRAND_MASTER} if mode == "pve" else trinkets
+                self.assertEqual({entry.item_id for entry in level}, expected, f"{token} {mode}")
                 self.assertEqual(ladder[:len(level)], level, "at the head of the ladder")
                 first = ladder[len(level)]
                 for entry in level:
@@ -1581,6 +1700,14 @@ class SpecsTest(unittest.TestCase):
                     self.assertEqual(entry.score, first.score, "a stand-in: the ladder stays in order")
                     self.assertIn(":x", luaout.encode_entry(entry))
                 self.assertIs(ladders.lead(ladder), first, "never a best pick")
+        for token, number in self.TANKS:
+            pool = self.ladder(token, number, "pve", "trinket")
+            for side in ("a", "h"):
+                visible = [entry for entry in pool if entry.passes((side, False, False, 0, False, 6))]
+                best, _ = ladders.picks("trinket", visible)
+                self.assertEqual([entry.shown(side) for entry in best], [self.LION_HORN, self.STABILIZER])
+                scores = {entry.item_id: entry.stored for entry in visible}
+                self.assertGreater(scores[self.MARK_OF_TYRANNY], scores[4130])
         for slot, item_id in (("main", self.QUEL_SERRAR), ("off", self.FORCE_REACTIVE_DISK)):
             for token, number in (("PALADIN", 2), ("WARRIOR", 3)):
                 ladder = self.ladder(token, number, "pve", slot)
@@ -1588,11 +1715,14 @@ class SpecsTest(unittest.TestCase):
                 self.assertIs(ladder[0].level, True)
         visible = [entry for entry in self.ladder("PALADIN", 2, slot="trinket") if entry.passes(self.DEFAULT)]
         best, alternatives = ladders.picks("trinket", visible)
-        self.assertEqual([entry.item_id for entry in best], [self.STABILIZER, 4130])  # Smotts' Compass
+        self.assertEqual([entry.item_id for entry in best], [self.LION_HORN, self.STABILIZER])
         self.assertNotIn(self.INSIGNIA, [entry.item_id for entry in visible], "Alterac Valley rewards are hidden")
-        self.assertEqual(alternatives[0].item_id, self.LION_HORN, "the first thing after the two best picks")
+        self.assertEqual(alternatives[0].item_id, self.ARENA_GRAND_MASTER)
         _, more = ladders.picks("trinket", visible, ladders.MAX_ALTERNATIVES)
-        self.assertEqual({entry.item_id for entry in more[:3]}, trinkets)
+        self.assertIn(self.MARK_OF_TYRANNY, [entry.item_id for entry in more])
+        by_id = {entry.item_id: entry for entry in visible}
+        self.assertGreater(by_id[self.MARK_OF_TYRANNY].stored, by_id[4130].stored)
+        self.assertFalse(by_id[self.MARK_OF_TYRANNY].unscored)
         kept = ladders.kept_ladder("trinket", self.ladder("PALADIN", 2, slot="trinket"))
         self.assertIn(self.LION_HORN, [entry.item_id for entry in kept])
 
@@ -1634,7 +1764,17 @@ class SpecsTest(unittest.TestCase):
     def test_the_cats_pvp_list_is_the_bears(self):
         druid = self.db.classes["DRUID"]["specs"]
         self.assertEqual(druid[4]["weights"]["pvp"], druid[2]["weights"]["pvp"])
+        # Each form has its own ability-specific idols. Everywhere else, the shared PvP weights still agree.
+        for number, own, other in ((4, 22397, 23198), (2, 23198, 22397)):
+            idols = self.ladder("DRUID", number, "pvp", "ranged")
+            expected = relics.read()["profiles"][f"DRUID {number}"]["pvp"]
+            self.assertEqual([entry.item_id for entry in idols], expected)
+            self.assertIn(own, expected)
+            self.assertNotIn(other, expected)
+            self.assertTrue(all(entry.unscored and entry.alternative_only for entry in idols))
         for slot, _ in ladders.SLOTS:
+            if slot == "ranged":
+                continue
             scored = lambda number: sorted((-entry.score, entry.item_id) for entry in
                                            self.ladder("DRUID", number, "pvp", slot) if entry.item_id not in self.db.effects)
             self.assertEqual(scored(4), scored(2), f"{slot}: but for what only a tank stands level with the best")

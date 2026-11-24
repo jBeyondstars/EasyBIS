@@ -1,3 +1,75 @@
+# Easy BIS 1.10.0
+
+- **Custom lists and WoWSims Forever import.** Create named gear lists for each class and specialization under Items → PvE. Add items individually or import a Gear-only JSON export to replace the selected list's items and enchants. Drag tabs to reorder them, or right-click to rename, move or delete a list.
+- **Dungeon tracking.** Combine Raid, PvP, AoE / Dungeons and custom lists in the Dungeons tab. The selection is saved per character and specialization. Both dungeon views count a shared item once, even when different lists put the same weapon in different hands. A loadout that equips two copies still tracks both.
+- **AoE / Dungeons rankings.** Compare pre-raid gear for 21 damage profiles on both factions. Rankings combine a 15-second four-target pull with a multi-pull dungeon route. Weapon tooltips show the recommended partner, the point breakdown and the measured damage gains.
+- **Item tooltips.** See which custom lists contain an item and whether it ranks as a best pick or alternative for AoE / Dungeons.
+- **Survival Hunter.** The ranged profile uses ranged stat weights for single-target gear and a rotation measured at 12 yards for dungeon gear.
+- **Items and sources.** Manual Crowd Pummeler is excluded from recommendations. The pre-raid dungeon rankings also omit Dragonskin Cowl (random suffix) and Ring of the Eternal Flame (raid drop). Blackrock Spire quest rewards show the appropriate quest for the character's faction.
+
+# Easy BIS 1.9.6
+
+- **Alliance battleground reputations.** If your Reputations tab was missing rewards, reinstalling this package restores the requirements for 11 Alterac Valley items and 15 Warsong Gulch items. For Discipline Priests in PvP, Lei of the Lifegiver appears under Stormpike Guard at Exalted.
+- The 1.9.5 release ZIP already contained these entries. The release tests now check each listed item against the source catalogue for both Alliance and Horde, including its required standing and vendor.
+
+# Easy BIS 1.9.5
+
+- **Protection Warrior, Feral Bear and Protection Paladin.** Pre-raid PvE lists label Threat and Mitigation alternatives where a gear swap trades threat for damage reduction. Hover over an option to see the difference for your faction.
+- **Protection Paladin weapons.** Sageblade, Hand of Edward the Odd and Mastersmith's Hammer lead the pre-raid list. Mind Carver is fourth. Arbiter's Blade takes fifth ahead of Greenhammer and Ironwood Blade for its 60 spell power.
+- **Protection Paladin trinkets.** Weakness Analyzer is the third pre-raid recommendation for Threat. Defender's Grip Stabilizer is the Mitigation option. Equip either alongside The Lion Horn of Stormwind.
+
+# Easy BIS 1.9.4
+
+- **Feral Bear PvE.** Force of Will is the fourth pre-raid trinket, just after Arena Grand Master. It appears with the default two alternatives. Its damage reduction is especially useful against packs. Mark of the Chosen is an option for threat.
+- **Healers.** Tome of Divine Right ranks first among pre-raid PvE off-hands for all five healing specs. Hammer of Revitalization ranks first for Holy Paladins and second for Restoration Druids, Restoration Shamans and both Priest healing specs.
+- **Relics.** Druids, Paladins and Shamans now have relic recommendations for all 11 specs in PvE and PvP. Idol of the Dream leads for raid cats staying in Cat Form. Short notes explain which spells benefit from each relic.
+- **Caster trinkets.** Pre-raid PvE rankings for ten damage specs now account for faction and trinket partner. Eye of the Beast pairs with Weakness Analyzer for Shadow Priests, Balance Druids and all three Warlock specs. Fire Mages keep Weakness Analyzer and Smolderweb's Eye in both factions.
+- **Situational gear.** Rune of the Dawn and Seal of the Dawn appear against undead, Force of Will for Protection tanks against packs, and Skullflame Shield for multi-target Warrior threat. Ramstein's Lightning Bolts is a PvP stun option for every spec. These choices appear alongside the usual alternatives.
+- **Quest sources.** Faction-specific rewards such as Eye of the Beast and Mark of Tyranny now show the quest for the selected faction.
+
+# Easy BIS 1.9.3
+
+## Item notes
+
+- Removed automatic tooltips that repeated DPS comparisons or gave generic simulation warnings. The information icon now appears only when an item has a written note about its ranking.
+
+# Easy BIS 1.9.2
+
+## Gear lists
+
+- **Feral Cat PvE.** Hand of Justice and Behemoth Bones are the recommended pre-raid trinket pair. Lucky Shovelnose Tuft is third and marked Tied. Its note explains when Shifting Power makes Spirit valuable while staying in Cat Form.
+- **Arms Warrior PvE.** The pre-raid list drops Stalwart Helm when Lionheart Helm is available. Horde warriors can now see Darkspear Epaulets alongside the equivalent leather shoulders. New notes explain why the Agility options beat the plate version on the tested sets.
+- **Arcane and Frost Mage PvE.** Updated chest rankings for both factions put Alanna’s Embrace second for Arcane and fourth for Frost. Robe of the Archmage remains first for both.
+- **Weapons, rings and trinkets.** Updated rankings account for faction, the other equipped item and weapon enchants where those comparisons were measured. Blackhand Doomsaw now appears in several pre-raid lists. Its proc deals extra damage against targets below 25% health.
+- **PvP trinkets.** The faction insignia is available as a situational choice when the character meets the rank requirement.
+
+## Item notes and sources
+
+- New English and French notes explain close choices, including hit versus spell power for casters, healing versus mana regeneration for priests, and Adaptive Combat Assistant versus Hand of Justice for Retribution. Shadow Priests can see when Obsidian Bauble beats Book of the Dead.
+- Corrected faction restrictions, drop sources and reputation requirements for affected items. The gear lists also handle unconfirmed sources and incomplete weapon-pair comparisons more accurately.
+
+## Interface
+
+- Buttons and dropdowns on the same row now share the same height.
+
+# Easy BIS 1.9.1
+
+## New
+
+- **Shockadin** joins the Paladin specializations. Its two-handed PvE list uses the Holy Shock build from WoWSims Forever. Its separate PvP list gives more weight to armor. Redeemer’s Waistcord is the first pre-raid belt for both factions at rank 6.
+
+## Fixed
+
+- **Arms Warrior PvP.** Two-handed weapons now account for the base damage of a Mortal Strike in a six-second window. At level 60 with the pre-raid, rank-6 filters, Arcanite Reaper moves from 11th to 3rd. Blade of Hanna moves from 4th to 45th.
+- **Tanks.** Shields now include their intrinsic block value as well as any explicit equip bonus.
+- **Group Finder.** EasyBIS uses its own menu buttons and only hides tooltips it owns when a menu or row loses focus.
+- **Item rankings.** Items with an unscored effect show “Situational”. “Tied” is reserved for matching scores.
+- **Tank PvE trinkets.** The Lion Horn of Stormwind and Defender’s Grip Stabilizer lead the pre-raid physical tank lists. Mark of Tyranny ranks above Smotts’ Compass for Protection Paladins, Protection Warriors and Feral Bears. Arena Grand Master is a situational absorb.
+- **Hunter and Rogue.** Hunter ranged attacks benefit from attack power and ranged hit. The Survival PvP list accounts for melee weapon damage. Assassination’s PvP weapon recommendations use daggers for Mutilate.
+- **Warlock.** Lapidis Tankard lost the DPS credited to drinking its beverage in combat. For Destruction, Sandstorm Cover edges ahead of Glowing Thresher Cape.
+- **Availability.** Class-restricted quest rewards and faction variants follow the character. Alterac Valley quest rewards respect the PvP filter, and Sulfuron Hammer requires Molten Core materials. Arathi Basin mail shoulders use the correct item for each faction.
+- **Interface.** Visible filters sit next to one another when switching tabs. Filters and Options use the original WoW styling, footer buttons keep their individual widths, and the auction scan status is vertically centered.
+
 # Easy BIS 1.9.0
 
 ## New

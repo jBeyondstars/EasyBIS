@@ -1,0 +1,1408 @@
+{
+ "wowsims": "8f0e65e5429423a40cca10632af9585b0d9938f2",
+ "seed": 326700,
+ "iterations": 2000,
+ "duration_seconds": 180,
+ "measure": "DPS gained over the same set with an empty relic slot, followed by paired standard error; active effects conditional on the profile rotation. PvP, healing and tank relics use situational presentation.",
+ "evidence_archive": "relics-evidence.zip",
+ "items": {
+  "22345": {
+   "name": "Totem of Tides",
+   "class": "SHAMAN",
+   "requires": 57,
+   "flags": "",
+   "sources": [
+    [
+     "d",
+     "429",
+     "Isalien",
+     "17",
+     "0",
+     "k"
+    ]
+   ],
+   "en": "Riptide costs 5% less mana.",
+   "fr": "Remous coûte 5 % de mana en moins.",
+   "evidence": [
+    "https://foreverdb.net/item/22345"
+   ]
+  },
+  "22395": {
+   "name": "Totem of Rage",
+   "class": "SHAMAN",
+   "requires": 52,
+   "flags": "",
+   "sources": [
+    [
+     "d",
+     "230",
+     "Magmus",
+     "20",
+     "0",
+     "k"
+    ]
+   ],
+   "en": "Your shocks deal 2% more damage.",
+   "fr": "Vos horions infligent 2 % de dégâts en plus.",
+   "evidence": [
+    "https://foreverdb.net/item/22395"
+   ]
+  },
+  "22396": {
+   "name": "Totem of Life",
+   "class": "SHAMAN",
+   "requires": 60,
+   "flags": "U",
+   "sources": [
+    [
+     "d",
+     "531",
+     "Fankriss the Unyielding",
+     "18",
+     "1",
+     "k"
+    ]
+   ],
+   "en": "Adds up to 80 healing to Lesser Healing Wave.",
+   "fr": "Ajoute jusqu’à 80 soins à Vague de soins inférieurs.",
+   "evidence": [
+    "https://foreverdb.net/item/22396"
+   ]
+  },
+  "22397": {
+   "name": "Idol of Ferocity",
+   "class": "DRUID",
+   "requires": 52,
+   "flags": "s",
+   "sources": [
+    [
+     "d",
+     "230",
+     "Lord Roccor",
+     "25",
+     "0",
+     "s"
+    ]
+   ],
+   "en": "Claw and Rake each cost 2 less energy.",
+   "fr": "Griffe et Griffure coûtent 2 points d’énergie de moins.",
+   "evidence": [
+    "https://foreverdb.net/item/22397"
+   ]
+  },
+  "22398": {
+   "name": "Idol of Rejuvenation",
+   "class": "DRUID",
+   "requires": 57,
+   "flags": "",
+   "sources": [
+    [
+     "d",
+     "229",
+     "Mor Grayhoof",
+     "20",
+     "0",
+     "k"
+    ]
+   ],
+   "en": "Regrowth’s initial heal is 5% stronger on a target with your Rejuvenation.",
+   "fr": "Le soin initial de Rétablissement augmente de 5 % si votre Récupération est active sur la cible.",
+   "evidence": [
+    "https://foreverdb.net/item/22398"
+   ]
+  },
+  "22399": {
+   "name": "Idol of Health",
+   "class": "DRUID",
+   "requires": 60,
+   "flags": "U",
+   "sources": [
+    [
+     "d",
+     "531",
+     "Viscidus",
+     "14",
+     "1",
+     "k"
+    ]
+   ],
+   "en": "Healing Touch casts 0.15 sec faster.",
+   "fr": "Toucher guérisseur s’incante 0,15 s plus vite.",
+   "evidence": [
+    "https://foreverdb.net/item/22399"
+   ]
+  },
+  "22400": {
+   "name": "Libram of Truth",
+   "class": "PALADIN",
+   "requires": 52,
+   "flags": "s",
+   "sources": [
+    [
+     "d",
+     "230",
+     "Magmus",
+     "20",
+     "0",
+     "s"
+    ]
+   ],
+   "en": "Purify and Cleanse cost 10% less mana.",
+   "fr": "Purification et Épuration coûtent 10 % de mana en moins.",
+   "evidence": [
+    "https://foreverdb.net/item/22400"
+   ]
+  },
+  "22401": {
+   "name": "Libram of Hope",
+   "class": "PALADIN",
+   "requires": 57,
+   "flags": "",
+   "sources": [
+    [
+     "d",
+     "429",
+     "Isalien",
+     "17",
+     "0",
+     "k"
+    ]
+   ],
+   "en": "Your seals last 4 sec longer.",
+   "fr": "Vos sceaux durent 4 s de plus.",
+   "evidence": [
+    "https://foreverdb.net/item/22401"
+   ]
+  },
+  "22402": {
+   "name": "Libram of Grace",
+   "class": "PALADIN",
+   "requires": 60,
+   "flags": "U",
+   "sources": [
+    [
+     "d",
+     "531",
+     "Fankriss the Unyielding",
+     "18",
+     "1",
+     "k"
+    ]
+   ],
+   "en": "Cleanse costs 25 less mana.",
+   "fr": "Épuration coûte 25 points de mana de moins.",
+   "evidence": [
+    "https://foreverdb.net/item/22402"
+   ]
+  },
+  "23004": {
+   "name": "Idol of Longevity",
+   "class": "DRUID",
+   "requires": 60,
+   "flags": "U",
+   "sources": [
+    [
+     "d",
+     "533",
+     "Instructor Razuvious",
+     "17",
+     "1",
+     "k"
+    ]
+   ],
+   "en": "Each Healing Touch restores up to 25 mana.",
+   "fr": "Chaque Toucher guérisseur rend jusqu’à 25 points de mana.",
+   "evidence": [
+    "https://foreverdb.net/item/23004"
+   ]
+  },
+  "23005": {
+   "name": "Totem of Flowing Water",
+   "class": "SHAMAN",
+   "requires": 60,
+   "flags": "U",
+   "sources": [
+    [
+     "d",
+     "533",
+     "Noth the Plaguebringer",
+     "14",
+     "1",
+     "k"
+    ]
+   ],
+   "en": "Each Lesser Healing Wave restores up to 10 mana.",
+   "fr": "Chaque Vague de soins inférieurs rend jusqu’à 10 points de mana.",
+   "evidence": [
+    "https://foreverdb.net/item/23005"
+   ]
+  },
+  "23006": {
+   "name": "Libram of Light",
+   "class": "PALADIN",
+   "requires": 60,
+   "flags": "U",
+   "sources": [
+    [
+     "d",
+     "533",
+     "Noth the Plaguebringer",
+     "14",
+     "1",
+     "k"
+    ]
+   ],
+   "en": "Adds up to 83 healing to Flash of Light.",
+   "fr": "Ajoute jusqu’à 83 soins à Éclair lumineux.",
+   "evidence": [
+    "https://foreverdb.net/item/23006"
+   ]
+  },
+  "23197": {
+   "name": "Idol of the Moon",
+   "class": "DRUID",
+   "requires": 60,
+   "flags": "sU",
+   "sources": [
+    [
+     "w",
+     "0",
+     "0",
+     "k"
+    ]
+   ],
+   "en": "Adds up to 33 damage to Moonfire.",
+   "fr": "Ajoute jusqu’à 33 dégâts à Éclat lunaire.",
+   "evidence": [
+    "https://foreverdb.net/item/23197"
+   ]
+  },
+  "23198": {
+   "name": "Idol of Brutality",
+   "class": "DRUID",
+   "requires": 60,
+   "flags": "",
+   "sources": [
+    [
+     "d",
+     "329",
+     "Magistrate Barthilas",
+     "17",
+     "0",
+     "k"
+    ]
+   ],
+   "en": "Maul and Swipe each cost 2 less rage.",
+   "fr": "Mutiler et Balayage coûtent 2 points de rage de moins.",
+   "evidence": [
+    "https://foreverdb.net/item/23198"
+   ]
+  },
+  "23199": {
+   "name": "Totem of the Storm",
+   "class": "SHAMAN",
+   "requires": 60,
+   "flags": "sU",
+   "sources": [
+    [
+     "w",
+     "0",
+     "0",
+     "k"
+    ]
+   ],
+   "en": "Adds up to 33 damage to Lightning Bolt and Chain Lightning.",
+   "fr": "Ajoute jusqu’à 33 dégâts à Éclair et Chaîne d’éclairs.",
+   "evidence": [
+    "https://foreverdb.net/item/23199"
+   ]
+  },
+  "23200": {
+   "name": "Totem of Sustaining",
+   "class": "SHAMAN",
+   "requires": 60,
+   "flags": "s",
+   "sources": [
+    [
+     "d",
+     "289",
+     "Instructor Malicia",
+     "1.1",
+     "0",
+     "k"
+    ],
+    [
+     "d",
+     "289",
+     "Doctor Theolen Krastinov",
+     "1.1",
+     "0",
+     "k"
+    ],
+    [
+     "d",
+     "289",
+     "Lorekeeper Polkelt",
+     "1.1",
+     "0",
+     "s"
+    ],
+    [
+     "d",
+     "289",
+     "The Ravenian",
+     "1.1",
+     "0",
+     "k"
+    ],
+    [
+     "d",
+     "289",
+     "Lord Alexei Barov",
+     "3.7",
+     "0",
+     "s"
+    ],
+    [
+     "d",
+     "289",
+     "Lady Illucia Barov",
+     "1.1",
+     "0",
+     "k"
+    ]
+   ],
+   "en": "Water Shield holds one extra charge.",
+   "fr": "Bouclier d’eau peut porter une charge supplémentaire.",
+   "evidence": [
+    "https://foreverdb.net/item/23200"
+   ]
+  },
+  "23201": {
+   "name": "Libram of Divinity",
+   "class": "PALADIN",
+   "requires": 60,
+   "flags": "",
+   "sources": [
+    [
+     "d",
+     "289",
+     "Instructor Malicia",
+     "1.1",
+     "0",
+     "k"
+    ],
+    [
+     "d",
+     "289",
+     "Doctor Theolen Krastinov",
+     "1.1",
+     "0",
+     "k"
+    ],
+    [
+     "d",
+     "289",
+     "Lorekeeper Polkelt",
+     "1.1",
+     "0",
+     "k"
+    ],
+    [
+     "d",
+     "289",
+     "The Ravenian",
+     "1.1",
+     "0",
+     "k"
+    ],
+    [
+     "d",
+     "289",
+     "Lord Alexei Barov",
+     "3.7",
+     "0",
+     "k"
+    ],
+    [
+     "d",
+     "289",
+     "Lady Illucia Barov",
+     "1.1",
+     "0",
+     "k"
+    ]
+   ],
+   "en": "Judgement heals nearby party members for 23–28.",
+   "fr": "Jugement rend 23 à 28 points de vie aux membres du groupe proches.",
+   "evidence": [
+    "https://foreverdb.net/item/23201"
+   ]
+  },
+  "23203": {
+   "name": "Libram of Fervor",
+   "class": "PALADIN",
+   "requires": 60,
+   "flags": "sU",
+   "sources": [
+    [
+     "d",
+     "289",
+     "Risen Warrior",
+     "0",
+     "0",
+     "s"
+    ],
+    [
+     "w",
+     "0",
+     "0",
+     "k"
+    ]
+   ],
+   "en": "Seal of the Crusader grants 48 more attack power and its judgement adds 33 more Holy damage.",
+   "fr": "Sceau du Croisé donne 48 PA de plus et son jugement ajoute 33 dégâts du Sacré de plus.",
+   "evidence": [
+    "https://foreverdb.net/item/23203"
+   ]
+  },
+  "220606": {
+   "name": "Idol of the Dream",
+   "class": "DRUID",
+   "requires": 55,
+   "flags": "",
+   "sources": [
+    [
+     "c",
+     "Enchanting",
+     "300",
+     "1249128",
+     "f"
+    ]
+   ],
+   "en": "Rip lasts 2 sec longer before it needs refreshing.",
+   "fr": "Déchirure dure 2 s de plus avant de devoir être renouvelée.",
+   "evidence": [
+    "https://foreverdb.net/item/220606",
+    "https://foreverdb.net/item/249529"
+   ]
+  },
+  "228175": {
+   "name": "Libram of Holy Alacrity",
+   "class": "PALADIN",
+   "requires": 55,
+   "flags": "",
+   "sources": [
+    [
+     "c",
+     "Enchanting",
+     "300",
+     "1249152",
+     "f"
+    ]
+   ],
+   "en": "Holy Shock shortens your next Holy Light cast by 0.2 sec within 10 sec.",
+   "fr": "Horion sacré raccourcit de 0,2 s votre prochaine Lumière sacrée dans les 10 s.",
+   "evidence": [
+    "https://foreverdb.net/item/228175",
+    "https://foreverdb.net/item/249530"
+   ]
+  },
+  "228176": {
+   "name": "Totem of Thunder",
+   "class": "SHAMAN",
+   "requires": 60,
+   "flags": "",
+   "sources": [
+    [
+     "c",
+     "Enchanting",
+     "300",
+     "1249154",
+     "f"
+    ]
+   ],
+   "en": "Lightning Bolt gains 1% critical strike chance.",
+   "fr": "Éclair gagne 1 % de chances de critique.",
+   "evidence": [
+    "https://foreverdb.net/item/228176",
+    "https://foreverdb.net/item/249532"
+   ]
+  },
+  "249396": {
+   "name": "Mystic Mushroom",
+   "class": "DRUID",
+   "requires": 20,
+   "flags": "n",
+   "sources": [
+    [
+     "c",
+     "Enchanting",
+     "130",
+     "1248752",
+     "f"
+    ]
+   ],
+   "en": "Increases Spirit by 5%.",
+   "fr": "Augmente l’Esprit de 5 %.",
+   "evidence": [
+    "https://foreverdb.net/item/249396",
+    "https://foreverdb.net/item/249476"
+   ]
+  },
+  "249397": {
+   "name": "Tenets of the Silver Hand",
+   "class": "PALADIN",
+   "requires": 20,
+   "flags": "n",
+   "sources": [
+    [
+     "c",
+     "Enchanting",
+     "130",
+     "1248754",
+     "f"
+    ]
+   ],
+   "en": "Increases damage against Undead by 1%.",
+   "fr": "Augmente de 1 % les dégâts contre les morts-vivants.",
+   "evidence": [
+    "https://foreverdb.net/item/249397",
+    "https://foreverdb.net/item/249477"
+   ]
+  },
+  "249398": {
+   "name": "Polished Driftwood Icon",
+   "class": "SHAMAN",
+   "requires": 20,
+   "flags": "n",
+   "sources": [
+    [
+     "c",
+     "Enchanting",
+     "130",
+     "1248755",
+     "f"
+    ]
+   ],
+   "en": "Keeps 8% of your mana regeneration active while casting.",
+   "fr": "Conserve 8 % de votre régénération de mana pendant l’incantation.",
+   "evidence": [
+    "https://foreverdb.net/item/249398",
+    "https://foreverdb.net/item/249478"
+   ]
+  },
+  "249441": {
+   "name": "Talons of Wrath",
+   "class": "DRUID",
+   "requires": 40,
+   "flags": "n",
+   "sources": [
+    [
+     "c",
+     "Enchanting",
+     "210",
+     "1248974",
+     "f"
+    ]
+   ],
+   "en": "Wrath has a 50% chance to restore 35 mana.",
+   "fr": "Colère a 50 % de chances de rendre 35 points de mana.",
+   "evidence": [
+    "https://foreverdb.net/item/249441",
+    "https://foreverdb.net/item/249493"
+   ]
+  },
+  "249442": {
+   "name": "Libram of Invocation",
+   "class": "PALADIN",
+   "requires": 40,
+   "flags": "n",
+   "sources": [
+    [
+     "c",
+     "Enchanting",
+     "210",
+     "1249006",
+     "f"
+    ]
+   ],
+   "en": "Your seals cost 5% less mana.",
+   "fr": "Vos sceaux coûtent 5 % de mana en moins.",
+   "evidence": [
+    "https://foreverdb.net/item/249442",
+    "https://foreverdb.net/item/249494"
+   ]
+  },
+  "249443": {
+   "name": "Totem of Ancestral Protection",
+   "class": "SHAMAN",
+   "requires": 40,
+   "flags": "n",
+   "sources": [
+    [
+     "c",
+     "Enchanting",
+     "210",
+     "1249015",
+     "f"
+    ]
+   ],
+   "en": "Grounding Totem’s cooldown is 1 sec shorter.",
+   "fr": "La recharge de Totem de Glèbe diminue de 1 s.",
+   "evidence": [
+    "https://foreverdb.net/item/249443",
+    "https://foreverdb.net/item/249495"
+   ]
+  },
+  "263411": {
+   "name": "Idol of Shifting Tides",
+   "class": "DRUID",
+   "requires": 0,
+   "flags": "sn",
+   "sources": [
+    [
+     "q",
+     "5061",
+     "Aquatic Form",
+     "16",
+     "a",
+     "s"
+    ],
+    [
+     "q",
+     "31",
+     "Aquatic Form",
+     "16",
+     "h",
+     "s"
+    ]
+   ],
+   "en": "Shapeshifting costs 40 less mana.",
+   "fr": "Les sorts de changement de forme coûtent 40 points de mana de moins.",
+   "evidence": [
+    "https://foreverdb.net/item/263411"
+   ]
+  },
+  "263412": {
+   "name": "Totem of Charged Flames",
+   "class": "SHAMAN",
+   "requires": 0,
+   "flags": "sn",
+   "sources": [
+    [
+     "q",
+     "94468",
+     "Call of Fire",
+     "10",
+     "a",
+     "s"
+    ],
+    [
+     "q",
+     "1527",
+     "Call of Fire",
+     "10",
+     "h",
+     "s"
+    ]
+   ],
+   "en": "Flame Shock and Lightning Bolt each cost 5 less mana.",
+   "fr": "Horion de flammes et Éclair coûtent 5 points de mana de moins.",
+   "evidence": [
+    "https://foreverdb.net/item/263412"
+   ]
+  },
+  "263435": {
+   "name": "Mark of Urs'endris",
+   "class": "DRUID",
+   "requires": 0,
+   "flags": "n",
+   "sources": [],
+   "en": "Increases armor from gear by 4%.",
+   "fr": "Augmente de 4 % l’armure apportée par l’équipement.",
+   "evidence": [
+    "https://foreverdb.net/item/263435"
+   ],
+   "unconfirmed_access": true
+  },
+  "263436": {
+   "name": "Firestorm Totem",
+   "class": "SHAMAN",
+   "requires": 0,
+   "flags": "n",
+   "sources": [],
+   "en": "Your totems cost 5% less mana.",
+   "fr": "Vos totems coûtent 5 % de mana en moins.",
+   "evidence": [
+    "https://foreverdb.net/item/263436"
+   ],
+   "unconfirmed_access": true
+  },
+  "272427": {
+   "name": "Howling Idol",
+   "class": "DRUID",
+   "requires": 60,
+   "flags": "sn",
+   "sources": [
+    [
+     "V",
+     "227853",
+     "226404:50",
+     "",
+     "s"
+    ]
+   ],
+   "en": "Shifting Power’s cooldown is 0.5 sec shorter.",
+   "fr": "La recharge de Puissance fluctuante diminue de 0,5 s.",
+   "evidence": [
+    "https://foreverdb.net/item/272427"
+   ]
+  },
+  "272428": {
+   "name": "Enraged Idol",
+   "class": "DRUID",
+   "requires": 60,
+   "flags": "sn",
+   "sources": [
+    [
+     "V",
+     "227853",
+     "226404:50",
+     "",
+     "s"
+    ]
+   ],
+   "en": "Enrage generates 10 more rage over its duration.",
+   "fr": "Enrager génère 10 points de rage de plus sur sa durée.",
+   "evidence": [
+    "https://foreverdb.net/item/272428"
+   ]
+  },
+  "272429": {
+   "name": "Idol of Synthesis",
+   "class": "DRUID",
+   "requires": 60,
+   "flags": "sn",
+   "sources": [
+    [
+     "V",
+     "227853",
+     "226404:50",
+     "",
+     "s"
+    ]
+   ],
+   "en": "Each of your healing-over-time effects on the target cuts Swiftmend’s cooldown by 1 sec when you cast it.",
+   "fr": "À l’utilisation de Prompte guérison, chacun de vos soins périodiques sur la cible raccourcit sa recharge de 1 s.",
+   "evidence": [
+    "https://foreverdb.net/item/272429"
+   ]
+  },
+  "272430": {
+   "name": "Swarming Idol",
+   "class": "DRUID",
+   "requires": 60,
+   "flags": "sn",
+   "sources": [
+    [
+     "V",
+     "227853",
+     "226404:50",
+     "",
+     "s"
+    ]
+   ],
+   "en": "Insect Swarm lasts 2 sec longer.",
+   "fr": "Essaim d’insectes dure 2 s de plus.",
+   "evidence": [
+    "https://foreverdb.net/item/272430"
+   ]
+  },
+  "272431": {
+   "name": "Tidal Totem",
+   "class": "SHAMAN",
+   "requires": 60,
+   "flags": "sn",
+   "sources": [
+    [
+     "V",
+     "227853",
+     "226404:50",
+     "",
+     "s"
+    ]
+   ],
+   "en": "Healing Wave costs 5% less mana.",
+   "fr": "Vague de soins coûte 5 % de mana en moins.",
+   "evidence": [
+    "https://foreverdb.net/item/272431"
+   ]
+  },
+  "272432": {
+   "name": "Totem of the Storm",
+   "class": "SHAMAN",
+   "requires": 60,
+   "flags": "sn",
+   "sources": [
+    [
+     "V",
+     "227853",
+     "226404:50",
+     "",
+     "s"
+    ]
+   ],
+   "en": "Lightning Bolt can trigger Maelstrom Weapon at half its usual proc chance.",
+   "fr": "Éclair peut déclencher Arme du Maelström à la moitié de sa chance habituelle.",
+   "evidence": [
+    "https://foreverdb.net/item/272432"
+   ]
+  },
+  "272433": {
+   "name": "Burning Totem",
+   "class": "SHAMAN",
+   "requires": 60,
+   "flags": "sn",
+   "sources": [
+    [
+     "V",
+     "227853",
+     "226404:50",
+     "",
+     "s"
+    ]
+   ],
+   "en": "Flame Shock lasts 3 sec longer.",
+   "fr": "Horion de flammes dure 3 s de plus.",
+   "evidence": [
+    "https://foreverdb.net/item/272433"
+   ]
+  },
+  "272434": {
+   "name": "Sentinel's Libram",
+   "class": "PALADIN",
+   "requires": 60,
+   "flags": "sn",
+   "sources": [
+    [
+     "V",
+     "227853",
+     "226404:50",
+     "",
+     "s"
+    ]
+   ],
+   "en": "Swift Judgement’s cooldown is 10 sec shorter if talented.",
+   "fr": "Avec le talent Jugement rapide, sa recharge diminue de 10 s.",
+   "evidence": [
+    "https://foreverdb.net/item/272434"
+   ]
+  },
+  "272435": {
+   "name": "Libram of Law",
+   "class": "PALADIN",
+   "requires": 60,
+   "flags": "sn",
+   "sources": [
+    [
+     "V",
+     "227853",
+     "226404:50",
+     "",
+     "s"
+    ]
+   ],
+   "en": "Judgement deals 4% more damage.",
+   "fr": "Jugement inflige 4 % de dégâts en plus.",
+   "evidence": [
+    "https://foreverdb.net/item/272435"
+   ]
+  },
+  "272436": {
+   "name": "Libram of Economy",
+   "class": "PALADIN",
+   "requires": 60,
+   "flags": "sn",
+   "sources": [
+    [
+     "V",
+     "227853",
+     "226404:50",
+     "",
+     "s"
+    ]
+   ],
+   "en": "Holy Light costs 5% less mana.",
+   "fr": "Lumière sacrée coûte 5 % de mana en moins.",
+   "evidence": [
+    "https://foreverdb.net/item/272436"
+   ]
+  },
+  "279247": {
+   "name": "Steadfast Libram",
+   "class": "PALADIN",
+   "requires": 60,
+   "flags": "n",
+   "sources": [
+    [
+     "c",
+     "Enchanting",
+     "300",
+     "1306521",
+     "f"
+    ]
+   ],
+   "en": "While Holy Shield is active, shield block value is 30% higher.",
+   "fr": "Bouclier sacré augmente de 30 % la valeur de blocage de votre bouclier tant qu’il est actif.",
+   "evidence": [
+    "https://foreverdb.net/item/279247",
+    "https://foreverdb.net/item/279296",
+    "https://foreverdb.net/item/274030"
+   ],
+   "unconfirmed_access": true
+  },
+  "279248": {
+   "name": "Libram of Infusion",
+   "class": "PALADIN",
+   "requires": 60,
+   "flags": "n",
+   "sources": [
+    [
+     "c",
+     "Enchanting",
+     "300",
+     "1306522",
+     "f"
+    ]
+   ],
+   "en": "Holy Shock gains 6% critical strike chance.",
+   "fr": "Horion sacré gagne 6 % de chances de critique.",
+   "evidence": [
+    "https://foreverdb.net/item/279248",
+    "https://foreverdb.net/item/279297",
+    "https://foreverdb.net/item/274030"
+   ],
+   "unconfirmed_access": true
+  },
+  "279249": {
+   "name": "Totem of Urgency",
+   "class": "SHAMAN",
+   "requires": 60,
+   "flags": "n",
+   "sources": [
+    [
+     "c",
+     "Enchanting",
+     "300",
+     "1306523",
+     "f"
+    ]
+   ],
+   "en": "Lesser Healing Wave gains 4% critical strike chance.",
+   "fr": "Vague de soins inférieurs gagne 4 % de chances de critique.",
+   "evidence": [
+    "https://foreverdb.net/item/279249",
+    "https://foreverdb.net/item/279298",
+    "https://foreverdb.net/item/274030"
+   ],
+   "unconfirmed_access": true
+  },
+  "279250": {
+   "name": "Idol of Swiftness",
+   "class": "DRUID",
+   "requires": 60,
+   "flags": "n",
+   "sources": [
+    [
+     "c",
+     "Enchanting",
+     "300",
+     "1306524",
+     "f"
+    ]
+   ],
+   "en": "Swiftmend’s cooldown is 3 sec shorter.",
+   "fr": "La recharge de Prompte guérison diminue de 3 s.",
+   "evidence": [
+    "https://foreverdb.net/item/279250",
+    "https://foreverdb.net/item/279299",
+    "https://foreverdb.net/item/274030"
+   ],
+   "unconfirmed_access": true
+  },
+  "279251": {
+   "name": "Idol of the Ursine Twins",
+   "class": "DRUID",
+   "requires": 60,
+   "flags": "n",
+   "sources": [
+    [
+     "c",
+     "Enchanting",
+     "300",
+     "1306525",
+     "f"
+    ]
+   ],
+   "en": "Each Lacerate hit has a 10% chance to reset Primal Bite.",
+   "fr": "Chaque touche de Lacérer a 10 % de chances de réinitialiser Morsure primordiale.",
+   "evidence": [
+    "https://foreverdb.net/item/279251",
+    "https://foreverdb.net/item/279300",
+    "https://foreverdb.net/item/274030"
+   ],
+   "unconfirmed_access": true
+  }
+ },
+ "profiles": {
+  "DRUID 1": {
+   "pve": [
+    272430,
+    23197,
+    249441,
+    249396
+   ],
+   "pvp": [
+    23197,
+    272430,
+    263411,
+    249441
+   ],
+   "dps": {
+    "272430": {
+     "a": [
+      8.554706,
+      0.99789
+     ],
+     "h": [
+      7.751459,
+      1.023238
+     ]
+    },
+    "23197": {
+     "a": [
+      3.3003,
+      0.003348
+     ],
+     "h": [
+      3.276068,
+      0.003315
+     ]
+    }
+   }
+  },
+  "DRUID 2": {
+   "pve": [
+    23198,
+    272428,
+    263435,
+    279251
+   ],
+   "pvp": [
+    23198,
+    263411,
+    272428,
+    263435,
+    279251
+   ]
+  },
+  "DRUID 3": {
+   "pve": [
+    272429,
+    22398,
+    249396,
+    23004,
+    22399,
+    279250
+   ],
+   "pvp": [
+    272429,
+    263411,
+    22398,
+    249396,
+    279250,
+    22399
+   ]
+  },
+  "DRUID 4": {
+   "pve": [
+    220606,
+    22397,
+    263411,
+    249396,
+    272427
+   ],
+   "pvp": [
+    22397,
+    263411,
+    220606,
+    272427,
+    263435
+   ],
+   "dps": {
+    "220606": {
+     "a": [
+      18.901735,
+      0.674531
+     ],
+     "h": [
+      19.036676,
+      0.649874
+     ]
+    },
+    "22397": {
+     "a": [
+      6.093593,
+      0.694124
+     ],
+     "h": [
+      5.98926,
+      0.663083
+     ]
+    },
+    "263411": {
+     "a": [
+      3.829152,
+      0.642745
+     ],
+     "h": [
+      4.384506,
+      0.617998
+     ]
+    },
+    "249396": {
+     "a": [
+      1.881085,
+      0.621437
+     ],
+     "h": [
+      2.722328,
+      0.582562
+     ]
+    }
+   }
+  },
+  "PALADIN 1": {
+   "pve": [
+    272436,
+    228175,
+    23201,
+    22400,
+    23006,
+    279248,
+    22402
+   ],
+   "pvp": [
+    272436,
+    22400,
+    228175,
+    279248,
+    23006,
+    22402
+   ]
+  },
+  "PALADIN 2": {
+   "pve": [
+    23203,
+    272435,
+    272434,
+    23201,
+    279247,
+    249397
+   ],
+   "pvp": [
+    272434,
+    272435,
+    22400,
+    279247,
+    23203
+   ]
+  },
+  "PALADIN 3": {
+   "pve": [
+    23203,
+    272435,
+    249397,
+    249442,
+    22401
+   ],
+   "pvp": [
+    23203,
+    272435,
+    22400,
+    22401,
+    249442
+   ],
+   "dps": {
+    "23203": {
+     "a": [
+      9.876276,
+      0.011007
+     ],
+     "h": [
+      9.797863,
+      0.010726
+     ]
+    }
+   }
+  },
+  "PALADIN 4": {
+   "pve": [
+    23203,
+    272435,
+    279248,
+    249397,
+    228175,
+    249442
+   ],
+   "pvp": [
+    272435,
+    279248,
+    22400,
+    23203,
+    228175
+   ],
+   "dps": {
+    "23203": {
+     "a": [
+      12.696806,
+      0.008891
+     ],
+     "h": [
+      12.601427,
+      0.009023
+     ]
+    },
+    "272435": {
+     "a": [
+      4.755376,
+      0.008442
+     ],
+     "h": [
+      4.700102,
+      0.008022
+     ]
+    },
+    "279248": {
+     "a": [
+      2.528704,
+      0.056276
+     ],
+     "h": [
+      2.505392,
+      0.057695
+     ]
+    }
+   }
+  },
+  "SHAMAN 1": {
+   "pve": [
+    23199,
+    228176,
+    249398,
+    263412,
+    22395,
+    272433,
+    263436
+   ],
+   "pvp": [
+    23199,
+    22395,
+    249443,
+    272433,
+    263412,
+    228176
+   ],
+   "dps": {
+    "23199": {
+     "a": [
+      17.637906,
+      0.017777
+     ],
+     "h": [
+      17.849529,
+      0.018436
+     ]
+    },
+    "228176": {
+     "a": [
+      3.974645,
+      0.461275
+     ],
+     "h": [
+      4.195852,
+      0.465524
+     ]
+    },
+    "249398": {
+     "a": [
+      3.613478,
+      0.681188
+     ],
+     "h": [
+      1.730476,
+      0.654673
+     ]
+    },
+    "263412": {
+     "a": [
+      2.801432,
+      0.536242
+     ],
+     "h": [
+      1.268738,
+      0.572948
+     ]
+    },
+    "22395": {
+     "a": [
+      2.090469,
+      0.004709
+     ],
+     "h": [
+      2.085576,
+      0.004449
+     ]
+    }
+   }
+  },
+  "SHAMAN 2": {
+   "pve": [
+    22395,
+    272432,
+    23199,
+    272433,
+    228176,
+    263412
+   ],
+   "pvp": [
+    22395,
+    272432,
+    249443,
+    272433,
+    23199
+   ]
+  },
+  "SHAMAN 3": {
+   "pve": [
+    272431,
+    22345,
+    249398,
+    23200,
+    22396,
+    23005,
+    279249
+   ],
+   "pvp": [
+    272431,
+    249443,
+    22345,
+    249398,
+    23200,
+    279249,
+    22396
+   ]
+  }
+ }
+}

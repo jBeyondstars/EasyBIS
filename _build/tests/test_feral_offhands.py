@@ -9,7 +9,7 @@ BUILD = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(BUILD))
 
 import fdb
-import feral_offhands
+import feral_gear
 import ladders
 import specs
 
@@ -18,7 +18,7 @@ class FeralOffhandsTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.db = fdb.load(BUILD / "cache" / "ForeverDB")
-        cls.ranking = feral_offhands.ranking(cls.db, "DRUID", 4, "pve", "off")
+        cls.ranking = feral_gear.ranking(cls.db, "DRUID", 4, "pve", "off")
 
     def test_only_cat_pve_off_hands(self):
         for cls, spec, mode, slot in (
@@ -27,10 +27,11 @@ class FeralOffhandsTest(unittest.TestCase):
             ("ROGUE", 2, "pve", "off"),
         ):
             with self.subTest(cls=cls, spec=spec, mode=mode, slot=slot):
-                self.assertIsNone(feral_offhands.ranking(self.db, cls, spec, mode, slot))
+                self.assertIsNone(feral_gear.ranking(self.db, cls, spec, mode, slot))
 
     def test_scepter_and_tome_use_the_main_hands_attack_power_scale(self):
-        source = feral_offhands._read()
+        source = feral_gear._read("off")
+        self.assertEqual(source["reference"]["fingers"], [272408, 17713])
         weight = self.db.classes["DRUID"]["specs"][4]["weights"]["raid"][specs.ATTACK_POWER]
         for item in (13385, 22329):
             trials = next(group["trials"] for group in source["candidates"] if group["id"] == item)
@@ -43,7 +44,7 @@ class FeralOffhandsTest(unittest.TestCase):
             self.assertTrue(all(mean > 2 * se for mean, se in comparisons.values()))
 
     def test_drink_is_unavailable_and_an_unmeasured_item_keeps_its_weight(self):
-        source = feral_offhands._read()
+        source = feral_gear._read("off")
         tankard = next(group for group in source["candidates"] if group["id"] == 4696)
         self.assertTrue(all(mean < -2 * se for _, _, mean, se, _ in tankard["trials"]))
         self.assertNotIn(4696, self.ranking.scores)
@@ -51,7 +52,7 @@ class FeralOffhandsTest(unittest.TestCase):
         self.assertEqual(self.ranking.value(99999999, 3.2), 3.2)
 
     def test_faction_twins_have_trials_on_the_actual_ids(self):
-        source = feral_offhands._read()
+        source = feral_gear._read("off")
         paired = next(group for group in source["candidates"] if group["id"] == 278157)
         self.assertEqual({(row[0], row[1]) for row in paired["trials"]}, {(278157, "a"), (272686, "h")})
         self.assertEqual(self.ranking.value(278157, 0), self.ranking.value(272686, 0))

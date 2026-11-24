@@ -13,6 +13,10 @@ import ladders
 import simulate_aoe
 
 
+# Archived trials also contain Dragonskin Cowl (random suffix) and Ring of the Eternal Flame (raid drop).
+ARCHIVED_ONLY_ITEMS = frozenset({22225, 23237})
+
+
 def digest(value):
     payload = json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False)
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
@@ -187,7 +191,7 @@ def _single_items(short, route, caps, priorities=None):
         raise ValueError("Different candidates in the two scenarios")
     rows = []
     for (iid,), source in first.items():
-        if iid in ladders.DISQUALIFIED_ITEMS:
+        if iid in ladders.DISQUALIFIED_ITEMS or iid in ARCHIVED_ONLY_ITEMS:
             continue
         dungeon = second[iid,]
         sb, rb = result["shortBaseline"], result["routeBaseline"]

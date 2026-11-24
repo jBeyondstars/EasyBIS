@@ -23,6 +23,7 @@ sys.path.insert(0, str(BUILD))
 import consumable_lists  # noqa: E402
 import fdb  # noqa: E402
 import ladders  # noqa: E402
+import tank_options  # noqa: E402
 import luaout  # noqa: E402
 import phases  # noqa: E402
 import reputations  # noqa: E402
@@ -63,12 +64,12 @@ def for_list(flt: tuple, mode: str) -> tuple:
     return flt if flt[4] is not None else (*flt[:4], ladders.PVP_REWARDS[mode], *flt[5:])
 
 
-def visible_duel(token, spec, mode, flt, slot, entries):
-    duel = tank_options.DUELS.get((token, spec), {}).get(slot)
-    if mode != "pve" or flt[3] != 0 or not duel:
-        return ()
-    eligible = {entry.shown(flt[0]) for entry in entries}
-    return duel[:2] if eligible.issuperset(duel[:2]) else ()
+def visible_duel(token, spec, mode, slot, entries, flt):
+    if mode != "pve" or flt[3] != phases.PRE_RAID:
+        return []
+    ids = tank_options.DUELS.get((token, spec), {}).get(slot, ())[:2]
+    by_id = {entry.shown(flt[0]): entry for entry in entries}
+    return [by_id[i] for i in ids] if all(i in by_id for i in ids) else []
 
 
 def toc_files() -> list[Path]:
@@ -132,29 +133,27 @@ class AddonTest(unittest.TestCase):
 
     # -- reference: what the generator's rules give ---------------------------------------
 
-    def expected_picks(self, token, spec, mode, flt, count=ladders.ALTERNATIVES, full=False, display=False) -> dict:
+    def expected_picks(self, token, spec, mode, flt, count=ladders.ALTERNATIVES, full=False) -> dict:
         """count: the alternatives asked for. full: from the whole ladder, not the part the data files keep."""
         flt = for_list(flt, mode)
         side = flt[0]
         ladder = (lambda slot: ladders.full_ladder(self.db, token, spec, mode, slot)) if full \
             else self.kept[token][spec][mode].__getitem__
-        visible = {slot: [e for e in ladder(slot) if e.passes(flt)] for slot, _ in ladders.SLOTS}
+        visible = ladders.visible_slots({slot: ladder(slot) for slot, _ in ladders.SLOTS}, flt)
         two_hand = bool(visible["main"]) and not ladders.weapon_lists(visible["main"], visible["off"])[1] \
             and ladders.weapon_lists(visible["main"], visible["off"])[0][0].two_hand
         other_main, other_off = ladders.other_weapons(visible["main"], visible["off"])
         visible["main"], visible["off"] = ladders.weapon_lists(visible["main"], visible["off"])
-        out = {"twoHand": two_hand, "ties": {}}
+        out = {"twoHand": two_hand, "ties": {}, "options": {}}
         for slot, entries in visible.items():
             best, alternatives = ladders.picks(slot, entries, count)
             out[slot] = ([e.shown(side) for e in best], [e.shown(side) for e in alternatives])
-            if display:
-                leaders, others = out[slot]
-                options = visible_duel(token, spec, mode, flt, slot, entries)
-                out[slot] = (leaders, [i for i in options if i not in leaders] + [i for i in others if i not in options])
-            # an alternative that scores exactly as a best pick is its equal; a placed one has no score of its own;
-            # one whose effect the weights cannot count (level) is shown as the best picks' equal
+            out["options"][slot] = [e.shown(side) for e in visible_duel(token, spec, mode, slot, entries, flt)]
+            # Only equal, comparable scores count as a tie.
             out["ties"][slot] = {e.shown(side) for e in alternatives
-                                 if e.level or (not e.placed and any(e.stored == b.stored for b in best))}
+                                 if not e.unscored and not e.estimated and any(
+                                     not b.unscored and not b.estimated and e.stored == b.stored
+                                     and e.paired_with == b.paired_with for b in best)}
         shown = 1 + count
         out["other"] = {"main": [e.shown(side) for e in other_main[:shown]],
                         "off": [e.shown(side) for e in other_off[:shown]]}
@@ -167,12 +166,12 @@ class AddonTest(unittest.TestCase):
                 if (token, spec) == ("HUNTER", 3):
                     continue  # Archived melee Survival has no tooltip recommendations.
                 for mode in ladders.MODES:
-                    picks = self.expected_picks(token, spec, mode, flt, display=True)
+                    picks = self.expected_picks(token, spec, mode, flt)
                     for slot, _ in ladders.SLOTS:
                         best, alternatives = picks[slot]
                         for item_id in best:
                             hits.setdefault(item_id, set()).add((token, spec, mode, slot, True))
-                        for item_id in alternatives:
+                        for item_id in (set(alternatives) | set(picks["options"][slot])) - set(best):
                             hits.setdefault(item_id, set()).add(
                                 (token, spec, mode, slot, item_id in picks["ties"][slot]))
                         for item_id in picks["other"].get(slot, []):
@@ -225,6 +224,34 @@ class AddonTest(unittest.TestCase):
         self.assertEqual(game.tooltip(EYE_OF_REND), [], "tooltips were switched off in the saved options")
 
     # -- the lists ----------------------------------------------------------------------------
+
+    def test_balance_weapon_set_uses_pre_raid_enchant(self):
+        """Use the authenticated head-to-head only for its exact three items in pre-raid."""
+        game = Game()
+        data = game.ns.Ladders.Decode("DRUID")
+        rules = data.weaponSets[1]["pve"]
+        for side in ("a", "h"):
+            flt = game.lua.table(side=side, phase=0, rankCap=6, pvpRewards=False)
+            result = game.ns.Ladders.Compute(data, 1, "pve", flt)
+            self.assertEqual(result.main.best[1].id, 13937)
+            self.assertTrue(result.twoHand)
+            self.assertIsNone(result.off.best[1])
+            self.assertEqual(result.main.other[1].id, 2243)
+            self.assertEqual(result.off.other[1].id, 18316)
+            key = f"{side}:13937:2243:18316"
+            rules[key] = None
+            fallback = game.ns.Ladders.Compute(data, 1, "pve", flt)
+            self.assertEqual((fallback.main.best[1].id, fallback.off.best[1].id), (2243, 18316))
+            rules[key] = True
+            for (seen, reward, expected) in ((True, False, 7713), (False, True, 20069 if side == "a" else 20220)):
+                flt.seenOnly, flt.pvpRewards, flt.rankCap = seen, reward, None
+                self.assertEqual(game.ns.Ladders.Compute(data, 1, "pve", flt).main.best[1].id, expected)
+            flt.phase = phases.LATER
+            with_rows = game.ns.Ladders.Compute(data, 1, "pve", flt)
+            data.weaponSets[1]["pve"] = None
+            without = game.ns.Ladders.Compute(data, 1, "pve", flt)
+            self.assertEqual((with_rows.twoHand, with_rows.main.best[1].id), (without.twoHand, without.main.best[1].id))
+            data.weaponSets[1]["pve"] = rules
 
     def test_lua_makes_the_generators_picks(self):
         """Every class, spec, list, slot and filter: same best picks and alternatives as ladders.py."""
@@ -340,7 +367,10 @@ class AddonTest(unittest.TestCase):
                                 self.assertEqual(got, expected[slot], f"{token} {spec} {mode} {slot} {flt} {count}")
                                 self.assertEqual([pick.id for pick in result[slot].other.values()],
                                                  expected["other"].get(slot, []), f"{token} {spec} {mode} {slot}")
-                                longest = max(longest, len(got[1]))
+                                ordinary = sum(not game.ns.Ladders.HasFlag(pick.entry, "j")
+                                               for pick in result[slot].alts.values())
+                                self.assertLessEqual(ordinary, count)
+                                longest = max(longest, ordinary)
         self.assertEqual(longest, ladders.MAX_ALTERNATIVES)
 
         # the character's own number: two until it asks for more, kept between two and what the data holds
@@ -385,8 +415,8 @@ class AddonTest(unittest.TestCase):
         self.assertIsNone(note(22329, "DRUID", 4, "pvp", "off"))
         main, off = note(12590, "ROGUE", 3, "pve", "main"), note(12590, "ROGUE", 3, "pve", "off")
         self.assertRegex(main, "^Its proc makes every attack land and crit")
-        self.assertRegex(off, "With Heartseeker.*Felstriker off hand by about 4 DPS",
-                         "the off-hand comparison used a valid main hand")
+        self.assertIn("Shadowsong beats Felstriker off hand with Heartseeker main hand", off)
+        self.assertIn("With Felstriker main hand, Distracting Dagger leads", off)
         self.assertIsNone(note(647, "WARRIOR", 1, "pve"), "a note for a slot is for a row of that slot")
         self.assertNotEqual(note(14555, "ROGUE", 3, "pve", "main"), None)
         self.assertRegex(note(871, "ROGUE", 2, "pve", "off"), "^Its proc, an extra attack", "the spec's own note first")
@@ -416,10 +446,10 @@ class AddonTest(unittest.TestCase):
         self.assertEqual(game.ns.Index.SpecName("DRUID", 4), "Feral (Cat)")
         cat, bear = game.ns.Ladders.For("DRUID", 4, "pve"), game.ns.Ladders.For("DRUID", 2, "pve")
         for slots, number in ((cat, 4), (bear, 2)):
+            expected = self.expected_picks("DRUID", number, "pve", default_filter())
             for slot, _ in ladders.SLOTS:
-                want = [entry for entry in self.kept["DRUID"][number]["pve"][slot] if entry.passes(default_filter())]
-                if slot not in ("main", "off") and want:
-                    self.assertEqual(slots[slot].best[1].id, ladders.lead(want).shown("a"), f"spec {number} {slot}")
+                self.assertEqual([pick.id for pick in slots[slot].best.values()], expected[slot][0],
+                                 f"spec {number} {slot}")
         self.assertNotEqual(cat.chest.best[1].id, bear.chest.best[1].id)
         self.assertEqual(game.slash("list 4")[0], "Easy BIS: Druid Feral (Cat), Level 60 PvE:")
         self.assertEqual(game.slash("list 2")[0], "Easy BIS: Druid Feral (Bear), Level 60 PvE:")
@@ -429,25 +459,28 @@ class AddonTest(unittest.TestCase):
         self.assertEqual(french.ns.SpecName("Feral (Cat)"), "Farouche (Félin)")
         self.assertEqual(french.ns.SpecName("Feral (Bear)"), "Farouche (Ours)")
 
-    def test_an_item_worth_its_effect_is_the_equal_of_the_best_picks(self):
-        """The Lion Horn of Stormwind in a Protection Paladin's trinkets: flag x, no score, tied, never a best pick."""
-        horn, stabilizer, compass = 14557, 272440, 4130
-        game = Game(cls="PALADIN")
+    def test_an_unmeasured_effect_stays_a_situational_alternative(self):
+        """Arena Grand Master in a Protection Paladin's trinkets: flag x, no score, no measured tie."""
+        horn, stabilizer, arena, mark, compass = 14557, 272440, 19024, 13966, 4130
+        game = Game(cls="PALADIN", saved="EasyBISDB = { altCount = 6 }")
         ladders_ = game.ns.Ladders
         trinkets = ladders_.For("PALADIN", 2, "pve").trinket
-        self.assertEqual([pick.id for pick in trinkets.best.values()], [stabilizer, compass])
+        self.assertEqual([pick.id for pick in trinkets.best.values()], [horn, stabilizer])
         first = trinkets.alts[1]
-        self.assertEqual(first.id, horn)
+        self.assertEqual(first.id, arena)
+        self.assertTrue(any(pick.id == mark for pick in trinkets.alts.values()))
+        self.assertNotIn(compass, [pick.id for pick in trinkets.best.values()])
         self.assertTrue(ladders_.HasFlag(first.entry, "x"))
         self.assertTrue(ladders_.Unscored(first.entry))
-        self.assertTrue(ladders_.IsTie(trinkets, first))
+        self.assertFalse(ladders_.IsTie(trinkets, first))
         state = game.lua.table_from({"class": "PALADIN", "spec": 2, "list": "pve"})
-        rows = [row for row in game.ns.Rows.Items(state, True)[0].values() if row.kind == "item" and row.id == horn]
+        rows = [row for row in game.ns.Rows.Items(state, True)[0].values() if row.kind == "item" and row.id == arena]
         self.assertEqual(len(rows), 1)
-        self.assertTrue(rows[0].level and rows[0].tie)
+        self.assertTrue(rows[0].level)
+        self.assertFalse(rows[0].tie)
         self.assertIsNone(rows[0].gap)
         self.assertIsNone(rows[0].ratio)
-        self.assertIn(("<classicon-paladin> Paladin Protection", "BIS PvE"), game.lines(horn), "a best pick's equal")
+        self.assertNotIn(("<classicon-paladin> Paladin Protection", "BIS PvE"), game.lines(arena))
 
     def test_a_tooltip_names_the_specs_in_the_order_they_are_listed(self):
         game = Game(cls="DRUID")
@@ -552,9 +585,6 @@ class AddonTest(unittest.TestCase):
         self.assertEqual(dict(game.ns.db.pvpRewards), ladders.PVP_REWARDS)
         self.assertEqual(dict(game.ns.Filter().pvpRewards), {"pve": False, "pvp": True})
         self.assertEqual((game.ns.PvPRewards(game.ns, "pve"), game.ns.PvPRewards(game.ns, "pvp")), (False, True))
-        lists = game.ns.Ladders.Decode("WARRIOR").lists[3]
-        flags = {mode: {entry.id: entry.flags for entries in lists[mode].values() for entry in entries.values()}
-                 for mode in ladders.MODES}
         with_them, without = default_filter(pvp=True), default_filter(pvp=False)
 
         def picks(mode):
@@ -566,7 +596,7 @@ class AddonTest(unittest.TestCase):
             shown, expected = picks(mode), self.expected_picks("WARRIOR", 3, mode, flt)
             for slot, _ in ladders.SLOTS:
                 self.assertEqual(shown[slot][:len(expected[slot][0])], expected[slot][0], f"{mode} {slot} {flt}")
-                rewards = [item_id for item_id in shown[slot] if "p" in flags[mode][item_id]]
+                rewards = [item_id for item_id in shown[slot] if ladders.pvp_reward(self.db.items[item_id])]
                 self.assertEqual(bool(rewards) and not flt[4], False, f"{mode} {slot}: a PvP reward is listed")
             return shown
 
@@ -574,7 +604,7 @@ class AddonTest(unittest.TestCase):
                                for hit in (game.ns.Index.ForItem(item) or game.lua.table()).values()}
         in_pve, in_pvp = check("pve", without), check("pvp", with_them)
         rank_13 = in_pvp["head"][0]
-        self.assertIn("p", flags["pvp"][rank_13], "the best PvP head is no PvP reward: this test needs another spec")
+        self.assertTrue(ladders.pvp_reward(self.db.items[rank_13]), "this case needs a PvP reward as its best head")
         self.assertEqual(wanted(rank_13) & {("WARRIOR", 3, "pve"), ("WARRIOR", 3, "pvp")}, {("WARRIOR", 3, "pvp")})
 
         # the PvE list counts them: its best head is that helm too; the PvP list has not moved

@@ -79,7 +79,7 @@ class AuctionTest(unittest.TestCase):
                 p = EasyBISAuctionPanel
                 assert(EasyBISAuctionTab.text == "EasyBis" and p:IsShown())
                 assert(p.spec.button.Text.text:find("Amélioration") and p.list.buttons[1].highlightLocked)
-                assert(p.list.buttons[1].Text.text == "JcE" and p.list.label.text == ns.L.FILTER_LIST)
+                assert(p.list.buttons[1].Text.text == ns.L.TAB_PVE and p.list.label.text == ns.L.FILTER_LIST)
                 assert(p.phase.text == ns.PhaseName(ns.Phase()))
                 click(p.scan)
             end

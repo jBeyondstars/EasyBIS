@@ -1,15 +1,26 @@
 <p style="text-align:center"><img src="https://raw.githubusercontent.com/jBeyondstars/EasyBIS/main/docs/banner.png" alt="Easy BIS" width="400"></p>
 
+## (New!) Custom list and import WoWSims Forever
+
+![A Warrior Fury custom list imported from WoWSims Forever](https://raw.githubusercontent.com/jBeyondstars/EasyBIS/main/docs/screenshots/custom-list.png)
+
+Build a gear list for your class and specialization under **Items → PvE**. Click **+**, name your list, then use **Add an item** to fill it one slot at a time.
+
+Already have a set in WoWSims Forever? In the simulator's export options, select **Gear** only and copy the JSON. Open the custom list you want to update, click **Import WoWSims** and paste the export. Importing replaces that list's items and enchants. Drag its tab to reorder it, or right-click to rename, move or delete it.
+
+## About Easy BIS
+
 **The best gear for every class and spec of WoW Forever, in one window and in your item tooltips.**
 
 Easy BIS is a BIS list for every class and spec: the best-in-slot (BIS) item of every slot at level 60, for PvE and PvP, with the alternatives behind it and where each piece comes from. Plan your pre-BIS gear before the raids, follow your full BIS gear set as new phases open, and keep track of what to farm next. It knows the enchants, the consumables and the reputations too, it lays your spec's best set out as a character sheet, it shows which dungeons to run for it, and it finds the pieces of your list that are on sale at the auction house.
 
-## New! Dungeons
+## Dungeons
 
 ![The dungeons, by dungeon](https://raw.githubusercontent.com/jBeyondstars/EasyBIS/main/docs/screenshots/dungeons.png)
 
 The **Dungeons** tab shows which dungeons to run for your spec's best picks, each dungeon in its own colour. It is the second tab on the window's right side.
 
+- Open **Tracked lists** to combine Raid, PvP, AoE / Dungeons and your custom lists. Easy BIS remembers the selection for your character and specialization.
 - **By dungeon** shows your set, every slot over the colour of its dungeon, then a band per dungeon with the pieces it holds, each with its boss and its drop chance. A piece no dungeon holds is in black and white.
 - **By piece** shows a line per piece and a column per dungeon, with a coloured cell where the piece drops.
 - A wing that is run on its own counts as a dungeon: Upper and Lower Blackrock Spire, the wings of Dire Maul, Stratholme and the Scarlet Monastery.
@@ -18,6 +29,10 @@ The **Dungeons** tab shows which dungeons to run for your spec's best picks, eac
 - Point at a dungeon to light its slots. Click a piece to see its slot in the Items tab.
 
 ![The dungeons, by piece](https://raw.githubusercontent.com/jBeyondstars/EasyBIS/main/docs/screenshots/dungeons-grid.png)
+
+## AoE / Dungeons gear
+
+Under **Items → PvE**, 21 damage profiles have a dedicated **AoE / Dungeons** list for each faction. Rankings combine a four-enemy pull with a multi-pull dungeon run. Hover over a weapon to see its recommended partner and how the pair performed in both scenarios. Survival Hunters use the ranged profile for dungeons.
 
 ## The window
 

@@ -26,14 +26,23 @@ Hunter. It is the developer's decision, and full_ladder's one line to remove.
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
+from functools import lru_cache
+import json
+from pathlib import Path
 from itertools import product
 
-import feral_offhands
+import caster_gear
+import feral_gear
+import hunter_bm
 import phases
+import pvp_insignia
 import ranks
+import reputations
+import relics
 import simulated
-import specs
 import tank_options
+import situational_gear
+import specs
 
 # Easy BIS slot -> the ForeverDB pools it reads. Rings and trinkets fill two slots from one pool.
 SLOTS = (
@@ -67,6 +76,8 @@ PVP_FACTIONS = frozenset((509, 510, 729, 730, 889, 890))
 # These sources are recorded as quests, without a quartermaster or a reputation source.
 PVP_QUESTS = frozenset((*range(7161, 7173), 7181, 7202, 8271, 8272))
 PVP_SET = ranks.PREMIER
+# Short melee windows on a level-60 humanoid, measured separately from ordinary PvP stat weights.
+PRERAID_MELEE_OPTIONS = {("WARRIOR", 1): (12583,), ("PALADIN", 3): (12583,), ("HUNTER", 3): (12583, 13348)}
 PVP_REWARDS = {"pve": False, "pvp": True}  # whether a list counts them until the player says otherwise
 ALTERNATIVES = 2      # picks shown after the best one(s), until the player asks for more
 MAX_ALTERNATIVES = 6  # ... up to this many: what the data files keep of a ladder
@@ -113,6 +124,16 @@ class Entry:
     estimated: bool = False  # ranked by simulation on a score that is no full measure (SlotRanking.measured): the
     #                          simulator cannot wear it (a random bonus), or lacks its effect or its proc rate. It keeps
     #                          its rank, and the addon shows no score for it
+    alternative_only: bool = False  # partial measurement in a faction-specific list
+    pvp_utility: bool = False  # a situational extra, after the ordinary alternatives
+    paired_with: int | None = None  # the first ring or trinket held constant for a companion score
+    model: str | None = None  # model or exclusion recorded for this faction and companion
+    preraid_option: bool = False  # scored normally in later phases, situational in pre-raid
+
+    # Complete pre-raid sets beaten with this two-hander's recommended enchant.
+    pre_raid_weapon_sets: tuple[tuple[str, int, int], ...] = ()
+    weapon_set_side: str | None = None  # set only in the pre-raid view
+    fourth_option: bool = False  # display this situational option fourth, including at the default list length
 
     @property
     def stored(self) -> int:
@@ -122,7 +143,7 @@ class Entry:
     @property
     def unscored(self) -> bool:
         """Whether its score is a stand-in, not its own: it keeps the ladder in order and is never a best pick."""
-        return self.placed or self.level
+        return self.placed or self.level or self.estimated or self.alternative_only or self.pvp_utility
 
     def shown(self, side: str) -> int | None:
         """The item a character of that faction wears for this entry."""
@@ -213,8 +234,75 @@ def _fits_style(pool: str, inv: int, style: str, dual_wields: bool) -> bool:
     return True
 
 
+def slot_ranking(db, cls: str, spec: int, mode: str, slot: str) -> simulated.SlotRanking | None:
+    """The measured scores used in this cap-level EasyBIS slot, including the cat’s calibrated gear."""
+    if not simulated.IN_USE or not getattr(db, "simulated", None):
+        return None
+    return simulated.ranking(db, cls, spec, mode, slot) or feral_gear.ranking(db, cls, spec, mode, slot)
+
+
+@lru_cache(maxsize=1)
+def _balance_weapon_sets():
+    source = Path(__file__).parent / "corrections" / "balance_weapon_sets.json"
+    return json.loads(source.read_text(encoding="utf-8"))
+
+
+class ProtectionPaladinWeapons(list):
+    """Keep weighted scores and prefer Arbiter's Blade to the two physical alternatives in pre-raid."""
+
+    def __init__(self, entries):
+        super().__init__(entries)
+        self.pre_raid = [entry for entry in entries if entry.phase == phases.PRE_RAID]
+        first_physical = next((i for i, e in enumerate(self.pre_raid) if e.item_id in (279261, 279259)), len(self.pre_raid))
+        arbiter = next((i for i, e in enumerate(self.pre_raid) if e.item_id == 11784), -1)
+        if arbiter > first_physical:
+            self.pre_raid.insert(first_physical, self.pre_raid.pop(arbiter))
+
+
+class ArmsHelms(list):
+    """Keep the raid ranking and recommend one costly hit helm to craft for pre-raid Arms."""
+
+    def __init__(self, entries):
+        super().__init__(entries)
+        self.pre_raid = [entry for entry in entries if entry.phase == phases.PRE_RAID]
+        helms = {entry.item_id: entry for entry in self.pre_raid}
+        lionheart, stalwart = helms.get(12640), helms.get(250599)
+        if lionheart and stalwart and lionheart.score > stalwart.score:
+            # Keep Stalwart if it offers a route to hit for someone who cannot get Lionheart.
+            if all(not stalwart.passes(flt) or lionheart.passes(flt)
+                   for flt in FILTERS if flt[3] == phases.PRE_RAID):
+                self.pre_raid = [entry for entry in self.pre_raid if entry != stalwart]
+
+
 def full_ladder(db, cls: str, spec: int, mode: str, slot: str, level: int | None = None,
                 rank_rewards: bool = True) -> list[Entry]:
+    entries = _ranked_ladder(db, cls, spec, mode, slot, level, rank_rewards)
+    if not rank_rewards or (level is not None and level != db.meta["cap"]):
+        return entries
+    if slot == "ranged" and cls in relics.CLASSES:
+        return relics.ranking(db, cls, spec, mode, entries)
+    options = []
+    for item_id in situational_gear.item_ids(cls, spec, mode, slot):
+        if (cls, spec, item_id) == ("DRUID", 2, 11810):
+            # The bear has a dedicated fourth-place pre-raid recommendation.
+            continue
+        item = db.items.get(item_id)
+        gear = db.gear.get(item_id)
+        if not item or not gear or gear["req"] > db.meta["cap"]:
+            continue
+        flags = item["flags"]
+        options.append(Entry(item_id=item_id, score=0, side=item["side"], twin=item["twin"],
+                             seen="s" in flags, new="n" in flags, unique="U" in flags, random="r" in flags,
+                             unsourced=not bool(item["groups"] & SOURCE_GROUPS), two_hand=False, limit=item["limit"],
+                             phase=phases.item_phase(item), pvp=pvp_reward(item), rank=ranks.required(item, gear),
+                             honor=ranks.sold_for_honor(item), pvp_utility=True))
+    if options:
+        entries = _annotatable(entries)
+        entries.options = options
+    return entries
+
+
+def _ranked_ladder(db, cls: str, spec: int, mode: str, slot: str, level: int | None, rank_rewards: bool):
     """Every pick for the slot, best first, with no faction or source filter applied.
 
     rank_rewards=False is foreverdb.net/bis's rule: the PvP-rank rewards are left out of the PvE list, and a
@@ -225,8 +313,14 @@ def full_ladder(db, cls: str, spec: int, mode: str, slot: str, level: int | None
     spec_def = data["specs"][spec]
     profile = MODES[mode]
     weights = spec_def["weights"][profile]
-    if "weapon_hit" in weights and (level != db.meta["cap"] or not rank_rewards):
-        weights = {stat: value for stat, value in weights.items() if stat != "weapon_hit"}
+    if slot == "trinket" and spec_def["role"] in {"Healer", "Caster DPS"} and 32 in weights:
+        # These profiles get their crit value from spells. Never credit a melee crit for the Eye.
+        weights = {caster_gear.SPELL_CRIT_RATING: weights[32], **weights}
+    if mode == "pvp" and (level != db.meta["cap"] or not rank_rewards):
+        weights = dict(weights)
+        weights.pop("weapon_hit", None)
+        if db.specs and (cls, spec) in db.specs.humanoid_power:
+            weights.pop(specs.HUMANOID_ATTACK_POWER, None)
     groups = SOURCE_GROUPS if rank_rewards or mode != "pve" else SOURCE_GROUPS - {PVP_RANK_GROUP}
     # The external-site comparison uses ForeverDB's unmodified candidate pool.
     disqualified = DISQUALIFIED_ITEMS if rank_rewards else ()
@@ -239,9 +333,21 @@ def full_ladder(db, cls: str, spec: int, mode: str, slot: str, level: int | None
             and mode == "pve" and slot == "main" and "dps" in weights):
         spell = weights["dps"] * specs.PALADIN_SPELL_DAMAGE_IN_WEAPON_DPS
         weights = {**weights, specs.SPELL_POWER: spell, specs.SPELL_DAMAGE: spell, specs.HOLY_DAMAGE: spell}
-    ranked = simulated.ranking(db, cls, spec, mode, slot) if ours else None
-    if ours and not ranked and simulated.IN_USE and getattr(db, "simulated", None):
-        ranked = feral_offhands.ranking(db, cls, spec, mode, slot)
+    ranked = slot_ranking(db, cls, spec, mode, slot) if ours else None
+    trinkets = (getattr(db, "pre_raid_trinkets", {}).get((cls, spec), {})
+                if ranked and mode == "pve" and slot == "trinket" else {})
+    pre_measured = {int(item) for side in ("a", "h") for item, row in trinkets.get(slot, {}).get(side, {}).items()
+                    if row[3] == "measured" and row[0] is not None}
+    arm_epaulets = {}
+    if ours and (cls, spec, mode, slot) == ("WARRIOR", 1, "pve", "shoulder"):
+        # The Warrior pool only includes the Alliance mail shoulders. Both factions' versions
+        # have identical stats and acquisition flags, and matched exactly in the paired Arms run.
+        alliance, horde = db.items.get(271956), db.items.get(272106)
+        if (alliance and horde and (alliance["side"], horde["side"]) == ("a", "h")
+                and db.gear.get(271956) and db.gear[271956] == db.gear.get(272106)
+                and all(alliance[key] == horde[key] for key in ("flags", "limit", "groups"))
+                and phases.item_phase(alliance) == phases.item_phase(horde)):
+            arm_epaulets = {271956: 272106, 272106: 271956}
     placed = getattr(db, "placed", None) or {}   # the items put by hand after another one (corrections/effects.json)
     class_only = getattr(db, "class_only", None) or {}   # the classes of an item the game restricts (corrections/classes.json)
     # In a PvP list, which no simulator ranks: a Survival Hunter fights in melee, so its weapon's damage counts, and
@@ -250,6 +356,16 @@ def full_ladder(db, cls: str, spec: int, mode: str, slot: str, level: int | None
     daggers = ours and mode == "pvp" and slot in DAGGERS_ONLY.get((cls, spec_def.get("slug")), ())
     # What the weights cannot value (specs.unvalued) is listed whatever they give it: it stands level with the best.
     level_ids = specs.unvalued(db, cls, spec) if ours and ranked is None else frozenset()
+    bonuses = {}
+    if ours and ranked is None and (mode, slot) == ("pve", "trinket"):
+        bonuses = specs.tank_trinket_bonuses(cls, spec, weights)
+        level_ids = level_ids.difference(bonuses)
+    two_hand_scores = {}
+    if (ours and simulated.IN_USE and (cls, spec_def.get("slug"), mode, slot)
+            == ("DRUID", "feral-cat", "pve", "main")):
+        anchor = score(db, 12583, weights, cls)
+        if anchor is not None:
+            two_hand_scores = feral_gear.calibrated_two_hand_scores(anchor, weights[specs.ATTACK_POWER])
 
     entries, seen_ids, weighed = [], set(), {}
     for pool in dict(SLOTS)[slot]:
@@ -272,29 +388,35 @@ def full_ladder(db, cls: str, spec: int, mode: str, slot: str, level: int | None
                 continue
             if hunter and rank_rewards and gear["inv"] == INV_HELD:
                 continue
-            if not healer and HEALING in stats and not any(stat in stats for stat in SPELL_DAMAGE):
+            if (not healer and HEALING in stats and not any(stat in stats for stat in SPELL_DAMAGE)
+                    and not (specs.FERAL_ATTACK_POWER in stats and specs.FERAL_ATTACK_POWER in weights)):
                 continue
             sourced = bool(item["groups"] & groups)
             if not sourced and "u" not in item["groups"]:
                 continue
-            value = score(db, item_id, weights, cls, melee) or 0.0
+            value = (score(db, item_id, weights, cls, melee) or 0.0) + bonuses.get(item_id, 0)
+            value = two_hand_scores.get(item_id, value)
             armour_only = gear["armor"] > 0 and not gear["dps"] and not stats
             # A list ranked by simulation also holds what the weights give nothing and the simulator measures: a
             # trinket that is all proc, a weapon a Hunter only holds. The weights say what to list only where they rank.
             measured = ranked is not None and (ranked.scores.get(item_id, 0) > 0 or item_id in placed)
-            if not (value >= min_score or (value > 0 and armour_only) or measured or item_id in level_ids):
+            if not (value >= min_score or (value > 0 and armour_only) or measured or item_id in level_ids
+                    or item_id in pre_measured):
                 continue
             flags = item["flags"]
-            twin = item["twin"]
+            twin = item["twin"] or arm_epaulets.get(item_id)
             if twin in disqualified or cls not in class_only.get(twin, (cls,)):
                 twin = None
             weighed[item_id] = value
             entries.append(Entry(
                 item_id=item_id, score=ranked.value(item_id, value) if ranked else value,
                 side=item["side"], twin=twin,
-                seen="s" in flags, new="n" in flags, unsourced=not sourced, unique="U" in flags,
+                seen="s" in flags, new="n" in flags, unique="U" in flags,
+                unsourced=not sourced or (rank_rewards and reputations.unconfirmed_watcher_ring(item)),
                 two_hand=gear["inv"] == INV_TWO_HAND, random="r" in flags, limit=item["limit"],
                 phase=phases.item_phase(item), pvp=pvp_reward(item),
+                preraid_option=(ours and mode == "pvp" and slot == "main" and
+                                item_id in PRERAID_MELEE_OPTIONS.get((cls, spec), ())),
                 rank=ranks.required(item, gear), honor=ranks.sold_for_honor(item),
                 estimated=ranked is not None and not ranked.measured(item_id)))
 
@@ -305,9 +427,45 @@ def full_ladder(db, cls: str, spec: int, mode: str, slot: str, level: int | None
     if rank_rewards and level == db.meta["cap"]:
         entries = simulated.place(entries, simulated.placements(db, cls, spec, mode, slot))
         if ranked is None:
-            entries = level_with_the_best(entries, specs.unvalued(db, cls, spec))
+            entries = level_with_the_best(entries, level_ids)
         else:
             entries = after_their_anchor(entries, placed)
+    if ours and mode == "pvp" and slot == "trinket" and pvp_insignia.ALLIANCE in db.items:
+        entries = [entry for entry in entries if entry.item_id not in (pvp_insignia.ALLIANCE, pvp_insignia.HORDE)]
+        entries.append(Entry(item_id=pvp_insignia.ALLIANCE, side="a", twin=pvp_insignia.HORDE, score=0,
+                             seen=True, new=True, unique=True, two_hand=False, random=False, unsourced=False,
+                             limit=None, pvp=True, rank=pvp_insignia.RANK, honor=True, pvp_utility=True))
+    if ranked and (cls, spec, mode, slot) == ("DRUID", 1, "pve", "main"):
+        rules = _balance_weapon_sets()
+        enchants = db.enchants.get(cls, {}).get((spec, "raid"), {}).get("w2h", [])
+        spell = rules["spellblasting"]
+        if any(key == spell and required <= level for key, required in enchants) and phases.enchant_phase(db, spell) == phases.PRE_RAID:
+            wins = [(side, staff, one, off) for side, tests in rules["by_side"].items()
+                    for staff, one, off, gain, error in tests if gain > 2 * error]
+            entries = [replace(e, pre_raid_weapon_sets=tuple(
+                (side, one, off) for side, staff, one, off in wins if e.shown(side) == staff
+            )) if e.two_hand else e for e in entries]
+    if ranked and (cls, spec, mode, slot) == ("DRUID", 4, "pve", "trinket"):
+        return feral_gear.PreRaidTrinkets(entries)
+    if ours and ranked is None and (cls, spec, mode, slot) == ("DRUID", 2, "pve", "trinket"):
+        return feral_gear.BearTrinkets(entries)
+    if ours and (cls, spec, mode, slot) == ("PALADIN", 2, "pve", "main"):
+        return ProtectionPaladinWeapons(entries)
+    if ours and (cls, spec, mode, slot) == ("WARRIOR", 1, "pve", "head"):
+        return ArmsHelms(entries)
+    if ranked and (cls, spec, mode) == ("HUNTER", 1, "pve") and slot in hunter_bm.SLOTS:
+        return hunter_bm.contextual_ladder(entries, slot, weighed)
+    if ranked and mode == "pve":
+        calibrated = db.simulated.by_faction.get((cls, spec), {})
+        pre_contexts = hunter_bm.rank_contexts(entries, slot, weighed, trinkets).contexts if trinkets else None
+        if slot in calibrated:
+            result = hunter_bm.rank_contexts(entries, slot, weighed, calibrated)
+            if placed and any(entry.placed for entry in entries):
+                result.contexts = {key: after_their_anchor(rows, placed) for key, rows in result.contexts.items()}
+            entries = result
+        if pre_contexts:
+            entries = _annotatable(entries)
+            entries.pre_contexts = pre_contexts
     return entries
 
 
@@ -339,7 +497,12 @@ def level_with_the_best(entries: list[Entry], unvalued) -> list[Entry]:
 def lead(entries: list[Entry]) -> Entry | None:
     """The first entry that can be a best pick: one with no score of its own never is, unless the list has
     nothing else."""
-    return next((entry for entry in entries if not entry.unscored), entries[0] if entries else None)
+    first = next((entry for entry in entries if not entry.unscored), None)
+    if first:
+        return first
+    if entries and not (entries[0].estimated or entries[0].alternative_only or entries[0].pvp_utility):
+        return entries[0]
+    return None
 
 
 def picks(slot: str, visible: list[Entry], alternatives: int = ALTERNATIVES) -> tuple[list[Entry], list[Entry]]:
@@ -352,7 +515,14 @@ def picks(slot: str, visible: list[Entry], alternatives: int = ALTERNATIVES) -> 
     """
     if not visible:
         return [], []
+    if visible[-1].pvp_utility:
+        best, others = picks(slot, visible[:-1], alternatives)
+        position = max(0, 3 - len(best)) if visible[-1].fourth_option else len(others)
+        others.insert(position, visible[-1])
+        return best, others
     first = lead(visible)
+    if first is None:
+        return [], visible[:alternatives]
     best = [first]
     if slot in PAIRED:
         second = next((e for e in visible if e is not first and not e.unscored
@@ -363,22 +533,26 @@ def picks(slot: str, visible: list[Entry], alternatives: int = ALTERNATIVES) -> 
     return best, others[:alternatives - (len(best) - 1)]
 
 
-def weapon_lists(main: list[Entry], off: list[Entry]) -> tuple[list[Entry], list[Entry]]:
-    """The main-hand and off-hand ladders once weighed against each other, as foreverdb.net/bis lays them out.
-
-    When the best two-hander beats the best main hand plus the best off hand,
-    the main hand lists two-handers only and the off hand is empty. Otherwise
-    the main hand lists one-handers, and the off hand leaves out the weapon
-    already picked for the main hand. Scores are weighed as the data files
-    hold them, so the addon (Ladders.lua) decides the same way.
-    """
+def _weapon_styles(main: list[Entry], off: list[Entry]):
+    """Score the same distinct main-hand and off-hand picks that the addon offers together."""
     two = [entry for entry in main if entry.two_hand]
     one = [entry for entry in main if not entry.two_hand]
-    if two and (not one or lead(two).stored >= lead(one).stored + (lead(off).stored if off else 0)):
-        return two, []
-    if not one:
-        return main, off
-    return one, [entry for entry in off if entry.item_id != lead(one).item_id]
+    two_best, one_best = lead(two), lead(one)
+    others = [entry for entry in off if entry.item_id != one_best.item_id] if one_best else []
+    off_best = lead(others)
+    side = two_best.weapon_set_side if two_best else None
+    measured = bool(side and one_best and off_best and
+                    (side, one_best.shown(side), off_best.shown(side)) in two_best.pre_raid_weapon_sets)
+    if two_best and (not one_best or measured or two_best.stored >= one_best.stored + (off_best.stored if off_best else 0)):
+        return (two, []), (one, others)
+    if not one_best:
+        return (main, off), ([], [])
+    return (one, others), (two, [])
+
+
+def weapon_lists(main: list[Entry], off: list[Entry]) -> tuple[list[Entry], list[Entry]]:
+    """Main-hand and off-hand lists for the higher scoring weapon style."""
+    return _weapon_styles(main, off)[0]
 
 
 def other_weapons(main: list[Entry], off: list[Entry]) -> tuple[list[Entry], list[Entry]]:
@@ -389,13 +563,7 @@ def other_weapons(main: list[Entry], off: list[Entry]) -> tuple[list[Entry], lis
     one-handers win: the two-handers, and no off hand. A spec that only has one
     of the two styles has nothing else to offer.
     """
-    two = [entry for entry in main if entry.two_hand]
-    one = [entry for entry in main if not entry.two_hand]
-    if not two or not one:
-        return [], []
-    if lead(two).stored >= lead(one).stored + (lead(off).stored if off else 0):
-        return one, [entry for entry in off if entry.item_id != lead(one).item_id]
-    return two, []
+    return _weapon_styles(main, off)[1]
 
 
 def _needed(slot: str, visible: list[Entry]) -> list[Entry]:
@@ -403,35 +571,123 @@ def _needed(slot: str, visible: list[Entry]) -> list[Entry]:
     alternatives as a player can ask for: what he sees with fewer is the start of it."""
     best, alternatives = picks(slot, visible, MAX_ALTERNATIVES)
     needed = best + alternatives
-    placed = sum(1 for e in visible if e.unscored)   # such an item may stand before a weapon list's best pick
     if slot == "main":
-        needed += [e for e in visible if e.two_hand][:1 + MAX_ALTERNATIVES + placed]
-        needed += [e for e in visible if not e.two_hand][:1 + MAX_ALTERNATIVES + placed]
+        for two_hand in (True, False):
+            style = [entry for entry in visible if entry.two_hand == two_hand]
+            needed.extend(style[:1 + MAX_ALTERNATIVES])  # also offered when this style loses
+            first = lead(style)
+            if first:
+                needed.append(first)
     elif slot == "off":
-        needed = visible[:2 + MAX_ALTERNATIVES + placed]  # one more: the main hand's pick is left out
+        # A main-hand pick can remove either a displayed alternative or the first measured off-hand.
+        needed = visible[:2 + MAX_ALTERNATIVES]
+        needed.extend([entry for entry in visible if not entry.unscored][:2])
     return needed
 
 
-def kept_ladder(slot: str, ladder: list[Entry], retained_ids=(), *, pre_raid_count: int = 0) -> list[Entry]:
+def _contexts(entries, phase):
+    if phase == phases.PRE_RAID and hasattr(entries, "pre_contexts"):
+        return entries.pre_contexts
+    return getattr(entries, "contexts", {})
+
+
+def visible(entries: list[Entry], flt, companion: int | None = None) -> list[Entry]:
+    """Ordered entries for a filter and its equipped companion, if one was measured."""
+    pre_raid = flt[3] == phases.PRE_RAID
+    extra = [e for e in getattr(entries, "options", ()) if pre_raid and e.passes(flt)]
+    replaced = {e.shown(flt[0]) for e in extra}
+    contexts = _contexts(entries, flt[3])
+    if contexts:
+        entries = contexts.get((flt[0], companion), ())
+    elif pre_raid and hasattr(entries, "pre_raid"):
+        entries = entries.pre_raid
+    eligible = [replace(e, weapon_set_side=flt[0]) if e.pre_raid_weapon_sets and pre_raid else e
+                for e in entries if e.passes(flt) and e.shown(flt[0]) not in replaced]
+    if pre_raid:
+        options = [replace(e, score=0, pvp_utility=True) for e in eligible if e.preraid_option]
+        if options:
+            eligible = [e for e in eligible if not e.preraid_option] + options
+    return eligible + extra
+
+
+def visible_slots(slots: dict, flt) -> dict:
+    """Visible entries before the comparison of one-handed and two-handed sets."""
+    result = {slot: visible(entries, flt) for slot, entries in slots.items()}
+    for slot in PAIRED:
+        ladder = slots.get(slot)
+        contexts = _contexts(ladder, flt[3])
+        if not contexts:
+            continue
+        first = lead(result[slot])
+        if first and (flt[0], first.shown(flt[0])) in contexts:
+            result[slot] = [first, *visible(ladder, flt, first.shown(flt[0]))]
+    if isinstance(slots.get("off"), hunter_bm.ContextLadder):
+        main = lead([entry for entry in result.get("main", ()) if not entry.two_hand])
+        main_id = main.shown(flt[0]) if main else None
+        if main_id and (flt[0], main_id) in slots["off"].contexts:
+            result["off"] = visible(slots["off"], flt, main_id)
+    return result
+
+
+class OptionLadder(list):
+    """Ordinary entries with additional pre-raid recommendations."""
+
+
+def _annotatable(entries):
+    return OptionLadder(entries) if type(entries) is list else entries
+
+
+def kept_ladder(slot: str, ladder: list[Entry], retained=()) -> list[Entry]:
     """The part of the ladder the addon needs, whatever it filters on."""
-    keep = set()
-    if pre_raid_count:
-        for side in ("a", "h"):
-            eligible = [entry for entry in ladder if entry.passes((side, False, False, 0, False))]
-            keep.update(eligible[:pre_raid_count])
+    kept = _kept_ladder(slot, ladder, retained)
+    if hasattr(ladder, "pre_contexts"):
+        kept = _annotatable(kept)
+        kept.pre_contexts = _keep_contexts(slot, ladder.pre_contexts, pre_raid=True)
+    if hasattr(ladder, "options"):
+        kept = _annotatable(kept)
+        kept.options = ladder.options
+    return kept
+
+
+def _keep_contexts(slot, source, pre_raid=False):
+    contexts = {}
+    for key, candidates in source.items():
+        keep = set()
+        for flt in FILTERS:
+            if flt[0] != key[0] or (pre_raid and flt[3] != phases.PRE_RAID):
+                continue
+            eligible = [entry for entry in candidates if entry.passes(flt)]
+            groups = ([e for e in eligible if e.two_hand], [e for e in eligible if not e.two_hand]) \
+                if slot == "main" else (eligible,)
+            for group in groups:
+                best, alts = picks(slot, group, MAX_ALTERNATIVES)
+                keep.update(best + alts)
+                if slot in ("main", "off"):
+                    keep.update(group[:1 + MAX_ALTERNATIVES])
+        contexts[key] = [entry for entry in candidates if entry in keep]
+    return contexts
+
+
+def _kept_ladder(slot, ladder, retained):
+    if isinstance(ladder, hunter_bm.ContextLadder):
+        # Older clients read only L rows. Keep every entry their original order needs,
+        # as well as all new entries selected by any supported faction or weapon.
+        contexts = _keep_contexts(slot, ladder.contexts)
+        ids = {entry.item_id for entry in kept_ladder(slot, list(ladder), retained)}
+        ids.update(e.item_id for rows in contexts.values() for e in rows)
+        return hunter_bm.ContextLadder([entry for entry in ladder if entry.item_id in ids], contexts)
+    if hasattr(ladder, "pre_raid"):
+        ids = {e.item_id for flt in FILTERS for e in _needed(slot, visible(ladder, flt))}
+        ids.update(retained)
+        if isinstance(ladder, ProtectionPaladinWeapons):
+            for side in ("a", "h"):
+                # The pre-raid editor displays ten weapons per faction.
+                ids.update(e.item_id for e in visible(ladder, (side, False, False, phases.PRE_RAID, False))[:10])
+        return type(ladder)([e for e in ladder if e.item_id in ids])
+    keep = {entry for entry in ladder if entry.preraid_option}
     for flt in FILTERS:
         keep.update(_needed(slot, [entry for entry in ladder if entry.passes(flt)]))
-    return [entry for entry in ladder if entry in keep or entry.item_id in retained_ids]
-
-
-def paladin_pre_raid_main(entries: list[Entry]) -> list[Entry]:
-    """Prefer Arbiter's Blade over Greenhammer and Ironwood Blade for its 60 spell power. Keep the stat scores."""
-    weapons = [entry for entry in entries if entry.phase == 0]
-    first_physical = next((i for i, entry in enumerate(weapons) if entry.item_id in (279261, 279259)), len(weapons))
-    arbiter = next((i for i, entry in enumerate(weapons) if entry.item_id == 11784), -1)
-    if arbiter > first_physical:
-        weapons.insert(first_physical, weapons.pop(arbiter))
-    return weapons
+    return [entry for entry in ladder if entry in keep or entry.item_id in retained]
 
 
 def build_all(db) -> dict:
@@ -441,14 +697,8 @@ def build_all(db) -> dict:
         out[cls] = {}
         for spec in sorted(data["specs"]):
             duels = tank_options.DUELS.get((cls, spec), {})
-            out[cls][spec] = {}
-            for mode in MODES:
-                slots = {}
-                for slot, _ in SLOTS:
-                    full = full_ladder(db, cls, spec, mode, slot)
-                    retained = duels.get(slot, ())[:2] if mode == "pve" else ()
-                    # Keep the full top ten of the revised weapon list for the pre-raid editor.
-                    editor_count = 10 if (cls, spec, mode, slot) == ("PALADIN", 2, "pve", "main") else 0
-                    slots[slot] = kept_ladder(slot, full, retained, pre_raid_count=editor_count)
-                out[cls][spec][mode] = slots
+            out[cls][spec] = {
+                mode: {slot: kept_ladder(slot, full_ladder(db, cls, spec, mode, slot),
+                                         duels.get(slot, ())[:2] if mode == "pve" else ()) for slot, _ in SLOTS}
+                for mode in MODES}
     return out

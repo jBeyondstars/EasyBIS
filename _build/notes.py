@@ -7,17 +7,20 @@ checked against the game data or the simulator before it is written down. A note
 names, for any slot or one (a weapon's proc is not worth the same in each hand), and the first of an item's notes
 that fits a row is the one shown.
 
-Paired PvE swaps are a final fallback. The CLI imports the run logs into corrections/comparisons.json and
-the build checks the original profile, score difference, stat inversion and exact measured faction id.
+For the offline audit, the CLI imports paired PvE swaps into corrections/comparisons.json.
+Only the written item notes are shipped in the addon.
 """
 
 from __future__ import annotations
 
 import hashlib
 import json
+from collections import defaultdict
 from pathlib import Path
 
 import ladders
+import relics
+import situational_gear
 
 FILE = Path(__file__).resolve().parent / "corrections" / "notes.json"
 COMPARISONS = FILE.with_name("comparisons.json")
@@ -55,7 +58,9 @@ def check(db, notes: list[dict]) -> None:
 
 def shown(db, shown_ids: set[int], notes: list[dict] | None = None) -> list[dict]:
     """The notes with the items the lists show; a note none of whose items is shown is a mistake."""
-    notes = load() if notes is None else notes
+    if notes is None:
+        options = [n for n in situational_gear.notes() if shown_ids.intersection(n["items"])]
+        notes = load() + options + relics.notes(shown_ids)
     check(db, notes)
     out = []
     for number, note in enumerate(notes, 1):
@@ -69,31 +74,40 @@ def shown(db, shown_ids: set[int], notes: list[dict] | None = None) -> list[dict
 def simulation_limits(db, all_ladders) -> list[dict]:
     """Fallbacks for partial measures that can have a numeric score, scoped to the original run."""
     messages = {
-        "without_effect": (
-            "The simulator lacks an effect on this item. Its contribution in play may differ from the listed score.",
-            "Le simulateur omet un effet de cet objet. Sa contribution en jeu peut différer du score affiché."),
-        "assumed_rate": (
-            "The proc rate is uncertain. The recorded ranking uses the simulator's assumption or its result with the proc disabled.",
-            "La fréquence du proc est incertaine. Le classement utilise l’hypothèse du simulateur ou sa mesure avec le proc désactivé."),
+        "without_effect": ("The simulator omits an effect on this item.",
+                           "Le simulateur omet un effet de cet objet."),
+        "assumed_rate": ("The uncertain proc rate limits how precisely this item can be ranked.",
+                         "La fréquence incertaine du proc limite la précision du classement."),
     }
     result = []
     if not db.simulated:
         return result
     for (cls, spec), measured in sorted(db.simulated.specs.items()):
         entries = all_ladders.get(cls, {}).get(spec, {}).get("pve", {})
-        side = measured.record.get("side")
-        for field, (en, fr) in messages.items():
-            flagged = set(measured.record.get(field, ()))
-            items = set()
-            for ladder in entries.values():
-                for entry in ladder:
-                    observed = entry.shown(side) if side else entry.item_id
-                    if (observed or entry.item_id) in flagged:
-                        items.add(entry.item_id)
-                        if entry.twin:
-                            items.add(entry.twin)
-            if items:
-                result.append({"items": sorted(items), "specs": [f"{cls} {spec}"], "simulated": True, "en": en, "fr": fr})
+        for slot, ladder in entries.items():
+            limits = defaultdict(set)
+            if hasattr(ladder, "contexts"):
+                # A note shared by both factions and all partners must hold whenever this ID appears.
+                models = defaultdict(set)
+                for (faction, _), rows in ladder.contexts.items():
+                    for entry in rows:
+                        models[entry.shown(faction)].add(entry.model)
+                for item, reasons in models.items():
+                    if reasons == {"unregistered_effect"}:
+                        limits["without_effect"].add(item)
+                    elif reasons <= {"unverified_proc_rate", "assumed_proc"}:
+                        limits["assumed_rate"].add(item)
+            else:
+                candidates = {item for entry in ladder for item in (entry.item_id, entry.twin) if item}
+                for field in messages:
+                    # A faction counterpart can have a different effect or be absent from the simulator.
+                    affected = candidates.intersection(measured.record.get(field, ()))
+                    if affected:
+                        limits[field] = affected
+            for field, items in limits.items():
+                en, fr = messages[field]
+                result.append({"items": sorted(items), "specs": [f"{cls} {spec}"], "slot": slot,
+                               "simulated": True, "en": en, "fr": fr})
     return result
 
 
@@ -150,7 +164,9 @@ def comparisons(db, all_ladders, specific, source=None):
         profile = f"{cls} {spec}"
         measured = db.simulated.specs.get((cls, spec))
         kept = all_ladders.get(cls, {}).get(spec, {}).get("pve", {}).get(slot, ())
-        if not kept or not measured or slot not in measured.slots:
+        # These duels refer to one archived race and gear set. A newer
+        # faction-specific comparison can reverse both the order and the cause.
+        if not kept or hasattr(kept, "contexts") or not measured or slot not in measured.slots:
             continue
         record = measured.record
         if ((record.get("wowsims") or db.simulated.commit) != source["wowsims"]
@@ -190,6 +206,9 @@ def comparisons(db, all_ladders, specific, source=None):
                 status += "m"
             if rival in assumed_rate:
                 status += "a"
+            if status == "n":
+                # A noisy duel alone does not explain either item's displayed rank.
+                continue
             # The game loads one string per slot. Hundredths suffice for tooltip text.
             out.setdefault((cls, spec, slot), []).append((actual, rival, round(dps * 100),
                                                          round(stats * 100), count, status))

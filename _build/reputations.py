@@ -48,6 +48,14 @@ SOURCE_FILES = ("Items.lua", "Recipes.lua")
 
 WEAR, QUEST, RECIPE = "w", "q", "r"
 
+
+def unconfirmed_watcher_ring(item: dict) -> bool:
+    """These rings have a client standing requirement but no verified acquisition route in Forever."""
+    return (item["limit"] == "WatchersRing" and "s" not in item["flags"]
+            and item["groups"] == {"e"}
+            and bool(item["sources"]) and all(source[:2] == ["r", "2819"] and source[-1] == "f"
+                                              for source in item["sources"]))
+
 # The factions the lists ask for: id -> (the name ForeverDB's data writes, the side that can earn it).
 FACTIONS = {
     21: ("Booty Bay", ""),
