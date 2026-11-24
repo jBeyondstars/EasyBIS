@@ -150,7 +150,7 @@ def load(data_dir, corrected: bool = True) -> Database:
         corrections.confirm(db, corrections.load_drops())
         corrections.price(db, corrections.load_costs())
         corrections.assign_sides(db)
-        corrections.pair_basin_mail_shoulders(db)
+        corrections.pair_faction_items(db)
         corrections.assign_reward_sides(db)
         raid_sources.apply(db)
         verified_gear.apply(db)

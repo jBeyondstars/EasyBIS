@@ -62,7 +62,7 @@ class InsigniaTest(unittest.TestCase):
                         for limit in (ladders.ALTERNATIVES, ladders.MAX_ALTERNATIVES):
                             best, ordinary = ladders.picks("trinket", eligible[:-1], limit)
                             self.assertEqual(ladders.picks("trinket", eligible, limit), (best, ordinary + [control]))
-        self.assertEqual(count, 29)
+        self.assertEqual(count, 30)  # includes both the melee and ranged Survival ladders
 
     @unittest.skipIf(lupa is None, "lupa is not installed")
     def test_shipped_lua_and_localized_note(self):

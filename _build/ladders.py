@@ -35,6 +35,7 @@ import caster_gear
 import feral_gear
 import hunter_bm
 import phases
+import pvp_factions
 import pvp_insignia
 import ranks
 import reputations
@@ -377,6 +378,8 @@ def _ranked_ladder(db, cls: str, spec: int, mode: str, slot: str, level: int | N
             gear, item = db.gear.get(item_id), db.items.get(item_id)
             if gear is None or item is None:
                 continue
+            if mode == "pvp" and rank_rewards:
+                item = pvp_factions.for_list(item_id, item)
             if cls not in class_only.get(item_id, (cls,)):
                 continue   # another class's piece: ForeverDB pools by armor type
             if daggers and gear["kind"] != DAGGER:

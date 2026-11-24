@@ -119,12 +119,26 @@ def assign_sides(db) -> list[int]:
     return changed
 
 
-def pair_basin_mail_shoulders(db) -> None:
-    """The Arathi Basin mail pauldrons convert into one another on a faction change."""
-    for item_id, side, twin in ((20056, "a", 20203), (20203, "h", 20056)):
-        item = db.items.get(item_id)
-        if item and twin in db.items and item.get("side") in ("", side) and item.get("twin") in (None, twin):
-            item.update(side=side, twin=twin)
+# (Alliance, Horde). Each pair occupies the same slot and has the same stats.
+FACTION_PAIRS = (
+    (20056, 20203),  # Arathi Basin mail pauldrons
+    # Rare Premier priest armor, Voidcloth / Satin (Lieutenant Commander's / Champion's Raiment).
+    (272814, 272562), (272817, 272565), (272816, 272564), (272812, 272569),
+    (272815, 272563), (272810, 272568), (272811, 272567), (272813, 272566),
+    # Mooncloth / Silken (Lieutenant Commander's / Champion's Investiture), same slot order.
+    (272677, 272649), (272678, 272650), (273448, 272634), (273445, 272619),
+    (273447, 272663), (273443, 272611), (273444, 273450), (273449, 275437),
+)
+
+
+def pair_faction_items(db) -> None:
+    """Fill missing faction links when both records agree with the known pair."""
+    for alliance_id, horde_id in FACTION_PAIRS:
+        alliance, horde = db.items.get(alliance_id), db.items.get(horde_id)
+        if (alliance and horde and alliance["side"] in ("", "a") and horde["side"] in ("", "h")
+                and alliance["twin"] in (None, horde_id) and horde["twin"] in (None, alliance_id)):
+            alliance.update(side="a", twin=horde_id)
+            horde.update(side="h", twin=alliance_id)
 
 
 # Each item binds on pickup. The quests carry a faction in WoWSims' Forever database.

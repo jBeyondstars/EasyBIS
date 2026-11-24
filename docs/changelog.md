@@ -1,3 +1,8 @@
+# Easy BIS 1.10.2
+
+- **PvP gear lists.** All nine classes now see the Premier armor for their selected faction. For Shadow Priests, the Alliance list shows Premier Voidcloth Diadem and the Horde list shows Premier Satin Cowl. This also applies with Available Now enabled.
+- Five pairs of quest rewards from the Hinterlands and Shaper's Terrace now respect the selected faction in PvP lists. The web gear editor also reflects the corrected Rogue and Shaman recommendations.
+
 # Easy BIS 1.10.1
 
 - **Item tooltips.** Under Options → Lists shown in tooltips, choose which Raid, AoE / Dungeons, PvP and custom lists appear when you hover over an item. If several lists contain the same item, you can hide each one independently.

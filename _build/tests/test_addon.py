@@ -328,10 +328,20 @@ class AddonTest(unittest.TestCase):
                 self.assertEqual([pick.id for pick in picks], expected[slot][0] + expected[slot][1], slot)
                 self.assertTrue(all(pick.entry.rank <= 6 for pick in picks), slot)
         head = game.ns.Ladders.For("PRIEST", 3, "pvp").head.best[1]
-        self.assertEqual(self.db.items[head.id]["name"], "Premier Satin Cowl", "sold for honor, with no rank")
+        self.assertEqual(self.db.items[head.id]["name"], "Premier Voidcloth Diadem", "Alliance honor helm, with no rank")
         self.assertEqual(game.ns.Sources.Describe(head.id).detail, "Honor")
         self.assertEqual(game.slash("now"), ["Easy BIS: Available now: off."])
         self.assertEqual(game.ns.Ladders.For("PRIEST", 3, "pvp").head.best[1].id, before)
+
+    def test_shadow_pvp_lists_only_the_players_premier_helm(self):
+        for faction, own, opposing in (("Alliance", 272814, 272562), ("Horde", 272562, 272814)):
+            with self.subTest(faction=faction):
+                game = Game(cls="PRIEST", faction=faction, saved="EasyBISDB = { availableNow = true }")
+                head = game.ns.Ladders.For("PRIEST", 3, "pvp").head
+                self.assertEqual([pick.id for pick in head.best.values()], [own])
+                alternatives = [pick.id for pick in head.alts.values()]
+                self.assertNotIn(opposing, alternatives)
+                self.assertIn(22302, alternatives)  # Ironweave Cowl, available to either faction
 
     def test_available_now_overrules_the_other_choices(self):
         """The week's rank cap, the game's phase and no unknown source, and the player's own choices come back."""

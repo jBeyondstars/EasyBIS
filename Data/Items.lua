@@ -785,6 +785,7 @@ ns.data.items = [==[
 16414|Knight-Captain's Silk Leggings|p|U|p^8^a^f
 16415|Lieutenant Commander's Silk Spaulders|p|U|p^10^a^f
 16417|Knight-Captain's Leather Armor|p|U|p^8^a^f
+16418|Lieutenant Commander's Leather Veil|p|U|p^10^a^f
 16421|Knight-Captain's Dragonhide Tunic|p|U|p^8^a^f
 16422|Knight-Captain's Dragonhide Leggings|p|U|p^8^a^f
 16425|Knight-Captain's Chain Hauberk|p|U|p^8^a^f
@@ -849,6 +850,7 @@ ns.data.items = [==[
 16502|Legionnaire's Dragonhide Trousers|p|U|p^8^h^f
 16504|Legionnaire's Dragonhide Breastplate|p|U|p^8^h^f
 16505|Legionnaire's Leather Hauberk|p|U|p^8^h^f
+16506|Champion's Leather Headguard|p|U|p^10^h^f
 16513|Legionnaire's Plate Armor|p|U|p^8^h^f
 16514|Champion's Plate Headguard|p|U|p^10^h^f
 16517|Legionnaire's Chain Bracers|p|U|p^8^h^f
@@ -2735,14 +2737,14 @@ ns.data.items = [==[
 272559|Premier Warlord's Felweave Hood|u||p^13^h^f
 272560|Premier Warlord's Felweave Robe|u||p^13^h^f
 272561|Premier General's Felweave Pants|u||p^12^h^f
-272562|Premier Satin Cowl|u|n|p^0^^f
-272563|Premier Satin Trousers|u|n|p^0^^f
-272564|Premier Satin Vestments|u|n|p^0^^f
-272565|Premier Satin Shoulderpads|u|n|p^0^^f
-272566|Premier Satin Sash|u|n|p^0^^f
-272567|Premier Satin Cuffs|u|n|p^0^^f
-272568|Premier Satin Boots|u|n|p^0^^f
-272569|Premier Satin Gloves|u|n|p^0^^f
+272562|Premier Satin Cowl|u|n|p^0^h^f
+272563|Premier Satin Trousers|u|n|p^0^h^f
+272564|Premier Satin Vestments|u|n|p^0^h^f
+272565|Premier Satin Shoulderpads|u|n|p^0^h^f
+272566|Premier Satin Sash|u|n|p^0^h^f
+272567|Premier Satin Cuffs|u|n|p^0^h^f
+272568|Premier Satin Boots|u|n|p^0^h^f
+272569|Premier Satin Gloves|u|n|p^0^h^f
 272570|Premier Centurion's Satin Boots|u||p^9^h^f
 272571|Premier Legionnaire's Satin Bracers|u||p^8^h^f
 272572|Premier Champion's Satin Gloves|u||p^10^h^f
@@ -2770,15 +2772,15 @@ ns.data.items = [==[
 272604|Premier High Warlord's Greatsword|v||v^14581^Sergeant Thunderhorn^1454^36.9^67.1^0^^s
 272608|Premier Shadowhide Walkers|v|sn|v^12792^Lady Palanseer^1454^37.2^64.7^0^^s
 272609|Premier Linked Greaves|u|n|p^0^^f
-272611|Premier Silken Walkers|u|n|p^0^^f
+272611|Premier Silken Walkers|u|n|p^0^h^f
 272614|Premier Dragonhide Grips|u|n|p^0^^f
 272617|Premier Mail Vices|u|n|p^0^^f
-272619|Premier Silken Handwraps|u|n|p^0^^f
+272619|Premier Silken Handwraps|u|n|p^0^h^f
 272625|Premier Linked Hauberk|u|n|p^0^^f
 272626|Premier Kodohide Chestpiece|u|n|p^0^^f
 272627|Premier Kodohide Leggings|u|n|p^0^^f
 272630|Premier Felweave Legguards|u|n|p^0^^f
-272634|Premier Silken Tunic|u|n|p^0^^f
+272634|Premier Silken Tunic|u|n|p^0^h^f
 272636|Premier Mail Legguards|u|n|p^0^^f
 272637|Premier Mortarplate Shoulders|u|n|p^0^^f
 272640|Premier Chain Shoulders|u|n|p^0^^f
@@ -2787,16 +2789,16 @@ ns.data.items = [==[
 272643|Premier Felweave Cowl|u|n|p^0^^f
 272647|Premier Linked Headguard|u|n|p^0^^f
 272648|Premier Mail Pauldrons|u|n|p^0^^f
-272649|Premier Silken Hood|u|n|p^0^^f
-272650|Premier Silken Mantle|u|n|p^0^^f
+272649|Premier Silken Hood|u|n|p^0^h^f
+272650|Premier Silken Mantle|u|n|p^0^h^f
 272656|Premier Lunarhide Leggings|u|n|p^0^^f
 272657|Premier Dreadweave Legguards|u|n|p^0^^f
-272663|Premier Silken Legguards|u|n|p^0^^f
+272663|Premier Silken Legguards|u|n|p^0^h^f
 272669|Premier Lunarhide Headguard|u|n|p^0^^f
 272670|Premier Lunarhide Shoulders|u|n|p^0^^f
 272671|Premier Dreadweave Cowl|u|n|p^0^^f
-272677|Premier Mooncloth Hood|u|n|p^0^^f
-272678|Premier Mooncloth Mantle|u|n|p^0^^f
+272677|Premier Mooncloth Hood|u|n|p^0^a^f
+272678|Premier Mooncloth Mantle|u|n|p^0^a^f
 272680|Premier Magus Mantle|u|n|p^0^^f
 272681|Premier High Warlord's Battle Mace|v||v^14581^Sergeant Thunderhorn^1454^36.9^67.1^0^^s
 272682|Premier High Warlord's Destroyer|v||v^14581^Sergeant Thunderhorn^1454^36.9^67.1^0^^s
@@ -2812,6 +2814,7 @@ ns.data.items = [==[
 272703|Premier Silk Gloves|u|n|p^0^^f
 272704|Premier Leather Boots|u|n|p^0^^f
 272705|Premier Beasthide Footwraps|u|n|p^0^^f
+272706|Premier Leather Bracers|u|n|p^0^^f
 272707|Premier Beasthide Armsplints|u|n|p^0^^f
 272708|Premier Leather Gauntlets|u|n|p^0^^f
 272709|Premier Beasthide Gloves|u|n|p^0^^f
@@ -2823,7 +2826,6 @@ ns.data.items = [==[
 272718|Premier Chevalier Sabatons|u|n|p^0^^f
 272719|Premier Chevalier Gauntlets|u|n|p^0^^f
 272720|Premier Chevalier Cinch|u|n|p^0^^f
-272721|Premier Chevalier Armsplints|u|n|p^0^^f
 272722|Premier Silk Raiment|u|n|p^0^^f
 272723|Premier Silk Leggings|u|n|p^0^^f
 272724|Premier Silk Spaulders|u|n|p^0^^f
@@ -2906,13 +2908,14 @@ ns.data.items = [==[
 272807|Premier Knight-Champion's Dreadweave Boots|u|n|p^9^a^f
 272808|Premier Lieutenant Commander's Dreadweave Gloves|u|n|p^10^a^f
 272809|Premier Knight-Captain's Dreadweave Sash|u|n|p^8^a^f
-272810|Premier Voidcloth Boots|u|n|p^0^^f
-272811|Premier Voidcloth Cuffs|u|n|p^0^^f
-272812|Premier Voidcloth Gloves|u|n|p^0^^f
-272814|Premier Voidcloth Diadem|u|n|p^0^^f
-272815|Premier Voidcloth Leggings|u|n|p^0^^f
-272816|Premier Voidcloth Robes|u|n|p^0^^f
-272817|Premier Voidcloth Amice|u|n|p^0^^f
+272810|Premier Voidcloth Boots|u|n|p^0^a^f
+272811|Premier Voidcloth Cuffs|u|n|p^0^a^f
+272812|Premier Voidcloth Gloves|u|n|p^0^a^f
+272813|Premier Voidcloth Cord|u|n|p^0^a^f
+272814|Premier Voidcloth Diadem|u|n|p^0^a^f
+272815|Premier Voidcloth Leggings|u|n|p^0^a^f
+272816|Premier Voidcloth Robes|u|n|p^0^a^f
+272817|Premier Voidcloth Amice|u|n|p^0^a^f
 272818|Premier Field Marshal's Voidcloth Headdress|u|n|p^13^a^f
 272819|Premier Marshal's Voidcloth Pants|u|n|p^12^a^f
 272820|Premier Marshal's Voidcloth Mantle|u|n|p^12^a^f
@@ -3077,13 +3080,13 @@ ns.data.items = [==[
 273434|Premier Warlord's Silken Cowl|u||p^13^h^f
 273435|Premier Warlord's Silken Robes|u||p^13^h^f
 273436|Premier General's Silken Leggings|u||p^12^h^f
-273443|Premier Mooncloth Boots|u|n|p^0^^f
-273444|Premier Mooncloth Cuffs|u|n|p^0^^f
-273445|Premier Mooncloth Gloves|u|n|p^0^^f
-273447|Premier Mooncloth Leggings|u|n|p^0^^f
-273448|Premier Mooncloth Robes|u|n|p^0^^f
-273449|Premier Mooncloth Cord|u|n|p^0^^f
-273450|Premier Silken Cuffs|u|n|p^0^^f
+273443|Premier Mooncloth Boots|u|n|p^0^a^f
+273444|Premier Mooncloth Cuffs|u|n|p^0^a^f
+273445|Premier Mooncloth Gloves|u|n|p^0^a^f
+273447|Premier Mooncloth Leggings|u|n|p^0^a^f
+273448|Premier Mooncloth Robes|u|n|p^0^a^f
+273449|Premier Mooncloth Cord|u|n|p^0^a^f
+273450|Premier Silken Cuffs|u|n|p^0^h^f
 273643|Worgenbane Talisman|d|sn|d^33^Commander Springvale^22.22^0^s
 273646|Half-Eaten Boots|d|sn|d^33^Fenrus the Devourer^11.11^0^s
 273647|Worgpelt Leggings|d|sn|d^33^Wolf Master Nandos^33.33^0^s
@@ -3158,6 +3161,8 @@ ns.data.items = [==[
 274225|Premier Scalemail Girdle|v|sn|v^12777^Captain Dirgehammer^1453^75.9^67^0^^s
 274226|Premier Scaled Sabatons|u|n|p^0^^f
 274227|Premier Scaled Gauntlets|u|n|p^0^^f
+274228|Premier Scaled Cinch|u|n|p^0^^f
+274229|Premier Scaled Armsplints|u|n|p^0^^f
 274230|Premier Scaled Breastplate|u|n|p^0^^f
 274231|Premier Scaled Headguard|u||p^0^^f
 274232|Premier Scaled Leggings|u|n|p^0^^f
@@ -3267,7 +3272,7 @@ ns.data.items = [==[
 275049|Farholde Bastion|q|sn|q^94890^Quest 94890^41^^s
 275052|Orc Bone Bow|q|sn|q^95066^The Rog'mar Situation^34^^s
 275390|Shallow Bindings|u|n|
-275437|Premier Silken Sash|u|n|p^0^^f
+275437|Premier Silken Sash|u|n|p^0^h^f
 275606|Venomspew Footpads|c|n|c^Tailoring^295^1297122^f
 275608|Swarmtender's Cord|c|n|c^Tailoring^290^1297124^f
 275609|Swarmtender's Footpads|c|n|c^Tailoring^295^1297125^f
