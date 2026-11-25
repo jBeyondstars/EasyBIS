@@ -38,7 +38,6 @@ ns.data.items = [==[
 944|Elemental Mage Staff|w||w^0^0^k
 1168|Skullflame Shield|w||w^0^0^k
 1263|Brain Hacker|w||w^0^0^k
-1292|Butcher's Cleaver|d|s|d^33^Razorclaw the Butcher^55.56^0^s
 1443|Jeweled Amulet of Cainwyn|w||w^0^0^k
 1486|Tree Bark Jacket|dw|s|d^48^^0^0^s~m^4810^Twilight Reaver^0^s
 1490|Guardian Talisman|Q||q^1445^The Temple of Atal'Hakkar^45^h^k~q^1475^Into The Temple of Atal'Hakkar^45^a^k
@@ -72,7 +71,6 @@ ns.data.items = [==[
 2954|Night Watch Pantaloons|q|s|q^55^Morbent Fel^27^a^s
 3187|Sacrificial Kris|wx|sr|o^Ancient Treasure^1.4^k~x^4637^Steel Lockbox^k
 3230|Black Wolf Bracers|d|s|d^33^Fenrus the Devourer^44.44^0^s
-3413|Doomspike|dw|s|d^48^^0^0^s~m^4798^Fallenroot Shadowstalker^0^s
 3475|Cloak of Flames|w||w^0^0^k
 3562|Belt of Vindication|Q|s|q^378^The Fury Runs Deep^22^a^s
 3753|Shepherd's Girdle|q|s|q^564^Costly Menace^30^a^s
@@ -222,7 +220,6 @@ ns.data.items = [==[
 8175|Nightscape Tunic|c|s|c^Leatherworking^200^10499^f
 8176|Nightscape Headband|c|s|c^Leatherworking^200^10507^f
 8188|Explosive Shotgun|dwx|s|m^4657^Maraudine Windchaser^0^s~d^90^Mekgineer Thermaplugg^0.43^0^k
-8190|Hanzo Sword|x||x^5758^Mithril Lockbox^k
 8216|Big Voodoo Cloak|c||c^Leatherworking^215^10562^f
 8248|Imperial Red Cloak|dwx||d^349^Princess Theradras^0.19^0^k
 8259|Serpentskin Cloak|dwx||d^349^Princess Theradras^0.19^0^k
@@ -252,6 +249,7 @@ ns.data.items = [==[
 9435|Reticulated Bone Gauntlets|wx|s|x^6827^Box of Supplies^k~w^0^0^k
 9448|Spidertank Oilrag|d|s|d^90^Electrocutioner 6000^100^0^s
 9450|Gnomebot Operating Boots|d|s|d^90^Crowd Pummeler 9-60^20^0^s
+9453|Toxic Revenger|d|s|d^90^Viscous Fallout^66.67^0^s
 9454|Acidic Walkers|d|s|d^90^Viscous Fallout^16.67^0^s
 9457|Royal Diplomatic Scepter|d|s|d^90^Dark Iron Ambassador^25.4^0^w
 9467|Gahz'rilla Fang|d|s|d^209^Gahz'rilla^0^0^s
@@ -1841,6 +1839,7 @@ ns.data.items = [==[
 22347|Fahrad's Reloading Repeater|Q||q^9023^The Perfect Poison^60^^k
 22348|Doomulus Prime|Q||q^9023^The Perfect Poison^60^^k
 22377|The Thunderwood Poker|Q|U|q^9023^The Perfect Poison^60^^k
+22378|Ravenholdt Slicer|Q||q^9023^The Perfect Poison^60^^k
 22379|Shivsprocket's Shiv|Q||q^9023^The Perfect Poison^60^^k
 22380|Simone's Cultivating Hammer|Q||q^9023^The Perfect Poison^60^^k
 22383|Sageblade|c||c^Blacksmithing^300^27832^f
@@ -3009,7 +3008,6 @@ ns.data.items = [==[
 274084|Quilboar Blaster|Q|sn|q^1102^A Vengeful Fate^29^h^s~q^1101^The Crone of the Kraul^29^a^s
 274149|Thornweaver Drape|d|sn|d^47^Roogug^27.7^0^w
 274152|Roogug's Severed Head|d|sn|d^47^Roogug^50^0^s
-274159|Thorncursed Grips|d|sn|d^47^Aggem Thorncurse^20^0^s
 274160|Quilrager Throwing Axe|d|sn|d^47^Agathelos the Raging^80^0^s
 274161|Quillord Mail Leggings|d|sn|d^47^Overlord Ramtusk^40^0^s
 274176|Premier Scalemail Walkers|v|sn|v^12777^Captain Dirgehammer^1453^75.9^67^0^^s

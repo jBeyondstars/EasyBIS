@@ -1551,18 +1551,6 @@
   },
   {
    "items": [
-    8190
-   ],
-   "specs": [
-    "ROGUE 2"
-   ],
-   "simulated": true,
-   "slot": "off",
-   "en": "Its proc, 75 damage, is worth about 2 DPS.",
-   "fr": "Son proc, 75 dégâts, vaut environ 2 DPS."
-  },
-  {
-   "items": [
     9412
    ],
    "specs": [
@@ -1998,8 +1986,8 @@
     "ROGUE 2"
    ],
    "simulated": true,
-   "en": "The three-piece Stormshroud bonus restores energy, worth about 27 DPS in this set.",
-   "fr": "Le bonus de trois pièces Stormshroud rend de l’énergie, soit environ 27 DPS avec cette tenue."
+   "en": "The three-piece Stormshroud bonus restores energy, worth about 25 DPS in this set.",
+   "fr": "Le bonus de trois pièces Stormshroud rend de l’énergie, soit environ 25 DPS avec cette tenue."
   },
   {
    "items": [
