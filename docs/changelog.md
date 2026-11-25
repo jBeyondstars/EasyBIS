@@ -1,3 +1,8 @@
+# Easy BIS 1.10.4
+
+- **Rogue rankings.** Assassination, Combat and Subtlety Raid lists are re-measured on the latest WoWSims Forever, which includes the Stormshroud hotfix (3% chance of 18 energy). Flurry Axe stays the first Combat off hand, ahead of Felstriker.
+- **Stormshroud.** Each piece now scores its share of the set, not the whole bonus. The set stays first for Assassination and Subtlety, and second for Combat. Devilsaur Gauntlets and Leggings are scored with their two-piece bonus.
+
 # Easy BIS 1.10.3
 
 - **Item sources.** Added 83 verified pre-raid acquisition records, including Staff of Jordan and Museum Keeper’s Chain. Restored the observed source for Underworld Band and added the assembly instructions for Sul’thraze in Zul’Farrak. Sources follow the applicable faction, class and reputation requirements.
