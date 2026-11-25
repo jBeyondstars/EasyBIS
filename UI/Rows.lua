@@ -205,24 +205,21 @@ function Rows.Items(state, withAlts)
             local picks = slots[slot]
             local top = picks.best[1]
             local listed = {}
-            for _, pick in ipairs(picks.best) do
+            for _, pick in ipairs(ns.Ladders.DisplayPicks(picks, withAlts)) do
                 listed[pick.id] = true
+                local bis = pick == top or pick == picks.best[2]
                 if pick.option then
-                    Add(slot, pick.id, { bis = true, option = pick.option })
-                elseif ns.Ladders.HasFlag(pick.entry, "c") then
-                    Add(slot, pick.id, { bis = true, recommended = true })
-                else
-                    Add(slot, pick.id, { bis = true, gap = 0, ratio = 1 })
-                end
-            end
-            for _, pick in ipairs(ns.Ladders.DisplayAlts(picks, withAlts)) do
-                listed[pick.id] = true
-                if pick.option then
-                    Add(slot, pick.id, { bis = false, option = pick.option })
-                elseif ns.Ladders.HasFlag(pick.entry, "e") then
-                    Add(slot, pick.id, { bis = false, placed = true })
+                    Add(slot, pick.id, { bis = bis, option = pick.option })
+                elseif bis then
+                    if ns.Ladders.HasFlag(pick.entry, "c") then
+                        Add(slot, pick.id, { bis = true, recommended = true })
+                    else
+                        Add(slot, pick.id, { bis = true, gap = 0, ratio = 1 })
+                    end
                 elseif ns.Ladders.HasFlag(pick.entry, "x") then
                     Add(slot, pick.id, { bis = false, level = true })
+                elseif ns.Ladders.HasFlag(pick.entry, "e") then
+                    Add(slot, pick.id, { bis = false, placed = true })
                 elseif ns.Ladders.HasFlag(pick.entry, "g") then
                     Add(slot, pick.id, { bis = false, estimated = true })
                 elseif ns.Ladders.HasFlag(pick.entry, "c") or (top and ns.Ladders.HasFlag(top.entry, "c")) then
@@ -239,10 +236,10 @@ function Rows.Items(state, withAlts)
                 all[#all + 1] = { kind = "note", slot = slot, text = OtherNote(slots, slot) }
                 for _, pick in ipairs(picks.other) do
                     listed[pick.id] = true
-                    if ns.Ladders.HasFlag(pick.entry, "e") then
-                        Add(slot, pick.id, { bis = false, other = true, placed = true })
-                    elseif ns.Ladders.HasFlag(pick.entry, "x") then
+                    if ns.Ladders.HasFlag(pick.entry, "x") then
                         Add(slot, pick.id, { bis = false, other = true, level = true })
+                    elseif ns.Ladders.HasFlag(pick.entry, "e") then
+                        Add(slot, pick.id, { bis = false, other = true, placed = true })
                     elseif ns.Ladders.HasFlag(pick.entry, "g") or pick.partialSet then
                         Add(slot, pick.id, { bis = false, other = true, estimated = true })
                     elseif slots.measuredWeaponSet then

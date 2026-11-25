@@ -3118,7 +3118,6 @@ ns.data.items = [==[
 274612|Waterlogged Burial Shroud|d|sn|d^2970^Primeval Elemental^32.4^0^w
 274613|Priestess Cloak|d|sn|d^2970^Var'Taka^33.1^0^w
 274614|Knucklebone Ring|d|sn|d^2970^Deathless Marrow^33.1^0^w
-274641|Theka's Last Breath|d|n|d^209^Theka the Martyr^34.8^0^w
 274643|Gutcutter Hatchet|d|n|d^209^Nekrum Gutchewer^30.9^0^w
 274647|Farraki Kris|d|n|d^209^Sergeant Bly^30.7^0^w
 274652|Wall of Water|d|sn|d^209^Hydromancer Velratha^29.9^0^w

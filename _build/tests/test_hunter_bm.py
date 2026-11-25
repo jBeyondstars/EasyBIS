@@ -127,8 +127,9 @@ class HunterBmTest(unittest.TestCase):
             other_main, other_off = ladders.other_weapons(visible["main"], visible["off"])
             self.assertEqual((main[0].shown(side), off), (250619, []))
             self.assertEqual(other_main[0].shown(side), 279259)
-            self.assertEqual(other_off[0].shown(side), 280021)
-            self.assertIn(286613, {e.shown(side) for e in other_off if e.pvp_utility})
+            self.assertEqual(other_off[0].shown(side), 286613)
+            self.assertTrue(other_off[0].pvp_utility)
+            self.assertEqual(next(e.shown(side) for e in other_off if not e.pvp_utility), 280021)
             self.assertAlmostEqual(main[0].score - other_main[0].score - other_off[0].score, 22.5, delta=0.5)
         for source in (full, kept):
             for flt in ladders.FILTERS:

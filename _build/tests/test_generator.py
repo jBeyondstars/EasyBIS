@@ -467,7 +467,7 @@ class GeneratorTest(unittest.TestCase):
         """Under every filter the addon can apply, the shortened ladder gives the same picks."""
         def shown(ladder_of, token, spec, mode, flt):
             visible = ladders.visible_slots({slot: ladder_of(token, spec, mode, slot) for slot, _ in ladders.SLOTS}, flt)
-            others = [entries[:1 + ladders.ALTERNATIVES]
+            others = [ladders.first_with_options(entries, 1 + ladders.ALTERNATIVES)
                       for entries in ladders.other_weapons(visible["main"], visible["off"])]
             visible["main"], visible["off"] = ladders.weapon_lists(visible["main"], visible["off"])
             return {slot: ladders.picks(slot, entries) for slot, entries in visible.items()}, others

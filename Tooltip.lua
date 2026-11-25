@@ -95,7 +95,7 @@ function Tooltip.BuildLines(id)
             local classSpec = ns.ClassName(hit.class) .. " " .. ns.SpecName(ns.Index.SpecName(hit.class, hit.spec))
             memberships[#memberships + 1] = {
                 left = (icon ~= "" and icon .. " " or "") .. classSpec,
-                right = L.GEAR_MEMBERSHIP:format(hit.listName), r = r, g = g, b = b,
+                right = hit.listName, r = r, g = g, b = b,
             }
         elseif shown and (rank ~= ALT or withAlternatives) then
             perSpec[hit.class] = perSpec[hit.class] or {}

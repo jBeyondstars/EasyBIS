@@ -1,3 +1,9 @@
+# Easy BIS 1.10.5
+
+- **Pre-raid rankings.** Situational items keep their place in the Raid and PvP rankings. An item that earns BiS with its base score shows the BiS badge. Situational alternatives remain outside the configured alternative count.
+- **Class recommendations.** Removed Hand of Justice from ranged Hunter recommendations in Raid, PvP and AoE / Dungeons. Removed King Mosh’s Tooth from both Combat Rogue weapon slots in Raid and PvP.
+- **Interface.** The notice can be dismissed for the account. Item tooltips show custom list names directly. Removed the “New” badge from the Reputations tab.
+
 # Easy BIS 1.10.4
 
 - **Rogue rankings.** Assassination, Combat and Subtlety Raid lists are re-measured on the latest WoWSims Forever, which includes the Stormshroud hotfix (3% chance of 18 energy). Flurry Axe stays the first Combat off hand, ahead of Felstriker.

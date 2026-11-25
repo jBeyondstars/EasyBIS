@@ -75,6 +75,7 @@ def encode_entry(entry: ladders.Entry) -> str:
     flags += "j" if entry.pvp_utility else ""
     flags += "f" if entry.fourth_option else ""
     flags += "k" if entry.preraid_option else ""
+    flags += "q" if entry.situational_only else ""
     flags += "g" if entry.estimated else ""
     flags += "b" if entry.alternative_only else ""
     flags += "c" if entry.recommended else ""
@@ -261,6 +262,8 @@ def lists_file(db, all_ladders) -> str:
         "           no score of its own, the addon shows it level with the best picks, never as one, and prints no figure,",
         "         g ranked by simulation on a score that is no full measure (a random bonus, an effect or a proc rate the",
         "           simulator lacks): it keeps its rank, and the addon shows no score for it,",
+        "         k a situational pick in pre-raid unless its ordinary score earns BiS,",
+        "         q the pre-raid rank depends on a condition or an explicit situational recommendation,",
         *(("         b a partial faction-specific measure retained as an alternative only,",) if contextual else ()),
         "         a digit: the content phase the item needs (none: before the raids, 1: Forever's first raids,",
         "         9: a raid known from Classic data only); see _build/phases.py",
@@ -935,15 +938,19 @@ def combined_aoe_file(db, short, route, directory=None, priorities=None) -> tupl
               "    route = " + _aoe_lua(route["schedule"]) + ", lists = {"]
     display_specs = aoe_rules.dungeon_specializations(db)
     for key, factions in combined.items():
-        cls, spec = key.split()
+        cls = key.split()[0]
+        spec = display_specs[key]
+        ranged_hunter = cls == "HUNTER" and db.classes[cls]["specs"][spec]["role"] == "Ranged DPS"
         for side, slots in sorted(factions.items()):
-            lines.append(f'    ["{cls}:{display_specs[key]}:{side}"] = {{')
+            lines.append(f'    ["{cls}:{spec}:{side}"] = {{')
             for slot, result in sorted(slots.items()):
                 lines.append(f"        {slot} = {{")
                 for field, value in result.items():
                     if field != "items":
                         lines.append(f"            {field} = {_aoe_lua(value)},")
                 for row in result["items"]:
+                    if ranged_hunter and row["id"] == ladders.HAND_OF_JUSTICE:
+                        continue
                     positions = ("id", "score", "scoreSE")
                     fields = [_aoe_lua(row[k]) for k in positions]
                     fields.extend(f"{k} = {_aoe_lua(v)}" for k, v in row.items() if k not in positions)

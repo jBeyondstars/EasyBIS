@@ -155,8 +155,7 @@ class AddonTest(unittest.TestCase):
                                      not b.unscored and not b.estimated and e.stored == b.stored
                                      and e.paired_with == b.paired_with for b in best)}
         shown = 1 + count
-        out["other"] = {slot: [e.shown(side) for index, e in enumerate(entries)
-                              if index < shown or e.pvp_utility]
+        out["other"] = {slot: [e.shown(side) for e in ladders.first_with_options(entries, shown)]
                         for slot, entries in (("main", other_main), ("off", other_off))}
         return out
 

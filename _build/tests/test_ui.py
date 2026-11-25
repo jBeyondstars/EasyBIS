@@ -109,7 +109,7 @@ class CustomGearListTest(unittest.TestCase):
         equipment = [{}] * 10 + [{"id": item}, {"id": item}]
         custom.Import("ROGUE", 1, two, json.dumps({"player": {"equipment": {"items": equipment}}}))
         labels = [line[1] for line in game.tooltip(item) if len(line) == 2]
-        self.assertEqual(labels, ["Liste perso : Donjons", "Liste perso : Sortie du jeudi"])
+        self.assertEqual(labels, ["Donjons", "Sortie du jeudi"])
         game.ns.Browser.Open()
         open_dropdown(game, game.ns.Browser.window.options)
         lists = find(game.stub.menu, "Listes affichées dans les infobulles")
@@ -118,12 +118,12 @@ class CustomGearListTest(unittest.TestCase):
         hidden = find(lists, "Sortie du jeudi")
         hidden.pick()
         self.assertFalse(hidden.selected())
-        self.assertEqual([right for _, right in game.lines(item)], ["Liste perso : Donjons"])
+        self.assertEqual([right for _, right in game.lines(item)], ["Donjons"])
         custom.RenameList("ROGUE", 1, two, "Jeudi")
         custom.Remove("ROGUE", 1, one, item)
         self.assertEqual(game.tooltip(item), [])
         hidden.pick()
-        self.assertEqual([right for _, right in game.lines(item)], ["Liste perso : Jeudi"])
+        self.assertEqual([right for _, right in game.lines(item)], ["Jeudi"])
         custom.Import("ROGUE", 1, two, '{"player":{"equipment":{"items":[{"id":42}]}}}')
         self.assertFalse(game.lines(item))
 
@@ -398,7 +398,7 @@ class WindowTest(unittest.TestCase):
         lead = ladders.lead   # a placed item (flag e) is never a best pick
         shown = 1 + count
         other_main, other_off = ladders.other_weapons(visible["main"], visible["off"])
-        other = {slot: [e for index, e in enumerate(entries) if index < shown or e.pvp_utility]
+        other = {slot: ladders.first_with_options(entries, shown)
                  for slot, entries in (("main", other_main), ("off", other_off))}
         visible["main"], visible["off"] = ladders.weapon_lists(visible["main"], visible["off"])
         first = lead(visible["main"])
@@ -430,19 +430,25 @@ class WindowTest(unittest.TestCase):
                 continue
             best, alternatives = ladders.picks(slot, visible[slot], count)
             duel = test_addon.visible_duel(token, spec, mode, slot, visible[slot], flt)
-            for entry in best:
-                rows.append(("item", entry.shown(side), slot, True, None if entry in duel or entry.recommended else 0))
-            displayed = [e for e in duel if e not in best]
+            displayed = best + [e for e in duel if e not in best]
             if alts:
-                displayed.extend(e for e in alternatives if e not in duel)
-                fourth = next((e for e in displayed if e.fourth_option), None)
+                displayed.extend(e for e in alternatives if e not in duel and not e.pvp_utility)
+                selected = {e.item_id: e for e in displayed + alternatives}
+                ranked = [selected[e.item_id] for e in visible[slot] if e.item_id in selected and not e.fourth_option]
+                for position, entry in enumerate(ranked):
+                    if entry.pvp_utility:
+                        displayed.insert(position, entry)
+                fourth = next((e for e in alternatives if e.fourth_option), None)
                 if fourth:
-                    displayed.remove(fourth)
-                    displayed.insert(3 - len(best), fourth)
+                    displayed.insert(3, fourth)
             for entry in displayed:
-                rows.append(("item", entry.shown(side), slot, False,
-                             None if entry.unscored or entry.estimated or entry in duel
-                             else self.gap(entry.stored / 10, best[1 if entry.paired_with else 0].stored / 10)))
+                if entry in best:
+                    gap = None if entry in duel or entry.recommended else 0
+                elif entry.unscored or entry in duel:
+                    gap = None
+                else:
+                    gap = self.gap(entry.stored / 10, best[1 if entry.paired_with else 0].stored / 10)
+                rows.append(("item", entry.shown(side), slot, entry in best, gap))
             if alts and other.get(slot):
                 rows.append(("note", None, slot, None, None))
                 for entry in other[slot]:
@@ -501,6 +507,8 @@ class WindowTest(unittest.TestCase):
         state = game.ns.Browser.state
         for token in test_addon.CLASSES:
             for spec in self.kept[token]:
+                if (token, spec) == ("HUNTER", 3):
+                    continue  # Archived melee Survival redirects to the active ranged profile in the browser.
                 for mode in ladders.MODES:
                     state["class"], state.spec, state.list = token, spec, mode
                     game.ns.SetOption(game.ns, "minimap", not game.ns.db.minimap)  # any option change refreshes
@@ -1596,7 +1604,7 @@ class WindowTest(unittest.TestCase):
                     ladder = modes["pve"][slot]
                     visible = ladders.visible(ladder, flt)
                     _, alternatives = ladders.picks(slot, visible, ladders.MAX_ALTERNATIVES)
-                    placed = next((e for e in alternatives if e.placed), None)
+                    placed = next((e for e in alternatives if e.placed and not e.pvp_utility), None)
                     if placed:
                         return token, spec, slot, placed.shown("a"), None
                     if not stand_in and not any(hasattr(ladder, name) for name in ("contexts", "pre_raid", "pre_contexts")):
@@ -1684,6 +1692,11 @@ class WindowTest(unittest.TestCase):
             notice = window.notice
             self.assertEqual(plain(notice.text.text), game.ns.L.NOTICE_ITEMS, locale)
             self.assertIn(word, notice.text.text, locale)
+            self.assertEqual(label(notice.dismiss), game.ns.L.NOTICE_DISMISS, locale)
+            left, right = notice.text.points[1], notice.text.points[2]
+            self.assertEqual((left[1], right[1]), ("LEFT", "RIGHT"))
+            self.assertEqual(left[2], -right[2], "equal insets center the message on the band")
+            self.assertGreater(left[2], notice.dismiss.width - notice.dismiss.points[1][2], "clear of the button")
             self.assertEqual((notice.points[1][1], notice.points[2][1]), ("TOPLEFT", "TOPRIGHT"), "across the window")
             top, list_top = -notice.points[1][3], -window.inset.points[1][3]
             self.assertGreaterEqual(top, 70, "under the filters")
@@ -1694,16 +1707,15 @@ class WindowTest(unittest.TestCase):
             game.stub.run(window.pages.buttons[2], "OnClick")
             self.assertTrue(notice.shown, "on the dungeons too")
 
-    def test_the_notices_cross_puts_it_away_until_the_window_opens_again(self):
+    def test_the_notice_stays_dismissed(self):
         game = self.open(saved=ENHANCEMENT)
-        window, tooltip = game.ns.Browser.window, game.lua.globals().GameTooltip
-        notice, cross = window.notice, window.notice.close
+        window = game.ns.Browser.window
+        notice = window.notice
+        self.assertIsNone(notice.close)
         list_top = lambda: -window.inset.points[1][3]
         self.assertEqual((notice.shown, list_top()), (True, 98))
         rows_before = len(window.rowData)
-        game.stub.run(cross, "OnEnter")
-        self.assertEqual(tooltip.text, "Hide this notice. It comes back the next time the window is opened.")
-        game.stub.run(cross, "OnClick")
+        game.stub.run(notice.dismiss, "OnClick")
         self.assertEqual((notice.shown, list_top()), (False, 70), "the list takes the room of the notice")
         self.assertEqual(len(window.inset.points), 2, "the list is anchored once")
         self.assertEqual(len(window.rowData), rows_before)
@@ -1712,11 +1724,12 @@ class WindowTest(unittest.TestCase):
             self.assertFalse(notice.shown)
         game.ns.Browser.Close()
         game.ns.Browser.Open()
-        self.assertEqual((notice.shown, list_top()), (True, 98), "back when the window opens again")
-        game.stub.run(cross, "OnClick")
-        game.ns.Browser.Toggle()
-        game.ns.Browser.Toggle()
-        self.assertTrue(notice.shown)
+        self.assertEqual((notice.shown, list_top()), (False, 70), "still hidden when the window opens again")
+        self.assertTrue(game.lua.globals().EasyBISDB.dismissedNotices.NOTICE_ITEMS)
+
+        reloaded = self.open(saved="EasyBISDB = { dismissedNotices = { NOTICE_ITEMS = true } }")
+        window = reloaded.ns.Browser.window
+        self.assertEqual((window.notice.shown, -window.inset.points[1][3]), (False, 70))
 
     # -- items added by hand --------------------------------------------------------------------
 
@@ -3170,26 +3183,14 @@ class WindowTest(unittest.TestCase):
             self.assertEqual(anchor[1], "BOTTOM")
             row_bottom = window.tabs.points[1][3]
             self.assertLess(anchor[3] + window.credit.GetStringHeight(window.credit), row_bottom)
-            badge = window.tabs.buttons[5].newBadge
-            badge_top = row_bottom + window.tabs.height + badge.points[1][5] + badge.height / 2
-            self.assertLessEqual(badge_top, window.inset.points[2][3])
+            self.assertLessEqual(row_bottom + window.tabs.height, window.inset.points[2][3])
 
-    def test_the_new_tabs_are_marked_new(self):
+    def test_only_the_dungeons_tab_is_marked_new(self):
         for locale in ("enUS", "frFR"):
             game = self.open(locale=locale)
             window = game.ns.Browser.window
-            buttons = window.tabs.buttons
-            for index in (1, 2, 3, 4):   # the consumables have had their day as a new tab
-                self.assertIsNone(buttons[index].newBadge, (locale, index))
-            for index in (5,):   # Reputations
-                tab = buttons[index]
-                self.assertEqual(tab.newBadge.text.text, "New", (locale, index))
-                self.assertTrue(tab.newBadge.shown)
-                game.stub.run(tab, "OnClick")
-                self.assertTrue(tab.highlightLocked)
-                self.assertTrue(tab.newBadge.shown, "the badge stays on the open tab")
-                self.assertEqual(tab.newBadge.points[1][3], "TOPRIGHT", "on the corner, clear of the caption")
-            # the dungeons, on the window's side
+            for index, tab in window.tabs.buttons.items():
+                self.assertIsNone(tab.newBadge, (locale, index))
             self.assertIsNone(window.pages.buttons[1].newBadge, locale)
             self.assertEqual(window.pages.buttons[2].newBadge.text.text, "New", locale)
 

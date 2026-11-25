@@ -52,8 +52,8 @@ end
 -- flags: s seen in Forever, n new in Forever, u no known source, U unique, t two-hander, r random bonus,
 -- p a PvP reward, v a Premier piece (sold for honor, even when the data gives it no source), e placed from a
 -- close spec's simulation; x situational effect beyond the stat weights; g estimated simulation score;
--- b incomplete faction-specific measurement, j extra situational option, f show that option fourth,
--- k situational only in pre-raid.
+-- b incomplete faction-specific measurement, j situational option outside the alternatives limit, f show that option fourth,
+-- k situational only in pre-raid, q its rank depends on a condition or an explicit recommendation.
 -- A digit gives the content phase the item needs (entry.phase, 0 without one).
 function Ladders.HasFlag(entry, letter)
     return entry.flags:find(letter, 1, true) ~= nil
@@ -130,31 +130,34 @@ local function Visible(entries, filter, list, extras)
     local rewards = filter.pvpRewards
     if type(rewards) == "table" then rewards = rewards[list] end
     local cap = filter.rankCap
-    local visible, options, conditional = {}, nil, {}
+    local visible, options, conditional, placed = {}, nil, {}, {}
     if filter.phase == 0 and extras then
         options = Visible(extras, filter, list)
         for _, pick in ipairs(options) do conditional[pick.id] = true end
     end
     for _, entry in ipairs(entries or {}) do
         local id = Shown(entry, filter.side)
-        if id and not conditional[id]
+        if id
             and entry.phase <= (filter.phase or 9)
             and (not cap or entry.rank <= cap)
             and (filter.unsourced or not Ladders.HasFlag(entry, "u") or (cap and Ladders.HasFlag(entry, "v")))
             and (rewards ~= false or not Ladders.HasFlag(entry, "p"))
             and (not filter.seenOnly or Ladders.HasFlag(entry, "s")) then
-            if filter.phase == 0 and Ladders.HasFlag(entry, "k") then
-                -- Keep the ordinary entry for later phases.
-                options = options or {}
-                local situational = setmetatable({ flags = entry.flags .. "xj", score10 = 0 }, { __index = entry })
-                options[#options + 1] = { id = id, score = 0, entry = situational }
-            else
-                visible[#visible + 1] = { id = id, score = entry.score10 / 10, entry = entry }
+            local pick = { id = id, score = entry.score10 / 10, entry = entry }
+            if filter.phase == 0 and (conditional[id] or Ladders.HasFlag(entry, "k")) then
+                if entry.score10 > 0 and not Ladders.Unscored(entry) and not Ladders.HasFlag(entry, "q") then
+                    pick.baseEntry = entry
+                end
+                pick.entry = setmetatable({ flags = entry.flags .. "xj" }, { __index = entry })
+                placed[id] = true
             end
+            visible[#visible + 1] = pick
         end
     end
     if options then
-        for _, pick in ipairs(options) do visible[#visible + 1] = pick end
+        for _, pick in ipairs(options) do
+            if not placed[pick.id] then visible[#visible + 1] = pick end
+        end
     end
     return visible
 end
@@ -175,12 +178,18 @@ function Ladders.Unscored(entry)
     return entry.flags:find("[exgbc]") ~= nil
 end
 
+local function CanBeBest(pick)
+    return pick.baseEntry ~= nil or not Ladders.Unscored(pick.entry)
+end
+
 -- The first pick that can be a best pick: one with no score of its own never is, unless the list has nothing else.
 function Ladders.Lead(picks)
+    local first
     for _, pick in ipairs(picks) do
-        if not Ladders.Unscored(pick.entry) then return pick end
+        if CanBeBest(pick) then return pick end
+        if not first and not Ladders.HasFlag(pick.entry, "j") then first = pick end
     end
-    if picks[1] and not picks[1].entry.flags:find("[gbj]") then return picks[1] end
+    if first and not first.entry.flags:find("[gb]") then return first end
 end
 
 -- Weighs the two weapon slots against each other. When the best two-hander
@@ -213,11 +222,14 @@ local function WeaponLists(main, off, side, measuredSets)
     return one, others, false, two, {}
 end
 
-local function First(picks, count, keepOptions)
+local function First(picks, count)
     local first = {}
-    for index, pick in ipairs(picks) do
-        if index <= count or (keepOptions and Ladders.HasFlag(pick.entry, "j")) then
+    for _, pick in ipairs(picks) do
+        if Ladders.HasFlag(pick.entry, "j") then
             first[#first + 1] = pick
+        elseif count > 0 then
+            first[#first + 1] = pick
+            count = count - 1
         end
     end
     return first
@@ -229,33 +241,32 @@ end
 -- item (flag e) is never a best pick.
 local function Picks(slot, visible, count)
     local best, alts = {}, {}
-    local last = visible[#visible]
-    if last and Ladders.HasFlag(last.entry, "j") then
-        -- Keep the ordinary number of alternatives when a situational pick is offered.
-        visible[#visible] = nil
-        best, alts = Picks(slot, visible, count)
-        local position = #alts + 1
-        if Ladders.HasFlag(last.entry, "f") then position = math.min(position, 4 - #best) end
-        table.insert(alts, position, last)
-        return best, alts
-    end
     local first = Ladders.Lead(visible)
-    if not first then return best, First(visible, count) end
     best[1] = first
-    if ns.PAIRED[slot] then
+    if first and ns.PAIRED[slot] then
         for _, pick in ipairs(visible) do
-            if pick ~= first and not Ladders.Unscored(pick.entry)
+            if pick ~= first and CanBeBest(pick)
                 and not (first.entry.limit and pick.entry.limit == first.entry.limit) then
                 best[2] = pick
                 break
             end
         end
     end
-    count = count - (#best - 1)
-    for _, pick in ipairs(visible) do
-        if #alts >= count then break end
-        if pick ~= best[1] and pick ~= best[2] then alts[#alts + 1] = pick end
+    for _, pick in ipairs(best) do pick.entry = pick.baseEntry or pick.entry end
+    count = count - math.max(0, #best - 1)
+    local fourth
+    for position, pick in ipairs(visible) do
+        pick.position = position
+        if Ladders.HasFlag(pick.entry, "f") then
+            fourth = pick
+        elseif Ladders.HasFlag(pick.entry, "j") then
+            alts[#alts + 1] = pick
+        elseif count > 0 and pick ~= best[1] and pick ~= best[2] then
+            alts[#alts + 1] = pick
+            count = count - 1
+        end
     end
+    if fourth then table.insert(alts, math.min(#alts + 1, 4 - #best), fourth) end
     return best, alts
 end
 
@@ -297,6 +308,33 @@ function Ladders.DisplayAlts(picks, withAlts)
         end
     end
     return out
+end
+
+-- Preserve the order of the ordinary picks, inserting situational picks at their
+-- positions among the displayed rows, even when this places them above a BiS pick.
+function Ladders.DisplayPicks(picks, withAlts)
+    local ordinary, situational, fourth = {}, {}, nil
+    for _, pick in ipairs(picks.best) do ordinary[#ordinary + 1] = pick end
+    for _, pick in ipairs(Ladders.DisplayAlts(picks, withAlts)) do
+        if Ladders.HasFlag(pick.entry, "f") then
+            fourth = pick
+        elseif Ladders.HasFlag(pick.entry, "j") then
+            situational[#situational + 1] = pick
+        else
+            ordinary[#ordinary + 1] = pick
+        end
+    end
+    local displayed = {}
+    for _, pick in ipairs(ordinary) do displayed[#displayed + 1] = pick end
+    for index, pick in ipairs(situational) do
+        local position = index
+        for _, other in ipairs(ordinary) do
+            if other.position < pick.position then position = position + 1 end
+        end
+        table.insert(displayed, position, pick)
+    end
+    if fourth then table.insert(displayed, math.min(#displayed + 1, 4), fourth) end
+    return displayed
 end
 
 function Ladders.OptionNote(option)
@@ -361,8 +399,8 @@ function Ladders.Compute(data, spec, list, filter)
         result[slot] = { best = best, alts = alts, other = {} }
         if duels and duels[slot] then TankOptions(result[slot], visible[slot], duels[slot], filter.side) end
     end
-    result.main.other = First(otherMain, 1 + count, true)
-    result.off.other = First(otherOff, 1 + count, true)
+    result.main.other = First(otherMain, 1 + count)
+    result.off.other = First(otherOff, 1 + count)
     if offSets and offSets.hasWeaponContexts and twoHand then
         for _, pick in ipairs(result.main.other) do
             local context = Context(offSets, filter, pick.id) or Context(offSets, filter)
