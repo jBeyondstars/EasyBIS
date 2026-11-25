@@ -124,7 +124,7 @@ WORLD_DROPPERS = frozenset({"Colossus of Zora", "Colossus of Regal", "Colossus o
 # Source kind -> the source groups it can stand for (an instance boss is "d", or "r" in a raid).
 _STANDS_FOR = {
     "q": "qQ", "V": "ve", "v": "ve", "c": "c", "w": "w", "m": "wR", "R": "Rw", "o": "wxd", "x": "x", "p": "pv",
-    "r": "e",
+    "r": "e", "a": "d",
 }
 
 

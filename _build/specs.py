@@ -307,6 +307,10 @@ def apply(db) -> Report:
     db.effects_but = load_effects_but()
     db.placed = load_placed()
     db.class_only = load_class_only()
+    for item_id, record in getattr(db, "verified_sources", {}).items():
+        if "quest_classes" in record:
+            allowed = frozenset(record["quest_classes"])
+            db.class_only[item_id] = allowed & db.class_only.get(item_id, allowed)
     db.class_unknown = load_class_unknown()
     own_enchants(db, report)
     for cls, data in db.classes.items():

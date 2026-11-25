@@ -1,3 +1,12 @@
+# Easy BIS 1.10.3
+
+- **Item sources.** Added 83 verified pre-raid acquisition records, including Staff of Jordan and Museum Keeper’s Chain. Restored the observed source for Underworld Band and added the assembly instructions for Sul’thraze in Zul’Farrak. Sources follow the applicable faction, class and reputation requirements.
+- **Pre-raid rankings.** Items with verified target or terrain bonuses appear as Situational in eligible Raid and PvP lists across all classes and specializations. This includes the faction hit trinkets, Heart of Wyrmthalak against Orcs, and Hand of Justice for melee hits, with a higher proc chance against Dwarves. Situational picks leave room for the usual alternatives.
+- **Class recommendations.** Shadow Priests can find Underworld Band in PvP, with Don Julio’s Band listed as a situational hit option. Hunters no longer get Staff of Jordan as an alternative.
+- **Armor variants.** Six pairs of vendor items now favor the more protective variant when the class can equip it. This includes the mail Theramore and Darkspear shoulders for Beast Mastery Hunters and the level-48 Arathi Basin belts.
+- **Shaman totems.** Raid and PvP lists show recommended picks and alternatives based on spell effects. Elemental keeps its measured Raid ranking. Removed 15 notes that duplicated the item tooltips.
+- **Interface.** The notice can be dismissed for the account. AoE score information identifies the humanoid targets used for the short-pull simulation.
+
 # Easy BIS 1.10.2
 
 - **PvP gear lists.** All nine classes now see the Premier armor for their selected faction. For Shadow Priests, the Alliance list shows Premier Voidcloth Diadem and the Horde list shows Premier Satin Cowl. This also applies with Available Now enabled.

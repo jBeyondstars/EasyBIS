@@ -39,13 +39,14 @@ local ALT_COLOR = "|cffc0c0c0"
 local SEPARATOR = " |cff808080·|r "
 
 -- How much a spec wants an item for a list: the highest of its hits counts.
-local ADDED, ALT, BIS = 1, 2, 3
-local THREAT, MITIGATION = 4, 5
+local ADDED, ALT, RECOMMENDED, BIS = 1, 2, 3, 4
+local THREAT, MITIGATION = 5, 6
 
 local function RankText(rank)
     if rank == THREAT then return BIS_COLOR .. L.RANK_THREAT .. "|r" end
     if rank == MITIGATION then return BIS_COLOR .. L.RANK_MITIGATION .. "|r" end
     if rank == BIS then return BIS_COLOR .. L.RANK_BIS .. "|r" end
+    if rank == RECOMMENDED then return BIS_COLOR .. L.RANK_RECOMMENDED .. "|r" end
     if rank == ALT then return ALT_COLOR .. L.RANK_ALT .. "|r" end
     return ns.COLOR .. L.RANK_CUSTOM .. "|r"
 end
@@ -85,7 +86,7 @@ function Tooltip.BuildLines(id)
     -- perSpec[class][spec][list] = BIS, ALT or ADDED: the best of the item's slots wins
     local perSpec, memberships = {}, {}
     for _, hit in ipairs(hits or {}) do
-        local rank = hit.custom and ADDED or (hit.bis and BIS or ALT)
+        local rank = hit.custom and ADDED or hit.recommended and RECOMMENDED or hit.bis and BIS or ALT
         if hit.option then rank = hit.option.sign == 1 and THREAT or MITIGATION end
         local shown = ns:ListShown(hit.list) and (not onlyClass or hit.class == onlyClass)
         if shown and hit.listName then

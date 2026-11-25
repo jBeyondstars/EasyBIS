@@ -37,7 +37,7 @@ class InsigniaTest(unittest.TestCase):
                 self.assertEqual(bool(extra), phase == 0 and not seen)
                 if extra:
                     self.assertTrue(game.ns.Ladders.HasFlag(extra[0].entry, "x"))
-                    self.assertEqual({e.item_id for e in alts if e.pvp_utility}, {12583, 13348})
+                    self.assertLessEqual({12583, 13348}, {e.item_id for e in alts if e.pvp_utility})
                     self.assertEqual(len([e for e in alts if not e.pvp_utility]), 3)
                     self.assertFalse(any(e.item_id == 12583 for e in expected))
 

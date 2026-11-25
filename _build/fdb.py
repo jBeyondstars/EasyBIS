@@ -26,6 +26,7 @@ import caster_gear
 import caster_trinkets
 import corrections
 import raid_sources
+import verified_sources
 import relics
 import aoe_eligibility
 import aoe_jewelry
@@ -149,6 +150,7 @@ def load(data_dir, corrected: bool = True) -> Database:
         corrections.fill(db, corrections.load_sources())
         corrections.confirm(db, corrections.load_drops())
         corrections.price(db, corrections.load_costs())
+        db.verified_sources = verified_sources.apply(db)
         corrections.assign_sides(db)
         corrections.pair_faction_items(db)
         corrections.assign_reward_sides(db)

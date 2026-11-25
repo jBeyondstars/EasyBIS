@@ -398,7 +398,8 @@ class WindowTest(unittest.TestCase):
         lead = ladders.lead   # a placed item (flag e) is never a best pick
         shown = 1 + count
         other_main, other_off = ladders.other_weapons(visible["main"], visible["off"])
-        other = {"main": other_main[:shown], "off": other_off[:shown]}
+        other = {slot: [e for index, e in enumerate(entries) if index < shown or e.pvp_utility]
+                 for slot, entries in (("main", other_main), ("off", other_off))}
         visible["main"], visible["off"] = ladders.weapon_lists(visible["main"], visible["off"])
         first = lead(visible["main"])
         two_hand = bool(first and first.two_hand)
@@ -430,7 +431,7 @@ class WindowTest(unittest.TestCase):
             best, alternatives = ladders.picks(slot, visible[slot], count)
             duel = test_addon.visible_duel(token, spec, mode, slot, visible[slot], flt)
             for entry in best:
-                rows.append(("item", entry.shown(side), slot, True, None if entry in duel else 0))
+                rows.append(("item", entry.shown(side), slot, True, None if entry in duel or entry.recommended else 0))
             displayed = [e for e in duel if e not in best]
             if alts:
                 displayed.extend(e for e in alternatives if e not in duel)
@@ -794,7 +795,7 @@ class WindowTest(unittest.TestCase):
             return [frame for frame in self.all_frames(game) if frame.data.slot == slot]
 
         # before the raids a one-hander and an off hand are best: the two-handers follow, under a note
-        main = rows_of("main")
+        main = [frame for frame in rows_of("main") if not frame.data.level]
         self.assertEqual([frame.data.kind for frame in main], ["item"] * 3 + ["note"] + ["item"] * 3)
         self.assertEqual(main[0].data.id, MAGEBLADE)
         self.assertEqual(main[0].sub.text, "One-Hand - One-Handed Swords")
@@ -1592,13 +1593,16 @@ class WindowTest(unittest.TestCase):
                 for slot, _ in ladders.SLOTS:
                     if slot in ("main", "off"):
                         continue
-                    visible = [e for e in modes["pve"][slot] if e.passes(flt)]
+                    ladder = modes["pve"][slot]
+                    visible = ladders.visible(ladder, flt)
                     _, alternatives = ladders.picks(slot, visible, ladders.MAX_ALTERNATIVES)
                     placed = next((e for e in alternatives if e.placed), None)
                     if placed:
                         return token, spec, slot, placed.shown("a"), None
-                    if alternatives and not stand_in and alternatives[-1].shown("a"):
-                        stand_in = token, spec, slot, alternatives[-1]
+                    if not stand_in and not any(hasattr(ladder, name) for name in ("contexts", "pre_raid", "pre_contexts")):
+                        ordinary = [e for e in alternatives if e in ladder and not e.unscored]
+                        if ordinary:
+                            stand_in = token, spec, slot, ordinary[-1]
         self.assertIsNotNone(stand_in, "no alternative in the PvE lists")
         token, spec, slot, entry = stand_in
         token_text = luaout.encode_entry(entry)

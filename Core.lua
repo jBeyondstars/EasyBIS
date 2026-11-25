@@ -54,6 +54,7 @@ local DEFAULTS = {
     alternatives = true,   -- tooltips: the alternatives too, not only the best picks
     repTooltip = true,     -- tooltips: the reputation an item asks for
     repCompact = true,     -- the window: a reputation's standing without its numbers
+    dismissedNotices = {}, -- window notices dismissed for this account, keyed by notice
     unsourced = false,     -- count the items with no known source
     seenOnly = false,      -- count only the items ForeverDB players have seen in Forever
     availableNow = false,  -- the window's checkbox: count only what a player can get today

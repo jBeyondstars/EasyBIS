@@ -122,6 +122,7 @@ def assign_sides(db) -> list[int]:
 # (Alliance, Horde). Each pair occupies the same slot and has the same stats.
 FACTION_PAIRS = (
     (20056, 20203),  # Arathi Basin mail pauldrons
+    (271954, 272104), (271956, 272106),  # Theramore / Darkspear leather and mail shoulders
     # Rare Premier priest armor, Voidcloth / Satin (Lieutenant Commander's / Champion's Raiment).
     (272814, 272562), (272817, 272565), (272816, 272564), (272812, 272569),
     (272815, 272563), (272810, 272568), (272811, 272567), (272813, 272566),

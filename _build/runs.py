@@ -75,12 +75,21 @@ QUEST_WINGS = {
     7488: "e", 7489: "e",    # Lethtendris's Web
     1049: "l",               # Compendium of the Fallen
     1051: "g",               # Vorrel's Revenge: Vorrel Sengutz waits in the graveyard
+    79970: "c",              # Aeonas the Vindicated: Scarlet Monastery cathedral
 }
 
 # Quests done in a dungeon that QuestieDB sorts elsewhere: quest -> instance.
 QUEST_INSTANCES = {
     5166: 229, 5167: 229,    # Breastplate of the Chromatic Flight, Legplates of the Chromatic Defier
     8257: 109,               # Blood of Morphaz
+    79970: 189,              # Aeonas the Vindicated
+    82084: 209,              # A Lesson in Literacy: Farraki Papyrus
+    84332: 329,              # A Thane's Gratitude
+    92065: 2974,             # Blackmaw Reclamation
+    92070: 2974,             # A Lost Memento
+    93404: 349,              # Rot and Regret: Vial of Earth Song Water in Maraudon
+    95790: 3001,             # Digestible Research
+    97049: 3001,             # Essence of Seeping Slimes
 }
 
 

@@ -55,14 +55,15 @@ class FeralTrinketsTest(unittest.TestCase):
             with self.subTest(side=side):
                 visible = ladders.visible(self.ladder, (side, False, False, 0, False, 6))
                 best, _ = ladders.picks("trinket", visible)
-                self.assertEqual([entry.shown(side) for entry in best], [11815, 280065])
+                self.assertEqual([entry.shown(side) for entry in best], [280065, 280060])
                 known = {entry.shown(side): entry for entry in visible}
-                self.assertEqual(known[280060].stored, known[11815].stored)
+                self.assertTrue(known[11815].pvp_utility)
                 for mana_trinket in (11832, 1713, 10659):
-                    self.assertGreater(known[11815].score, known[mana_trinket].score)
-                self.assertEqual(known[10659].score, known[18371].score)
+                    self.assertGreater(known[280060].score, known[mana_trinket].score)
+                self.assertTrue(known[10659].pvp_utility)
+                self.assertGreater(known[18371].score, 0)
 
-    def test_pre_raid_hand_is_first_tuft_tied_third_and_raid_uses_measured_scores(self):
+    def test_pre_raid_hand_and_heart_are_situational_and_raid_uses_measured_scores(self):
         for side in "ah":
             for phase in (0, 1):
                 with self.subTest(side=side, phase=phase):
@@ -71,9 +72,9 @@ class FeralTrinketsTest(unittest.TestCase):
                     ids = [entry.shown(side) for entry in best + alts]
                     hand = next(entry for entry in visible if entry.item_id == 11815)
                     if phase == 0:
-                        self.assertEqual(ids[:5], [11815, 280065, 280060, 280074, 22321])
-                        self.assertFalse(alts[0].unscored)
-                        self.assertEqual(alts[0].stored, hand.stored)
+                        self.assertEqual(ids[:3], [280065, 280060, 280074])
+                        situational = {entry.shown(side) for entry in alts if entry.pvp_utility}
+                        self.assertLessEqual({11815, 22321}, situational)
                     else:
                         self.assertFalse(hand.unscored)
                         self.assertEqual(hand.score, self.ranking.scores[11815])

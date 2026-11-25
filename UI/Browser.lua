@@ -8,9 +8,8 @@ The Easy BIS window: the best gear of a spec, slot by slot.
   top      filters: spec, list (PvE, PvP), phase, slot, source, zone, reputation. A filter that narrows
            the list down is gold; the others stay quiet. On the Consumables tab the slot filter is a category
            filter.
-  notice   a band under the filters while a known problem awaits its fix (NOTICE), with a cross that puts it
-           away until the window is opened again and gives its room to the list; none otherwise, and the
-           middle takes its room.
+  notice   a band under the filters (NOTICE). Its cross hides it until the window is opened again, and its
+           button hides it for the account. The list takes the room of a hidden notice.
   middle   the rows (UI\Rows.lua). An item or a consumable takes one line: icon, name, score bar and rank,
            type or effect, where it comes from. With the option "compact" off it takes two, as an enchant
            always does. What a reputation stands in front of says so under where it comes from. Over the
@@ -68,11 +67,15 @@ local NOTICE_MARK = "|TInterface\\DialogFrame\\UI-Dialog-Icon-AlertNew:16:16:0:0
 local FILTERS, INSET_BOTTOM = 70, 58   -- what the filters and the footer take of the window's height
 local FOOTER_BUTTON_BOTTOM = 24   -- room for the credit below and the corner badge above
 local NOTICE_CLOSE = "Interface\\Buttons\\UI-StopButton"   -- the cross that puts the notice away
-local noticeShown = NOTICE ~= nil   -- false once its cross is clicked, until the window is opened again
+local noticeClosed = false   -- true once its cross is clicked, until the window is opened again
+
+local function NoticeShown()
+    return NOTICE ~= nil and not noticeClosed and not ns.db.dismissedNotices[NOTICE]
+end
 
 -- Where the list starts: under the filters, and under the notice while it shows.
 local function InsetTop()
-    return FILTERS + (noticeShown and NOTICE_HEIGHT + NOTICE_GAP or 0)
+    return FILTERS + (NoticeShown() and NOTICE_HEIGHT + NOTICE_GAP or 0)
 end
 local ROW_HEIGHT = 54      -- a row on two lines
 local COMPACT_HEIGHT = 36  -- an item or a consumable on one line
@@ -144,6 +147,7 @@ local function RankText(row)
     if row.custom then return ns.COLOR .. L.RANK_CUSTOM .. "|r" end
     if row.placed then return GREY_TEXT .. L.RANK_PLACED .. "|r" end
     if row.level then return GREY_TEXT .. L.RANK_SITUATIONAL .. "|r" end
+    if row.recommended then return GOLD_TEXT .. L.RANK_RECOMMENDED .. "|r" end
     if row.estimated then return "" end   -- its score is no full measure: no figure is shown for it
     if row.bis then return GOLD_TEXT .. L.RANK_BIS .. "|r" end
     if row.tie then return GOLD_TEXT .. L.RANK_TIE .. "|r" end
@@ -466,7 +470,6 @@ local function CreateNotice(parent, text)
     notice:SetHeight(NOTICE_HEIGHT)
     notice.text = notice:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
     notice.text:SetPoint("LEFT", 26, 0)
-    notice.text:SetPoint("RIGHT", -26, 0)   -- clear of the cross, and as far from the left edge: the text stays centered
     notice.text:SetJustifyH("CENTER")
     notice.text:SetWordWrap(false)
     notice.text:SetText(NOTICE_MARK .. text)
@@ -481,15 +484,31 @@ local function CreateNotice(parent, text)
         GameTooltip:Show()
     end)
     notice.close:SetScript("OnLeave", ns.Tooltip.HideOwned)
+    notice.dismiss = Widgets.Button(notice, L.NOTICE_DISMISS)
+    notice.dismiss:SetHeight(NOTICE_HEIGHT - 4)
+    notice.dismiss:SetPoint("RIGHT", notice.close, "LEFT", -6, 0)
+    notice.text:SetPoint("RIGHT", notice.dismiss, "LEFT", -8, 0)
     return notice
 end
 
 -- Shows the notice or puts it away, and starts the list under what shows.
 local function PlaceNotice()
-    if window.notice then window.notice:SetShown(noticeShown) end
+    if window.notice then window.notice:SetShown(NoticeShown()) end
     window.inset:ClearAllPoints()
     window.inset:SetPoint("TOPLEFT", 6, -InsetTop())
     window.inset:SetPoint("BOTTOMRIGHT", -6, INSET_BOTTOM)
+end
+
+local function HideNotice(button, permanently)
+    Widgets.Click()
+    if permanently then
+        ns.db.dismissedNotices[NOTICE] = true
+    else
+        noticeClosed = true
+    end
+    ns.Tooltip.HideOwned(button)
+    PlaceNotice()
+    Refresh()
 end
 
 ---------------------------------------------------------------------------
@@ -1420,13 +1439,8 @@ local function Build()
         window.notice = CreateNotice(window, L[NOTICE])
         window.notice:SetPoint("TOPLEFT", 8, -FILTERS)
         window.notice:SetPoint("TOPRIGHT", -8, -FILTERS)
-        window.notice.close:SetScript("OnClick", function(self)
-            Widgets.Click()
-            noticeShown = false
-            ns.Tooltip.HideOwned(self)
-            PlaceNotice()
-            Refresh()
-        end)
+        window.notice.close:SetScript("OnClick", function(self) HideNotice(self, false) end)
+        window.notice.dismiss:SetScript("OnClick", function(self) HideNotice(self, true) end)
     end
 
     -- Rows
@@ -1554,8 +1568,8 @@ local function Build()
         self:UnregisterEvent("GET_ITEM_INFO_RECEIVED")
         ns.AddItem.Close()
         ns.GearDialog.Close()
-        if NOTICE and not noticeShown then   -- put away with its cross: back for the next time the window opens
-            noticeShown = true
+        if noticeClosed then
+            noticeClosed = false
             PlaceNotice()
         end
     end)

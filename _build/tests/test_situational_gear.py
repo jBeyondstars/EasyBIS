@@ -120,7 +120,12 @@ class SituationalGearClientTest(unittest.TestCase):
                                                 ordinary.append(pick.id)
                                         expected = gear.item_ids(cls, spec, mode, slot)
                                         self.assertEqual(len(ordinary), 1 + count)
-                                        self.assertEqual(tuple(extras), expected if phase == 0 else ())
+                                        if phase == 0:
+                                            audited = gear.target_options() | {22321}
+                                            self.assertEqual(tuple(item for item in extras if item not in audited), expected)
+                                            self.assertTrue(set(audited).isdisjoint(ordinary))
+                                        else:
+                                            self.assertEqual(extras, [])
                                         self.assertTrue(set(expected).isdisjoint(ordinary))
                                         self.assertEqual(len(set(displayed)), len(displayed))
                                         if (cls, spec, mode, phase) == ("DRUID", 2, "pve", 0):
@@ -128,15 +133,58 @@ class SituationalGearClientTest(unittest.TestCase):
                                             regular_ids = [14557, 272440, 19024, 13966, 4130, 280065,
                                                            271903 if side == "a" else 272060]
                                             self.assertEqual(ordinary, regular_ids[:1 + count])
-                                            self.assertEqual(displayed, ordinary[:3] + [11810] + ordinary[3:] + [17774])
+                                            self.assertEqual([item for item in displayed if item not in audited],
+                                                             ordinary[:3] + [11810] + ordinary[3:] + [17774])
                                         else:
                                             self.assertEqual(displayed, ordinary + extras)
+
+    def test_faction_hit_trinkets_are_situational_in_pre_raid(self):
+        for faction, side, item in (("Alliance", "a", 270275), ("Horde", "h", 19120)):
+            game = Game(cls="WARRIOR", faction=faction, locale="frFR")
+            game.ns.SetPhase(game.ns, 0)
+            game.ns.Browser.Open()
+            browser = game.ns.Browser
+            browser.state["class"], browser.state.spec, browser.state.list = "WARRIOR", 1, "pve"
+            browser.ShowSlot("trinket")
+            choices = [(index, row) for index, row in browser.window.rowData.items() if row.id == item]
+            self.assertEqual(len(choices), 1)
+            index, row = choices[0]
+            frame = browser.window.rows[index]
+            self.assertEqual(strip_colors(frame.rank.GetText(frame.rank)), "Situationnel")
+            self.assertFalse(row.bis or row.tie)
+            self.assertIsNone(row.gap)
+            self.assertIn("cap de toucher", row.why)
+
+            ladders = game.ns.Ladders
+            data = ladders.Decode("WARRIOR")
+            for phase, mode in ((1, "pve"), (1, "pvp"), (0, "pvp")):
+                flt = game.lua.table(side=side, phase=phase, alternatives=6, pvpRewards=False, unsourced=False)
+                trinkets = ladders.Compute(data, 1, mode, flt)["trinket"]
+                picks = [pick for group in (trinkets.best, trinkets.alts) for pick in group.values() if pick.id == item]
+                self.assertEqual(len(picks), 1)
+                self.assertEqual(ladders.HasFlag(picks[0].entry, "j"), phase == 0)
+
+    def test_survival_hunter_has_the_medallion_and_heart_as_situational_options(self):
+        for faction, side, medal in (("Alliance", "a", 270275), ("Horde", "h", 19120)):
+            game = Game(cls="HUNTER", faction=faction)
+            ladders = game.ns.Ladders
+            data = ladders.Decode("HUNTER")
+            for mode in ("pve", "pvp"):
+                flt = game.lua.table(side=side, phase=0, alternatives=2, pvpRewards=mode == "pvp")
+                picks = ladders.Compute(data, 4, mode, flt).trinket
+                optional = {pick.id for pick in picks.alts.values() if ladders.HasFlag(pick.entry, "j")}
+                self.assertLessEqual({medal, 22321, 11815}, optional)
+                self.assertIn(280065, {pick.id for pick in picks.best.values()})
+            self.assertEqual(game.ns.Sources.Describe(22321).detail, "Overlord Wyrmthalak")
 
     def test_browser_paints_the_situational_badge_in_both_locales(self):
         examples = (("DRUID", 2, "pve", "trinket", (11810, 17774)),
                     ("WARRIOR", 3, "pve", "off", (1168,)),
+                    ("WARRIOR", 1, "pve", "ranged", (18323,)),
+                    ("HUNTER", 1, "pve", "off", (286613,)),
                     ("PALADIN", 3, "pve", "trinket", (19812, 13209)),
-                    ("MAGE", 1, "pvp", "trinket", (13515,)))
+                    ("MAGE", 1, "pvp", "trinket", (13515,)),
+                    ("ROGUE", 1, "pvp", "trinket", (18465,)))
         for locale, badge in (("enUS", "Situational"), ("frFR", "Situationnel")):
             game = Game(locale=locale, saved="EasyBISDB = { altCount=6, pvpRewards={pve=false, pvp=false} }")
             game.ns.SetPhase(game.ns, 0)
@@ -157,6 +205,18 @@ class SituationalGearClientTest(unittest.TestCase):
                             found.append(row.id)
                     self.assertCountEqual(found, wanted)
 
+    def test_barbarous_blade_reports_the_aoe_target_type(self):
+        for faction in ("Alliance", "Horde"):
+            game = Game(cls="HUNTER", faction=faction, locale="frFR")
+            for spec in (1, 2, 4):
+                state = game.lua.table(slot="main", spec=spec)
+                state["class"] = "HUNTER"
+                rows, _ = game.ns.Rows.Aoe(state)
+                blade = next(row for row in rows.values() if row.id == 18520)
+                self.assertTrue(blade.bis)
+                self.assertIn("packs d’humanoïdes", blade.why)
+                self.assertIn("33 PA supplémentaires", blade.why)
+
     def test_fourth_bear_trinket_in_the_open_window_with_two_or_six_alternatives(self):
         for faction in ("Alliance", "Horde"):
             game = Game(cls="DRUID", faction=faction, saved="EasyBISDB = { pvpRewards={pve=false} }")
@@ -169,6 +229,9 @@ class SituationalGearClientTest(unittest.TestCase):
                     game.ns.SetAlternatives(game.ns, count)
                     browser.ShowSlot("trinket")
                     rows = [row for row in browser.window.rowData.values() if row.kind == "item"]
+                    added = gear.target_options() | {22321}
+                    self.assertTrue(all(row.level and not row.bis for row in rows if row.id in added))
+                    rows = [row for row in rows if row.id not in added]
                     # The measured Threat option joins the two existing situational recommendations.
                     self.assertEqual(len(rows), 1 + count + 3)
                     self.assertEqual(rows[2].id, 272437)

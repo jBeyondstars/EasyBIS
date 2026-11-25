@@ -42,8 +42,9 @@ class FeralDoomsawTest(unittest.TestCase):
         for side in "ah":
             flt = (side, False, False, 0, False, 6)
             two = [e for e in ladders.visible(new, flt) if e.two_hand]
-            self.assertEqual([e.item_id for e in two[:7]], [250619, 18420, 280018, 12583, 18725, 13393, 274419])
-            self.assertEqual(two[3].stored, 1295)
+            self.assertEqual([e.item_id for e in two[:7]], [250619, 280018, 12583, 18725, 13393, 274419, 280059])
+            self.assertEqual(two[2].stored, 1295)
+            self.assertIn(18420, {e.item_id for e in two if e.pvp_utility})
         with patch.object(feral_gear, "calibrated_two_hand_scores", side_effect=AssertionError("wrong scope")):
             for cls, spec, mode, slot in (("DRUID", 4, "pvp", "main"), ("DRUID", 4, "pve", "off"),
                                          ("DRUID", 2, "pve", "main"), ("PALADIN", 2, "pve", "main")):

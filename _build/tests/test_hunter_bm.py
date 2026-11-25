@@ -72,6 +72,44 @@ class HunterBmTest(unittest.TestCase):
             result = game.ns.Ladders.Compute(data, 3, "pve", game.lua.table(side=side, phase=0))
             self.assertEqual([p.id for p in result.trinket.best.values()], [leader, 1])
 
+    @unittest.skipIf(lupa is None, "lupa is not installed")
+    def test_lua_keeps_main_hand_option_without_inventing_an_off_hand(self):
+        def prepare(ns):
+            ns.data.lists.HUNTER = "\n".join((
+                "S\t1\tBeast Mastery\tRanged DPS\tany",
+                "L\t1\tpve\tmain\t10:90:t 11:65 12:60 13:50 14:40:k",
+                "L\t1\tpve\toff\t20:40",
+                "F\t1\tpve\tmain\ta\t10:90:t 11:65 12:60 13:50 14:40:k",
+                "F\t1\tpve\toff\ta:12\t20:40"))
+        game = Game(cls="HUNTER", faction="Alliance", prepare=prepare)
+        api = game.ns.Ladders
+        data = api.Decode("HUNTER")
+        flt = game.lua.table(side="a", phase=0, alternatives=2)
+        slots = api.Compute(data, 1, "pve", flt)
+        candidate = slots.main.other[1]
+        self.assertEqual(candidate.id, 11)
+        self.assertTrue(candidate.partialSet)
+        self.assertIsNone(candidate.partner)
+        self.assertFalse(list(slots.off.other.values()))
+        self.assertEqual([pick.id for pick in slots.main.other.values()], [11, 12, 13, 14])
+        self.assertTrue(api.HasFlag(slots.main.other[4].entry, "j"))
+
+    @unittest.skipIf(lupa is None, "lupa is not installed")
+    def test_beast_weapons_are_situational_in_pre_raid_bm_without_using_alternative_slots(self):
+        options = {22314, 279910}
+        for side in ("a", "h"):
+            game = Game(cls="HUNTER")
+            api = game.ns.Ladders
+            data = api.Decode("HUNTER")
+            for count in (2, 6):
+                flt = game.lua.table(side=side, phase=0, pvpRewards=False, alternatives=count, unsourced=False)
+                slots = api.Compute(data, 1, "pve", flt)
+                self.assertTrue(slots.twoHand)
+                self.assertTrue(options.isdisjoint(pick.id for pick in slots.main.best.values()))
+                situational = [pick for pick in slots.main.alts.values() if api.HasFlag(pick.entry, "j")]
+                self.assertTrue(options <= {pick.id for pick in situational})
+                self.assertEqual(len(slots.main.alts) - len(situational), count)
+
     def test_pre_raid_hands_and_other_confirmed_choices(self):
         self.assertTrue(hunter_bm.read(), "the numerical input is part of the build")
         db = fdb.load(BUILD / "cache" / "ForeverDB")
@@ -88,15 +126,19 @@ class HunterBmTest(unittest.TestCase):
             main, off = ladders.weapon_lists(visible["main"], visible["off"])
             other_main, other_off = ladders.other_weapons(visible["main"], visible["off"])
             self.assertEqual((main[0].shown(side), off), (250619, []))
-            self.assertEqual((other_main[0].shown(side), other_off[0].shown(side)), (279259, 280021))
+            self.assertEqual(other_main[0].shown(side), 279259)
+            self.assertEqual(other_off[0].shown(side), 280021)
+            self.assertIn(286613, {e.shown(side) for e in other_off if e.pvp_utility})
             self.assertAlmostEqual(main[0].score - other_main[0].score - other_off[0].score, 22.5, delta=0.5)
         for source in (full, kept):
             for flt in ladders.FILTERS:
                 one = ladders.lead([e for e in ladders.visible(source["main"], flt) if not e.two_hand])
                 if one:
                     key = (flt[0], one.shown(flt[0]))
-                    self.assertIn(key, source["off"].contexts)
-                    self.assertNotIn(key[1], [e.shown(key[0]) for e in source["off"].contexts[key]])
+                    left = source["off"].contexts.get(key, ())
+                    self.assertNotIn(key[1], [e.shown(key[0]) for e in left])
+                    if key not in source["off"].contexts:
+                        self.assertEqual(ladders.visible_slots(source, flt)["off"], [])
         self.assertFalse(hasattr(ladders.full_ladder(db, "HUNTER", 1, "pvp", "hands"), "contexts"))
         self.assertFalse(hasattr(ladders.full_ladder(db, "HUNTER", 2, "pve", "hands"), "contexts"))
         self.assertFalse(hasattr(ladders.full_ladder(db, "HUNTER", 1, "pve", "hands", rank_rewards=False), "contexts"))

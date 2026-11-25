@@ -155,8 +155,9 @@ class AddonTest(unittest.TestCase):
                                      not b.unscored and not b.estimated and e.stored == b.stored
                                      and e.paired_with == b.paired_with for b in best)}
         shown = 1 + count
-        out["other"] = {"main": [e.shown(side) for e in other_main[:shown]],
-                        "off": [e.shown(side) for e in other_off[:shown]]}
+        out["other"] = {slot: [e.shown(side) for index, e in enumerate(entries)
+                              if index < shown or e.pvp_utility]
+                        for slot, entries in (("main", other_main), ("off", other_off))}
         return out
 
     def expected_hits(self, flt) -> dict:
@@ -243,7 +244,8 @@ class AddonTest(unittest.TestCase):
             fallback = game.ns.Ladders.Compute(data, 1, "pve", flt)
             self.assertEqual((fallback.main.best[1].id, fallback.off.best[1].id), (2243, 18316))
             rules[key] = True
-            for (seen, reward, expected) in ((True, False, 7713), (False, True, 20069 if side == "a" else 20220)):
+            for (seen, reward, expected) in ((True, False, 271928 if side == "a" else 272083),
+                                             (False, True, 20069 if side == "a" else 20220)):
                 flt.seenOnly, flt.pvpRewards, flt.rankCap = seen, reward, None
                 self.assertEqual(game.ns.Ladders.Compute(data, 1, "pve", flt).main.best[1].id, expected)
             flt.phase = phases.LATER
@@ -433,7 +435,7 @@ class AddonTest(unittest.TestCase):
         self.assertRegex(note(871, "ROGUE", 2, "pvp", "off"), "^Added by hand", "then the one for every list")
         self.assertIsNone(note(647, "WARRIOR", 3, "pve", "main"), "Protection is not one of the note's specs")
         self.assertIsNone(note(647, "WARRIOR", 1, "pvp", "main"), "the PvP list is not ranked by simulation")
-        self.assertRegex(note(11815, "WARRIOR", 3, "pvp", "trinket"), "^12 attack power.* in Classic[)][.]$", "a fact of the item: everywhere")
+        self.assertIn("three times as likely against Dwarves", note(11815, "WARRIOR", 3, "pvp", "trinket"))
         self.assertIsNone(note(2, "WARRIOR", 1, "pve", "main"), "an item without a note")
         self.assertRegex(Game(locale="frFR").ns.Notes.For(647, "WARRIOR", 1, "pve", "main"), "^Son proc, 200 de Force")
         self.assertRegex(Game(locale="deDE").ns.Notes.For(647, "WARRIOR", 1, "pve", "main"), "^Its proc, 200 Strength",
@@ -1034,7 +1036,7 @@ class AddonTest(unittest.TestCase):
     def test_reputation_counts_follow_the_generators_picks(self):
         """The addon's count of the best pieces asking for the wearer's reputation, against the generator's picks
         and the reading kept in corrections/reputations.json."""
-        records = reputations.load()["items"]
+        records = fdb.verified_sources.add_reputations(self.db, reputations.load())["items"]
 
         def asks_the_wearer(item_id, side):
             found = records.get(item_id, ())
@@ -1055,7 +1057,7 @@ class AddonTest(unittest.TestCase):
 
     def test_reputation_requirements_follow_the_data(self):
         game = Game()
-        records = reputations.load()["items"]
+        records = fdb.verified_sources.add_reputations(self.db, reputations.load())["items"]
         rep = game.ns.Reputation
         for line in game.ns.data["items"].splitlines():
             item_id = int(line.split("|", 1)[0])

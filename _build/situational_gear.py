@@ -21,6 +21,13 @@ def item_ids(cls: str, spec: int, mode: str, slot: str) -> tuple[int, ...]:
                  and ("specs" not in row or profile in row["specs"]))
 
 
+@lru_cache(maxsize=1)
+def target_options() -> frozenset[int]:
+    """Ranked items with target or terrain bonuses, independent of class and spec."""
+    data = json.loads(FILE.with_name("target_situational.json").read_text(encoding="utf-8"))
+    return frozenset(map(int, data["items"]))
+
+
 def include(db):
     """Supply the missing trinket and source records without changing the normal gear pools."""
     for row in _options():

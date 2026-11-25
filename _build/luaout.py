@@ -27,6 +27,7 @@ import runs
 import shockadin
 import tank_options
 import specs
+import verified_sources
 
 CREDIT = "Data from ForeverDB.net (https://foreverdb.net)"
 ENCHANTS_PER_SLOT = 3
@@ -76,6 +77,7 @@ def encode_entry(entry: ladders.Entry) -> str:
     flags += "k" if entry.preraid_option else ""
     flags += "g" if entry.estimated else ""
     flags += "b" if entry.alternative_only else ""
+    flags += "c" if entry.recommended else ""
     flags += str(entry.phase) if entry.phase else ""
     limit = entry.limit or ""
     if not limit.isalnum() and limit:
@@ -356,7 +358,7 @@ def _wing_rows(db, bosses: dict) -> list[str]:
 def items_file(db, all_ladders, extra_ids=()) -> str:
     rows, instances, bosses, quests = [], set(), {}, {}
     places = getattr(db, "quest_places", None) or {}
-    for item_id in sorted(shown_ids(all_ladders).union(extra_ids)):
+    for item_id in sorted(shown_ids(all_ladders).union(extra_ids, getattr(db, "verified_sources", {}))):
         item = db.items.get(item_id)
         if item is None:
             continue  # a twin ForeverDB has no line for: the addon falls back to the game's own item data
@@ -367,6 +369,8 @@ def items_file(db, all_ladders, extra_ids=()) -> str:
             if source[0] == "d" and source[1].isdigit():
                 instances.add(int(source[1]))
                 bosses.setdefault(int(source[1]), set()).add(source[2])
+            elif source[0] == "a":
+                instances.add(int(source[1]))
             elif source[0] == "q" and source[1].isdigit() and int(source[1]) in places:
                 quests[int(source[1])] = places[int(source[1])]
                 instances.add(places[int(source[1])][0])
@@ -389,6 +393,7 @@ def items_file(db, all_ladders, extra_ids=()) -> str:
         "  w^level from^level to^label (world drop)                 o^chest^percent^label",
         "  x^item^container^label                                   p^rank^side^label",
         "  r^faction^standing^name^label",
+        "  a^instance^first component item^second component item^label (assembly)",
         "  label: s Seen in Forever, c Clue (unconfirmed), f Forever client, k Classic data, t QuestieDB,",
         "         w counted in Forever (Wowhead Forever's loot counts)",
         "  price: in copper, or <the currency's item id>:<amount> (ns.data.currencies), then :b while it is the beta's",
@@ -529,6 +534,7 @@ def enchants_file(db, all_ladders) -> str:
 
 def reputation_file(db, all_ladders, reading: dict, extra_ids=()) -> str:
     """The reputations the listed items and enchants ask for, and what is known of how to earn them."""
+    reading = verified_sources.add_reputations(db, reading)
     shown = shown_ids(all_ladders).union(extra_ids)
     enchants = {enchant for specs in (db.enchants or {}).values() for lists in specs.values()
                 for entries in lists.values() for enchant, _ in entries}
@@ -663,7 +669,7 @@ def notes_file(db, all_ladders) -> str:
         "  items      the item ids",
         "  specs      the specs it is for, as CLASS<n>; none: every spec",
         "  slot       the slot it is for; none: any",
-        "  list       pve or pvp; none: either",
+        "  list       pve, pvp or aoe; none: pve and pvp",
         "  simulated  true when it speaks of the simulation: shown only in a list ranked by it",
         "  enUS, frFR the text",
     ))

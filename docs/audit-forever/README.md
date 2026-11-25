@@ -1,5 +1,9 @@
 # EasyBIS · audit des équipements au 22 novembre 2026
 
+Le contrôle du 25 novembre recense les objets écartés par le filtre de provenance et les sources depuis observées dans ForeverDB. [Inventaire des objets masqués](sources-inconnues.md)
+
+La revue des classements du 25 novembre couvre aussi le catalogue Raid, PvP et AoE actuel, avec de nouveaux duels sur les effets de toucher et de proc. [Résultats de la revue](classements-2026-11-25.md)
+
 Les **29 spécialisations** et les **deux modes** du catalogue livré ont été examinés. Avant correction, le registre comportait **25 674 combinaisons objet, spécialisation, mode et emplacement**, variantes de faction comprises (3 183 identifiants). Après correction, il en compte **25 811**, soit 12 037 en PvE et 13 774 en JcJ, pour **3 194 objets distincts**. Les 22 486 entrées de classement Lua se dédoublent lorsqu’une faction porte un autre identifiant. 163 combinaisons sont conservées en réserve par le générateur sans apparaître dans les configurations de jeu parcourues.
 
 **Campagne sur le simulateur du 21 novembre.** Le détail des tests par faction, des changements de premier choix et des résultats indécis accompagne les lignes des 29 fiches. [Résultats sur WoWSims à jour](campagne-wowsims.md) · [Druide félin et trois tanks](controle-actualise-feral-tanks.md)

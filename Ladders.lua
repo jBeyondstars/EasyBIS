@@ -20,7 +20,7 @@ content phase the list stops at, and how many alternatives a slot lists.
   Ladders.IsTie(picks, pick)         whether an alternative of a slot scores as much as a best pick
   Ladders.Lead(picks)                the first pick that can be a best pick (not a placed one, flag e, nor one
                                      whose effect the weights cannot count, flag x)
-  Ladders.Unscored(entry)            whether an entry has a stand-in score or only a partial measurement (e, x, g, b)
+  Ladders.Unscored(entry)            whether an entry lacks a comparable score (e, x, g, b, c)
 
 The rules are the generator's (_build/ladders.py: picks, weapon_lists,
 other_weapons); the tests check both give the same picks.
@@ -144,7 +144,7 @@ local function Visible(entries, filter, list, extras)
             and (rewards ~= false or not Ladders.HasFlag(entry, "p"))
             and (not filter.seenOnly or Ladders.HasFlag(entry, "s")) then
             if filter.phase == 0 and Ladders.HasFlag(entry, "k") then
-                -- This contact window was checked in pre-raid. Keep the ordinary entry for later phases.
+                -- Keep the ordinary entry for later phases.
                 options = options or {}
                 local situational = setmetatable({ flags = entry.flags .. "xj", score10 = 0 }, { __index = entry })
                 options[#options + 1] = { id = id, score = 0, entry = situational }
@@ -170,9 +170,9 @@ local function Context(slot, filter, companion)
 end
 
 -- Whether an entry's score is a stand-in that keeps the ladder in order, not its own: placed from a close spec's
--- simulation (e), an effect the weights cannot count (x), or an incomplete simulation score (g or b).
+-- simulation (e), a situational effect (x), an incomplete simulation score (g or b), or an unscored recommendation (c).
 function Ladders.Unscored(entry)
-    return entry.flags:find("[exgb]") ~= nil
+    return entry.flags:find("[exgbc]") ~= nil
 end
 
 -- The first pick that can be a best pick: one with no score of its own never is, unless the list has nothing else.
@@ -213,9 +213,13 @@ local function WeaponLists(main, off, side, measuredSets)
     return one, others, false, two, {}
 end
 
-local function First(picks, count)
+local function First(picks, count, keepOptions)
     local first = {}
-    for index = 1, math.min(count, #picks) do first[index] = picks[index] end
+    for index, pick in ipairs(picks) do
+        if index <= count or (keepOptions and Ladders.HasFlag(pick.entry, "j")) then
+            first[#first + 1] = pick
+        end
+    end
     return first
 end
 
@@ -314,13 +318,15 @@ function Ladders.Compute(data, spec, list, filter)
     local contexts = specContexts and specContexts[list] or {}
     local visible = {}
     for _, slot in ipairs(ns.SLOTS) do
-        local entries = ladders[slot]
-        entries = Context(contexts[slot], filter) or entries
-        local extras = contexts[slot] and contexts[slot].situational
+        local context = contexts[slot]
+        local entries = Context(context, filter)
+        -- A contextual off-hand needs a matching main hand. The base rows use a different reference.
+        if not entries and not (context and context.hasWeaponContexts) then entries = ladders[slot] end
+        local extras = context and context.situational
         visible[slot] = Visible(entries, filter, list, extras)
-        if contexts[slot] and ns.PAIRED[slot] then
+        if context and ns.PAIRED[slot] then
             local first = Ladders.Lead(visible[slot])
-            local paired = first and Context(contexts[slot], filter, first.id)
+            local paired = first and Context(context, filter, first.id)
             if paired then
                 local companions = Visible(paired, filter, list, extras)
                 for _, pick in ipairs(companions) do pick.pairedWith = first.id end
@@ -355,8 +361,8 @@ function Ladders.Compute(data, spec, list, filter)
         result[slot] = { best = best, alts = alts, other = {} }
         if duels and duels[slot] then TankOptions(result[slot], visible[slot], duels[slot], filter.side) end
     end
-    result.main.other = First(otherMain, 1 + count)
-    result.off.other = First(otherOff, 1 + count)
+    result.main.other = First(otherMain, 1 + count, true)
+    result.off.other = First(otherOff, 1 + count, true)
     if offSets and offSets.hasWeaponContexts and twoHand then
         for _, pick in ipairs(result.main.other) do
             local context = Context(offSets, filter, pick.id) or Context(offSets, filter)

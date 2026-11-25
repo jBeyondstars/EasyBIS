@@ -11,15 +11,16 @@ from test_addon import Game, lupa, strip_colors
 @unittest.skipIf(lupa is None, "lupa is not installed")
 class TankOptionTest(unittest.TestCase):
     def test_protection_paladin_pre_raid_order(self):
-        for faction in ("Alliance", "Horde"):
+        for faction, weapons in (
+                ("Alliance", [22383, 2243, 18048, 18396, 227935, 11784, 279261]),
+                ("Horde", [22383, 2243, 18048, 281586, 18396, 227935, 11784])):
             with self.subTest(faction=faction):
                 game = Game(faction=faction)
                 ns = game.ns
                 ns.Alternatives = game.lua.eval("function() return 6 end")
                 state = game.lua.table_from({"class": "PALADIN", "spec": 2, "list": "pve", "slot": "main"})
                 rows, _ = ns.Rows.Items(state, True)
-                self.assertEqual([r.id for r in rows.values() if r.kind == "item"][:7],
-                                 [22383, 2243, 18048, 18396, 11784, 279261, 279259])
+                self.assertEqual([r.id for r in rows.values() if r.kind == "item"][:7], weapons)
                 state.slot = "trinket"
                 for with_alts in (True, False):
                     rows, _ = ns.Rows.Items(state, with_alts)

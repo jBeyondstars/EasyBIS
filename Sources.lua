@@ -141,6 +141,11 @@ local READERS = {
         local zone, kind = InstanceName(f[2])
         return (f[5] == "1" or kind == "raid") and "raid" or "dungeon", f[3], zone, Percent(f[4]), f[6]
     end,
+    a = function(f)
+        local zone = InstanceName(f[2])
+        local first, second = ns.Items.Name(tonumber(f[3])), ns.Items.Name(tonumber(f[4]))
+        return "dungeon", L.SRC_ASSEMBLE:format(first, second), zone, "", f[5]
+    end,
     m = function(f) return "drop", f[3], nil, Percent(f[4]), f[5] end,
     R = function(f) return "rare", f[3], nil, Percent(f[4]), f[5] end,
     c = function(f)

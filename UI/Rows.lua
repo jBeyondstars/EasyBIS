@@ -152,6 +152,7 @@ function Rows.Aoe(state)
             for rank, sample in Rows.AoePicks(tested, withAlternatives) do
                 AddItem(all, facets, slot, sample[1], {
                     bis = rank == 1,
+                    why = ns.Notes.For(sample[1], state.class, state.spec, "aoe", slot),
                     gain = sample[2], se = sample[3], weaponPartner = sample.partner,
                     weaponPriority = sample.weaponPriority, weaponBasePoints = sample.weaponBasePoints,
                     weaponBonusPoints = sample.weaponBonusPoints, weaponRotationPoints = sample.weaponRotationPoints,
@@ -208,6 +209,8 @@ function Rows.Items(state, withAlts)
                 listed[pick.id] = true
                 if pick.option then
                     Add(slot, pick.id, { bis = true, option = pick.option })
+                elseif ns.Ladders.HasFlag(pick.entry, "c") then
+                    Add(slot, pick.id, { bis = true, recommended = true })
                 else
                     Add(slot, pick.id, { bis = true, gap = 0, ratio = 1 })
                 end
@@ -222,6 +225,8 @@ function Rows.Items(state, withAlts)
                     Add(slot, pick.id, { bis = false, level = true })
                 elseif ns.Ladders.HasFlag(pick.entry, "g") then
                     Add(slot, pick.id, { bis = false, estimated = true })
+                elseif ns.Ladders.HasFlag(pick.entry, "c") or (top and ns.Ladders.HasFlag(top.entry, "c")) then
+                    Add(slot, pick.id, { bis = false })
                 else
                     local reference = pick.pairedWith and picks.best[2] or top
                     Add(slot, pick.id, {

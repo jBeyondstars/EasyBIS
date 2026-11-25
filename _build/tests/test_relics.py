@@ -41,6 +41,7 @@ class RelicTests(unittest.TestCase):
         for key, profile in self.catalog["profiles"].items():
             for mode in ("pve", "pvp"):
                 self.assertTrue(profile[mode])
+                self.assertLessEqual(set(profile.get("recommended", {}).get(mode, [])), set(profile[mode]))
                 for item in profile[mode]:
                     self.assertEqual(self.catalog["items"][str(item)]["class"], key.split()[0])
             for item, measurements in profile.get("dps", {}).items():
@@ -97,6 +98,12 @@ class RelicTests(unittest.TestCase):
                     with self.subTest(profile=key, mode=mode, side=side):
                         if mode == "pve" and key in scored:
                             self.assertEqual(result.best[1].id, scored[key])
+                        elif recommended := profile.get("recommended", {}).get(mode):
+                            self.assertEqual(result.best[1].id, recommended[0])
+                            self.assertIn("c", result.best[1].entry.flags)
+                            self.assertEqual(result.best[1].entry.score10, 0)
+                            self.assertTrue(all(not game.ns.Ladders.IsTie(result, row)
+                                                for row in result.alts.values()))
                         else:
                             self.assertEqual(len(result.best), 0)
                             self.assertTrue(all("x" in row.entry.flags and "b" in row.entry.flags
@@ -112,7 +119,9 @@ class RelicTests(unittest.TestCase):
                 with patch.object(relics.simulated, "IN_USE", enabled), patch.object(self.db, "simulated", reading):
                     rows = relics.ranking(self.db, "SHAMAN", 1, "pve", [])
                 self.assertTrue(rows)
-                self.assertTrue(all(row.score == 0 and row.alternative_only and row.level for row in rows))
+                self.assertTrue(all(row.score == 0 and row.unscored for row in rows))
+                self.assertEqual(ladders.lead(rows).item_id, 23199)
+                self.assertTrue(ladders.lead(rows).recommended)
 
     def test_wearing_requirements_are_separate_from_crafting_and_raid_access(self):
         tank = ladders.full_ladder(self.db, "DRUID", 2, "pve", "ranged")
@@ -127,7 +136,27 @@ class RelicTests(unittest.TestCase):
         seen = {e.item_id for e in restoration if e.passes(("h", False, True, 0, False, 6))}
         self.assertIn(272431, seen)
         self.assertNotIn(22345, seen)
-        self.assertEqual([item["items"] for item in relics.notes({22397})], [[22397]])
+        shaman_ids = {int(key) for key, item in self.catalog["items"].items() if item["class"] == "SHAMAN"}
+        self.assertEqual([item["items"] for item in relics.notes(shaman_ids | {22397})], [[22397]])
+
+    @unittest.skipIf(test_addon.lupa is None, "lupa is not installed")
+    def test_enhancement_browser_distinguishes_recommended_alternative_and_situational(self):
+        game = test_addon.Game(cls="SHAMAN", locale="frFR", saved="EasyBISDB = { altCount = 6 }")
+        game.ns.SetPhase(game.ns, 0)
+        game.ns.Browser.Open()
+        browser = game.ns.Browser
+        browser.state["class"], browser.state.spec, browser.state.list = "SHAMAN", 2, "pve"
+        browser.ShowSlot("ranged")
+        ranks = {}
+        for index, row in browser.window.rowData.items():
+            if row.id in (22395, 272432, 272433):
+                frame = browser.window.rows[index]
+                ranks[row.id] = test_addon.strip_colors(frame.rank.GetText(frame.rank))
+                self.assertIsNone(row.gap)
+                self.assertIsNone(row.ratio)
+                self.assertIsNone(row.why)
+        self.assertEqual(ranks, {22395: "Recommandé", 272432: game.ns.L.RANK_ALT, 272433: "Situationnel"})
+        self.assertTrue(any("Recommandé" in right for _, right in game.lines(22395)))
 
 
 if __name__ == "__main__":

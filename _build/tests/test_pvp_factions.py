@@ -56,11 +56,38 @@ class PvpFactionTest(unittest.TestCase):
             visible = {e.shown(side) for e in hunter if e.passes((side, False, False, 0, True, 6))}
             self.assertIn(own, visible)
             self.assertNotIn(other, visible)
-        # The Horde rogue helm has an observed vendor. Its Alliance counterpart does not.
+        # Both rogue helms have observations, each from its own faction's quartermaster.
         rogue = ladders.full_ladder(self.db, "ROGUE", 1, "pvp", "head")
-        for side, item, observed in (("a", 272727, False), ("h", 272474, True)):
+        for side, item, other in (("a", 272727, 272474), ("h", 272474, 272727)):
             visible = {e.shown(side) for e in rogue if e.passes((side, False, True, 0, True, 6))}
-            self.assertEqual(item in visible, observed)
+            self.assertIn(item, visible)
+            self.assertNotIn(other, visible)
+
+    @unittest.skipIf(lupa is None, "lupa is not installed")
+    def test_shadow_pvp_shows_underworld_band_and_keeps_julio_as_a_hit_option(self):
+        for faction, side in (("Alliance", "a"), ("Horde", "h")):
+            with self.subTest(faction=faction):
+                game = Game(faction=faction)
+                ladders = game.ns.Ladders
+                data = ladders.Decode("PRIEST")
+                flt = game.lua.table(side=side, phase=0, alternatives=2, pvpRewards=True, unsourced=False)
+                rings = ladders.Compute(data, 3, "pvp", flt)["finger"]
+                self.assertEqual([pick.id for pick in rings.best.values()], [20682, 22433])
+                self.assertEqual([pick.id for pick in rings.alts.values()], [1980, 19325])
+                self.assertFalse(ladders.Unscored(rings.alts[1].entry))
+                self.assertTrue(ladders.HasFlag(rings.alts[1].entry, "s"))
+                self.assertTrue(ladders.HasFlag(rings.alts[2].entry, "j"))
+                source = game.ns.Sources.Describe(1980)
+                self.assertEqual((source.detail, source.origin, source.percent), ("Silverback Patriarch", "s", ""))
+                flt.alternatives = 6
+                rings = ladders.Compute(data, 3, "pvp", flt)["finger"]
+                alternatives = [pick.id for pick in rings.alts.values()]
+                self.assertEqual(len(alternatives), 6)
+                self.assertEqual((alternatives[0], alternatives[-1]), (1980, 19325))
+                flt.alternatives = 2
+                flt.pvpRewards = False
+                rings = ladders.Compute(data, 3, "pvp", flt)["finger"]
+                self.assertEqual([pick.id for pick in rings.alts.values()], [1980])
 
 
 if __name__ == "__main__":

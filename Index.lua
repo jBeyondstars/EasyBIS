@@ -58,7 +58,7 @@ local function ReadClass(class, filter)
                 local picks = slots[slot]
                 for _, pick in ipairs(picks.best) do
                     Add(byItem, pick.id, { class = class, spec = spec, list = list, slot = slot, bis = true,
-                        option = pick.option })
+                        option = pick.option, recommended = ns.Ladders.HasFlag(pick.entry, "c") or nil })
                 end
                 for _, pick in ipairs(ns.Ladders.DisplayAlts(picks, true)) do
                     Add(byItem, pick.id, { class = class, spec = spec, list = list, slot = slot,

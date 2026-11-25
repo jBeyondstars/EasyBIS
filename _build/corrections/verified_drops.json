@@ -5,6 +5,14 @@
     "questie": "https://github.com/Questie/QuestieDB",
     "audit": "docs/audit-forever/acquisition-pre-raid.json"
   },
+  "observed": {
+    "1980": {
+      "name": "Underworld Band",
+      "evidence": "https://foreverdb.net/item/1980",
+      "snapshot": "2026-11-25.b04a66ba",
+      "source": ["m", "1558", "Silverback Patriarch", "0", "s"]
+    }
+  },
   "items": {
     "1936": {
       "name": "Goblin Screwdriver",

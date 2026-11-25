@@ -49,7 +49,7 @@ def check(db, notes: list[dict]) -> None:
                 raise ValueError(f"{where}: no spec {spec!r}")
         if note.get("slot") is not None and note["slot"] not in SLOTS:
             raise ValueError(f"{where}: no slot {note['slot']!r}")
-        if note.get("list") is not None and note["list"] not in ladders.MODES:
+        if note.get("list") not in (None, "aoe", *ladders.MODES):
             raise ValueError(f"{where}: no list {note['list']!r}")
         unknown = set(note) - {"items", "specs", "slot", "list", "simulated", *LANGUAGES}
         if unknown:

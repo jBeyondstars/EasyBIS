@@ -22,23 +22,30 @@
   {"items": [18327], "specs": ["PRIEST 1", "PRIEST 2"], "list": "pve", "slot": "waist", "en": "Its 6 mana per 5 sec gives it the edge over Wisdom of the Timbermaw on long fights.", "fr": "Ses 6 mana toutes les 5 s lui donnent l’avantage sur Wisdom of the Timbermaw en combat long."},
   {"items": [274605], "specs": ["PRIEST 1"], "list": "pve", "slot": "waist", "en": "Same Intellect as Whipvine Cord, with 3 less healing and 6 less mana per 5 sec.", "fr": "Même Intelligence que Whipvine Cord, avec 3 soins et 6 mana toutes les 5 s de moins."},
   {"items": [272437], "specs": ["PALADIN 3"], "list": "pve", "slot": "trinket", "en": "Its expertise reduces boss dodges by 1.1%. With Smolderweb’s Eye equipped, it performs close to HoJ.", "fr": "Son expertise réduit les esquives du boss de 1,1 %. Avec Smolderweb’s Eye équipé, il fait jeu égal avec HoJ sur les tenues testées."},
-  {"items": [11815], "specs": ["DRUID 4"], "list": "pve", "slot": "trinket", "en": "Its 12 attack power and extra attacks still work when you run out of mana.", "fr": "Ses 12 PA et son proc restent utiles même à court de mana."},
+  {"items": [11815], "specs": ["DRUID 4"], "list": "pve", "slot": "trinket", "en": "Its 12 attack power and melee proc still work when you run out of mana. The proc is three times as likely against Dwarves.", "fr": "Ses 12 PA et son proc en mêlée restent utiles même à court de mana. La chance de proc triple contre les Nains."},
   {"items": [272440], "specs": ["WARRIOR 3"], "list": "pve", "slot": "trinket", "en": "Paired with the Lion Horn, it prevents more damage over 18 minutes. Arena Grand Master wins over 3 minutes.", "fr": "Avec le Cor de Hurlevent, il évite plus de dégâts sur 18 minutes. Le Maître de l’arène passe devant sur 3 minutes."},
   {"items": [11302], "specs": ["SHAMAN 3"], "list": "pve", "slot": "trinket", "en": "Grants 3 more healing than Second Wind. If you run short on mana, Second Wind restores 630.", "fr": "Donne 3 aux soins de plus que Second Wind. Si tu manques de mana, Second Wind en rend 630."},
   {"items": [13253], "specs": ["DRUID 1"], "list": "pve", "slot": "hands", "en": "Best confirmed pre-raid drop. If you can get Gloves of the Greatfather, their Nature damage puts them ahead.", "fr": "Meilleur butin pré-raid confirmé. Si tu trouves les Gloves of the Greatfather, leurs dégâts de Nature les placent devant."},
   {"items": [14136], "specs": ["PRIEST 3"], "list": "pve", "slot": "chest", "en": "Its 40 Shadow damage wins on the Alliance set. With 18 hit, Robes of Dark Summons ties it on the Horde set.", "fr": "Ses 40 dégâts d’Ombre l’emportent sur la tenue Alliance. Avec 18 de toucher, Robes of Dark Summons fait jeu égal sur la tenue Horde."},
   {"items": [18510], "specs": ["WARLOCK 3"], "list": "pve", "slot": "back", "en": "Its 14 spell damage matches Spritecaster Cape.", "fr": "Ses 14 dégâts des sorts égalent ceux de Spritecaster Cape."},
   {"items": [13937, 7713, 20069, 20220], "specs": ["DRUID 1"], "list": "pve", "slot": "main", "simulated": true, "en": "With pre-raid Spellblasting (+65 spell power), the staff beats the one-hand setup. Without it, the setup wins.", "fr": "En pré-raid, le bâton passe devant le duo avec Spellblasting (+65 puissance des sorts). Sans cet enchantement, le duo gagne."},
-  {"items": [18465], "specs": ["ROGUE 1", "ROGUE 2", "ROGUE 3"], "list": "pvp", "en": "Grants 45 extra attack power against humanoids.", "fr": "Donne 45 PA supplémentaires contre les humanoïdes."},
+  {"items": [18465], "specs": ["ROGUE 1", "ROGUE 2", "ROGUE 3"], "list": "pvp", "slot": "trinket", "en": "The 45 attack power applies only against humanoids. The 1% hit is always active.", "fr": "Les 45 PA s’appliquent uniquement contre les humanoïdes. Le 1 % de toucher est permanent."},
   {"items": [18484], "specs": ["ROGUE 2", "ROGUE 3"], "list": "pvp", "en": "Grants 30 extra attack power against humanoids.", "fr": "Donne 30 PA supplémentaires contre les humanoïdes."},
   {"items": [18502], "specs": ["HUNTER 1", "HUNTER 2", "HUNTER 3"], "list": "pvp", "en": "Its 36 attack power against humanoids also applies to ranged attacks.", "fr": "Ses 36 PA contre les humanoïdes s’appliquent aussi aux tirs."},
   {"items": [18520], "specs": ["HUNTER 1", "HUNTER 2", "HUNTER 3", "PALADIN 3"], "list": "pvp", "en": "Grants 33 extra attack power against humanoids.", "fr": "Donne 33 PA supplémentaires contre les humanoïdes."},
+  {"items": [18520], "specs": ["HUNTER 1", "HUNTER 2", "HUNTER 4"], "list": "aoe", "slot": "main", "en": "The simulation uses humanoid packs and includes this weapon’s extra 33 attack power against them.", "fr": "Le score AoE est mesuré sur des packs d’humanoïdes et inclut les 33 PA supplémentaires contre eux."},
   {"items": [18694], "specs": ["HUNTER 3", "PALADIN 3"], "list": "pvp", "en": "Grants 18 extra attack power against humanoids.", "fr": "Donne 18 PA supplémentaires contre les humanoïdes."},
   {"items": [13393], "specs": ["DRUID 4"], "list": "pve", "slot": "main", "en": "The proc grants 53 Strength for 20 seconds, even when the boss is immune to its stun.", "fr": "Le proc donne 53 de Force pendant 20 s, même si le boss est immunisé à son étourdissement."},
   {"items": [12583], "specs": ["DRUID 4"], "list": "pve", "slot": "main", "en": "Attacks in Cat Form can trigger Fatal Wound.", "fr": "Blessure fatale se déclenche aussi sur les attaques du félin."},
   {"items": [12583], "specs": ["HUNTER 3"], "list": "pvp", "slot": "main", "en": "Each landed Wing Clip can trigger Fatal Wound in melee.", "fr": "Chaque Coupure d’ailes qui touche peut déclencher Blessure fatale."},
   {"items": [12583], "specs": ["WARRIOR 1", "PALADIN 3"], "list": "pvp", "slot": "main", "en": "Fatal Wound makes this a strong melee finisher below 25% health.", "fr": "Blessure fatale en fait une bonne arme pour finir une cible sous 25 % de vie."},
   {"items": [13348], "specs": ["HUNTER 3"], "list": "pvp", "slot": "main", "en": "Wing Clip can trigger the Shadow damage even on a full-health target.", "fr": "Coupure d’ailes peut déclencher les dégâts d’Ombre dès l’ouverture."},
+  {"items": [19325], "specs": ["PRIEST 3"], "list": "pvp", "slot": "finger", "en": "A situational ring when you need hit. Its 10 hit and 14 crit apply to spells in Forever.", "fr": "Une option si tu manques de toucher. Dans Forever, ses 10 de toucher et ses 14 de critique s’appliquent aux sorts."},
+  {"items": [22321], "slot": "trinket", "en": "Melee and ranged attacks can trigger the fire damage. The proc deals triple damage against Orcs.", "fr": "Les attaques de mêlée et à distance peuvent déclencher les dégâts de Feu. Le proc inflige trois fois plus de dégâts aux Orcs."},
+  {"items": [19120, 270275], "specs": ["WARRIOR 1"], "list": "pve", "slot": "trinket", "en": "Useful below the hit cap. Its 14 attack power rises to 42 in forests and grasslands. At the cap, Behemoth Bones wins outside those areas.", "fr": "Utile sous le cap de toucher. Ses 14 PA passent à 42 en forêt ou en plaine. Au cap, Behemoth Bones passe devant en dehors de ces zones."},
+  {"items": [13213], "specs": ["WARRIOR 1"], "list": "pve", "slot": "trinket", "en": "The 1% hit gives it an edge on the reference set. At the hit cap, Behemoth Bones did more damage in the paired test.", "fr": "Son 1 % de toucher lui donne l’avantage sur la tenue de référence. Au cap, Behemoth Bones inflige plus de dégâts dans le duel simulé."},
+  {"items": [19120, 270275], "specs": ["HUNTER 1"], "list": "pve", "slot": "trinket", "en": "Useful below the hit cap. Its 14 attack power rises to 42 in forests and grasslands. At the cap, Behemoth Bones wins outside those areas.", "fr": "Utile sous le cap de toucher. Ses 14 PA passent à 42 en forêt ou en plaine. Au cap, Behemoth Bones passe devant en dehors de ces zones."},
+  {"items": [249469], "specs": ["SHAMAN 2"], "list": "pve", "slot": "trinket", "en": "The value of its 0.9% hit depends on your gear. With 65 hit rating and Smolderweb's Eye equipped, Behemoth Bones won on both faction test sets.", "fr": "La valeur de ses 0,9 % de toucher dépend de la tenue. Avec 65 de toucher et Smolderweb’s Eye équipé, Behemoth Bones passe devant sur les deux tenues testées."},
   {"items": [12583], "specs": ["PALADIN 3"], "list": "pve", "slot": "main", "simulated": true, "en": "Fatal Wound adds about 35 DPS on the pre-raid setup.", "fr": "Blessure fatale apporte environ 35 DPS sur la tenue pré-raid testée."},
   {
    "items": [272414],
@@ -484,19 +491,6 @@
   },
   {
    "items": [
-    6901,
-    274752
-   ],
-   "specs": [
-    "WARLOCK 3"
-   ],
-   "slot": "back",
-   "simulated": true,
-   "en": "With equal Spirit, Sandstorm Cover gives 4 spell damage against Glowing Thresher Cape’s 3.",
-   "fr": "Sandstorm Cover donne 4 dégâts des sorts contre 3 pour Glowing Thresher Cape, à Esprit égal."
-  },
-  {
-   "items": [
     18375
    ],
    "specs": [
@@ -528,8 +522,8 @@
    ],
    "slot": "shoulder",
    "simulated": true,
-   "en": "The extra 27 Agility on Theramore Pauldrons nearly offsets this pair’s other stats.",
-   "fr": "Les 27 d’Agilité de plus des épaules de Theramore compensent presque les autres stats de cette paire."
+   "en": "The extra 27 Agility on the faction mail shoulders nearly offsets this pair’s other stats.",
+   "fr": "Les 27 d’Agilité de plus des épaules de faction en mailles compensent presque les autres statistiques de cette paire."
   },
   {
    "items": [
@@ -2264,8 +2258,8 @@
    "items": [
     11815
    ],
-   "en": "12 attack power and a 1% chance of an extra attack (20 and 2% in Classic).",
-   "fr": "12 de puissance d'attaque et 1 % de chance d'attaque supplémentaire (20 et 2 % dans Classic)."
+   "en": "12 attack power. Melee hits can grant an extra attack. The proc is three times as likely against Dwarves.",
+   "fr": "12 de puissance d’attaque. Les coups en mêlée peuvent donner une attaque supplémentaire. La chance de proc triple contre les Nains."
   },
   {
    "items": [
