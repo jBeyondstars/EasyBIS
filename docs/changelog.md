@@ -1,3 +1,7 @@
+# Easy BIS 1.10.7
+
+- **Item tooltips.** Alternatives show their rank within the slot by default, for example “Alt 2 PvE”. Clear **Show alternative ranks in tooltips** under Options to hide the numbers. **Alternatives per slot** also limits which alternatives appear in item tooltips.
+
 # Easy BIS 1.10.6
 
 - **Gear comparison.** Switching between Raid and AoE / Dungeons keeps the visible gear slot at the same height.

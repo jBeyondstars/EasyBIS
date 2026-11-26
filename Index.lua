@@ -3,8 +3,10 @@ local _, ns = ...
 --[[
 Which specs want an item: what item tooltips need.
 
-  Index.ForItem(id)   { { class, spec, list, slot, bis = true|false, custom = true|nil }, ... } or nil
+  Index.ForItem(id)   { { class, spec, list, slot, bis, position, beyondAltLimit, custom }, ... } or nil
                       bis: a best pick, or an alternative that scores as much as one
+                      position: row in the slot's ranking, including best picks
+                      beyondAltLimit: the window can show extra rows past the tooltip's limit
                       custom: added to that list by hand (Custom.lua), not a pick of the data
   Index.AoeForItem(id)   AoE picks indexed for the active faction and alternative limit
   Index.SpecName(class, spec), Index.SpecCount(class)
@@ -49,24 +51,27 @@ local function ReadClass(class, filter)
         specNames[class][spec] = def.name
         for slot, samples in pairs(ns.Rows.AoeList(class, spec) or {}) do
             for rank, sample in ns.Rows.AoePicks(samples, true) do
-                Add(aoeByItem, sample[1], { class = class, spec = spec, slot = slot, bis = rank == 1 })
+                Add(aoeByItem, sample[1], { class = class, spec = spec, slot = slot, bis = rank == 1, position = rank })
             end
         end
         for _, list in ipairs(ns.LISTS) do
             local slots = ns.Ladders.Compute(data, spec, list, filter)
             for _, slot in ipairs(ns.SLOTS) do
                 local picks = slots[slot]
-                for _, pick in ipairs(picks.best) do
-                    Add(byItem, pick.id, { class = class, spec = spec, list = list, slot = slot, bis = true,
-                        option = pick.option, recommended = ns.Ladders.HasFlag(pick.entry, "c") or nil })
-                end
-                for _, pick in ipairs(ns.Ladders.DisplayAlts(picks, true)) do
-                    Add(byItem, pick.id, { class = class, spec = spec, list = list, slot = slot,
-                        bis = ns.Ladders.IsTie(picks, pick), option = pick.option })
+                local displayed = ns.Ladders.DisplayPicks(picks, true)
+                local lastAltPosition = filter.alternatives + (picks.best[1] and 1 or 0)
+                for position, pick in ipairs(displayed) do
+                    local best = pick == picks.best[1] or pick == picks.best[2]
+                    Add(byItem, pick.id, { class = class, spec = spec, list = list, slot = slot, position = position,
+                        beyondAltLimit = position > lastAltPosition or nil,
+                        bis = best or ns.Ladders.IsTie(picks, pick), option = pick.option,
+                        recommended = best and ns.Ladders.HasFlag(pick.entry, "c") or nil })
                 end
                 -- the weapons of the other style (a one-hander when a two-hander is best) are alternatives too
-                for _, pick in ipairs(picks.other) do
-                    Add(byItem, pick.id, { class = class, spec = spec, list = list, slot = slot, bis = false })
+                for index, pick in ipairs(picks.other) do
+                    local position = #displayed + index
+                    Add(byItem, pick.id, { class = class, spec = spec, list = list, slot = slot,
+                        bis = false, position = position, beyondAltLimit = position > lastAltPosition or nil })
                 end
             end
         end

@@ -6,16 +6,16 @@ Item tooltips say which classes and specs want the item:
 
     Easy BIS
     (icon) Shaman Enhancement            BIS
-    (icon) Warrior Arms, Fury            BIS PvE · Alt PvP
-    (icon) Hunter                        Alt
+    (icon) Warrior Arms, Fury            BIS PvE · Alt 3 PvP
+    (icon) Hunter                        Alt 2 PvE
 
 A line per class and status. The spec names are left out when every spec of
-the class is on the line. An AoE/Dung membership names each applicable
-list explicitly. Otherwise PvE and PvP are named when the two lists disagree. "Alt" is one of the picks that come after the best, as many
-as the "alternatives per slot" option asks for (the second ring or trinket
-counts among them), or a weapon of the other style (a one-hander when a
-two-hander is best); an
-alternative that scores as much as the best pick reads "BIS". "Added" is an
+the class is on the line. An AoE/Dung membership or a numbered alternative
+names each applicable list explicitly. Otherwise PvE and PvP are named when
+the two lists disagree. "Alt" is a pick within the "alternatives per slot"
+limit. The second ring or trinket counts within that limit, as do weapons
+of the other style. An alternative that scores as much as the best pick
+reads "BIS". "Added" is an
 item the player put in that spec's list by hand (Custom.lua), when the data
 does not pick it. The lists are the ones of the character's content phase
 (ns.Phase). Under those lines, the reputation the item asks for, how far the
@@ -42,21 +42,24 @@ local SEPARATOR = " |cff808080·|r "
 local ADDED, ALT, RECOMMENDED, BIS = 1, 2, 3, 4
 local THREAT, MITIGATION = 5, 6
 
-local function RankText(rank)
+local function RankText(status)
+    local rank = status.rank
     if rank == THREAT then return BIS_COLOR .. L.RANK_THREAT .. "|r" end
     if rank == MITIGATION then return BIS_COLOR .. L.RANK_MITIGATION .. "|r" end
     if rank == BIS then return BIS_COLOR .. L.RANK_BIS .. "|r" end
     if rank == RECOMMENDED then return BIS_COLOR .. L.RANK_RECOMMENDED .. "|r" end
-    if rank == ALT then return ALT_COLOR .. L.RANK_ALT .. "|r" end
+    if rank == ALT then
+        local position = status.position and " " .. status.position or ""
+        return ALT_COLOR .. L.RANK_ALT .. position .. "|r"
+    end
     return ns.COLOR .. L.RANK_CUSTOM .. "|r"
 end
 
--- status[list] = BIS, ALT, ADDED or nil (not wanted) -> "BIS", "Alt PvE", "BIS PvE · Alt PvP"...
 local function StatusText(status, lists)
-    if not status.aoe then
-        local first, second = lists[1], lists[2]
-        if not second or status[first] == status[second] then
-            return status[first] and RankText(status[first]) or nil
+    local first, second = status[lists[1]], status[lists[2]]
+    if not status.aoe and not (first and first.position or second and second.position) then
+        if not lists[2] or (first and second and first.rank == second.rank) then
+            return first and RankText(first) or nil
         end
     end
     local parts = {}
@@ -68,6 +71,20 @@ local function StatusText(status, lists)
     end
     if status.aoe then parts[#parts + 1] = RankText(status.aoe) .. " AoE/Dung" end
     return parts[1] and table.concat(parts, SEPARATOR) or nil
+end
+
+-- For each spec and list, keep the best status and then the highest-ranked alternative.
+local function TrackStatus(perSpec, hit, rank, showPositions)
+    local list = hit.list or "aoe"
+    local position = rank == ALT and showPositions and hit.position or nil
+    perSpec[hit.class] = perSpec[hit.class] or {}
+    local status = perSpec[hit.class][hit.spec] or {}
+    perSpec[hit.class][hit.spec] = status
+    local previous = status[list]
+    if not previous or rank > previous.rank
+        or (rank == previous.rank and position and (not previous.position or position < previous.position)) then
+        status[list] = { rank = rank, position = position }
+    end
 end
 
 function Tooltip.BuildLines(id)
@@ -82,8 +99,8 @@ function Tooltip.BuildLines(id)
 
     local onlyClass = ns:GetOption("onlyMyClass") and ns.PlayerClass() or nil
     local withAlternatives = ns:GetOption("alternatives")
+    local showPositions = ns:GetOption("altTooltipRanks")
 
-    -- perSpec[class][spec][list] = BIS, ALT or ADDED: the best of the item's slots wins
     local perSpec, memberships = {}, {}
     for _, hit in ipairs(hits or {}) do
         local rank = hit.custom and ADDED or hit.recommended and RECOMMENDED or hit.bis and BIS or ALT
@@ -97,20 +114,14 @@ function Tooltip.BuildLines(id)
                 left = (icon ~= "" and icon .. " " or "") .. classSpec,
                 right = hit.listName, r = r, g = g, b = b,
             }
-        elseif shown and (rank ~= ALT or withAlternatives) then
-            perSpec[hit.class] = perSpec[hit.class] or {}
-            local status = perSpec[hit.class][hit.spec] or {}
-            perSpec[hit.class][hit.spec] = status
-            status[hit.list] = math.max(status[hit.list] or 0, rank)
+        elseif shown and (rank ~= ALT or (withAlternatives and not hit.beyondAltLimit)) then
+            TrackStatus(perSpec, hit, rank, showPositions)
         end
     end
 
     for _, hit in ipairs(aoeHits or {}) do
         if (not onlyClass or hit.class == onlyClass) and (hit.bis or withAlternatives) then
-            perSpec[hit.class] = perSpec[hit.class] or {}
-            local status = perSpec[hit.class][hit.spec] or {}
-            perSpec[hit.class][hit.spec] = status
-            status.aoe = math.max(status.aoe or 0, hit.bis and BIS or ALT)
+            TrackStatus(perSpec, hit, hit.bis and BIS or ALT, showPositions)
         end
     end
 

@@ -52,6 +52,7 @@ local DEFAULTS = {
     tooltip = true,        -- BIS lines in item tooltips
     onlyMyClass = false,   -- tooltips: my class only
     alternatives = true,   -- tooltips: the alternatives too, not only the best picks
+    altTooltipRanks = true, -- tooltips: show each alternative's position in its slot
     repTooltip = true,     -- tooltips: the reputation an item asks for
     repCompact = true,     -- the window: a reputation's standing without its numbers
     dismissedNotices = {}, -- window notices dismissed for this account, keyed by notice

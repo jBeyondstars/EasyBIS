@@ -20,9 +20,11 @@ class AoeTooltipTest(unittest.TestCase):
         self.assertTrue(all(right == "BIS AoE/Dung" for _, right in game.lines(910001)))
         self.assertIn(("<classicon-mage> Mage Frost", "BIS AoE/Dung"), game.tooltip(910001))
         self.assertEqual(game.lines(910002)[0][1], "BIS AoE/Dung")  # best of both slots
-        self.assertEqual(game.lines(910003)[0][1], "Alt AoE/Dung")
+        self.assertEqual(game.lines(910003)[0][1], "Alt 3 AoE/Dung")
         self.assertEqual(game.lines(910004), [])
         ns.SetAlternatives(ns, 3)
+        self.assertEqual(game.lines(910004)[0][1], "Alt 4 AoE/Dung")
+        ns.SetOption(ns, "altTooltipRanks", False)
         self.assertEqual(game.lines(910004)[0][1], "Alt AoE/Dung")
         ns.SetOption(ns, "onlyMyClass", True)
         self.assertEqual(game.lines(910001), [("<classicon-mage> Mage Frost", "BIS AoE/Dung")])

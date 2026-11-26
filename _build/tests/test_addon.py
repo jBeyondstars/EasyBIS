@@ -216,8 +216,9 @@ class AddonTest(unittest.TestCase):
         self.assertEqual(game.ns.data.meta.level, 60)
 
     def test_saved_options_are_kept(self):
-        game = Game(saved="EasyBISDB = { tooltip = false, lists = { pvp = false } }")
+        game = Game(saved="EasyBISDB = { tooltip = false, altTooltipRanks = false, lists = { pvp = false } }")
         self.assertFalse(game.ns.db.tooltip, "a saved choice was overwritten by the default")
+        self.assertFalse(game.ns.db.altTooltipRanks, "a saved choice was overwritten by the default")
         self.assertFalse(game.ns.db.lists.pvp, "a saved choice was overwritten by the default")
         self.assertTrue(game.ns.db.lists.pve, "a missing option did not get its default")
         self.assertTrue(game.ns.db.alternatives, "a missing option did not get its default")
@@ -692,8 +693,7 @@ class AddonTest(unittest.TestCase):
         self.assertTrue(mage and "BIS" in mage[0])
         for one_hander in (VAULTED_SECRETS, MAGEBLADE):
             mage = [right for left, right in game.lines(one_hander) if "Mage" in left]
-            self.assertTrue(mage and all("Alt" in right and "BIS" not in right for right in mage),
-                            "a one-hander behind a two-hander is an alternative")
+            self.assertEqual(mage, [], "these alternate weapons rank outside the tooltip limit")
 
         game.ns.SetPhase(game.ns, phases.PRE_RAID)
         self.assertEqual(game.ns.Ladders.For("MAGE", 2, "pve").main.best[1].id, MAGEBLADE)
@@ -753,6 +753,40 @@ class AddonTest(unittest.TestCase):
 
         game.ns.SetOption(game.ns, "tooltip", False)
         self.assertEqual(game.tooltip(DRAGONSCALE_HELM), [])
+
+    def test_tooltip_can_show_each_alternatives_rank(self):
+        game = Game(cls="MAGE")
+        ns = game.ns
+        ns.data.lists.MAGE = "\n".join((
+            "S\t2\tFire\tdps",
+            "S\t3\tFrost\tdps",
+            "L\t2\tpve\thead\t910101:100 910102:90 910103:80 910104:70xf",
+            "L\t2\tpvp\thead\t910101:100 910103:80",
+            "L\t3\tpve\thead\t910101:100 910103:80",
+            "L\t3\tpvp\thead\t910101:100 910102:90 910103:80",
+        ))
+        ns.Index.Reset()
+        self.assertEqual(game.tooltip(910103)[2:], [
+            ("<classicon-mage> Mage Fire", "Alt 3 PvE · Alt 2 PvP"),
+            ("<classicon-mage> Mage Frost", "Alt 2 PvE · Alt 3 PvP"),
+        ])
+        self.assertEqual(game.lines(910101), [("<classicon-mage> Mage", "BIS")])
+        self.assertEqual(game.lines(910104), [])
+        ns.SetOption(ns, "altTooltipRanks", False)
+        self.assertEqual(game.lines(910103), [("<classicon-mage> Mage", "Alt")])
+        self.assertEqual(game.lines(910104), [])
+        ns.SetOption(ns, "altTooltipRanks", True)
+        ns.SetListShown(ns, "pvp", False)
+        self.assertEqual(game.lines(910103), [
+            ("<classicon-mage> Mage Fire", "Alt 3 PvE"),
+            ("<classicon-mage> Mage Frost", "Alt 2 PvE"),
+        ])
+        ns.SetAlternatives(ns, 3)
+        self.assertEqual(game.lines(910104), [("<classicon-mage> Mage Fire", "Alt 4 PvE")])
+        ns.SetAlternatives(ns, 2)
+        self.assertEqual(game.lines(910104), [])
+        ns.SetOption(ns, "alternatives", False)
+        self.assertEqual(game.lines(910103), [])
 
     def test_tooltip_options(self):
         game = Game(cls="SHAMAN")

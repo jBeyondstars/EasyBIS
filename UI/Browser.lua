@@ -1176,7 +1176,7 @@ end
 -- count come three submenus: the PvP rewards, a box per list (each list counts them or not), the
 -- number of alternatives a slot lists, and the faction the lists are for.
 local OPTION_GROUPS = {
-    { "tooltip", "onlyMyClass", "alternatives", "repTooltip" },
+    { "tooltip", "onlyMyClass", "alternatives", "altTooltipRanks", "repTooltip" },
     { "unsourced" },
     { "compact", "repCompact", "minimap", "auctionTab" },
 }

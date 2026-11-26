@@ -1346,7 +1346,8 @@ class WindowTest(unittest.TestCase):
         open_dropdown(game, window.options)
         menu = game.stub.menu
         self.assertEqual(texts(menu), ["Options", "BIS lines in item tooltips", "Tooltips show my class only",
-                                       "Tooltips show alternatives too", "Reputation needed in item tooltips",
+                                       "Tooltips show alternatives too", "Show alternative ranks in tooltips",
+                                       "Reputation needed in item tooltips",
                                        "Lists shown in tooltips", "Items with no known source",
                                        "PvP rewards", "Alternatives per slot",
                                        "Faction", "Compact rows", "Short reputation lines", "Minimap button",
@@ -1357,6 +1358,14 @@ class WindowTest(unittest.TestCase):
         self.assertFalse(game.ns.db.tooltip)
         self.assertEqual(game.tooltip(EYE_OF_REND), [])
         tooltips.pick()
+        ranks = find(menu, "Show alternative ranks in tooltips")
+        self.assertEqual(ranks.kind, "checkbox")
+        self.assertTrue(ranks.selected())
+        ranks.pick()
+        self.assertFalse(ranks.selected())
+        self.assertFalse(game.ns.db.altTooltipRanks)
+        ranks.pick()
+        self.assertTrue(ranks.selected())
         unsourced = find(menu, "no known source")
         self.assertFalse(unsourced.selected())
         unsourced.pick()
