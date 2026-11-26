@@ -1132,6 +1132,35 @@ local function LayoutRows(rows)
     window.rowData = rows
 end
 
+local function ScenarioScrollAnchor()
+    local scroll = window.scroll:GetVerticalScroll()
+    if scroll <= 0 then return end
+    local slot, top
+    -- Use the first fully visible row's slot so a clipped row above its header does not anchor the comparison.
+    for index, data in ipairs(window.rowData) do
+        local _, _, _, _, y = window.rows[index]:GetPoint()
+        if data.kind == "header" then slot, top = data.group, -y end
+        if -y >= scroll then break end
+    end
+    if slot then return slot, scroll - top end
+end
+
+local function RestoreScenarioScroll(slot, offset)
+    local top, lastRowTop
+    for index, data in ipairs(window.rowData) do
+        if data.kind == "header" and top then break end
+        if top or (data.kind == "header" and data.group == slot) then
+            local _, _, _, _, y = window.rows[index]:GetPoint()
+            top = top or -y
+            lastRowTop = -y
+        end
+    end
+    if not top then return end
+    local limit = window.child:GetHeight() - window.scroll:GetHeight()
+    -- A shorter section may end before the saved offset.
+    window.scroll:SetVerticalScroll(math.max(0, math.min(top + offset, lastRowTop, limit)))
+end
+
 ---------------------------------------------------------------------------
 -- Building the window
 ---------------------------------------------------------------------------
@@ -1440,9 +1469,15 @@ local function Build()
         { { value = "pve", text = L.LIST_RAID }, { value = "aoe", text = L.LIST_AOE } },
         function() return ItemList(state.list) end,
         function(value)
+            local previous = state.itemList
+            local slot, offset
+            if (previous == "pve" and value == "aoe") or (previous == "aoe" and value == "pve") then
+                slot, offset = ScenarioScrollAnchor()
+            end
             ns.char.gearList = ns.Custom.GearList(state.class, state.spec, value) and value or nil
             ns.char.aoe = value == "aoe"
             Refresh()
+            if slot then RestoreScenarioScroll(slot, offset) end
         end)
     -- A separate frame keeps the drop marker above the tab artwork.
     local marker = CreateFrame("Frame", nil, window.scenario)

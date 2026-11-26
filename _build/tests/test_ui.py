@@ -81,7 +81,7 @@ def open_dropdown(game, button):
 
 
 @unittest.skipIf(lupa is None, "lupa is not installed")
-class ItemScenarioLabelTest(unittest.TestCase):
+class ItemScenarioTest(unittest.TestCase):
     def test_dungeon_button_fits_its_label_in_both_locales(self):
         for locale in ("enUS", "frFR"):
             with self.subTest(locale=locale):
@@ -93,6 +93,31 @@ class ItemScenarioLabelTest(unittest.TestCase):
                 self.assertIsNone(scenario.summary)
                 button = scenario.buttons[2]
                 self.assertGreater(button.width, button.Text.GetStringWidth(button.Text))
+
+    def test_switching_scenario_keeps_the_gear_section_at_the_same_height(self):
+        saved = "EasyBISCharDB = { class = 'WARRIOR', spec = 2, list = 'pve' }"
+        game = Game(cls="WARRIOR", saved=saved)
+        game.ns.Browser.Open()
+        window = game.ns.Browser.window
+        scroll = window.scroll
+        scroll.SetHeight(scroll, 500)
+
+        def legs_top():
+            index = next(i for i, row in window.rowData.items() if row.kind == "header" and row.group == "legs")
+            frame = window.rows[index]
+            return -frame.GetPoint(frame)[4]
+
+        raid_top = legs_top()
+        for offset in (-8, 0, HEADER + 12):
+            with self.subTest(offset=offset):
+                scroll.SetVerticalScroll(scroll, raid_top + offset)
+                game.stub.run(window.scenario.buttons[2], "OnClick")
+                aoe_top = legs_top()
+                aoe_scroll = scroll.GetVerticalScroll(scroll)
+                game.stub.run(window.scenario.buttons[1], "OnClick")
+                self.assertNotEqual(raid_top, aoe_top)
+                self.assertEqual(aoe_scroll - aoe_top, offset)
+                self.assertEqual(scroll.GetVerticalScroll(scroll) - legs_top(), offset)
 
 
 @unittest.skipIf(lupa is None, "lupa is not installed")

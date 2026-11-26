@@ -1,3 +1,7 @@
+# Easy BIS 1.10.6
+
+- **Gear comparison.** Switching between Raid and AoE / Dungeons keeps the visible gear slot at the same height.
+
 # Easy BIS 1.10.5
 
 - **Pre-raid rankings.** Situational items keep their place in the Raid and PvP rankings. An item that earns BiS with its base score shows the BiS badge. Situational alternatives remain outside the configured alternative count.
