@@ -92,7 +92,7 @@ local function enchants()
     for line in ns.data.enchantInfo:gmatch("[^\n]+") do known[line:match("^([^|]+)|")] = true end
     for _, text in pairs(ns.data.enchants) do
         for line in text:gmatch("[^\n]+") do
-            local ids = line:match("^E\t%d+\t%w+\t(.*)$")
+            local ids = line:match("^[EU]\t%d+\t%w+\t(.*)$")
             for token in ids:gmatch("%S+") do
                 local id = token:match("^([si]%d+):?%d*$")   -- "s20025", or "s20025:1" with the phase it needs
                 count = count + 1

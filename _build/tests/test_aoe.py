@@ -15,6 +15,7 @@ import fdb
 import aoe_combined
 import aoe_eligibility as rules
 import aoe_weapon_priority
+import ladders
 import luaout
 import simulate_aoe as aoe
 from test_addon import Game, lupa
@@ -611,19 +612,25 @@ class AoeTest(unittest.TestCase):
     @unittest.skipIf(lupa is None, "lupa is not installed")
     def test_published_weapon_points_and_damage_percentages_for_every_specialization(self):
         game = Game()
-        display_specs = rules.dungeon_specializations(fdb.load(BUILD / "cache" / "ForeverDB"))
+        db = fdb.load(BUILD / "cache" / "ForeverDB")
+        display_specs = rules.dungeon_specializations(db)
         for key, factions in combined_rankings().items():
             cls, _ = key.split()
+            spec = display_specs[key]
+            ranged_hunter = cls == "HUNTER" and db.classes[cls]["specs"][spec]["role"] == "Ranged DPS"
             for faction, slots in factions.items():
-                published = game.ns.data.aoe.lists[f"{cls}:{display_specs[key]}:{faction}"]
+                published = game.ns.data.aoe.lists[f"{cls}:{spec}:{faction}"]
                 for slot, block in slots.items():
                     weapon = slot in ("main", "off") or (slot == "ranged" and cls not in ("DRUID", "PALADIN", "SHAMAN"))
                     with self.subTest(spec=key, faction=faction, slot=slot):
                         display = published[slot]
-                        self.assertEqual(len(display), len(block["items"]))
+                        items = block["items"]
+                        if ranged_hunter and slot == "trinket":
+                            items = [item for item in items if item["id"] != ladders.HAND_OF_JUSTICE]
+                        self.assertEqual(len(display), len(items))
                         self.assertEqual(display.pointStat is not None, weapon)
                         previous = float("inf")
-                        for i, item in enumerate(block["items"], 1):
+                        for i, item in enumerate(items, 1):
                             row = display[i]
                             self.assertEqual(row[1], item["id"])
                             self.assertAlmostEqual(row[2], item["score"], places=8)
