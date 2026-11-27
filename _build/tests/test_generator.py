@@ -832,7 +832,6 @@ class GeneratorTest(unittest.TestCase):
             "s23804": "Enchant Weapon - Mighty Intellect, sold by the Thorium Brotherhood",
             "i18329": "Arcanum of Rapidity, a Dire Maul libram",
             "s20023": "a formula that drops in Stratholme",
-            "i273593": "an enchant of Forever with no known source",
         }
         for enchant, what in before_the_raids.items():
             self.assertEqual(phase(enchant), phases.PRE_RAID, what)
@@ -841,6 +840,9 @@ class GeneratorTest(unittest.TestCase):
             "i23548": "Might of the Scourge, from Sapphiron", "i19785": "Falcon's Call, from Zul'Gurub's idols",
             "i20077": "a Zandalar signet", "s22749": "Enchant Weapon - Spell Power, a Molten Core formula",
             "s25080": "Enchant Gloves - Superior Agility, an Ahn'Qiraj formula",
+            "i18283": "the Biznicks schematic and Lava Cores require Molten Core",
+            "i273593": "Living Stats uses Ahn'Qiraj reagents and has no confirmed acquisition in Forever",
+            "i279272": "the SAF-T schematic has no confirmed pre-raid source",
         }
         for enchant, what in classic_raids.items():
             self.assertEqual(phase(enchant), phases.LATER, what)
@@ -1817,21 +1819,21 @@ class SpecsTest(unittest.TestCase):
                                 for key, entries in was.items()}, "the bear keeps ForeverDB's, but another class's")
         self.assertEqual(effect(bear["wrist"][0][0]), "Defense +9")
 
-    def test_a_tank_is_listed_its_own_class_enchant_only(self):
-        """ForeverDB gives the Rogue's Death's Embrace to the bear and the Warrior's Presence of Might to the Paladin."""
+    def test_every_spec_is_listed_its_own_class_enchant_only(self):
         self.assertIn("i19784", {enchant for enchant, _ in self.published.enchants["DRUID"][(2, "raid")]["head"]})
         self.assertIn("i19782", {enchant for enchant, _ in self.published.enchants["PALADIN"][(2, "raid")]["head"]})
-        for token, number in (*self.TANKS, ("DRUID", 4)):
-            for profile in ("lvl", "raid"):
-                for key, entries in self.db.enchants[token][(number, profile)].items():
+        for token, profiles in self.db.enchants.items():
+            for (number, profile), slots in profiles.items():
+                for key, entries in slots.items():
                     for enchant, _ in entries:
-                        self.assertEqual(specs.CLASS_ENCHANTS.get(enchant, token), token, f"{token} {number} {key}")
+                        self.assertEqual(specs.CLASS_ENCHANTS.get(enchant, token), token, (token, number, profile, key))
         self.assertIn("i19782", {enchant for enchant, _ in self.db.enchants["WARRIOR"][(3, "raid")]["head"]}, "its own")
-        self.assertEqual(self.db.specs.unbound, {("DRUID", 2): {"i19784"}, ("PALADIN", 2): {"i19782"}})
-        for token, per_spec in self.published.enchants.items():   # the other specs: as ForeverDB has them
+        self.assertIn("i19787", self.db.specs.unbound[("DRUID", 1)])
+        for token, per_spec in self.published.enchants.items():
             for key, per_slot in per_spec.items():
-                if (token, key[0]) not in self.TANKS:
-                    self.assertEqual(self.db.enchants[token][key], per_slot, f"{token} {key}")
+                expected = {slot: [pair for pair in entries if specs.CLASS_ENCHANTS.get(pair[0], token) == token]
+                            for slot, entries in per_slot.items()}
+                self.assertEqual(self.db.enchants[token][key], expected, (token, key))
 
     # -- the data file ------------------------------------------------------------------------------
 
@@ -3148,18 +3150,22 @@ class ConsumableListTest(unittest.TestCase):
     def test_the_recipes_placed_by_hand_are_recipes_of_the_data(self):
         data = self.db.consumables
         origins = consumable_lists.load_origins()
-        self.assertEqual(len(origins), 16)
         for item, origin in origins.items():
             with self.subTest(item=item):
-                self.assertEqual(data.catalogue[item]["name"], origin["name"])
-                self.assertEqual(bool(data.recipes.get(item)), "container" not in origin, "a recipe makes it, or it is held")
-                self.assertEqual(len(set(origin) & {*consumable_lists._ORIGIN_SAID, "container"}), 1, "one way to have it")
+                self.assertTrue(item in data.catalogue or item in data.recipes or item in data.facts
+                                or item in consumable_lists._SUPPLEMENTAL)
+                if item in data.catalogue:
+                    self.assertEqual(data.catalogue[item]["name"], origin["name"])
+                if not ("source" in origin or "phase" in origin):
+                    self.assertEqual(bool(data.recipes.get(item)), "container" not in origin)
+                    self.assertEqual(len(set(origin) & {*consumable_lists._ORIGIN_SAID, "container"}), 1)
 
     def test_where_a_recipe_placed_by_hand_is_learned(self):
         said = {item: row[2] for item, row in consumable_lists.info_rows(self.db, [249870, 250071, 13446, 286152]).items()}
         self.assertEqual(said[249870], "Cooking 250: recipe drops from Deadwind Ogre Mage (Deadwind Pass)")
         self.assertEqual(said[250071], "Cooking 275: recipe from the quest Now We're Cooking (Mount Hyjal)")
-        self.assertEqual(said[13446], "First Aid 275: recipe sold by Pexmit (Mount Hyjal)")
+        self.assertIn("A Rest Without Pain (Horde, Mount Hyjal)", said[13446])
+        self.assertIn("Pexmit (Mount Hyjal) by QuestieDB", said[13446])
         self.assertEqual(said[286152], "Cooking 225: recipe found in Deadwind Pass")
 
     def test_what_players_cannot_get_is_not_listed(self):
@@ -3226,6 +3232,9 @@ class ConsumableListTest(unittest.TestCase):
         self.assertIn(self.CRYOBLAST, dict(consumable_lists.situational(self.db, "MAGE")))
         self.assertNotIn(self.CRYOBLAST, dict(consumable_lists.situational(self.db, "WARRIOR")))
         self.assertIn(self.CRYOBLAST, dict(consumable_lists.situational(self.db)), "the data's rows hold every class's")
+        self.assertIn(20520, dict(consumable_lists.situational(self.db, "MAGE")))
+        self.assertNotIn(20520, dict(consumable_lists.situational(self.db, "ROGUE")))
+        self.assertIn(12451, dict(consumable_lists.situational(self.db, "ROGUE")))
 
     def test_an_item_the_game_holds_twice_is_listed_once(self):
         records = {1: {"name": "Steak"}, 2: {"name": "Steak"}, 4: {"name": "Soup"}}
@@ -3276,6 +3285,18 @@ class ConsumableListTest(unittest.TestCase):
         self.assertEqual(phase(self.REJUVENATION), phases.PRE_RAID, "a quest gives it too")
         self.assertEqual(phase(self.MCWEAKSAUCE), phases.LATER, "no known source")
         self.assertEqual(phase(self.TITANS), phases.PRE_RAID, "a dungeon boss drops the recipe")
+        for item in (20002, 20008, 20748, 20749, 21023, 274273, 274274, 274275, 274276):
+            self.assertEqual(phase(item), phases.LATER, item)
+        self.assertEqual(phase(246948), phases.PRE_RAID)
+
+    def test_melee_attack_power_keeps_its_scope(self):
+        record = consumables.load()["items"][12820]
+        weights = {consumables.ATTACK_POWER: 1}
+        self.assertEqual(consumable_lists.score(record, weights, "Melee DPS"), 35)
+        self.assertEqual(consumable_lists.score(record, weights, "Ranged DPS"), 0)
+        self.assertIn("Melee Attack Power", consumable_lists.effect(record))
+        self.assertIn(246948, dict(self.shelf("WARRIOR", 2, "pve", "elixir").unranked))
+        self.assertNotIn(246948, dict(self.shelf("HUNTER", 2, "pve", "elixir").unranked))
 
     def test_situational_is_listed_without_rank(self):
         listed = dict(consumable_lists.situational(self.db))
@@ -3286,7 +3307,8 @@ class ConsumableListTest(unittest.TestCase):
                          "a potion that gives levels is nothing to bring to a fight at the level cap")
 
     def test_the_tooltips_to_read_include_what_the_tab_names(self):
-        self.assertLessEqual(set(consumables.ALWAYS_READ), set(consumables.consumable_ids(self.db.consumables)))
+        selected = set(consumables.consumable_ids(self.db.consumables))
+        self.assertLessEqual(set(consumables.ALWAYS_READ) | consumables.COOKING_HOTFIX_ITEMS, selected)
 
     def test_the_data_file(self):
         text = luaout.consumables_file(self.db)

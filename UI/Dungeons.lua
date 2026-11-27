@@ -601,7 +601,8 @@ end
 -- What the last column says of a piece no dungeon holds: a picture for the kind of source, and a few words.
 local function WhereText(piece)
     local source = piece.source
-    return ns.Sources.IconText(source.category) .. " " .. ns.Sources.Short(source) .. Mark(source.origin)
+    local text = ns.Sources.WithCost(ns.Sources.Short(source), source.cost)
+    return ns.Sources.IconText(source.category) .. " " .. text .. Mark(source.origin)
 end
 
 local function FillRow(row, piece, model, width, name)

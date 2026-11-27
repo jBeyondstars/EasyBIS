@@ -15,9 +15,9 @@ Where an item comes from, in words (its first source in Data\Items.lua).
       The first available source is shown. Quests and QuestieDB vendors of the other faction are
       passed over when the item has another source for the selected faction.
       profession the profession's English name, for a crafted item
-      cost       what the vendor asks in a currency: { item = the currency's item id, amount, beta = true when
-                 the price is the beta's and was not read in the game }; nil for anything else
+      cost       the first currency and amount, optional extra currencies in `extra`, and `beta` for beta prices
   Sources.Manual()                    the description of an item only the player knows
+  Sources.PvPCost(id)                 the known honor price, including marks and the seal when applicable
   Sources.CategoryName(category)
   Sources.Icon(category, profession)  texture, cropped: a small picture per category (a crafted item gets its
                                       profession's); cropped is true for a square icon whose border should go
@@ -29,11 +29,11 @@ Where an item comes from, in words (its first source in Data\Items.lua).
   Sources.Short(description)          a few words for a small space: the place, else the detail, else the
                                       category's name
   Sources.CostText(cost)              "75 Reals", the currency's picture before its name when the game has one
-  Sources.WithCost(text, cost)        "75 Reals · text": the price first, so a narrow row cuts the place and not it
+  Sources.WithCost(text, cost)        the required PvP rank and price before the source in a narrow row
   Sources.Held(item)                  how much of a currency the player has, bank included; nil when the game
                                       cannot say. The game may keep it as a currency or as an item: the larger
                                       of the two counts
-  Sources.CostLine(cost)              the tooltip's line: the price, what the player has and what is missing
+  Sources.CostLines(cost)             the tooltip's lines: the prices, what the player has and what is missing
   Sources.ToPay(cells)                what is left to pay for cells ({ id, source }, ...), per currency:
                                       { { item, amount, held }, ... }. What the player owns is paid for
   Sources.ToPayLine(owed)             the character sheet's line for one of those
@@ -166,8 +166,12 @@ local READERS = {
     r = function(f) return "reputation", L.SRC_REPUTATION:format(f[4] or "", Standing(f[3])), nil, "", f[5] end,
 }
 
--- id of the game's currency and its English name.
+local HONOR = 1792
+local COPPER = 0
+
+-- The game's currency ID and fallback name.
 local function Currency(item)
+    if item == HONOR then return { id = HONOR, name = L.SRC_HONOR } end
     local raw = ns.data and ns.data.currencies and ns.data.currencies[item]
     if not raw then return nil end
     local currency, name = raw:match("^([^%^]*)%^([^%^]*)$")
@@ -180,6 +184,15 @@ local function Cost(source)
     local item, amount, flag = (source[7] or ""):match("^(%d+):(%d+):?(%a?)$")
     if not item then return nil end
     return { item = tonumber(item), amount = tonumber(amount), beta = flag == "b" }
+end
+
+function Sources.PvPCost(id)
+    local price = ns.data and ns.data.pvpCosts and ns.data.pvpCosts[id]
+    if not price then return nil end
+    local extra = {}
+    if price.mark then extra[#extra + 1] = { item = price.mark, amount = price.marks } end
+    if price.copper then extra[#extra + 1] = { item = COPPER, amount = price.copper } end
+    return { item = HONOR, amount = price.honor + (price.seal or 0), rank = price.rank, seal = price.seal, extra = extra }
 end
 
 local function OwnSource(item)
@@ -201,14 +214,16 @@ function Sources.Describe(id)
     local item = ns.Items.Get(id)
     local source = item and OwnSource(item)
     local reader = source and READERS[source.kind]
+    local pvpCost = Sources.PvPCost(id)
     if not reader then
+        if pvpCost then return { category = "pvp", detail = L.SRC_HONOR, percent = "", origin = "f", cost = pvpCost } end
         return { category = "unknown", detail = "", percent = "", origin = "f" }
     end
     local category, detail, zone, percent, origin = reader(source)
     return {
         category = category, detail = detail or "", zone = zone, percent = percent or "", origin = origin,
         profession = source.kind == "c" and source[2] or nil,
-        cost = Cost(source),
+        cost = pvpCost or Cost(source),
     }
 end
 
@@ -376,7 +391,10 @@ local function CurrencyIcon(item)
         if ok and type(info) == "table" then icon = info.iconFileID end
     end
     local GetIcon = (C_Item and C_Item.GetItemIconByID) or GetItemIcon
-    if not icon and GetIcon then
+    if not icon and item == HONOR then
+        icon = ns.CharacterSide() == "h" and "Interface\\PVPFrame\\PVP-Currency-Horde"
+            or "Interface\\PVPFrame\\PVP-Currency-Alliance"
+    elseif not icon and GetIcon then
         local ok, texture = pcall(GetIcon, item)
         if ok then icon = texture end
     end
@@ -386,20 +404,48 @@ local function CurrencyIcon(item)
 end
 
 -- The currency's name, with its picture before it when the game has one.
-local function CurrencyLabel(item)
+local function CurrencyLabel(item, compact)
     local icon = CurrencyIcon(item)
-    local name = CurrencyName(item)
+    local key = "CURRENCY_SHORT_" .. item
+    local name = compact and L[key] ~= key and L[key] or CurrencyName(item)
     return icon and (CROPPED_ICON:format(icon) .. " " .. name) or name
 end
 
-function Sources.CostText(cost)
-    return L.COST_AMOUNT:format(cost.amount, CurrencyLabel(cost.item))
+function Sources.MoneyText(copper)
+    if GetCoinTextureString then return GetCoinTextureString(copper) end
+    local gold, silver = math.floor(copper / 10000), math.floor(copper / 100) % 100
+    local rest, parts = copper % 100, {}
+    if gold > 0 then parts[#parts + 1] = L.REP_GOLD:format(gold) end
+    if silver > 0 then parts[#parts + 1] = L.REP_SILVER:format(silver) end
+    if rest > 0 or not parts[1] then parts[#parts + 1] = L.REP_COPPER:format(rest) end
+    return table.concat(parts, " ")
+end
+
+local function AmountText(item, amount)
+    if item == COPPER then return Sources.MoneyText(amount) end
+    if item == HONOR and BreakUpLargeNumbers then return BreakUpLargeNumbers(amount) end
+    return tostring(amount)
+end
+
+local function PartText(part, compact)
+    local amount = AmountText(part.item, part.amount)
+    if part.item == COPPER then return amount end
+    return L.COST_AMOUNT:format(amount, CurrencyLabel(part.item, compact))
+end
+
+function Sources.CostText(cost, compact)
+    local text = PartText(cost, compact)
+    for _, part in ipairs(cost.extra or {}) do text = text .. " + " .. PartText(part, compact) end
+    return text
 end
 
 function Sources.WithCost(text, cost)
     if not cost then return text end
-    local price = Sources.CostText(cost)
-    return text ~= "" and (price .. " · " .. text) or price
+    local price = Sources.CostText(cost, true)
+    local rank = cost.rank and L.SRC_RANK:format(cost.rank)
+    if rank then price = rank .. " · " .. price end
+    if text == "" or text == rank or (cost.item == HONOR and text == L.SRC_HONOR) then return price end
+    return price .. " · " .. text
 end
 
 -- A number the game hands out; restricted content may hide it.
@@ -409,6 +455,7 @@ local function Count(value)
 end
 
 function Sources.Held(item)
+    if item == COPPER then return GetMoney and Count(GetMoney()) end
     local held
     local currency = Currency(item)
     if currency and currency.id and C_CurrencyInfo and C_CurrencyInfo.GetCurrencyInfo then
@@ -416,7 +463,7 @@ function Sources.Held(item)
         if ok and type(info) == "table" then held = Count(info.quantity) end
     end
     local GetCount = (C_Item and C_Item.GetItemCount) or GetItemCount
-    if GetCount then
+    if GetCount and item ~= HONOR then
         local ok, count = pcall(GetCount, item, true)
         count = ok and Count(count) or nil
         if count and (not held or count > held) then held = count end
@@ -425,11 +472,21 @@ function Sources.Held(item)
 end
 
 function Sources.CostLine(cost)
-    local price = Sources.CostText(cost)
+    local price = PartText(cost)
     local held = Sources.Held(cost.item)
     if not held then return L.TIP_COST:format(price) end
-    if held >= cost.amount then return L.TIP_COST_HAVE:format(price, held) end
-    return L.TIP_COST_SHORT:format(price, held, cost.amount - held)
+    local balance = AmountText(cost.item, held)
+    if held >= cost.amount then return L.TIP_COST_HAVE:format(price, balance) end
+    return L.TIP_COST_SHORT:format(price, balance, AmountText(cost.item, cost.amount - held))
+end
+
+function Sources.CostLines(cost)
+    local lines = { Sources.CostLine(cost) }
+    for _, part in ipairs(cost.extra or {}) do lines[#lines + 1] = Sources.CostLine(part) end
+    if cost.seal then
+        lines[#lines + 1] = L.TIP_PVP_UPGRADE:format(AmountText(HONOR, cost.amount - cost.seal), AmountText(HONOR, cost.seal))
+    end
+    return lines
 end
 
 -- Whether the player has the item, worn, in the bags or in the bank.
@@ -451,23 +508,28 @@ Sources.Owned = Owned
 
 function Sources.ToPay(cells)
     local owed, byItem = {}, {}
+    local function Add(part)
+        local entry = byItem[part.item]
+        if not entry then
+            entry = { item = part.item, amount = 0, held = Sources.Held(part.item) }
+            byItem[part.item] = entry
+            owed[#owed + 1] = entry
+        end
+        entry.amount = entry.amount + part.amount
+    end
     for _, cell in ipairs(cells) do
         local cost = cell.id and cell.source and cell.source.cost
         if cost and not Owned(cell.id) then
-            local entry = byItem[cost.item]
-            if not entry then
-                entry = { item = cost.item, amount = 0, held = Sources.Held(cost.item) }
-                byItem[cost.item] = entry
-                owed[#owed + 1] = entry
-            end
-            entry.amount = entry.amount + cost.amount
+            Add(cost)
+            for _, part in ipairs(cost.extra or {}) do Add(part) end
         end
     end
     return owed
 end
 
 function Sources.ToPayLine(owed)
-    local name = CurrencyLabel(owed.item)
-    if not owed.held then return L.CHAR_COST_UNKNOWN:format(name, owed.amount) end
-    return L.CHAR_COST:format(name, owed.amount, owed.held)
+    local name = owed.item == COPPER and L.CURRENCY_MONEY or CurrencyLabel(owed.item, true)
+    local amount = AmountText(owed.item, owed.amount)
+    if not owed.held then return L.CHAR_COST_UNKNOWN:format(name, amount) end
+    return L.CHAR_COST:format(name, amount, AmountText(owed.item, owed.held))
 end

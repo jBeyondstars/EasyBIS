@@ -37,11 +37,10 @@ Feral Combat, which its weights, its enchants and its coach all treat as a bear.
    WoWSims Forever's item database, both from raids. The corrected items carry stat 40, weighted like attack
    power only by the bear and cat.
 
-3. A tank is listed its own class's Zul'Gurub enchant only (own_enchants), and so is the cat. ForeverDB's lists
+3. Each spec is listed its own class's Zul'Gurub enchant only (own_enchants). ForeverDB's lists
    give the head and leg enchants of that raid's class quests to several classes each (the Rogue's Death's
    Embrace to the Druid, the Warrior's Presence of Might to the Paladin); WoWSims Forever's item database binds
-   each to one class (CLASS_ENCHANTS), as Classic does, and nothing read in Forever says otherwise. The other
-   specs' lists have the same flaw and are left as ForeverDB has them here: this module is about the tanks.
+   each to one class (CLASS_ENCHANTS), as Classic does.
 
 4. An item whose worth to a role is mostly an effect is not given a figure it does not have (unvalued).
    corrections/effects.json names them by hand (for the tanks: The Lion Horn of Stormwind, whose 8 defense score
@@ -124,7 +123,7 @@ class Report:
     shockadin: tuple | None = None                  # (class, spec) of the Shockadin added to the Paladin
     ranged: dict = field(default_factory=dict)      # (class, spec, profile) of a Hunter -> the weight its attack
     #                                                 power got, the ranged attack power's added
-    unbound: dict = field(default_factory=dict)     # (class, spec) of a tank -> the other classes' enchants its
+    unbound: dict = field(default_factory=dict)     # (class, spec) -> the other classes' enchants its
     #                                                 lists no longer hold
 
 
@@ -285,11 +284,9 @@ def split_survival(db) -> None:
 
 
 def own_enchants(db, report: Report) -> None:
-    """Take out of a tank's enchant lists the Zul'Gurub enchants that are another class's (CLASS_ENCHANTS)."""
+    """Keep the Zul'Gurub enchants only for the class that can obtain them."""
     for cls, per_spec in db.enchants.items():
         for (number, _), per_slot in per_spec.items():
-            if db.classes.get(cls, {}).get("specs", {}).get(number, {}).get("role") != TANK:
-                continue
             for key, entries in per_slot.items():
                 kept = [(enchant, level) for enchant, level in entries if CLASS_ENCHANTS.get(enchant, cls) == cls]
                 if len(kept) != len(entries):
@@ -299,7 +296,7 @@ def own_enchants(db, report: Report) -> None:
 
 
 def apply(db) -> Report:
-    """Complete the tanks' weights, leave them their own class's enchants, then split the Feral Druid: the cat's
+    """Complete the tanks' weights, enforce class enchant restrictions, then split the Feral Druid: the cat's
     PvP weights are the completed ones, and its enchants are ranked among the ones a Druid can have."""
     report = Report()
     pvp_insignia.include(db)

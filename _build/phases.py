@@ -105,7 +105,7 @@ RAID_CRAFTS = _by_id({
 # formula drops from raid bosses. Classic's history again, and only what is certain.
 RAID_ENCHANTS = _by_id({
     # Enchant Weapon - Spell Power, Healing Power: formulas from Molten Core's bosses
-    "mc": ("s22749", "s22750"),
+    "mc": ("s22749", "s22750", "i18283"),  # Biznicks requires the schematic and Lava Cores
     # the class enchants made from Zul'Gurub's idols, the Zandalar signets (exalted with the Zandalar Tribe)
     "zg": (*(f"i{number}" for number in range(19782, 19791)), "i20076", "i20077", "i20078"),
     # Enchant Gloves - Threat, Shadow, Frost, Fire and Healing Power, Superior Agility; Enchant Cloak - Stealth,
@@ -114,6 +114,10 @@ RAID_ENCHANTS = _by_id({
     # Sapphiron's shoulder enchants
     "naxx": ("i23545", "i23547", "i23548", "i23549"),
 })
+
+# Applications without a confirmed live acquisition route, from the 2026-11-25 audit.
+# Phase 9 is the catalogue view for these options until a source can be gated properly.
+UNCONFIRMED_ENCHANTS = frozenset({"i273592", "i273593", "i273597", "i279272"})
 
 # Creatures whose name does not say where to look for an item, by the name the data gives them. The
 # colossi of the Ahn'Qiraj war came once, for the opening of the gates, and dropped the world's epics as
@@ -211,6 +215,8 @@ def enchant_phase(db, enchant: str) -> int:
     in" a raid instance needs that raid, and so does one whose source, read in
     QuestieDB, is in a raid (corrections.fill, db.enchant_raids).
     """
+    if enchant in UNCONFIRMED_ENCHANTS:
+        return LATER
     raid = RAID_ENCHANTS.get(enchant) or getattr(db, "enchant_raids", {}).get(enchant)
     if raid is None:
         where = (db.enchant_info.get(enchant) or ["", "", ""])[2]

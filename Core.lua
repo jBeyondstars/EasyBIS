@@ -53,7 +53,6 @@ local DEFAULTS = {
     onlyMyClass = false,   -- tooltips: my class only
     alternatives = true,   -- tooltips: the alternatives too, not only the best picks
     altTooltipRanks = true, -- tooltips: show each alternative's position in its slot
-    repTooltip = true,     -- tooltips: the reputation an item asks for
     repCompact = true,     -- the window: a reputation's standing without its numbers
     dismissedNotices = {}, -- window notices dismissed for this account, keyed by notice
     unsourced = false,     -- count the items with no known source
@@ -231,9 +230,10 @@ function ns:SetPhase(phase)
     self:Fire("OPTION_CHANGED", "phase", phase)
 end
 
--- The PvP ranks of a season are capped, and the cap rises at every weekly reset (_build/ranks.py).
+-- Fallback calendar for clients that do not report the weekly PvP cap (_build/ranks.py).
 local WEEK = 7 * 24 * 60 * 60
 local TOP_RANK = 14
+local PVP_RANK_POINTS_FACTION_ID = 2800
 
 -- The week of the season, from 1: how many weekly resets have passed since it began, plus one.
 function ns.SeasonWeek()
@@ -248,6 +248,12 @@ end
 
 -- The highest rank a player can have this week.
 function ns.RankCap()
+    -- Use the same weekly cap as Blizzard's PvP panel.
+    local progression = C_MajorFactions and C_MajorFactions.GetMajorFactionProgressionInfo
+        and C_MajorFactions.GetMajorFactionProgressionInfo(PVP_RANK_POINTS_FACTION_ID)
+    local cap = progression and progression.currentWeekProgressiveMaxLevel
+    if cap and cap > 0 and cap <= TOP_RANK then return cap end
+
     local caps = ns.data and ns.data.meta and ns.data.meta.rankCaps
     if not caps then return TOP_RANK end
     return caps[math.min(ns.SeasonWeek(), #caps)]

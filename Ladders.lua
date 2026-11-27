@@ -457,9 +457,13 @@ end
 function Ladders.For(class, spec, list)
     local data = Load(class)
     if not data then return nil end
+    local filter = ns.Filter()
+    if current.rankCap ~= filter.rankCap then
+        current.rankCap, current.results = filter.rankCap, {}
+    end
     local key = spec .. ":" .. list
     if not current.results[key] then
-        current.results[key] = Ladders.Compute(data, spec, list, ns.Filter())
+        current.results[key] = Ladders.Compute(data, spec, list, filter)
     end
     return current.results[key]
 end

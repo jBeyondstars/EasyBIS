@@ -38,6 +38,34 @@ SEAL_RANKS = {9: 8, 6: 8, 8: 9, 10: 10, 7: 12, 3: 12, 5: 13, 20: 13, 1: 13}  # w
 #                                                                              legs and shoulders, chest and head
 NEEDED = (NO_RANK, *sorted({pvp_insignia.RANK, *BLUE_RANKS.values(), *SEAL_RANKS.values(), WEAPON_RANK}))
 
+# Prices read from Dirgehammer, Biggins and O'Neal in build 1.60.1.71139 (2026-11-26).
+# The armor prices apply by slot. The epic armor upgrade consumes the matching rare piece and seal.
+# https://worldofwarcraft.blizzard.com/en-us/news/24303316
+HONOR_CURRENCY = 1792
+WARSONG, ARATHI, ALTERAC, DARKSPEAR = 20558, 20559, 20560, 274895  # mark item IDs
+RARE_PRICES = {
+    1: (9000, ALTERAC, 15),   # head
+    3: (6350, ARATHI, 10),    # shoulders
+    5: (9350, ARATHI, 15),    # chest, including robes (inventory type 20)
+    6: (6000, ARATHI, 10),    # waist
+    7: (9000, WARSONG, 15),   # legs
+    8: (7500, DARKSPEAR, 10), # feet
+    9: (4500, WARSONG, 10),   # wrists
+    10: (7500, WARSONG, 10),  # hands
+    CLOAK: (4500, ARATHI, 10),
+    NECK: (7500, DARKSPEAR, 10),
+}
+SEALS = {  # inventory type: (Emboldened Seal item ID, honor)
+    1: (275241, 2650), 3: (275229, 2250), 5: (275238, 2650), 6: (275244, 1500),
+    7: (275242, 2650), 8: (275243, 1500), 9: (275240, 1200), 10: (275239, 2250),
+}
+SEAL_PRICES = {slot: price for slot, (_, price) in SEALS.items()}
+WEAPON_PRICES = {
+    **dict.fromkeys((13, 15, 21, 22, 26), (12000, DARKSPEAR, 10)),
+    **dict.fromkeys((14, 23), (10500, DARKSPEAR, 10)),
+    17: (22500, ALTERAC, 20),
+}
+
 
 def sold_for_honor(item: dict) -> bool:
     """Whether an item of the source list is a piece of the Premier sets, which the data often gives no
@@ -55,6 +83,29 @@ def required(item: dict, gear: dict | None) -> int:
             return SEAL_RANKS.get(gear.get("inv"), WEAPON_RANK)
         return BLUE_RANKS.get(gear.get("inv"), NO_RANK)
     return NOT_SOLD if RANK_GROUP in item["groups"] else NO_RANK
+
+
+def honor_price(item_id: int, item: dict, gear: dict) -> dict:
+    """The full price of a Premier piece or the rank-two insignia, in vendor currencies."""
+    if item_id in (pvp_insignia.ALLIANCE, pvp_insignia.HORDE):
+        return {"honor": 5250, "copper": 15000}
+    if not sold_for_honor(item):
+        return {}
+    slot = 5 if gear.get("inv") == 20 else gear.get("inv")
+    level = gear.get("req")
+    seal = 0
+    if level == EPIC_LEVEL:
+        seal = SEAL_PRICES.get(slot, 0)
+        price = RARE_PRICES.get(slot) if seal else WEAPON_PRICES.get(slot)
+    else:
+        price = RARE_PRICES.get(slot) if level == 55 else None
+    if not price:
+        return {}
+    honor, mark, marks = price
+    fields = {"honor": honor, "mark": mark, "marks": marks}
+    if seal:
+        fields["seal"] = seal
+    return fields
 
 
 def filter_caps() -> tuple[int, ...]:

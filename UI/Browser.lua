@@ -594,11 +594,13 @@ end
 
 local function ItemTooltip(owner, data, side)
     PlaceTooltip(owner, side)
+    ns.Tooltip.skipPvPCost = true
     if data.enchantId and data.enchantId > 0 then
         pcall(GameTooltip.SetHyperlink, GameTooltip, ("item:%d:%d"):format(data.id, data.enchantId))
     else
         pcall(GameTooltip.SetItemByID, GameTooltip, data.id)
     end
+    ns.Tooltip.skipPvPCost = nil
     if GameTooltip:NumLines() == 0 then GameTooltip:SetText(ns.Items.Name(data.id), 1, 1, 1) end
     -- what a row shortens or leaves to a picture, in full
     local source = data.source
@@ -607,7 +609,9 @@ local function ItemTooltip(owner, data, side)
     GameTooltip:AddLine(" ")
     GameTooltip:AddLine(L.TIP_SOURCE:format(where), 1, 0.82, 0, true)
     if source.cost then
-        GameTooltip:AddLine(ns.Sources.CostLine(source.cost), 1, 0.82, 0, true)
+        for _, costLine in ipairs(ns.Sources.CostLines(source.cost)) do
+            GameTooltip:AddLine(costLine, 1, 0.82, 0, true)
+        end
         if source.cost.beta then GameTooltip:AddLine(L.TIP_COST_BETA, MUTED[1], MUTED[2], MUTED[3], true) end
     end
     local remark = ns.Sources.OriginRemark(source.origin)
@@ -635,10 +639,9 @@ local function ItemTooltip(owner, data, side)
         GameTooltip:AddLine(L.TIP_PLACED, MUTED[1], MUTED[2], MUTED[3], true)
     elseif data.level then
         GameTooltip:AddLine(L.TIP_LEVEL, MUTED[1], MUTED[2], MUTED[3], true)
-    elseif data.ratio and not data.bis and not data.tie then
+    elseif data.other and data.ratio and not data.bis and not data.tie then
         local share = math.floor(data.ratio * 100 + 0.5)
-        GameTooltip:AddLine((data.other and L.TIP_SCORE_SET or L.TIP_SCORE):format(share),
-            MUTED[1], MUTED[2], MUTED[3], true)
+        GameTooltip:AddLine(L.TIP_SCORE_SET:format(share), MUTED[1], MUTED[2], MUTED[3], true)
     end
 end
 
@@ -707,6 +710,11 @@ local function WhyTooltip(mark)
     GameTooltip:Show()
 end
 
+local CONSUMABLE_RULES = {
+    elixir = L.CONS_ELIXIR_RULE, scroll = L.CONS_SCROLL_RULE,
+    combat = L.CONS_POTION_RULE, healing = L.CONS_POTION_RULE, mana = L.CONS_POTION_RULE,
+}
+
 local function RowTooltip(row)
     local data = row.data
     if not data or data.kind == "note" or data.kind == "header" then return end
@@ -721,6 +729,10 @@ local function RowTooltip(row)
         local zoneNote = ns.Consumables.ZoneNote(consumable)
         if zoneNote then GameTooltip:AddLine(zoneNote, 0.45, 0.78, 1, true) end
         GameTooltip:AddLine(ns.Consumables.Where(consumable), 1, 0.82, 0, true)
+        local sourceRemark = ns.Sources.OriginRemark(consumable.origin)
+        if sourceRemark then GameTooltip:AddLine(sourceRemark, MUTED[1], MUTED[2], MUTED[3], true) end
+        local rule = CONSUMABLE_RULES[data.key]
+        if rule then GameTooltip:AddLine(rule, MUTED[1], MUTED[2], MUTED[3], true) end
         if data.unranked and data.key ~= "situational" then
             GameTooltip:AddLine(L.TIP_CONS_UNRANKED, MUTED[1], MUTED[2], MUTED[3], true)
         elseif data.ratio and not data.bis and not data.tie then
@@ -1176,7 +1188,7 @@ end
 -- count come three submenus: the PvP rewards, a box per list (each list counts them or not), the
 -- number of alternatives a slot lists, and the faction the lists are for.
 local OPTION_GROUPS = {
-    { "tooltip", "onlyMyClass", "alternatives", "altTooltipRanks", "repTooltip" },
+    { "tooltip", "onlyMyClass", "alternatives", "altTooltipRanks" },
     { "unsourced" },
     { "compact", "repCompact", "minimap", "auctionTab" },
 }

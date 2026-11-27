@@ -34,6 +34,7 @@ lupa = test_addon.lupa
 
 EYE_OF_REND = 12587             # a drop of Warchief Rend Blackhand: Enhancement Shaman's second PvE head
 DRAGONSCALE_HELM = 252605       # Black Dragonscale Helm, Leatherworking 300: Enhancement Shaman's best PvE head
+TOTEM_OF_RAGE = 22395           # Enhancement Shaman's recommended pre-raid relic
 TIMBERMAW_TUNIC = 252484        # crafted, Leatherworking 300
 GRAND_MARSHALS_SUNDERER = 18830  # PvP rank 14
 GENERALS_GREAVES = 231656       # no known source
@@ -1141,6 +1142,7 @@ class WindowTest(unittest.TestCase):
     # -- enchants -----------------------------------------------------------------------------
 
     def test_enchants_tab(self):
+        import enchantments
         import luaout
         game = self.open(saved=ENHANCEMENT)
         window = game.ns.Browser.window
@@ -1150,7 +1152,9 @@ class WindowTest(unittest.TestCase):
         game.stub.spellNames[int(wanted[1:])] = "A chest enchant"
         game.stub.run(window.tabs.buttons[2], "OnClick")
         rows = self.shown_rows(game)
-        self.assertEqual(len(rows), sum(len(ids) for ids in best.values()))
+        choices = enchantments.options("SHAMAN", "Melee DPS")
+        utility = {key: choices[key] for key in best.keys() & choices.keys()}
+        self.assertEqual(len(rows), sum(map(len, best.values())) + sum(map(len, utility.values())))
         self.assertTrue(all(row[0] == "enchant" for row in rows))
         chest = [row for row in rows if row[2] == "chest"]
         self.assertEqual([row[1] for row in chest], best["chest"])
@@ -1172,6 +1176,8 @@ class WindowTest(unittest.TestCase):
         first = frames[best["chest"][0]]
         self.assertEqual(strip_colors(first.rank.text), "BIS")
         self.assertTrue(first.bar.shown)
+        self.assertEqual(strip_colors(frames["s1328948"].rank.text), "Not ranked")
+        self.assertTrue(frames["s1328948"].data.unranked)
         game.stub.run(spell, "OnEnter")
         tooltip = game.lua.globals().GameTooltip
         self.assertEqual(tooltip.spell, int(wanted[1:]))
@@ -1187,19 +1193,23 @@ class WindowTest(unittest.TestCase):
         self.assertEqual(self.shown_rows(game), self.reference_rows("SHAMAN", 2, "pve", only_slot="main"))
 
     def test_enchants_follow_the_phase(self):
+        import enchantments
         import luaout
         game = self.open(cls="HUNTER", saved="EasyBISCharDB = { class = 'HUNTER', spec = 2, list = 'pve' }")
         window = game.ns.Browser.window
         ladder = luaout.enchant_ladders(self.db, "HUNTER", 2, self.kept["HUNTER"][2])
+        choices = enchantments.options("HUNTER", "Ranged DPS")
         game.stub.run(window.tabs.buttons[2], "OnClick")
         for phase in phases.PHASES:
             game.ns.SetPhase(game.ns, phase)
             best = luaout.best_enchants(ladder, phase)
             rows = self.shown_rows(game)
             self.assertEqual([row[1] for row in rows],
-                             [enchant for key in game.ns.Enchants.KEYS.values() for enchant in best.get(key, [])],
+                             [enchant for key in game.ns.Enchants.KEYS.values() if key in best
+                              for enchant in [*best[key], *choices.get(key, ())]],
                              f"phase {phase}")
         before = luaout.best_enchants(ladder, phases.PRE_RAID)
+        self.assertEqual(before["rng"][0], "i10548")
         self.assertNotIn("i23548", [e for ids in before.values() for e in ids], "Might of the Scourge needs Naxxramas")
         self.assertIn("i23548", luaout.best_enchants(ladder, EVERYTHING)["shoulder"])
         # a hunter carries no shield and holds nothing in the off hand
@@ -1217,12 +1227,16 @@ class WindowTest(unittest.TestCase):
         self.assertEqual(detail(boots), "Formula drops in Stratholme, or a scroll")
         strength = info("s1248668")
         self.assertEqual(detail(strength), "Formula, source unknown")
+        self.assertEqual(detail(info("s7418")), "Learned with the profession, or a scroll")
         kit = info("i15564")
         self.assertEqual((kind(kit), detail(kit)), ("Leatherworking (225)", "Taught by trainers"))
-        scroll = info("i273593")   # a scroll new in Forever: neither ForeverDB nor QuestieDB says where it is from
-        self.assertEqual((kind(scroll), detail(scroll)), ("Item to apply", "Unknown source"))
-        self.assertEqual(game.ns.Enchants.Category(scroll), "unknown")
-        self.assertEqual(game.ns.Enchants.Where(scroll), "where it comes from isn't known yet")
+        scroll = info("i273593")
+        self.assertEqual(kind(scroll), "Enchanting (300)")
+        self.assertIn("Ahn'Qiraj reagents", game.ns.Enchants.Where(scroll))
+        self.assertEqual(scroll.origin, "c")
+        spellblasting = info("s1219580")
+        self.assertIn("Alynsia", detail(spellblasting))
+        self.assertIn("Beneris", detail(spellblasting))
         self.assertEqual((game.ns.Enchants.Category(cloak), game.ns.Enchants.Category(kit)), ("crafted", "crafted"))
         self.assertEqual(game.ns.Enchants.Where(kit), "Leatherworking 225: from a trainer")
         # the items to apply that a quest or a boss gives: the source read in QuestieDB, said as an item's is
@@ -1241,7 +1255,7 @@ class WindowTest(unittest.TestCase):
             record = info(enchant)
             if record is None:
                 continue   # not among the enchants the addon lists
-            read = (record.trainer or record.recipe or record.category
+            read = (record.trainer or record.learned or record.recipe or record.category
                     or fields[2] == "where it comes from isn't known yet")
             self.assertTrue(read, f"{enchant}: {fields[2]!r} is a sentence Enchants.lua does not read")
             if fields[3] == "t":
@@ -1285,12 +1299,15 @@ class WindowTest(unittest.TestCase):
         self.assertEqual(look(window.alts), "idle")
         self.assertEqual(self.shown_rows(game), self.reference_rows("MAGE", 2, "pve", alts=False))
         self.assertTrue(all(row[3] for row in self.shown_rows(game)), "only best picks are left")
-        # the enchants follow the switch
+        # The switch hides ranked alternatives and keeps unranked utility enchants.
         game.stub.run(window.tabs.buttons[2], "OnClick")
-        self.assertTrue(all(row[3] for row in self.shown_rows(game)))
+        enchants = [frame.data for frame in self.frames(game)]
+        self.assertTrue(all(row.bis or row.unranked for row in enchants))
+        self.assertTrue(any(row.unranked for row in enchants))
         game.stub.run(window.alts, "OnClick")
         self.assertTrue(game.ns.db.listAlts)
-        self.assertFalse(all(row[3] for row in self.shown_rows(game)))
+        enchants = [frame.data for frame in self.frames(game)]
+        self.assertTrue(any(not row.bis and not row.unranked for row in enchants))
         # the choice comes back
         again = self.open(saved="EasyBISDB = { listAlts = false }; " + ENHANCEMENT)
         self.assertEqual(self.shown_rows(again), self.reference_rows("SHAMAN", 2, "pve", alts=False))
@@ -1347,7 +1364,6 @@ class WindowTest(unittest.TestCase):
         menu = game.stub.menu
         self.assertEqual(texts(menu), ["Options", "BIS lines in item tooltips", "Tooltips show my class only",
                                        "Tooltips show alternatives too", "Show alternative ranks in tooltips",
-                                       "Reputation needed in item tooltips",
                                        "Lists shown in tooltips", "Items with no known source",
                                        "PvP rewards", "Alternatives per slot",
                                        "Faction", "Compact rows", "Short reputation lines", "Minimap button",
@@ -1677,8 +1693,7 @@ class WindowTest(unittest.TestCase):
         game.stub.run(row, "OnEnter")
         lines = [strip_colors(line[1]) for line in game.lua.globals().GameTooltip.lines.values()]
         self.assertIn(game.ns.L.TIP_PLACED, lines)
-        score = game.ns.L.TIP_SCORE.split("%")[0]
-        self.assertFalse(any(line.startswith(score) for line in lines), "no score in its tooltip either")
+        self.assertFalse(any(line.startswith("Score ") for line in lines), "no score in its tooltip either")
 
     def test_tooltip_opens_beside_the_window(self):
         game = Game(saved=ENHANCEMENT)
@@ -1698,12 +1713,13 @@ class WindowTest(unittest.TestCase):
         game.lua.globals().UIParent.right, window.right = 1600, 1500
         game.stub.run(rows[0], "OnEnter")
         self.assertEqual((tooltip.points[1][1], tooltip.points[1][3]), ("TOPRIGHT", "TOPLEFT"))
-        # what the row shortens is in the tooltip in full
+        # the tooltip shows the full source of a scored alternative
+        self.assertIsNotNone(rows[1].data.ratio)
         game.stub.run(rows[1], "OnEnter")
         lines = [strip_colors(line[1]) for line in tooltip.lines.values()]
         self.assertIn("Source: Dungeon - Warchief Rend Blackhand - Blackrock Spire (15%)", lines)
         self.assertNotIn("* Source from Classic's data, not confirmed in Forever.", lines)
-        self.assertTrue(any(re.match(r"Score for this slot: \d+% of the best pick's\.", line) for line in lines), lines)
+        self.assertFalse(any(line.startswith("Score for this slot:") for line in lines), lines)
 
     def test_window_height_is_kept(self):
         game = self.open()
@@ -2057,13 +2073,13 @@ class WindowTest(unittest.TestCase):
         hands = cells[6]
         self.assertTrue(hands.mirrored, "the right column has its pictures on the outside, as in the game")
         self.assertEqual(hands.points[1][1], "TOPRIGHT")
-        # an Enhancement Shaman's two-hander leaves the off hand empty, and its list has nothing at range
+        # Enhancement's two-hander leaves the off hand empty, and the ranged cell shows its relic.
         off, ranged = cells[15], cells[16]
         self.assertTrue(off.data.twoHand)
         self.assertFalse(off.icon.shown)
         self.assertEqual((strip_colors(off.name.text), off.where.text), ("Off hand", "Taken by the two-hander"))
-        self.assertIsNone(ranged.data.id)
-        self.assertEqual((strip_colors(ranged.name.text), ranged.where.text), ("Ranged or relic", "Nothing listed"))
+        self.assertEqual(ranged.data.id, TOTEM_OF_RAGE)
+        self.assertEqual(strip_colors(ranged.name.text), "Totem of Rage")
 
         # back to the list: the sheet goes, the rows and their filters come back
         game.stub.run(window.tabs.buttons[1], "OnClick")
@@ -2318,7 +2334,7 @@ class WindowTest(unittest.TestCase):
         self.assertEqual(label(game.ns.Browser.window.tabs.buttons[3]), "Personnage")
         self.assertEqual(game.ns.Character.view.subtitle.text, "Niveau 60 JcE - Pré-raid")
         self.assertEqual(cells[("off", 1)].where.text, "Prise par l'arme à deux mains")
-        self.assertEqual(cells[("ranged", 1)].where.text, "Rien dans la liste")
+        self.assertEqual(cells[("ranged", 1)].data.id, TOTEM_OF_RAGE)
 
     # -- a client without the newer frames and menus ---------------------------------------
 
@@ -2467,6 +2483,17 @@ class WindowTest(unittest.TestCase):
         lines = [plain(line[1]) for line in game.lua.globals().GameTooltip.lines.values()]
         self.assertTrue(any(text.startswith("Requires ") for text in lines), lines)
         self.assertEqual(sum(1 for text in lines if text.startswith("Requires ")), 1)
+
+    def test_enchant_reputation_filters_before_selecting_the_best(self):
+        game = self.open(cls="HUNTER", saved="EasyBISCharDB = { class = 'HUNTER', spec = 2, phase = 9 }")
+        state = game.lua.table_from({"class": "HUNTER", "spec": 2, "slot": "head", "reputation": "ok"})
+        game.ns.SetOption(game.ns, "listAlts", False)
+        rows = list(game.ns.Rows.Enchants(state).values())
+        self.assertEqual([(row.enchant.id, row.bis) for row in rows], [("i18329", True)])
+        for side, faction, vendor in (("a", 2586, 256732), ("h", 2587, 248199)):
+            for enchant in ("s1219580", "s1328948"):
+                need = game.ns.Reputation.EnchantRequirement(enchant, side)
+                self.assertEqual((need.factionID, need.vendor, need.standing, need.kind), (faction, vendor, 5, "r"))
 
     def test_reputations_tab(self):
         game = self.pvp_game()
@@ -3186,6 +3213,7 @@ class WindowTest(unittest.TestCase):
 
     def test_a_consumable_tied_to_a_zone_stands_out(self):
         game = self.open_consumables("WARRIOR", 3)
+        game.ns.SetPhase(game.ns, EVERYTHING)
         game.stub.run(game.ns.Browser.window.alts, "OnClick")
         frames = [frame for frame in self.frames(game) if frame.data.kind == "consumable"]
         marked = [frame for frame in frames if frame.zoneMark.shown]
@@ -3789,6 +3817,22 @@ class CostWindowTest(unittest.TestCase):
         self.assertIn("|T134400:", self.row(game, self.CLOAK).detail.text, "the currency's picture")
         game.ns.SetOption(game.ns, "compact", False)
         self.assertEqual(plain(self.row(game, self.CLOAK).detail.text), "75 Reals · Pix Xizzix - Map 1434")
+
+    def test_a_pvp_row_shows_the_required_rank_and_price_in_both_layouts(self):
+        saved = "EasyBISCharDB = { class = 'MAGE', spec = 1, list = 'pvp' }"
+        game = Game(locale="frFR", cls="MAGE", saved=saved)
+        game.ns.Browser.Open()
+        for compact in (True, False):
+            game.ns.SetOption(game.ns, "compact", compact)
+            row = self.row(game, 272856)
+            self.assertEqual(plain(row.detail.text),
+                             "Rang 14 · 12000 Honneur + 10 marques Sombrelances · Captain O'Neal - Map 1453")
+        game.stub.currencies[1792] = 3000
+        game.stub.itemCounts[274895] = 3
+        game.stub.run(row, "OnEnter")
+        lines = [plain(line[1]) for line in game.lua.globals().GameTooltip.lines.values()]
+        self.assertIn("Coût : 12000 Honneur (vous en avez 3000, il en manque 9000)", lines)
+        self.assertIn("Coût : 10 Marque d’honneur des îles des Sombrelances (vous en avez 3, il en manque 7)", lines)
 
     def test_the_tooltip_says_what_is_missing(self):
         game = self.open()

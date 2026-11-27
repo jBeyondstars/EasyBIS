@@ -46,6 +46,8 @@ NOT_READ_FAMILIES = ("Alcohol",)
 _WEAPON_ITEM = re.compile(r"Sharpening Stone|Weightstone|Wizard Oil|Mana Oil")
 # Free Action, Swiftness and Restorative potions: of a low level, and what a raid or a battleground asks for at the cap.
 ALWAYS_READ = (5634, 2459, 9030)
+# Blizzard's 2026-11-23 cooking fixes include low-level dishes that the catalogue calls plain food.
+COOKING_HOTFIX_ITEMS = frozenset({3663, 5525, 5526, 5527, 6038, 16766, 250081})
 
 # Stat ids are ForeverDB's, which are the game's item stats (capture.GAME_KEYS); "armor" is ForeverDB's weight of that name.
 AGILITY, STRENGTH, INTELLECT, SPIRIT, STAMINA = 3, 4, 5, 6, 7
@@ -474,7 +476,7 @@ def consumable_ids(data) -> list:
     for item, row in data.catalogue.items():
         if not row["leftover"] and row["kind"] != PERMANENT_KIND and row["family"] not in NOT_READ_FAMILIES:
             families.setdefault((row["kind"], row["family"]), []).append(item)
-    kept = set(weapon_items(data)) | {item for item in ALWAYS_READ if item in data.catalogue}
+    kept = set(weapon_items(data)) | ((set(ALWAYS_READ) | COOKING_HOTFIX_ITEMS) & data.catalogue.keys())
     for items in families.values():
         rows = {item: data.catalogue[item] for item in items}
         high = [item for item, row in rows.items() if row["level"] >= FROM_LEVEL]

@@ -302,6 +302,9 @@ class AddonTest(unittest.TestCase):
                     (first_reset, first_reset + week, 2),
                     (first_reset + week - 1, first_reset + week, 2),
                     (first_reset + week, first_reset + 2 * week, 3),
+                    (first_reset + 2 * week - 1, first_reset + 2 * week, 3),
+                    (first_reset + 2 * week, first_reset + 3 * week, 4),
+                    (first_reset + 3 * week, first_reset + 4 * week, 5),
                     (first_reset + 8 * week, first_reset + 9 * week, 10),
                     (first_reset + 30 * week, first_reset + 31 * week, 32)):
                 game.stub.serverTime, game.stub.untilReset = now, next_reset - now
@@ -312,6 +315,27 @@ class AddonTest(unittest.TestCase):
         for now, expected_week in ((launch, 1), (launch + week - 1, 1), (launch + week, 2)):
             game.stub.serverTime = now
             self.assertEqual(game.ns.SeasonWeek(), expected_week)
+
+    def test_available_now_follows_the_clients_weekly_pvp_cap(self):
+        game = Game(cls="PRIEST", saved="EasyBISDB = { availableNow = true }")
+        game.lua.execute("""
+            pvpProgress = { renownLevel = 3 }
+            C_MajorFactions = { GetMajorFactionProgressionInfo = function(id)
+                if id == 2800 then return pvpProgress end
+            end }
+        """)
+        api = game.lua.globals()
+        bracers = 272822
+        self.assertEqual(game.ns.Filter().rankCap, 6)  # the test calendar is in week three
+        for reported, expected in ((7, 7), (8, 8), (0, 6), (None, 6)):
+            with self.subTest(reported=reported):
+                api.pvpProgress.currentWeekProgressiveMaxLevel = reported
+                self.assertEqual(game.ns.Filter().rankCap, expected)
+                wrist = game.ns.Ladders.For("PRIEST", 3, "pvp").wrist
+                self.assertEqual(wrist.best[1].id == bracers, expected == 8)
+                hits = game.ns.Index.ForItem(bracers)
+                self.assertEqual(any(hit["class"] == "PRIEST" and hit.spec == 3 and hit.list == "pvp"
+                                     for hit in hits.values()) if hits else False, expected == 8)
 
     def test_the_rank_cap_option_narrows_the_lists(self):
         game = Game()
@@ -978,10 +1002,13 @@ class AddonTest(unittest.TestCase):
         self.assertIn("[Eye of Rend]", chat[1])       # the English name, the game has not loaded the item
         self.assertTrue(chat[1].startswith("Easy BIS:   Head: BIS "))
         self.assertIn("two-hander", next(line for line in chat if "Off hand" in line))
-        # a Fire Mage has both styles: the two-handers follow the one-handers as alternatives
+        # A Fire Mage lists both weapon styles and keeps the situational staff among the alternatives.
         mage = Game(cls="MAGE")
         main = next(line for line in mage.slash("list 2") if "Main hand" in line)
-        self.assertEqual(main.count("["), 1 + ladders.ALTERNATIVES + 1 + ladders.ALTERNATIVES, main)
+        self.assertIn("[Sageblade]", main)
+        self.assertIn("[Elemental Mage Staff]", main)
+        self.assertIn("[Argent Crusader]", main)
+        self.assertEqual(main.count("["), 2 * (1 + ladders.ALTERNATIVES) + 1, main)
         self.assertIn("PvP", game.slash("list 2 pvp")[0])
         self.assertEqual(game.slash("list 7"), ["Easy BIS: Your class has no spec number 7. Its specs: 1 Elemental, "
                                                 "2 Enhancement, 3 Restoration."])
@@ -1264,13 +1291,8 @@ class AddonTest(unittest.TestCase):
         stub.factions[576] = lua.table_from({"reaction": 8, "value": 42000, "low": 42000, "high": 43000, "name": "Timbermaw Hold"})
         stub.fire("UPDATE_FACTION")
         self.assertNotIn("|cffffd100", rep.StateText(woolies))
-        lines = list(rep.TooltipLines(15065).values())
-        self.assertEqual((lines[0].r, lines[0].g, lines[0].b), (1, 1, 1), "the tailor's own standing is not the piece's")
-        self.assertEqual(lines[1].text, "Leatherworking: not one of your professions")
-        self.assertIn("Recipe sold by: Meilosh, Map 1448 65.7, 2.8", [line.text for line in lines])
         learn(("Leatherworking", 300, 165))
-        first = rep.TooltipLines(15065)[1]
-        self.assertEqual((first.r, first.g, first.b), (1, 0.82, 0), "the leatherworker has earned it: gold")
+        self.assertEqual(rep.StateText(woolies), "|cffffd100Earned|r", "the leatherworker has earned it: gold")
         # no profession at all
         learn()
         self.assertEqual(dict(rep.Professions()), {})
@@ -1416,34 +1438,13 @@ class AddonTest(unittest.TestCase):
         game.stub.runTimers()
         self.assertEqual(seen.count, 1)
 
-    def test_reputation_tooltip(self):
-        game = Game(cls="WARRIOR")
-        rep = game.ns.Reputation
-        text = (ADDON / "Data" / "Reputation.lua").read_text(encoding="utf-8")
-        block = re.search(r"items = \[==\[\n(.*?)\]==\]", text, re.S).group(1)
-        # a piece of a faction the Alliance can earn: one of the Horde's is never earned
-        fields = next(fields for fields in map(lambda line: line.split("|"), block.splitlines())
-                      if fields[4] == "w" and fields[6] and fields[1] != "h"
-                      and reputations.FACTIONS[int(fields[2])][1] != "h")
-        item_id, faction = int(fields[0]), int(fields[2])
-        lines = list(rep.TooltipLines(item_id).values())
-        self.assertTrue(lines[0].text.startswith("Requires "))
-        self.assertEqual((lines[0].r, lines[0].g, lines[0].b), (1, 1, 1), "not earned: not gold")
-        words = [strip_colors(line.text) for line in lines]
-        self.assertTrue(any(word.startswith("You: ") for word in words), words)
-        self.assertTrue(any(word.startswith("Vendor: ") for word in words), words)
-        self.assertTrue(any(word.startswith("Price: ") for word in words), words)
-        game.stub.factions[faction] = game.lua.table_from({"reaction": 8, "value": 42000, "low": 42000, "high": 43000})
-        game.stub.fire("UPDATE_FACTION")
-        first = rep.TooltipLines(item_id)[1]
-        self.assertEqual((first.r, first.g, first.b), (1, 0.82, 0), "earned: gold")
-        self.assertEqual(len(rep.TooltipLines(EYE_OF_REND)), 0)
-        # the option takes them out of the game's tooltips
-        shown = lambda: any(line[0].startswith("Requires ") for line in game.tooltip(item_id))
-        if game.lines(item_id):
-            self.assertTrue(shown())
-            game.ns.SetOption(game.ns, "repTooltip", False)
-            self.assertFalse(shown())
+    def test_item_tooltip_omits_reputation_with_old_setting(self):
+        game = Game(cls="PRIEST", saved="EasyBISDB = { repTooltip = true }")
+        item_id = 19047  # Wisdom of the Timbermaw
+        self.assertEqual(game.ns.Reputation.Requirement(item_id).kind, "r")
+        rankings = game.lines(item_id)
+        self.assertTrue(rankings)
+        self.assertEqual(game.tooltip(item_id), [(" ",), ("Easy BIS",), *rankings])
 
     def test_reputation_ways_say_what_is_known(self):
         game = Game()
@@ -1671,6 +1672,46 @@ class CostTest(unittest.TestCase):
         self.assertEqual(no_pictures(self.sources.WithCost("Pix Xizzix", cost)), "75 Reals · Pix Xizzix")
         self.assertIsNone(self.sources.Describe(EYE_OF_REND).cost, "a drop costs nothing")
         self.assertEqual(self.sources.WithCost("Blackrock Spire", None), "Blackrock Spire")
+
+    def test_pvp_prices_include_the_right_marks_and_the_upgrade(self):
+        for item, honor, mark, count, seal in (
+            (272453, 7500, 274895, 10, None),   # rare boots
+            (272787, 11650, 20560, 15, 2650), # epic helm
+            (272856, 12000, 274895, 10, None), # Alliance one-hander
+            (272683, 12000, 274895, 10, None), # Horde counterpart
+            (272840, 22500, 20560, 20, None),  # two-hander
+        ):
+            cost = self.sources.Describe(item).cost
+            self.assertEqual((cost.item, cost.amount, cost.seal), (1792, honor, seal), item)
+            self.assertEqual((cost.extra[1].item, cost.extra[1].amount), (mark, count), item)
+        self.assertIsNone(self.sources.Describe(18830).cost, "Classic Grand Marshal's Sunderer")
+
+    def test_the_game_tooltip_breaks_down_epic_upgrade_and_marks(self):
+        self.game.stub.currencies[1792] = 8000
+        self.game.stub.itemCounts[20560] = 6
+        lines = [no_pictures(line[0]) for line in self.game.tooltip(272787)]
+        self.assertIn("Cost: 11650 Honor (you have 8000, 3650 missing)", lines)
+        self.assertIn("Cost: 15 Alterac Valley Mark of Honor (you have 6, 9 missing)", lines)
+        self.assertIn("Upgrade from the rare piece (9000 Honor) with an Emboldened Seal (2650 Honor).", lines)
+
+    def test_the_price_line_includes_the_required_rank_once(self):
+        wrist = self.sources.Describe(272822)  # Premier Knight-Captain's Voidcloth Bracers
+        boots = self.sources.Describe(272453)  # rank-free rare set
+        self.assertEqual(no_pictures(self.sources.WithCost(self.sources.Line(wrist), wrist.cost)),
+                         "Rank 8 · 5700 Honor + 10 WSG marks")
+        self.assertEqual(no_pictures(self.sources.WithCost(self.sources.Line(boots), boots.cost)),
+                         "7500 Honor + 10 Darkspear marks")
+        self.assertEqual(self.sources.PvPCost(274445).rank, 2)  # vendor source with a secondary rank source
+        self.assertEqual(self.sources.PvPCost(275240).rank, 8)  # wrist seal
+
+    def test_the_set_total_counts_every_currency_for_unowned_pieces(self):
+        self.game.stub.equipped[272856] = True
+        cells = self.game.lua.table_from([
+            self.game.lua.table_from({"id": item, "source": self.sources.Describe(item)})
+            for item in (272453, 272856, 272787, 274445)
+        ])
+        owed = {row.item: row.amount for row in self.sources.ToPay(cells).values()}
+        self.assertEqual(owed, {1792: 24400, 274895: 10, 20560: 15, 0: 15000})
 
     def test_a_price_read_at_the_vendor_is_not_called_the_betas(self):
         source = self.game.ns.Items.Get(self.CLOAK).sources[1]

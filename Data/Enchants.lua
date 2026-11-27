@@ -5,360 +5,456 @@
 -- (https://github.com/Questie/QuestieDB, GPL-3.0), labelled t. An item of ForeverDB's lists counts from the phase that source needs;
 -- the 455 pieces added from the game among them stay flagged u and 9, with the source to show. See _build/questie.py.
 --   E <spec> <slot key> <ids>    ids best first; s<spell id> an enchant, i<item id> a kit, spike or scope;
+--   U <spec> <slot key> <ids>    situational choices without a rank
 --                                id:<phase> when it needs a raid (as in Lists.lua; see _build/phases.py)
 --   slot keys: head neck shoulder back chest wrist hands legs feet, w1h w2h (weapons), shield, held, rng
--- An item takes only one of them. The addon shows the first 3 of the character's phase.
+-- The addon shows the first 3 eligible choices per slot and any situational options.
 -- A weapon, shield, held or ranged key is listed only for the specs whose PvE list holds such an item.
--- Changed from ForeverDB's lists: the tanks (Feral (Bear) Druid, Protection Paladin) are not listed the head and leg enchants of another class's Zul'Gurub quest. See _build/specs.py.
+-- Zul'Gurub head and leg enchants follow their class restrictions. See _build/specs.py.
 -- Added to ForeverDB's lists: the enchants of Feral (Cat) Druid (spec 4), a spec ForeverDB does not have: its enchants, ranked on that spec's weights.
 local _, ns = ...
 ns.data = ns.data or {}
 ns.data.enchants = {
 DRUID = [==[
-E	1	chest	i252487 i252462 i252452
-E	1	feet	i252487 i252462 i252452
-E	1	hands	s1213626 s13948 i252487
-E	1	head	i19787:9 i18330
+E	1	chest	i252487 i252462 i252452 s20028 s13917 i273593:9 s13663 i252436 s13607 s7776 s7443
+E	1	feet	i252487 i252462 i252452 i252436 s20024 s13687 s13836
+E	1	hands	s1213626 s13948 i252487 i252462 i252452 i252436
+E	1	head	i18330
 E	1	held	s1219577 s1219579
-E	1	legs	i19787:9 i18330 i252487 i252462
+E	1	legs	i18330 i252487 i252462 i252452 i252436
 E	1	neck	s1249057
 E	1	shoulder	i23545:9 i20076:9
 E	1	w1h	s22749:9 s23804
 E	1	w2h	s1219580 s22749:9 s23804 s7793
-E	1	wrist	s1220624 i273596 s1248498
-E	2	back	s25086:9 s20015 s13746 s13635
-E	2	chest	i279258 i15564 s20026
-E	2	feet	i279258 i15564 i8173
-E	2	hands	i279258 s25080:9 i15564 s20012
+E	1	wrist	s1220624 s1248498 s1248459 s1248458 s13622
+U	1	feet	s1328948 s13890
+U	1	w1h	s1248805 s1248757
+U	1	w2h	s1248805 s1248757
+E	2	back	s25086:9 s20015 s13746 s13635 s13421 s7771
+E	2	chest	i279258 i15564 s20026 i273593:9 i8173 s13858 i4265 s13640 i2313 s7857 s7748
+E	2	feet	i279258 i15564 i8173 s20020 i4265 s13836 i2313 s13644
+E	2	hands	i279258 s25080:9 i15564 s20012 i8173 i4265 s13815 i2313
 E	2	head	i18331
-E	2	legs	i279258 i18331 i15564
+E	2	legs	i279258 i18331 i15564 i8173 i4265 i2313
 E	2	neck	s1249059
 E	2	shoulder	i23549:9 i20077:9
 E	2	w1h	s23800 s20034
-E	2	w2h	s27837 s23800 s20034
-E	2	wrist	s1248665 s13931 i273597
-E	3	chest	i252487 i252462 s20028
-E	3	feet	i252487 i252462 i252452
-E	3	hands	s25079:9 s13948 i252487 i252462
-E	3	head	i19789:9 i18330
+E	2	w2h	s27837 s23800 s20034 s1248510
+E	2	wrist	s1248665 s13931 i273597:9 s13648 s7428 s7418
+U	2	feet	s1328948 s13890
+U	2	w1h	s1248805 s1248757 s1248760
+U	2	w2h	s1248805 s1248757 s1248760
+E	3	chest	i252487 i252462 s20028 i273593:9 i252452 s13917 s13663 i252436 s13607 s7776 s7443
+E	3	feet	i252487 i252462 i252452 s20024 i252436 s13687 s13836
+E	3	hands	s25079:9 s13948 i252487 i252462 i252452 i252436
+E	3	head	i18330
 E	3	held	s1219578 s1219579
-E	3	legs	i19789:9 i18330 i252487 i252462
+E	3	legs	i18330 i252487 i252462 i252452 i252436
 E	3	neck	s1249058
 E	3	shoulder	i23547:9 i20078:9
 E	3	w1h	s22750:9 s23803
 E	3	w2h	s1248636 s22750:9 s23803 s7793
-E	3	wrist	s23802 s1248498 i273596
+E	3	wrist	s23802 s1248498 s1248459 s1248458 s13622
+U	3	feet	s1328948 s13890
+U	3	w1h	s1248805 s1248757
+U	3	w2h	s1248805 s1248757
 E	4	back	s1219587 s13419
-E	4	chest	s20025:1 s13941 s13700 i252488
-E	4	feet	s20023 s13935 s13637
-E	4	hands	s25080:9 s1248640 s20012 s20013
+E	4	chest	s20025:1 s13941 s13700 i252488 i252463 i252453 s13626 i252437
+E	4	feet	s20023 s13935 s13637 i252488 i252463 i252453 i252437
+E	4	hands	s25080:9 s1248640 s20012 s20013 s13815 s13887 s13948 i252488 i252463 i252453 i252437
 E	4	head	i11647 i11645
-E	4	legs	i11647 i11645 i252488
+E	4	legs	i11647 i11645 i252488 i252463 i252453 i252437
 E	4	neck	s1249059 s1249019
 E	4	shoulder	i23548:9 i20077:9
 E	4	w1h	s23800 s23799
-E	4	w2h	s27837 s1248668 s23800
-E	4	wrist	s1248599 i273597 s20010
+E	4	w2h	s27837 s1248668 s23800 s1248510 s1248511 s23799
+E	4	wrist	s1248599 i273597:9 s20010 s1248500 s13939 s1248497 s13661 s1248460 s13536 s7779 s7782
+U	4	feet	s1328948 s13890
+U	4	w1h	s1248805 s1248757 s1248760
+U	4	w2h	s1248805 s1248757 s1248760
 ]==],
 HUNTER = [==[
 E	1	back	s1219587 s13419
-E	1	chest	i273593 s20025:1 s13941 s13700
-E	1	feet	s20023 s13935 s13637
-E	1	hands	s25080:9 s20012 s13948 s13815
+E	1	chest	i273593:9 s20025:1 s13941 s13700 s13626 i252488 i252463 s7776 i252453
+E	1	feet	s20023 s13935 s13637 i252488 i252463 i252453
+E	1	hands	s25080:9 s20012 s13948 s13815 i252488 i252463 i252453
 E	1	head	i19785:9 i11647
-E	1	legs	i19785:9 i11647 i252488 i252463
+E	1	legs	i19785:9 i11647 i252488 i252463 i252453
 E	1	neck	s1249059
-E	1	rng	i18283 i279272 i10548
+E	1	rng	i18283:9 i279272:9 i10548 i10546 i4407 i4406 i4405
 E	1	shoulder	i23548:9 i20077:9
 E	1	w1h	s23800
-E	1	w2h	s27837 s23800 s1248510
-E	1	wrist	s1248599 i273597 s1248500
+E	1	w2h	s27837 s23800 s1248510 s7793
+E	1	wrist	s1248599 i273597:9 s1248500 s1248497 s1248460 s7779
+U	1	feet	s1328948 s13890
+U	1	w1h	s1248805 s1248757
+U	1	w2h	s1248805 s1248757
 E	2	back	s1219587 s13419
-E	2	chest	i273593 s20025:1 s13941 s13700
-E	2	feet	s20023 s13935 s13637
-E	2	hands	s25080:9 s20012 s13948 s13815
+E	2	chest	i273593:9 s20025:1 s13941 s13700 s13626 i279258 s7776 i15564
+E	2	feet	s20023 s13935 s13637 i279258 i15564
+E	2	hands	s25080:9 s20012 s13948 s13815 i279258 i15564
 E	2	head	i19785:9 i18329
 E	2	legs	i19785:9 i18329 i279258 i15564
 E	2	neck	s1249059
-E	2	rng	i18283 i279272 i10548
+E	2	rng	i18283:9 i279272:9 i10548 i10546 i4407 i4406 i4405
 E	2	shoulder	i23548:9 i20077:9
 E	2	w1h	s23800
-E	2	w2h	s27837 s23800 s1248510
-E	2	wrist	s1248599 i273597 s1248500
+E	2	w2h	s27837 s23800 s1248510 s7793
+E	2	wrist	s1248599 i273597:9 s1248500 s1248497 s1248460 s7779
+U	2	feet	s1328948 s13890
+U	2	w1h	s1248805 s1248757
+U	2	w2h	s1248805 s1248757
 E	3	back	s1219587 s13419
-E	3	chest	i273593 s20025:1 i252488 s13941
-E	3	feet	s20023 s13935 i252488
-E	3	hands	s25080:9 s20012 s13948 s13815
+E	3	chest	i273593:9 s20025:1 i252488 s13941 i252463 i252453 s13700 i252437 s13626 s7857
+E	3	feet	s20023 s13935 i252488 s13637 i252463 i252453 i252437
+E	3	hands	s25080:9 s20012 s13948 s13815 i252488 i252463 i252453 i252437
 E	3	head	i19785:9 i11647
-E	3	legs	i19785:9 i11647 i252488 i252463
+E	3	legs	i19785:9 i11647 i252488 i252463 i252453 i252437
 E	3	neck	s1249059
-E	3	rng	i10548 i10546 i4407
+E	3	rng	i10548 i10546 i4407 i4406 i4405
 E	3	shoulder	i23548:9 i20077:9
-E	3	w2h	s27837 i6043 s23800
-E	3	wrist	s1248599 i273597 s1248500
+E	3	w2h	s27837 i6043 s23800 s1248510 s20034
+E	3	wrist	s1248599 i273597:9 s1248500 s1248497 s1248460 s7779
+U	3	feet	s1328948 s13890
+U	3	w2h	s1248805 s1248757 s1248760
 E	4	back	s1219587 s13419
-E	4	chest	s20025:1 s20028 s13917 s13941
-E	4	feet	s20023 s13935 s13637
-E	4	hands	s25080:9 s20012 s13948 s13815
+E	4	chest	s20025:1 s20028 s13917 s13941 s13663 i252488 s13700 i252463 s13607 i252453 s7776 s13626 i252437 s7443
+E	4	feet	s20023 s13935 s13637 i252488 i252463 i252453 i252437
+E	4	hands	s25080:9 s20012 s13948 s13815 i252488 i252463 i252453 i252437
 E	4	head	i19785:9 i11647
-E	4	legs	i19785:9 i11647 i252488 i252463
+E	4	legs	i19785:9 i11647 i252488 i252463 i252453 i252437
 E	4	neck	s1249059
-E	4	rng	i18283 i279272 i10548
+E	4	rng	i18283:9 i279272:9 i10548 i10546 i4407 i4406 i4405
 E	4	shoulder	i23548:9 i20077:9 i23547:9
 E	4	w1h	s23800 s23804
-E	4	w2h	s27837 s23800 s1248510
-E	4	wrist	s1248599 i273597 s1248500
+E	4	w2h	s27837 s23800 s1248510 s23804 s7793
+E	4	wrist	s1248599 i273597:9 s1248500 s1248497 s1248460 s7779 s1248458 s13622
+U	4	feet	s1328948 s13890
+U	4	w1h	s1248805 s1248757
+U	4	w2h	s1248805 s1248757
 ]==],
 MAGE = [==[
-E	1	chest	i252487 i252462 s20028
-E	1	feet	i252487 i252462 i252452
-E	1	hands	s1213626 s13948 i252487
+E	1	chest	i252487 i252462 s20028 i252452 s13917 i273593:9 s13663 i252436 s13607 s7776 s7443
+E	1	feet	i252487 i252462 i252452 i252436 s20024 s13687 s13836
+E	1	hands	s1213626 s13948 i252487 i252462 i252452 i252436
 E	1	head	i19787:9 i18330
 E	1	held	s1219579
-E	1	legs	i19787:9 i18330 i252487 i252462
+E	1	legs	i19787:9 i18330 i252487 i252462 i252452 i252436
 E	1	neck	s1249057
 E	1	shoulder	i23545:9 i20076:9
 E	1	w1h	s22749:9 s23804
 E	1	w2h	s1219580 s22749:9 s23804 s7793
-E	1	wrist	s1220624 i273596 s1248498
-E	2	chest	i252487 i252462 i252452
-E	2	feet	i252487 i252462 i252452
-E	2	hands	s25078:9 s13948 i252487 i252462
+E	1	wrist	s1220624 s1248498 s1248459 s1248458 s13622
+U	1	feet	s1328948 s13890
+U	1	w1h	s1248805 s1248757
+U	1	w2h	s1248805 s1248757
+E	2	chest	i252487 i252462 i252452 s20028 s13917 i273593:9 s13663 i252436 s13607 s7776 s7443
+E	2	feet	i252487 i252462 i252452 i252436 s20024 s13687 s13836
+E	2	hands	s25078:9 s13948 i252487 i252462 i252452 i252436
 E	2	head	i19787:9 i18330
 E	2	held	s1219577 s1219579
-E	2	legs	i19787:9 i18330 i252487 i252462
+E	2	legs	i19787:9 i18330 i252487 i252462 i252452 i252436
 E	2	neck	s1249057
 E	2	shoulder	i23545:9 i20076:9
 E	2	w1h	s22749:9 s23804
 E	2	w2h	s1219580 s22749:9 s23804 s7793
-E	2	wrist	s1220624 i273596 s1248498
-E	3	chest	i252487 i252462 i252452
-E	3	feet	i252487 i252462 i252452
-E	3	hands	s25074:9 s13948 i252487 i252462
+E	2	wrist	s1220624 s1248498 s1248459 s1248458 s13622
+U	2	feet	s1328948 s13890
+U	2	w1h	s1248805 s1248757
+U	2	w2h	s1248805 s1248757
+E	3	chest	i252487 i252462 i252452 s20028 s13917 i273593:9 s13663 i252436 s13607 s7776 s7443
+E	3	feet	i252487 i252462 i252452 i252436 s20024 s13687 s13836
+E	3	hands	s25074:9 s13948 i252487 i252462 i252452 i252436
 E	3	head	i19787:9 i18330
 E	3	held	s1219577 s1219579
-E	3	legs	i19787:9 i18330 i252487 i252462
+E	3	legs	i19787:9 i18330 i252487 i252462 i252452 i252436
 E	3	neck	s1249057
 E	3	shoulder	i23545:9 i20076:9
 E	3	w1h	s22749:9 s21931 s23804
-E	3	w2h	s1219580 s22749:9 s21931 s23804
-E	3	wrist	s1220624 i273596 s1248498
+E	3	w2h	s1219580 s22749:9 s21931 s23804 s7793
+E	3	wrist	s1220624 s1248498 s1248459 s1248458 s13622
+U	3	feet	s1328948 s13890
+U	3	w1h	s1248805 s1248757
+U	3	w2h	s1248805 s1248757
 ]==],
 PALADIN = [==[
-E	1	chest	i252487 s20028 i252462
-E	1	feet	i252487 i252462 i252452
-E	1	hands	s25079:9 s13948 i252487 i252462
-E	1	head	i19789:9 i18330
+E	1	chest	i252487 s20028 i252462 s13917 i252452 s13663 i273593:9 s13607 i252436 s7776 s7443
+E	1	feet	i252487 i252462 i252452 i252436 s20024 s13687 s13836
+E	1	hands	s25079:9 s13948 i252487 i252462 i252452 i252436
+E	1	head	i18330
 E	1	held	s1219577 s1219579
-E	1	legs	i19789:9 i18330 i252487 i252462
+E	1	legs	i18330 i252487 i252462 i252452 i252436
 E	1	neck	s1249058
-E	1	shield	i273592 s1220623 s20016
+E	1	shield	i273592:9 s1220623 s20016 s13905 s13659 s13485
 E	1	shoulder	i23547:9 i20078:9
 E	1	w1h	s22750:9 s23804
 E	1	w2h	s1248636 s22750:9 s23804 s7793
-E	1	wrist	s23802 s1248498 i273596
-E	2	back	s25086:9 s20015 s13746 s13635
-E	2	chest	i279258 s20026 i15564
-E	2	feet	i279258 i15564 i8173
-E	2	hands	i279258 s1213622 i15564
+E	1	wrist	s23802 s1248498 s1248459 s1248458 s13622
+U	1	feet	s1328948 s13890
+U	1	w1h	s1248805 s1248757
+U	1	w2h	s1248805 s1248757
+E	2	back	s25086:9 s20015 s13746 s13635 s13421 s7771
+E	2	chest	i279258 s20026 i15564 s13858 i8173 i273593:9 s13640 i4265 s7857 i2313 s7748
+E	2	feet	i279258 i15564 i8173 s20020 i4265 s13836 s13644 i2313
+E	2	hands	i279258 s1213622 i15564 i8173 i4265 s20013 i2313 s13887
 E	2	head	i18331
-E	2	legs	i279258 i18331 i15564
+E	2	legs	i279258 i18331 i15564 i8173 i4265 i2313
 E	2	neck	s1249057
-E	2	shield	s1219581 s20017 s13817
+E	2	shield	s1219581 s20017 s13817 s13689 s13631 s13378
 E	2	shoulder	i23549:9 i20076:9
 E	2	w1h	s22749:9 s20034 s23804 s23799
-E	2	wrist	s1248665 s13931 i273596
+E	2	wrist	s1248665 s13931 s13648 s7428 s7418
+U	2	feet	s1328948 s13890
+U	2	w1h	s1248805 s1248757 s1248760
 E	3	back	s1219587 s13419
-E	3	chest	i273593 s20025:1 s13941 i252488
-E	3	feet	i252488 i252463 s20023
-E	3	hands	s1248640 s20013 s13887
-E	3	head	i19784:9 i11645
-E	3	legs	i19784:9 i11645 i252488 i252463
+E	3	chest	i273593:9 s20025:1 s13941 i252488 i252463 s13700 i252453 i252437 s13626 s7776
+E	3	feet	i252488 i252463 s20023 i252453 s13935 s13637 i252437
+E	3	hands	s1248640 s20013 s13887 i252488 i252463 s13815 i252453 i252437
+E	3	head	i11645
+E	3	legs	i11645 i252488 i252463 i252453 i252437
 E	3	neck	s1249019
 E	3	shoulder	i23548:9 i20077:9
-E	3	w2h	s1248668 s20030 s20034
-E	3	wrist	s20010 s13939 s13661
+E	3	w2h	s1248668 s20030 s20034 i6043 s13937 s13695 s23799 s13529 s20031 s7745 s13943 s13693 s13503 s7788
+E	3	wrist	s20010 s13939 s13661 i273597:9 s13536 s7782 s7779
+U	3	feet	s1328948 s13890
+U	3	w2h	s1248805 s1248757 s1248760
 E	4	back	s1219587 s13419
-E	4	chest	s20028 s20025:1 s13917 i252487
-E	4	feet	i252487 i252462 i252452
-E	4	hands	s1213622 s25079:9 s13948 s1248640
+E	4	chest	s20028 s20025:1 s13917 i252487 s13941 i252462 s13663 i252452 s13700 s13607 s7776 i252436 s13626 i252488 s7443 i252463 i252453 i279258 s20026 s13858 i252437 s13640 i15564 i8173 s7857 i4265 s7748 i2313
+E	4	feet	i252487 i252462 i252452 s20023 s13935 s13637 i252436 i252488 i252463 i252453 i279258 s20020 i252437 i15564 s13836 i8173 s13644 i4265 i2313
+E	4	hands	s1213622 s25079:9 s13948 s1248640 i252487 i252462 s20013 i252452 s13815 s13887 i252436 i252488 i252463 i252453 i279258 i252437 i15564 i8173 i4265 i2313
 E	4	head	i18330 i11645
-E	4	legs	i18330 i252487 i252462
+E	4	legs	i18330 i252487 i252462 i252452 i11645 i252436 i252488 i252463 i252453 i279258 i252437 i15564 i8173 i4265 i2313
 E	4	neck	s1249057 s1249058 s1249019
-E	4	shoulder	i20076:9 i23548:9 i20077:9
-E	4	w2h	s1219580 s1248636 s22749:9 s23804
-E	4	wrist	s1220624 i273596 s1248498
+E	4	shoulder	i20076:9 i23548:9 i20077:9 i23549:9 i23547:9
+E	4	w2h	s1219580 s1248636 s22749:9 s23804 s1248668 s1248511 s23799 s7793
+E	4	wrist	s1220624 s1248498 i273597:9 s20010 s13939 s1248459 s1248458 s13622 s13661 s13536 s7779 s7782 s13648 s7457 s7418
+U	4	feet	s1328948 s13890
+U	4	w2h	s1248805 s1248757 s1248760
 ]==],
 PRIEST = [==[
-E	1	chest	i252487 s20028 i252462
-E	1	feet	i252487 i252462 i252452
-E	1	hands	s25079:9 s13948 i252487 i252462
+E	1	chest	i252487 s20028 i252462 s13917 i273593:9 i252452 s13663 s13607 i252436 s7776 s7443
+E	1	feet	i252487 i252462 i252452 s20024 i252436 s13687 s13836
+E	1	hands	s25079:9 s13948 i252487 i252462 i252452 i252436
 E	1	head	i19789:9 i18330
 E	1	held	s1219579
-E	1	legs	i19789:9 i18330 i252487 i252462
+E	1	legs	i19789:9 i18330 i252487 i252462 i252452 i252436
 E	1	neck	s1249058
 E	1	shoulder	i23547:9 i20078:9
 E	1	w1h	s22750:9 s23804
 E	1	w2h	s1248636 s22750:9 s23804 s7793
-E	1	wrist	s23802 s1248498 i273596
-E	2	chest	i252487 i252462 s20028
-E	2	feet	i252487 i252462 i252452
-E	2	hands	s25079:9 s13948 i252487 i252462
+E	1	wrist	s23802 s1248498 s1248459 s1248458 s13622
+U	1	feet	s1328948 s13890
+U	1	w1h	s1248805 s1248757
+U	1	w2h	s1248805 s1248757
+E	2	chest	i252487 i252462 s20028 i273593:9 i252452 s13917 s13663 i252436 s13607 s7776 s7443
+E	2	feet	i252487 i252462 i252452 s20024 s13687 i252436 s13836
+E	2	hands	s25079:9 s13948 i252487 i252462 i252452 i252436
 E	2	head	i19789:9 i18330
 E	2	held	s1219578 s1219579
-E	2	legs	i19789:9 i18330 i252487 i252462
+E	2	legs	i19789:9 i18330 i252487 i252462 i252452 i252436
 E	2	neck	s1249058
 E	2	shoulder	i23547:9 i20078:9
 E	2	w1h	s22750:9 s23803
-E	2	w2h	s1248636 s22750:9 s23803 s13380
-E	2	wrist	s23802 s1248498 i273596
-E	3	chest	i252487 i252462 i252452
-E	3	feet	i252487 i252462 i252452
-E	3	hands	s25073:9 s13948 i252487 i252462
-E	3	head	i19787:9 i18330
+E	2	w2h	s1248636 s22750:9 s23803 s13380 s7793
+E	2	wrist	s23802 s1248498 s1248459 s7766 s1248458 s13622
+U	2	feet	s1328948 s13890
+U	2	w1h	s1248805 s1248757
+U	2	w2h	s1248805 s1248757
+E	3	chest	i252487 i252462 i252452 s20028 s13917 i273593:9 i252436 s13663 s13607 s7776 s7443
+E	3	feet	i252487 i252462 i252452 i252436 s20024 s13687 s13836
+E	3	hands	s25073:9 s13948 i252487 i252462 i252452 i252436
+E	3	head	i18330
 E	3	held	s1219579
-E	3	legs	i19787:9 i18330 i252487 i252462
+E	3	legs	i18330 i252487 i252462 i252452 i252436
 E	3	neck	s1249057
 E	3	shoulder	i23545:9 i20076:9
 E	3	w1h	s22749:9 s23804
 E	3	w2h	s1219580 s22749:9 s23804 s7793
-E	3	wrist	s1220624 i273596 s1248498
+E	3	wrist	s1220624 s1248498 s1248459 s1248458 s13622
+U	3	feet	s1328948 s13890
+U	3	w1h	s1248805 s1248757
+U	3	w2h	s1248805 s1248757
+U	3	head	i19789:9
+U	3	legs	i19789:9
 ]==],
 ROGUE = [==[
 E	1	back	s1219587 s13419
-E	1	chest	i273593 s20025:1 s13941 i252488
-E	1	feet	s20023 s13935 i252488
-E	1	hands	s25080:9 s20012 s13948 s13815
-E	1	head	i19785:9 i11647
-E	1	legs	i19785:9 i11647 i252488 i252463
+E	1	chest	i273593:9 s20025:1 s13941 i252488 i252463 s13700 i252453 i252437 s13626
+E	1	feet	s20023 s13935 i252488 s13637 i252463 i252453 i252437
+E	1	hands	s25080:9 s20012 s13948 s13815 i252488 i252463 i252453 i252437
+E	1	head	i11647
+E	1	legs	i11647 i252488 i252463 i252453 i252437
 E	1	neck	s1249059
 E	1	shoulder	i23548:9 i20077:9
-E	1	w1h	s23800 s20034 s20031
-E	1	wrist	s1248599 i273597 s1248500
+E	1	w1h	s23800 s20034 s20031 s13943 s13693 s13503 s7788
+E	1	wrist	s1248599 i273597:9 s1248500 s1248497 s1248460 s7779
+U	1	feet	s1328948 s13890
+U	1	w1h	s1248760
+U	1	head	i19784:9
+U	1	legs	i19784:9
 E	2	back	s1219587 s13419
-E	2	chest	i273593 s20025:1 s13941 i252488
-E	2	feet	s20023 s13935 i252488
-E	2	hands	s25080:9 s20012 s13948 s13815
-E	2	head	i19785:9 i18329
-E	2	legs	i19785:9 i18329 i252488 i252463
+E	2	chest	i273593:9 s20025:1 s13941 i252488 i252463 s13700 i252453 i252437 s13626
+E	2	feet	s20023 s13935 i252488 s13637 i252463 i252453 i252437
+E	2	hands	s25080:9 s20012 s13948 s13815 i252488 i252463 i252453 i252437
+E	2	head	i18329
+E	2	legs	i18329 i252488 i252463 i252453 i252437
 E	2	neck	s1249059
 E	2	shoulder	i23548:9 i20077:9
-E	2	w1h	s23800 s20034 s20031
-E	2	wrist	s1248599 i273597 s1248500
+E	2	w1h	s23800 s20034 s20031 s13943 s13693 s13503 s7788
+E	2	wrist	s1248599 i273597:9 s1248500 s1248497 s1248460 s7779
+U	2	feet	s1328948 s13890
+U	2	w1h	s1248760
+U	2	head	i19784:9
+U	2	legs	i19784:9
 E	3	back	s1219587 s13419
-E	3	chest	i273593 s20025:1 i252488 s13941
-E	3	feet	s20023 i252488 s13935
-E	3	hands	s25080:9 s20012 s13815 i252488
+E	3	chest	i273593:9 s20025:1 i252488 s13941 i252463 s13700 i252453 i252437 s13626 s7857 s7748 i2313
+E	3	feet	s20023 i252488 s13935 i252463 s13637 i252453 i252437 i2313
+E	3	hands	s25080:9 s20012 s13815 i252488 i252463 i252453 i252437 i2313
 E	3	head	i19784:9 i11647
-E	3	legs	i19784:9 i11647 i252488 i252463
+E	3	legs	i19784:9 i11647 i252488 i252463 i252453 i252437 i2313
 E	3	neck	s1249059
 E	3	shoulder	i23548:9 i20077:9
-E	3	w1h	s23800 s20034 s20031
-E	3	wrist	s1248599 i273597 s1248500
+E	3	w1h	s23800 s20034 s20031 s13943 s13693 s13503 s7788
+E	3	wrist	s1248599 i273597:9 s1248500 s1248497 s1248460 s7779 s7418
+U	3	feet	s1328948 s13890
+U	3	w1h	s1248760
 ]==],
 SHAMAN = [==[
-E	1	chest	i252487 i252462 i252452
-E	1	feet	i252487 i252462 i252452
-E	1	hands	s1248645 s13948 i252487
-E	1	head	i19787:9 i18330
+E	1	chest	i252487 i252462 i252452 s20028 s13917 s13663 i273593:9 i252436 s13607 s7776 s7443
+E	1	feet	i252487 i252462 i252452 i252436 s20020 s13836
+E	1	hands	s1248645 s13948 i252487 i252462 i252452 i252436
+E	1	head	i18330
 E	1	held	s1219577 s1219579
-E	1	legs	i19787:9 i18330 i252487 i252462
+E	1	legs	i18330 i252487 i252462 i252452 i252436
 E	1	neck	s1249057
-E	1	shield	i273592 s1220623 s1219581
+E	1	shield	i273592:9 s1220623 s1219581 s20017 s13817 s13905 s13631
 E	1	shoulder	i23545:9 i20076:9
 E	1	w1h	s22749:9 s23804
 E	1	w2h	s1219580 s22749:9 s23804 s7793
-E	1	wrist	s1220624 i273596 s1248498
+E	1	wrist	s1220624 s1248498 s1248459 s1248458 s13622
+U	1	feet	s1328948 s13890
+U	1	w1h	s1248805 s1248757
+U	1	w2h	s1248805 s1248757
 E	2	back	s1219587 s13419
-E	2	chest	i273593 s20025:1 s13941 i252488
-E	2	feet	i252488 s20023 i252463
-E	2	hands	s1248640 s20013 s13948
-E	2	head	i19784:9 i18329
-E	2	legs	i19784:9 i18329 i252488 i252463
+E	2	chest	i273593:9 s20025:1 s13941 i252488 s13700 i252463 i252453 i252437 s13626 s7776 s7443
+E	2	feet	i252488 s20023 i252463 s13935 i252453 s13637 i252437
+E	2	hands	s1248640 s20013 s13948 s13887 i252488 s13815 i252463 i252453 i252437
+E	2	head	i18329
+E	2	legs	i18329 i252488 i252463 i252453 i252437
 E	2	neck	s1249019
 E	2	shoulder	i23548:9 i20077:9
-E	2	w2h	i6043 s1248668 s20034
-E	2	wrist	s20010 s13939 i273597
-E	3	chest	i252487 s20028 i252462
-E	3	feet	i252487 i252462 i252452
-E	3	hands	s25079:9 s13948 i252487 i252462
-E	3	head	i19789:9 i18330
+E	2	w2h	i6043 s1248668 s20034 s20030 s13937 s1248511 s23799 s13695 s13529 s20031 s7745 s13943 s13693 s13503 s7788
+E	2	wrist	s20010 s13939 i273597:9 s13661 s13536 s7782 s7779
+U	2	feet	s1328948 s13890
+U	2	w2h	s1248805 s1248757 s1248760
+E	3	chest	i252487 s20028 i252462 s13917 i252452 i273593:9 s13663 s13607 i252436 s7776 s7443
+E	3	feet	i252487 i252462 i252452 i252436 s20024 s13687 s13836
+E	3	hands	s25079:9 s13948 i252487 i252462 i252452 i252436
+E	3	head	i18330
 E	3	held	s1219577 s1219579
-E	3	legs	i19789:9 i18330 i252487 i252462
+E	3	legs	i18330 i252487 i252462 i252452 i252436
 E	3	neck	s1249058
-E	3	shield	i273592 s1220623 s20016
+E	3	shield	i273592:9 s1220623 s20016 s13905 s13659 s13485
 E	3	shoulder	i23547:9 i20078:9
 E	3	w1h	s22750:9 s23804
 E	3	w2h	s1248636 s22750:9 s23804 s7793
-E	3	wrist	s23802 s1248498 i273596
+E	3	wrist	s23802 s1248498 s1248459 s1248458 s13622
+U	3	feet	s1328948 s13890
+U	3	w1h	s1248805 s1248757
+U	3	w2h	s1248805 s1248757
 ]==],
 WARLOCK = [==[
-E	1	chest	i252487 i252462 i252452
-E	1	feet	i252487 i252462 i252452
-E	1	hands	s25073:9 s13948 i252487 i252462
-E	1	head	i19787:9 i18330
+E	1	chest	i252487 i252462 i252452 s20028 i273593:9 s13917 i252436 s13663 s13607 s7776 s7748
+E	1	feet	i252487 i252462 i252452 i252436 s20020 s13836 s13644
+E	1	hands	s25073:9 s13948 i252487 i252462 i252452 i252436
+E	1	head	i18330
 E	1	held	s1219577 s1219579
-E	1	legs	i19787:9 i18330 i252487 i252462
+E	1	legs	i18330 i252487 i252462 i252452 i252436
 E	1	neck	s1249057
 E	1	shoulder	i23545:9 i20076:9
 E	1	w1h	s22749:9 s23804
 E	1	w2h	s1219580 s22749:9 s23804 s7793
-E	1	wrist	s1220624 i273596 s1248498
-E	2	chest	i252487 i252462 i252452
-E	2	feet	i252487 i252462 i252452
-E	2	hands	s25073:9 s13948 i252487 i252462
-E	2	head	i19787:9 i18330
+E	1	wrist	s1220624 s1248498 s1248459 s13648 s1248458 s7457
+U	1	feet	s1328948 s13890
+U	1	w1h	s1248805 s1248757
+U	1	w2h	s1248805 s1248757
+U	1	head	i19788:9
+U	1	legs	i19788:9
+E	2	chest	i252487 i252462 i252452 s20026 i273593:9 s13858 i252436 s13640 s7857 s7748 i2313
+E	2	feet	i252487 i252462 i252452 s20020 i252436 s13836 s13644 i2313
+E	2	hands	s25073:9 s13948 i252487 i252462 i252452 i252436 i2313
+E	2	head	i18330
 E	2	held	s1219577 s1219579
-E	2	legs	i19787:9 i18330 i252487 i252462
+E	2	legs	i18330 i252487 i252462 i252452 i252436 i2313
 E	2	neck	s1249057
 E	2	shoulder	i23545:9 i20076:9
 E	2	w1h	s22749:9 s23804
 E	2	w2h	s1219580 s22749:9 s23804 s7793
-E	2	wrist	s1220624 i273596 s1248498
-E	3	chest	i252487 i252462 i252452
-E	3	feet	i252487 i252462 i252452
-E	3	hands	s25078:9 s13948 i252487 i252462
-E	3	head	i19787:9 i18330
+E	2	wrist	s1220624 s1248498 s1248459 s13648 s7457 s7418
+U	2	feet	s1328948 s13890
+U	2	w1h	s1248805 s1248757
+U	2	w2h	s1248805 s1248757
+U	2	head	i19788:9
+U	2	legs	i19788:9
+E	3	chest	i252487 i252462 i252452 s20028 s13917 i252436 s13663 i273593:9 s13607 s7776 s7443
+E	3	feet	i252487 i252462 i252452 i252436 s20020 s13836 s13644
+E	3	hands	s25078:9 s13948 i252487 i252462 i252452 i252436
+E	3	head	i18330
 E	3	held	s1219577 s1219579
-E	3	legs	i19787:9 i18330 i252487 i252462
+E	3	legs	i18330 i252487 i252462 i252452 i252436
 E	3	neck	s1249057
 E	3	shoulder	i23545:9 i20076:9
 E	3	w1h	s22749:9 s23804
 E	3	w2h	s1219580 s22749:9 s23804 s7793
-E	3	wrist	s1220624 i273596 s1248498
+E	3	wrist	s1220624 s1248498 s1248459 s1248458 s13622
+U	3	feet	s1328948 s13890
+U	3	w1h	s1248805 s1248757
+U	3	w2h	s1248805 s1248757
+U	3	head	i19788:9
+U	3	legs	i19788:9
 ]==],
 WARRIOR = [==[
 E	1	back	s1219587 s13419
-E	1	chest	i273593 s20025:1 s13941 i252488
-E	1	feet	i252488 s20023 i252463
-E	1	hands	s1248640 s20013 s13948
-E	1	head	i19785:9 i11645
-E	1	legs	i19785:9 i11645 i252488 i252463
+E	1	chest	i273593:9 s20025:1 s13941 i252488 i252463 s13700 i252453 i252437 s13626
+E	1	feet	i252488 s20023 i252463 s13935 i252453 s13637 i252437
+E	1	hands	s1248640 s20013 s13948 s13887 i252488 s13815 i252463 i252453 i252437
+E	1	head	i11645
+E	1	legs	i11645 i252488 i252463 i252453 i252437
 E	1	neck	s1249019
 E	1	shoulder	i23548:9 i20077:9
-E	1	w2h	s1248668 i6043 s20030
-E	1	wrist	s20010 s13939 i273597
+E	1	w2h	s1248668 i6043 s20030 s20034 s13937 s13695 s23799 s13529 s20031 s7745 s13943 s13693 s13503 s7788
+E	1	wrist	s20010 s13939 i273597:9 s13661 s13536 s7782 s7779
+U	1	feet	s1328948 s13890
+U	1	w2h	s1248760
+U	1	head	i19782:9
+U	1	legs	i19782:9
 E	2	back	s1219587 s13419
-E	2	chest	i273593 s20025:1 s13941 i252488
-E	2	feet	i252488 s20023 i252463
-E	2	hands	s1248640 s20013 s13948
-E	2	head	i19785:9 i18329
-E	2	legs	i19785:9 i18329 i252488 i252463
+E	2	chest	i273593:9 s20025:1 s13941 i252488 i252463 s13700 i252453 i252437 s13626
+E	2	feet	i252488 s20023 i252463 s13935 i252453 s13637 i252437
+E	2	hands	s1248640 s20013 s13948 s13887 i252488 s13815 i252463 i252453 i252437
+E	2	head	i18329
+E	2	legs	i18329 i252488 i252463 i252453 i252437
 E	2	neck	s1249019
 E	2	shoulder	i23548:9 i20077:9
-E	2	w1h	s20034 s23799 s20031
-E	2	wrist	s20010 s13939 i273597
-E	3	back	s25086:9 s20015 s13746 s13635
-E	3	chest	i279258 s20026 i15564
-E	3	feet	i279258 i15564 i8173
-E	3	hands	i279258 i15564 s25080:9 i8173
+E	2	w1h	s20034 s23799 s20031 s13943 s13693 s13503 s7788
+E	2	wrist	s20010 s13939 i273597:9 s13661 s13536 s7782 s7779
+U	2	feet	s1328948 s13890
+U	2	w1h	s1248760
+U	2	head	i19782:9
+U	2	legs	i19782:9
+E	3	back	s25086:9 s20015 s13746 s13635 s13421 s7771
+E	3	chest	i279258 s20026 i15564 s13858 i273593:9 i8173 s13640 i4265 s7857 i2313 s7748
+E	3	feet	i279258 i15564 i8173 s20020 i4265 s13836 s13644 i2313
+E	3	hands	i279258 i15564 s25080:9 i8173 s1248640 i4265 s20012 i2313 s13815
 E	3	head	i19782:9 i18331
-E	3	legs	i19782:9 i279258 i18331 i15564
+E	3	legs	i19782:9 i279258 i18331 i15564 i8173 i4265 i2313
 E	3	neck	s1249060
-E	3	shield	s1219581 s20017 s13817
+E	3	shield	s1219581 s20017 s13817 s13689 s13631 s13378
 E	3	shoulder	i23549:9
 E	3	w1h	s20034 s23800
-E	3	wrist	s1248665 s13931 s13648
+E	3	wrist	s1248665 s13931 s13648 s7428 i273597:9 s7418
+U	3	feet	s1328948 s13890
+U	3	w1h	s1248760
 ]==],
 }
 -- id|name|effect|where it comes from|label (s Seen in Forever, c Clue, f Forever client, k Classic data,
@@ -369,7 +465,7 @@ i10548|Sniper Scope|Scope (+7 Damage)|Engineering 240: recipe Schematic: Sniper 
 i11645|Lesser Arcanum of Voracity|Strength +8|Quest: Libram of Voracity|t
 i11647|Lesser Arcanum of Voracity|Agility +8|Quest: Libram of Voracity|t
 i15564|Rugged Armor Kit|Stamina +5 and Armor +40|Leatherworking 225: from a trainer|k
-i18283|Biznicks 247x128 Accurascope|+3% Hit|Engineering 300: recipe Schematic: Biznicks 247x128 Accurascope|k
+i18283|Biznicks 247x128 Accurascope|+3% Hit|Engineering 300: recipe Schematic: Biznicks 247x128 Accurascope, drops in Molten Core|k
 i18329|Arcanum of Rapidity|Attack Speed +1%|Quest: Libram of Rapidity (Dire Maul)|t
 i18330|Arcanum of Focus|Healing and Spell Damage +8|Quest: Libram of Focus (Dire Maul)|t
 i18331|Arcanum of Protection|Dodge +1%|Quest: Libram of Protection (Dire Maul)|t
@@ -377,25 +473,32 @@ i19782|Presence of Might|Defense +7/Stamina +10/Block Value +15|Quest: Presence 
 i19784|Death's Embrace|Attack Power +28/Dodge +1%|Quest: Death's Embrace (Zul'Gurub)|t
 i19785|Falcon's Call|Ranged Attack Power +24/Stamina +10/Hit +1%|Quest: Falcon's Call (Zul'Gurub)|t
 i19787|Presence of Sight|Healing and Spell Damage +18/Spell Hit +1%|Quest: Presence of Sight (Zul'Gurub)|t
+i19788|Hoodoo Hex|Healing and Spell Damage +18/Stamina +10|Quest: Hoodoo Hex (Zul'Gurub)|t
 i19789|Prophetic Aura|Mana Regen +4/Stamina +10/Healing Spells +24|Quest: Prophetic Aura (Zul'Gurub)|t
 i20076|Zandalar Signet of Mojo|+18 Spell Damage and Healing|Quest: Signets of the Zandalar (Zul'Gurub)|t
 i20077|Zandalar Signet of Might|+30 Attack Power|Quest: Signets of the Zandalar (Zul'Gurub)|t
 i20078|Zandalar Signet of Serenity|+33 Healing Spells|Quest: Signets of the Zandalar (Zul'Gurub)|t
+i2313|Medium Armor Kit|Stamina +2 and Armor +16|Leatherworking 90: from a trainer|s
 i23545|Power of the Scourge|Spell Damage +15 and +1% Spell Critical Strike|Raid drop: Sapphiron|t
 i23547|Resilience of the Scourge|Healing +31 and 5 mana per 5 sec.|Raid drop: Sapphiron|t
 i23548|Might of the Scourge|Attack Power +26 and +1% Critical Strike|Raid drop: Sapphiron|t
 i23549|Fortitude of the Scourge|Stamina +16 and Armor +100|Raid drop: Sapphiron|t
+i252436|Mystic Medium Armor Kit|Spell Power +2 and Armor +16|Leatherworking 80: recipe Pattern: Mystic Medium Armor Kit, sold by Saenorion (Darnassus)|s
+i252437|Forceful Medium Armor Kit|Attack Power +4 and Armor +16|Leatherworking 80: recipe Pattern: Forceful Medium Armor Kit, sold by Saenorion (Darnassus)|s
 i252452|Mystic Heavy Armor Kit|Spell Power +4 and Armor +24|Leatherworking 135: recipe Pattern: Mystic Heavy Armor Kit, sold by Saenorion (Darnassus)|s
-i252462|Mystic Thick Armor Kit|Spell Power +5 and Armor +32|Leatherworking 185: recipe Pattern: Mystic Thick Armor Kit, sold by Gorhak (Desolace)|s
+i252453|Forceful Heavy Armor Kit|Attack Power +6 and Armor +24|Leatherworking 135: recipe Pattern: Forceful Heavy Armor Kit, sold by Saenorion (Darnassus)|s
+i252462|Mystic Thick Armor Kit|Spell Power +5 and Armor +32|Leatherworking 185: recipe Pattern: Mystic Thick Armor Kit, from the quest Leather Technique|s
 i252463|Forceful Thick Armor Kit|Attack Power +8 and Armor +32|Leatherworking 185: recipe Pattern: Forceful Thick Armor Kit, sold by Daniel Stitchsong (Redridge Mountains)|s
 i252487|Mystic Rugged Armor Kit|Spell Power +6 and Armor +40|Leatherworking 235: recipe Pattern: Mystic Rugged Armor Kit, sold by Daniel Stitchsong (Redridge Mountains)|s
-i252488|Forceful Rugged Armor Kit|Attack Power +10 and Armor +40|Leatherworking 235: recipe Pattern: Forceful Rugged Armor Kit|k
-i273592|Enchant Shield - Law of Nature|Law of Nature|where it comes from isn't known yet|f
-i273593|Enchant Chest - Living Stats|Living Stats|where it comes from isn't known yet|f
-i273596|Enchant Bracer - Spell Power|+12 Spell Power|where it comes from isn't known yet|f
-i273597|Enchant Bracer - Agility|+9 Agility|where it comes from isn't known yet|f
+i252488|Forceful Rugged Armor Kit|Attack Power +10 and Armor +40|Leatherworking 235: recipe Pattern: Forceful Rugged Armor Kit, sold by Nioma (The Hinterlands, Alliance) or Jangdor Swiftstrider (Feralas, Horde)|s
+i273592|Enchant Shield - Law of Nature|Law of Nature|Enchanting 300: recipe Formula: Enchant Shield - Law of Nature; requires Revered with Timbermaw Hold. Meilosh's stock is unconfirmed|c
+i273593|Enchant Chest - Living Stats|Living Stats|Enchanting 300: recipe Formula: Enchant Chest - Living Stats; requires Ahn'Qiraj reagents. No live recipe source confirmed|c
+i273597|Enchant Bracer - Agility|+9 Agility|where it comes from isn't known yet|c
 i279258|Wild Leather Armor Kit|Defense +4 and Stamina +10|Leatherworking 300: recipe Pattern: Wild Leather Armor Kit|k
-i279272|SAF-T Ultra Precision Scope|+2% Crit|Engineering 300: recipe Schematic: SAF-T Ultra Precision Scope|k
+i279272|SAF-T Ultra Precision Scope|+2% Crit|Engineering 300: recipe Schematic: SAF-T Ultra Precision Scope|c
+i4265|Heavy Armor Kit|Stamina +3 and Armor +24|Leatherworking 145: from a trainer|s
+i4405|Crude Scope|Scope (+1 Damage)|Engineering 60: from a trainer|s
+i4406|Standard Scope|Scope (+2 Damage)|Engineering 110: from a trainer|s
 i4407|Accurate Scope|Scope (+3 Damage)|Engineering 180: recipe Schematic: Accurate Scope, sold by Mazk Snipeshot (Stranglethorn Vale)|s
 i6043|Iron Counterweight|Counterweight +3% Attack Speed|Blacksmithing 140: recipe Plans: Iron Counterweight|s
 i8173|Thick Armor Kit|Stamina +4 and Armor +32|Leatherworking 195: from a trainer|s
@@ -404,41 +507,74 @@ s1213626|Enchant Gloves - Arcane Power|Arcane Damage +20|Enchanting 300: recipe 
 s1219577|Enchant Off-Hand - Superior Intellect|+9 Intellect|Enchanting 300: recipe Formula: Enchant Off Hand - Superior Intellect; or Forever's scroll Enchant Off-Hand - Superior Intellect|k
 s1219578|Enchant Off-Hand - Excellent Spirit|+12 Spirit|Enchanting 300: recipe Formula: Enchant Off Hand - Excellent Spirit; or Forever's scroll Enchant Off-Hand - Excellent Spirit|k
 s1219579|Enchant Off-Hand - Wisdom|+6 Intellect and +5 Spirit|Enchanting 300: recipe Formula: Enchant Off Hand - Wisdom, sold by Alynsia (Redridge Mountains); or Forever's scroll Enchant Off-Hand - Wisdom|s
-s1219580|Enchant 2H Weapon - Spellblasting|+65 Spell Power|Enchanting 300: recipe Formula: Enchant 2H Weapon - Spellblasting, sold by Alynsia (Redridge Mountains); or Forever's scroll Enchant 2H Weapon - Spellblasting|s
+s1219580|Enchant 2H Weapon - Spellblasting|+65 Spell Power|Enchanting 300: recipe Formula: Enchant 2H Weapon - Spellblasting, sold by Alynsia (Redridge Mountains, Alliance) or Beneris (The Barrens, Horde); 240 Merchant's Favor|s
 s1219581|Enchant Shield - Excellent Stamina|+12 Stamina|Enchanting 300: recipe Formula: Enchant Shield - Excellent Stamina; or Forever's scroll Enchant Shield - Excellent Stamina|k
 s1219587|Enchant Cloak - Agility|+5 Agility|Enchanting 300: recipe Formula: Enchant Cloak - Agility, sold by Alynsia (Redridge Mountains); or Forever's scroll Enchant Cloak - Agility|s
 s1220623|Enchant Shield - Critical Strike|+1% Critical Strike Chance|Enchanting 300: recipe Formula: Enchant Shield - Critical Strike; or Forever's scroll Enchant Shield - Critical Strike|k
 s1220624|Enchant Bracer - Greater Spellpower|+16 Spell Power|Enchanting 300: recipe Formula: Enchant Bracer - Greater Spellpower, sold by Alynsia (Redridge Mountains); or Forever's scroll Enchant Bracer - Greater Spellpower|s
-s1248498|Enchant Bracer - Lesser Healing Power|Healing Spells +16, Damage Spells +6|Enchanting 205: recipe Formula: Enchant Bracer - Lesser Healing Power, sold by Gorhak (Desolace); or Forever's scroll Enchant Bracer - Lesser Healing Power|s
+s1248458|Enchant Bracer - Minor Intellect|Intellect +3|Enchanting 70: recipe Formula: Enchant Bracer - Minor Intellect; or Forever's scroll Enchant Bracer - Minor Intellect|s
+s1248459|Enchant Bracer - Minor Healing Power|Healing Spells +8, Damage Spells +3|Enchanting 90: recipe Formula: Enchant Bracer - Minor Healing Power; or Forever's scroll Enchant Bracer - Minor Healing Power|s
+s1248460|Enchant Bracer - Lesser Agility|Agility +4|Enchanting 140: recipe Formula: Enchant Bracer - Lesser Agility, sold by Gorhak (Desolace); or Forever's scroll Enchant Bracer - Lesser Agility|s
+s1248497|Enchant Bracer - Agility|Agility +5|Enchanting 190: recipe Formula: Enchant Bracer - Agility; or Forever's scroll Enchant Bracer - Agility|k
+s1248498|Enchant Bracer - Lesser Healing Power|Healing Spells +16, Damage Spells +6|Enchanting 205: recipe Formula: Enchant Bracer - Lesser Healing Power, from the quest Mysterious Mysticism; also sold by Gorhak (Desolace)|s
 s1248500|Enchant Bracer - Greater Agility|Agility +7|Enchanting 240: recipe Formula: Enchant Bracer - Greater Agility; or Forever's scroll Enchant Bracer - Greater Agility|k
 s1248510|Enchant 2H Weapon - Lesser Agility|Agility +15|Enchanting 210: recipe Formula: Enchant 2H Weapon - Lesser Agility; or Forever's scroll Enchant 2H Weapon - Lesser Agility|k
+s1248511|Enchant 2H Weapon - Lesser Strength|Strength +15|Enchanting 220: recipe Formula: Enchant 2H Weapon - Lesser Strength; or Forever's scroll Enchant 2H Weapon - Lesser Strength|k
 s1248599|Enchant Bracer - Superior Agility|+9 Agility|Enchanting 295: recipe Formula: Enchant Bracer - Superior Agility; or Forever's scroll Enchant Bracer - Superior Agility|k
 s1248636|Enchant 2H Weapon - Mighty Healing Power|Healing Spells +100, Damage Spells +34|Enchanting 300: recipe Formula: Enchant 2H Weapon - Mighty Healing Power, sold by Alynsia (Redridge Mountains); or Forever's scroll Enchant 2H Weapon - Mighty Healing Power|s
 s1248640|Enchant Gloves - Superior Strength|Strength +15|Enchanting 300: recipe Formula: Enchant Gloves - Superior Strength, sold by Alynsia (Redridge Mountains); or Forever's scroll Enchant Gloves - Superior Strength|s
 s1248645|Enchant Gloves - Natural Power|Nature Damage +20|Enchanting 300: recipe Formula: Enchant Gloves - Natural Power, sold by Alynsia (Redridge Mountains); or Forever's scroll Enchant Gloves - Natural Power|s
 s1248665|Enchant Bracer - Superior Deflection|Defense +9|Enchanting 300: recipe Formula: Enchant Bracer - Superior Deflection, sold by Alynsia (Redridge Mountains); or Forever's scroll Enchant Bracer - Superior Deflection|s
 s1248668|Enchant 2H Weapon - Strength|Strength +25|Enchanting 290: recipe Formula: Enchant 2H Weapon - Strength|k
+s1248757|Enchant Weapon - Insight|Chance to temporarily increase Spirit when casting a spell|Enchanting 140: recipe Formula: Enchant Weapon - Insight, sold by Alynsia (Redridge Mountains, Alliance) or Beneris (The Barrens, Horde); 45 Merchant's Favor|s
+s1248760|Enchant Weapon - Recovery|Heals for 5% of maximum health when your attack is dodged or parried. 10 sec cooldown|Enchanting 140: recipe Formula: Enchant Weapon - Recovery, sold by Alynsia (Redridge Mountains, Alliance) or Beneris (The Barrens, Horde); 45 Merchant's Favor|s
+s1248805|Enchant Weapon - Revelation|A non-critical direct spell can grant critical chance to your next direct spell|Enchanting 140: recipe Formula: Enchant Weapon - Revelation, sold by Alynsia (Redridge Mountains, Alliance) or Beneris (The Barrens, Horde); 45 Merchant's Favor|s
 s1249019|Enchant Necklace - Strength|Strength +5|Enchanting 210: recipe Formula: Enchant Necklace - Strength, sold by Alynsia (Redridge Mountains); or Forever's scroll Enchant Necklace - Strength|s
 s1249057|Enchant Necklace - Spell Power|+6 Spell Power|Enchanting 210: recipe Formula: Enchant Necklace - Spell Power, sold by Alynsia (Redridge Mountains); or Forever's scroll Enchant Necklace - Spell Power|s
 s1249058|Enchant Necklace - Healing Power|Healing Spells +11, Damage Spells +4|Enchanting 210: recipe Formula: Enchant Necklace - Healing Power, sold by Alynsia (Redridge Mountains); or Forever's scroll Enchant Necklace - Healing Power|s
 s1249059|Enchant Necklace - Agility|Agility +5|Enchanting 210: recipe Formula: Enchant Necklace - Agility, sold by Alynsia (Redridge Mountains); or Forever's scroll Enchant Necklace - Agility|s
 s1249060|Enchant Necklace - Deflection|Defense +5|Enchanting 210: recipe Formula: Enchant Necklace - Deflection, sold by Alynsia (Redridge Mountains); or Forever's scroll Enchant Necklace - Deflection|s
+s1328948|Enchant Boots - Speed|+8% Movement Speed|Enchanting 280: recipe Formula: Enchant Boots - Speed, sold by Alynsia (Redridge Mountains, Alliance) or Beneris (The Barrens, Horde); 180 Merchant's Favor|s
+s13378|Enchant Shield - Minor Stamina|Stamina +3|Enchanting 105: from a trainer; or Forever's scroll Enchant Shield - Minor Stamina|s
 s13380|Enchant 2H Weapon - Lesser Spirit|Spirit +5|Enchanting 110: recipe Formula: Enchant 2H Weapon - Lesser Spirit; or Forever's scroll Enchant 2H Weapon - Lesser Spirit|s
 s13419|Enchant Cloak - Minor Agility|Agility +3|Enchanting 110: recipe Formula: Enchant Cloak - Minor Agility, sold by Dalria (Ashenvale); or Forever's scroll Enchant Cloak - Minor Agility|s
+s13421|Enchant Cloak - Lesser Protection|Armor +20|Enchanting 115: from a trainer; or Forever's scroll Enchant Cloak - Lesser Protection|s
+s13485|Enchant Shield - Lesser Spirit|Spirit +3|Enchanting 130: from a trainer; or Forever's scroll Enchant Shield - Lesser Spirit|s
+s13503|Enchant Weapon - Lesser Striking|Weapon Damage +2|Enchanting 140: from a trainer; or Forever's scroll Enchant Weapon - Lesser Striking|s
+s13529|Enchant 2H Weapon - Lesser Impact|Weapon Damage +5|Enchanting 145: from a trainer; or Forever's scroll Enchant 2H Weapon - Lesser Impact|s
+s13536|Enchant Bracer - Lesser Strength|Strength +4|Enchanting 140: recipe Formula: Enchant Bracer - Lesser Strength, sold by Dalria (Ashenvale); or Forever's scroll Enchant Bracer - Lesser Strength|s
+s13607|Enchant Chest - Intellect|Intellect +4|Enchanting 145: from a trainer; or Forever's scroll Enchant Chest - Intellect|s
+s13622|Enchant Bracer - Lesser Intellect|Intellect +3|Enchanting 150: from a trainer; or Forever's scroll Enchant Bracer - Lesser Intellect|s
+s13626|Enchant Chest - Minor Stats|All Stats +1|Enchanting 150: from a trainer; or Forever's scroll Enchant Chest - Minor Stats|s
+s13631|Enchant Shield - Lesser Stamina|Stamina +5|Enchanting 155: from a trainer; or Forever's scroll Enchant Shield - Lesser Stamina|s
 s13635|Enchant Cloak - Defense|Armor +30|Enchanting 155: from a trainer; or Forever's scroll Enchant Cloak - Defense|s
 s13637|Enchant Boots - Lesser Agility|Agility +4|Enchanting 160: from a trainer; or Forever's scroll Enchant Boots - Lesser Agility|s
+s13640|Enchant Chest - Greater Stamina|Stamina +6|Enchanting 160: from a trainer; or Forever's scroll Enchant Chest - Greater Stamina|s
+s13644|Enchant Boots - Lesser Stamina|Stamina +4|Enchanting 170: from a trainer; or Forever's scroll Enchant Boots - Lesser Stamina|s
 s13648|Enchant Bracer - Stamina|Stamina +5|Enchanting 170: from a trainer; or Forever's scroll Enchant Bracer - Stamina|s
+s13659|Enchant Shield - Spirit|Spirit +5|Enchanting 180: from a trainer; or Forever's scroll Enchant Shield - Spirit|s
 s13661|Enchant Bracer - Strength|Strength +5|Enchanting 180: from a trainer; or Forever's scroll Enchant Bracer - Strength|s
+s13663|Enchant Chest - Greater Intellect|Intellect +6|Enchanting 185: from a trainer; or Forever's scroll Enchant Chest - Greater Intellect|s
+s13687|Enchant Boots - Lesser Spirit|Spirit +4|Enchanting 190: recipe Formula: Enchant Boots - Lesser Spirit; or Forever's scroll Enchant Boots - Lesser Spirit|s
+s13689|Enchant Shield - Lesser Block|Blocking +2%|Enchanting 195: recipe Formula: Enchant Shield - Lesser Block; or Forever's scroll Enchant Shield - Lesser Block|k
+s13693|Enchant Weapon - Striking|Weapon Damage +3|Enchanting 195: from a trainer; or Forever's scroll Enchant Weapon - Striking|s
+s13695|Enchant 2H Weapon - Impact|Weapon Damage +6|Enchanting 200: from a trainer; or Forever's scroll Enchant 2H Weapon - Impact|s
 s13700|Enchant Chest - Lesser Stats|All Stats +2|Enchanting 200: from a trainer; or Forever's scroll Enchant Chest - Lesser Stats|s
 s13746|Enchant Cloak - Greater Defense|Armor +60|Enchanting 205: from a trainer; or Forever's scroll Enchant Cloak - Greater Defense|s
 s13815|Enchant Gloves - Agility|Agility +7|Enchanting 210: from a trainer; or Forever's scroll Enchant Gloves - Agility|k
 s13817|Enchant Shield - Stamina|Stamina +7|Enchanting 210: recipe Formula: Enchant Shield - Stamina; or Forever's scroll Enchant Shield - Stamina|s
+s13836|Enchant Boots - Stamina|Stamina +5|Enchanting 215: from a trainer; or Forever's scroll Enchant Boots - Stamina|s
+s13858|Enchant Chest - Superior Stamina|Stamina +8|Enchanting 220: from a trainer; or Forever's scroll Enchant Chest - Superior Stamina|s
 s13887|Enchant Gloves - Strength|Strength +7|Enchanting 225: from a trainer; or Forever's scroll Enchant Gloves - Strength|s
+s13890|Enchant Boots - Minor Speed|+4% Movement Speed|Enchanting 225: from a trainer|f
+s13905|Enchant Shield - Greater Spirit|Spirit +7|Enchanting 230: from a trainer; or Forever's scroll Enchant Shield - Greater Spirit|k
 s13917|Enchant Chest - Superior Intellect|Intellect +8|Enchanting 230: from a trainer; or Forever's scroll Enchant Chest - Superior Intellect|k
 s13931|Enchant Bracer - Deflection|Defense +7|Enchanting 235: recipe Formula: Enchant Bracer - Deflection, sold by Mythrin'dir (Darnassus); or Forever's scroll Enchant Bracer - Deflection|s
 s13935|Enchant Boots - Agility|Agility +5|Enchanting 235: from a trainer; or Forever's scroll Enchant Boots - Agility|k
+s13937|Enchant 2H Weapon - Greater Impact|Weapon Damage +7|Enchanting 240: from a trainer; or Forever's scroll Enchant 2H Weapon - Greater Impact|k
 s13939|Enchant Bracer - Greater Strength|Strength +7|Enchanting 240: from a trainer; or Forever's scroll Enchant Bracer - Greater Strength|k
 s13941|Enchant Chest - Stats|All Stats +3|Enchanting 245: from a trainer; or Forever's scroll Enchant Chest - Stats|k
+s13943|Enchant Weapon - Greater Striking|Weapon Damage +4|Enchanting 245: from a trainer; or Forever's scroll Enchant Weapon - Greater Striking|k
 s13948|Enchant Gloves - Minor Haste|Haste +1%|Enchanting 250: from a trainer; or Forever's scroll Enchant Gloves - Minor Haste|k
 s20010|Enchant Bracer - Superior Strength|Strength +9|Enchanting 295: recipe Formula: Enchant Bracer - Superior Strength; or Forever's scroll Enchant Bracer - Superior Strength|k
 s20012|Enchant Gloves - Greater Agility|Agility +10|Enchanting 270: recipe Formula: Enchant Gloves - Greater Agility; or Forever's scroll Enchant Gloves - Greater Agility|k
@@ -446,7 +582,9 @@ s20013|Enchant Gloves - Greater Strength|Strength +10|Enchanting 295: recipe For
 s20015|Enchant Cloak - Superior Defense|Armor +70|Enchanting 285: recipe Formula: Enchant Cloak - Superior Defense, sold by Lorelae Wintersong (Moonglade); or Forever's scroll Enchant Cloak - Superior Defense|k
 s20016|Enchant Shield - Superior Spirit|Spirit +9|Enchanting 280: recipe Formula: Enchant Shield - Superior Spirit; or Forever's scroll Enchant Shield - Superior Spirit|k
 s20017|Enchant Shield - Greater Stamina|Stamina +9|Enchanting 265: recipe Formula: Enchant Shield - Greater Stamina, sold by Mythrin'dir (Darnassus); or Forever's scroll Enchant Shield - Greater Stamina|s
+s20020|Enchant Boots - Greater Stamina|Stamina +7|Enchanting 260: recipe Formula: Enchant Boots - Greater Stamina, drops in Sunken Temple; or Forever's scroll Enchant Boots - Greater Stamina|k
 s20023|Enchant Boots - Greater Agility|Agility +7|Enchanting 295: recipe Formula: Enchant Boots - Greater Agility, drops in Stratholme; or Forever's scroll Enchant Boots - Greater Agility|k
+s20024|Enchant Boots - Spirit|Spirit +5|Enchanting 275: recipe Formula: Enchant Boots - Spirit, drops in Sunken Temple; or Forever's scroll Enchant Boots - Spirit|k
 s20025|Enchant Chest - Greater Stats|All Stats +4|Enchanting 300: recipe Formula: Enchant Chest - Greater Stats, drops in Onyxia's Lair; or Forever's scroll Enchant Chest - Greater Stats|k
 s20026|Enchant Chest - Major Stamina|+10 Stamina|Enchanting 275: recipe Formula: Enchant Chest - Major Stamina, sold by Qia (Winterspring); or Forever's scroll Enchant Chest - Major Stamina|k
 s20028|Enchant Chest - Major Intellect|Intellect +10|Enchanting 290: recipe Formula: Enchant Chest - Major Intellect; or Forever's scroll Enchant Chest - Major Intellect|k
@@ -468,5 +606,18 @@ s25079|Enchant Gloves - Healing Power|Healing Spells +35/Damage Spells +12|Encha
 s25080|Enchant Gloves - Superior Agility|Agility +15|Enchanting 300: recipe Formula: Enchant Gloves - Superior Agility; or Forever's scroll Enchant Gloves - Superior Agility|k
 s25086|Enchant Cloak - Dodge|Dodge +1%|Enchanting 300: recipe Formula: Enchant Cloak - Dodge; or Forever's scroll Enchant Cloak - Dodge|k
 s27837|Enchant 2H Weapon - Agility|Agility +25|Enchanting 290: recipe Formula: Enchant 2H Weapon - Agility, sold by Meilosh (Felwood); or Forever's scroll Enchant 2H Weapon - Agility|k
+s7418|Enchant Bracer - Inferior Stamina|Stamina +2|Enchanting 1: learned with the profession; or Forever's scroll Enchant Bracer - Inferior Stamina|f
+s7428|Enchant Bracer - Minor Deflect|Defense +3|Enchanting 1: from a trainer; or Forever's scroll Enchant Bracer - Minor Deflect|k
+s7443|Enchant Chest - Minor Intellect|Intellect +2|Enchanting 20: recipe Formula: Enchant Chest - Minor Intellect, sold by Eaysaa Brightgust (Zephras Isle); or Forever's scroll Enchant Chest - Minor Intellect|s
+s7457|Enchant Bracer - Minor Stamina|Stamina +3|Enchanting 50: from a trainer; or Forever's scroll Enchant Bracer - Minor Stamina|s
+s7745|Enchant 2H Weapon - Minor Impact|Weapon Damage +4|Enchanting 100: from a trainer; or Forever's scroll Enchant 2H Weapon - Minor Impact|s
+s7748|Enchant Chest - Lesser Stamina|Stamina +3|Enchanting 60: from a trainer; or Forever's scroll Enchant Chest - Lesser Stamina|s
+s7766|Enchant Bracer - Minor Spirit|Spirit +3|Enchanting 60: recipe Formula: Enchant Bracer - Minor Spirit; or Forever's scroll Enchant Bracer - Minor Spirit|s
+s7771|Enchant Cloak - Minor Protection|Armor +10|Enchanting 90: recipe Formula: Imbue Cloak - Protection; or Forever's scroll Enchant Cloak - Minor Protection|k
+s7776|Enchant Chest - Lesser Intellect|Intellect +3|Enchanting 80: recipe Formula: Enchant Chest - Lesser Intellect, sold by Kithas (Orgrimmar); or Forever's scroll Enchant Chest - Lesser Intellect|k
+s7779|Enchant Bracer - Minor Agility|Agility +3|Enchanting 80: from a trainer; or Forever's scroll Enchant Bracer - Minor Agility|s
+s7782|Enchant Bracer - Minor Strength|Strength +3|Enchanting 80: recipe Formula: Enchant Bracer - Minor Strength, drops in The Hall of Thanes; or Forever's scroll Enchant Bracer - Minor Strength|s
+s7788|Enchant Weapon - Minor Striking|Weapon Damage +1|Enchanting 90: from a trainer; or Forever's scroll Enchant Weapon - Minor Striking|s
 s7793|Enchant 2H Weapon - Lesser Intellect|Intellect +5|Enchanting 100: recipe Formula: Enchant 2H Weapon - Lesser Intellect, sold by Tilli Thistlefuzz (Ironforge); or Forever's scroll Enchant 2H Weapon - Lesser Intellect|s
+s7857|Enchant Chest - Stamina|Stamina +4|Enchanting 120: from a trainer; or Forever's scroll Enchant Chest - Stamina|s
 ]==]

@@ -386,7 +386,7 @@ def _ranked_ladder(db, cls: str, spec: int, mode: str, slot: str, level: int | N
     # The specs a simulator ranked (simulated.py). The site's rule and other levels stay on the weights.
     ours = rank_rewards and level == db.meta["cap"]
     manual_options = PRERAID_OPTIONS.get((cls, spec, mode, slot), ()) if ours else ()
-    pre_raid_options = situational_gear.target_options().union(manual_options) if ours else ()
+    pre_raid_options = situational_gear.target_options(weights, spec_def["role"]).union(manual_options) if ours else ()
     if (ours and cls == "PALADIN" and spec_def.get("slug") == "protection"
             and mode == "pve" and slot == "main" and "dps" in weights):
         spell = weights["dps"] * specs.PALADIN_SPELL_DAMAGE_IN_WEAPON_DPS

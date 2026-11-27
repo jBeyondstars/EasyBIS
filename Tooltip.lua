@@ -18,8 +18,7 @@ of the other style. An alternative that scores as much as the best pick
 reads "BIS". "Added" is an
 item the player put in that spec's list by hand (Custom.lua), when the data
 does not pick it. The lists are the ones of the character's content phase
-(ns.Phase). Under those lines, the reputation the item asks for, how far the
-character is, where it is sold and for how much (Reputation.TooltipLines).
+(ns.Phase).
 
   Tooltip.BuildLines(id)   { { left, right, r, g, b }, ... }, also used by /easybis item
 ]]
@@ -165,15 +164,16 @@ local function Decorate(tooltip, id)
     if tooltip.IsForbidden and tooltip:IsForbidden() then return end
 
     local lines = Tooltip.BuildLines(id)
-    if not lines[1] then return end
+    local cost = not Tooltip.skipPvPCost and ns.Sources.PvPCost(id)
+    if not lines[1] and not cost then return end
     tooltip:AddLine(" ")
     tooltip:AddLine(ns.COLOR .. L.ADDON_TITLE .. "|r")
     for _, line in ipairs(lines) do
         tooltip:AddDoubleLine(line.left, line.right, line.r, line.g, line.b, 1, 1, 1)
     end
-    if ns:GetOption("repTooltip") then
-        for _, line in ipairs(ns.Reputation.TooltipLines(id)) do
-            tooltip:AddLine(line.text, line.r, line.g, line.b, true)
+    if cost then
+        for _, costLine in ipairs(ns.Sources.CostLines(cost)) do
+            tooltip:AddLine(costLine, 1, 0.82, 0, true)
         end
     end
 end

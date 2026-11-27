@@ -29,6 +29,7 @@ local specNames = {}  -- [class] = { [spec] = English name }
 local specOrder = {}  -- [class] = { spec, ... } as the data lists them
 local done = {}       -- [class] = true once read
 local generation = 0  -- bumped by Reset, so a warm-up in progress stops
+local indexedRankCap  -- the weekly cap used to build the current index
 local added           -- [item id] = hits for the items added by hand; nil until asked for, and after a change
 
 local function Add(into, id, hit)
@@ -78,8 +79,17 @@ local function ReadClass(class, filter)
     end
 end
 
-local function ReadAll()
+local function CurrentFilter()
     local filter = ns.Filter()
+    if indexedRankCap ~= filter.rankCap then
+        Index.Reset()
+        indexedRankCap = filter.rankCap
+    end
+    return filter
+end
+
+local function ReadAll()
+    local filter = CurrentFilter()
     for _, class in ipairs(ns.CLASSES) do ReadClass(class, filter) end
 end
 
@@ -152,6 +162,7 @@ end
 -- Reads one class per frame, so the first tooltip does not pay for all nine.
 function Index.WarmUp()
     if not (C_Timer and C_Timer.After) then return end
+    local filter = CurrentFilter()
     local started = generation
     local position = 0
     local function Step()
@@ -159,7 +170,7 @@ function Index.WarmUp()
         position = position + 1
         local class = ns.CLASSES[position]
         if not class then return end
-        ReadClass(class, ns.Filter())
+        ReadClass(class, filter)
         C_Timer.After(0, Step)
     end
     C_Timer.After(WARM_UP_DELAY, Step)

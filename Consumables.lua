@@ -177,6 +177,11 @@ local function ReadWhere(record)
         return
     end
     record.profession, record.skill = profession, tonumber(skill)
+    local primary, additional = rest:match("^(.-); (.+)$")
+    if primary then
+        rest = primary
+        record.additionalSource = additional
+    end
     if rest == "from a trainer" then
         record.trainer = true
     elseif rest:match("^recipe sold by ") then
@@ -260,5 +265,6 @@ end
 function Consumables.Where(record)
     local detail = Consumables.Detail(record)
     local kind = Consumables.Kind(record)
+    if record.additionalSource then detail = detail .. "\n" .. record.additionalSource end
     return L.TIP_SOURCE:format(detail ~= kind and (kind .. " - " .. detail) or kind)
 end

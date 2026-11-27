@@ -13,6 +13,7 @@ import aoe_combined
 import simulate_aoe
 import consumable_lists
 import consumables
+import enchantments
 import hashlib
 import json
 import math
@@ -222,9 +223,7 @@ def _enchants_note(db) -> list:
     changed = getattr(db, "specs", None)
     lines = []
     if changed and changed.unbound:
-        tanks = ", ".join(f"{db.classes[cls]['specs'][spec]['name']} {cls.title()}" for cls, spec in sorted(changed.unbound))
-        lines += [f"Changed from ForeverDB's lists: the tanks ({tanks}) are not listed the head and leg enchants of "
-                  "another class's Zul'Gurub quest. See _build/specs.py."]
+        lines += ["Zul'Gurub head and leg enchants follow their class restrictions. See _build/specs.py."]
     if changed and changed.cat:
         cls, spec = changed.cat
         lines += [f"Added to ForeverDB's lists: the enchants of {db.classes[cls]['specs'][spec]['name']} {cls.title()} "
@@ -358,6 +357,25 @@ def _wing_rows(db, bosses: dict) -> list[str]:
     return rows
 
 
+def pvp_cost_rows(db) -> list[str]:
+    prices = {seal: {"honor": honor, "rank": ranks.SEAL_RANKS[slot]}
+              for slot, (seal, honor) in ranks.SEALS.items()}
+    for item_id, item in db.items.items():
+        gear = db.gear.get(item_id, {})
+        price = ranks.honor_price(item_id, item, gear)
+        if price:
+            rank = ranks.required(item, gear)
+            if rank > ranks.NO_RANK:
+                price["rank"] = rank
+            prices[item_id] = price
+    rows = []
+    for item_id, price in sorted(prices.items()):
+        fields = ", ".join(f"{field} = {value}" for field, value in price.items())
+        rows.append(f"[{item_id}] = {{ {fields} }},")
+    return [f"-- PvP prices (Honor currency {ranks.HONOR_CURRENCY}) and required ranks, see _build/ranks.py.",
+            "ns.data.pvpCosts = {", *rows, "}"]
+
+
 def items_file(db, all_ladders, extra_ids=()) -> str:
     rows, instances, bosses, quests = [], set(), {}, {}
     places = getattr(db, "quest_places", None) or {}
@@ -429,6 +447,7 @@ def items_file(db, all_ladders, extra_ids=()) -> str:
     for item_id, record in sorted(priced.currencies.items() if priced else ()):
         lines.append(f'[{item_id}]="{record.get("currency", "")}^{_field(record["name"])}",')
     lines.append("}")
+    lines.extend(pvp_cost_rows(db))
     return "\n".join(lines) + "\n"
 
 
@@ -477,8 +496,7 @@ def enchant_fits(db, key: str, spec_ladders: dict) -> bool:
 
 
 def enchant_ladders(db, cls: str, spec: int, spec_ladders: dict) -> dict[str, list[tuple[str, int]]]:
-    """{slot key: [(enchant, phase)], best first}: what the addon needs to show a level-cap character of
-    that spec its ENCHANTS_PER_SLOT best enchants, whatever the content phase."""
+    """{slot key: [(enchant, phase)], best first}. Keep candidates for filtering before taking the first three."""
     per_slot = db.enchants.get(cls, {}).get((spec, "raid"), {})
     cap = db.meta["cap"]
     out = {}
@@ -486,12 +504,9 @@ def enchant_ladders(db, cls: str, spec: int, spec_ladders: dict) -> dict[str, li
         if not enchant_fits(db, key, spec_ladders):
             continue
         usable = [(enchant, phases.enchant_phase(db, enchant)) for enchant, level in entries
-                  if level <= cap and enchant in db.enchant_info]
-        keep = set()
-        for phase in phases.PHASES:
-            keep.update([pair for pair in usable if pair[1] <= phase][:ENCHANTS_PER_SLOT])
-        if keep:
-            out[key] = [pair for pair in usable if pair in keep]
+                  if level <= cap and enchant in db.enchant_info and enchant not in enchantments.UNAVAILABLE]
+        if usable:
+            out[key] = usable
     return out
 
 
@@ -510,9 +525,10 @@ def enchants_file(db, all_ladders) -> str:
     lines = _header(db, f"The best enchant, armor kit or scope per spec and slot at level {db.meta['cap']}.", (
         *_sources_note(db),
         "  E <spec> <slot key> <ids>    ids best first; s<spell id> an enchant, i<item id> a kit, spike or scope;",
+        "  U <spec> <slot key> <ids>    situational choices without a rank",
         "                               id:<phase> when it needs a raid (as in Lists.lua; see _build/phases.py)",
         "  slot keys: head neck shoulder back chest wrist hands legs feet, w1h w2h (weapons), shield, held, rng",
-        f"An item takes only one of them. The addon shows the first {ENCHANTS_PER_SLOT} of the character's phase.",
+        f"The addon shows the first {ENCHANTS_PER_SLOT} eligible choices per slot and any situational options.",
         "A weapon, shield, held or ranged key is listed only for the specs whose PvE list holds such an item.",
         *_enchants_note(db),
     ))
@@ -525,11 +541,25 @@ def enchants_file(db, all_ladders) -> str:
                 used.update(enchant for enchant, _ in pairs)
                 tokens = [f"{enchant}:{phase}" if phase else enchant for enchant, phase in pairs]
                 block.append("\t".join(("E", str(spec), key, " ".join(tokens))))
+            role = db.classes[cls]["specs"][spec]["role"]
+            options = enchantments.options(cls, role)
+            own = next((enchant for enchant, owner in specs.CLASS_ENCHANTS.items()
+                        if owner == cls and enchant in db.enchant_info), None)
+            if own:
+                for key in ("head", "legs"):
+                    if own not in dict(ladder.get(key, ())):
+                        options[key] = (own,)
+            for key, ids in options.items():
+                if ids and enchant_fits(db, key, all_ladders[cls][spec]):
+                    used.update(ids)
+                    tokens = [f"{enchant}:{phase}" if (phase := phases.enchant_phase(db, enchant)) else enchant
+                              for enchant in ids]
+                    block.append("\t".join(("U", str(spec), key, " ".join(tokens))))
         lines.append(f"{cls} = {_block(block)},")
     lines.append("}")
     lines.append("-- id|name|effect|where it comes from|label (s Seen in Forever, c Clue, f Forever client, k Classic data,")
     lines.append("-- t QuestieDB: \"Quest: <title> (<instance>)\", \"Raid drop: <boss>\", \"Vendor: <name>\"..., see _build/questie.py)")
-    rows = ["|".join([enchant] + [_field(text) for text in (db.enchant_info[enchant] + [""] * 4)[:4]])
+    rows = ["|".join([enchant] + [_field(text) for text in enchantments.info(db, enchant)])
             for enchant in sorted(used)]
     lines.append(f"ns.data.enchantInfo = {_block(rows)}")
     return "\n".join(lines) + "\n"
@@ -541,7 +571,12 @@ def reputation_file(db, all_ladders, reading: dict, extra_ids=()) -> str:
     shown = shown_ids(all_ladders).union(extra_ids)
     enchants = {enchant for specs in (db.enchants or {}).values() for lists in specs.values()
                 for entries in lists.values() for enchant, _ in entries}
+    enchants.update(specs.CLASS_ENCHANTS.keys() & db.enchant_info.keys())
     vendors = reputations.faction_vendors(reading, shown)
+    commerce = (enchants | {"s1328948"}) & enchantments.REPUTATION_RECIPES.keys() if db.enchants else set()
+    if commerce:
+        for side, (faction, _) in enchantments.COMMERCE_FACTIONS.items():
+            vendors.setdefault(faction, enchantments.COMMERCE_VENDORS[side][0])
     rewards = {record["faction"] for item_id in shown for record in reading.get("items", {}).get(item_id, ())
                if record["kind"] == reputations.QUEST}
 
@@ -568,7 +603,7 @@ def reputation_file(db, all_ladders, reading: dict, extra_ids=()) -> str:
                 record.get("profession", ""), record.get("skill", ""), record.get("recipe", "")))))
     formulas = []
     for enchant, record in sorted(reading.get("enchants", {}).items()):
-        if enchant not in enchants:
+        if enchant not in enchants or enchant in commerce or enchant in enchantments.UNAVAILABLE:
             continue
         if record.get("vendor"):
             used.add(record["vendor"])
@@ -576,8 +611,17 @@ def reputation_file(db, all_ladders, reading: dict, extra_ids=()) -> str:
             enchant, record["faction"], record["standing"], record["kind"], "1" if record.get("scroll") else "",
             _field(record.get("via", "")), record.get("vendor", ""), record.get("recipe", ""),
             record.get("profession", ""), record.get("skill", "")))))
-    sellers = ["|".join([str(npc)] + [_field(str(text)) for text in reading["vendors"][npc]])
-               for npc in sorted(used) if npc in reading.get("vendors", {})]
+    vendor_details = dict(reading.get("vendors", {}))
+    for enchant in sorted(commerce):
+        recipe, name, skill = enchantments.REPUTATION_RECIPES[enchant]
+        for side, (faction, _) in enchantments.COMMERCE_FACTIONS.items():
+            npc, *details = enchantments.COMMERCE_VENDORS[side]
+            vendor_details[npc] = details
+            used.add(npc)
+            formulas.append("|".join(map(str, (enchant, faction, 5, reputations.RECIPE, "", name, npc,
+                                               recipe, "Enchanting", skill, side))))
+    sellers = ["|".join([str(npc)] + [_field(str(text)) for text in vendor_details[npc]])
+               for npc in sorted(used) if npc in vendor_details]
 
     read = sum(1 for item_id in shown for record in reading.get("items", {}).get(item_id, ()) if record.get("read") == "game")
     seen = (f" The requirement of {read} listed pieces ForeverDB gives none is the game's own, read by the capture "
@@ -601,7 +645,7 @@ def reputation_file(db, all_ladders, reading: dict, extra_ids=()) -> str:
         "  items     id|side|faction|standing|kind|vendor npc|price in copper|quest or recipe|profession|skill|"
         "the recipe's item",
         "  enchants  id|faction|standing|kind|1 when a scroll does the same|quest or recipe|vendor npc|"
-        "the recipe's item|profession|skill",
+        "the recipe's item|profession|skill|side when the recipe is faction-specific",
         "  a recipe's vendor npc sells the recipe, not the piece it makes",
         "  kind: w the wearer's reputation, q a quest asks for it, r the crafter's: the recipe is sold against it",
         "  standing: 3 Neutral, 4 Friendly, 5 Honored, 6 Revered, 7 Exalted",
@@ -658,7 +702,7 @@ def consumables_file(db) -> str:
     for cls in sorted(db.classes):
         lines.append(f'{cls} = "{" ".join(map(_listed_token, consumable_lists.situational(db, cls)))}",')
     lines.append("}")
-    lines.append("-- id|name|effect|where it comes from|label (f read from the game client)|zone rule "
+    lines.append("-- id|name|effect|where it comes from|source label when verified|zone rule "
                  "(only:<place> usable nowhere else, bonus:<place> a bonus that works there alone)")
     info = consumable_lists.info_rows(db, consumable_lists.used_ids(lists, situational))
     rows = ["|".join([str(item)] + [_field(text) for text in info[item]]) for item in sorted(info)]

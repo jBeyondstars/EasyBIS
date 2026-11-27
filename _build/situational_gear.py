@@ -4,8 +4,19 @@ import json
 from functools import lru_cache
 from pathlib import Path
 
+import specs
+
 
 FILE = Path(__file__).parent / "corrections" / "situational_gear.json"
+FROST_DAMAGE, SHADOW_DAMAGE = 87, 88
+TARGET_BONUS_STATS = {
+    "attack_power": (specs.ATTACK_POWER, specs.RANGED_ATTACK_POWER, specs.FERAL_ATTACK_POWER),
+    "spell_damage": (specs.SPELL_DAMAGE,),  # Generic spell power can be weighted for healing alone.
+    "frost_or_shadow_damage": (FROST_DAMAGE, SHADOW_DAMAGE),
+    "agility": (specs.AGILITY,),
+    "extra_melee_attack": (specs.ATTACK_POWER,),
+    "direct_damage": (),  # The cannon deals its own damage for any profile.
+}
 
 
 @lru_cache(maxsize=1)
@@ -22,10 +33,21 @@ def item_ids(cls: str, spec: int, mode: str, slot: str) -> tuple[int, ...]:
 
 
 @lru_cache(maxsize=1)
-def target_options() -> frozenset[int]:
-    """Ranked items with target or terrain bonuses, independent of class and spec."""
+def _target_groups() -> dict[str, frozenset[int]]:
     data = json.loads(FILE.with_name("target_situational.json").read_text(encoding="utf-8"))
-    return frozenset(map(int, data["items"]))
+    return {bonus: frozenset(map(int, items)) for bonus, items in data["bonuses"].items()}
+
+
+def target_options(weights: dict, role: str) -> frozenset[int]:
+    """Ranked options whose conditional effect benefits the profile."""
+    eligible = set()
+    for bonus, items in _target_groups().items():
+        if bonus == "extra_melee_attack" and role == "Ranged DPS":
+            continue
+        stats = TARGET_BONUS_STATS[bonus]
+        if not stats or any(weights.get(stat, 0) > 0 for stat in stats):
+            eligible.update(items)
+    return frozenset(eligible)
 
 
 def include(db):

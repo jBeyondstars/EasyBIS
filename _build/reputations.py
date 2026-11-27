@@ -75,6 +75,8 @@ FACTIONS = {
     889: ("Warsong Outriders", "h"),
     890: ("Silverwing Sentinels", "a"),
     910: ("Brood of Nozdormu", ""),
+    2586: ("Azeroth Commerce Authority", "a"),
+    2587: ("Durotar Supply and Logistics", "h"),
     2747: ("Barkskin Burrow", ""),
     2798: ("Darkspear Raiders", "h"),
     2799: ("Theramore Expeditionary Force", "a"),

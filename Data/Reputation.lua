@@ -6,7 +6,7 @@
 --   methods   faction|quest|amount|1 when it repeats|side|the classes that may take it (the game's mask), empty for all|the standing it is offered from|the standing it is offered up to|<set>:<quest> for a branch of quests that exclude one another
 --   vendors   npc|name|uiMap|x|y
 --   items     id|side|faction|standing|kind|vendor npc|price in copper|quest or recipe|profession|skill|the recipe's item
---   enchants  id|faction|standing|kind|1 when a scroll does the same|quest or recipe|vendor npc|the recipe's item|profession|skill
+--   enchants  id|faction|standing|kind|1 when a scroll does the same|quest or recipe|vendor npc|the recipe's item|profession|skill|side when the recipe is faction-specific
 --   a recipe's vendor npc sells the recipe, not the piece it makes
 --   kind: w the wearer's reputation, q a quest asks for it, r the crafter's: the recipe is sold against it
 --   standing: 3 Neutral, 4 Friendly, 5 Honored, 6 Revered, 7 Exalted
@@ -31,6 +31,8 @@ factions = [==[
 889|Warsong Outriders|h|7|2|0|260|14754||3277
 890|Silverwing Sentinels|a|7|2|260|0|14753||3277
 910|Brood of Nozdormu||103|49|5663|5663|||
+2586|Azeroth Commerce Authority|a|0|0|0|0|256732||
+2587|Durotar Supply and Logistics|h|0|0|0|0|248199||
 2747|Barkskin Burrow||0|0|0|0|256629||
 2798|Darkspear Raiders|h|2|0|0|350|263570||16606
 2799|Theramore Expeditionary Force|a|2|0|350|0|263569||16606
@@ -1167,8 +1169,10 @@ vendors = [==[
 15127|Samuel Hawke|1417|46|45.4
 15176|Vargus|1451|51.2|38.9
 15179|Mishta|1451|49.9|36.3
+248199|Beneris|1413|49.7|29.8
 255897|Friz Frazzlespark|2548|77.1|52.9
 256629|Dala Fairmaw|2482|21|78.4
+256732|Alynsia|1433|11.2|71.5
 263569|Bryanna Embreeze|1413|63.4|58.7
 263570|Creeg Bothunk|1413|65|34.6
 265574|Winklespark|1413|62.5|37.6
@@ -1679,5 +1683,9 @@ s23802|529|6|r|1|Formula: Enchant Bracer - Healing|10856|19447|Enchanting|300
 s23803|59|5|r|1|Formula: Enchant Weapon - Mighty Spirit|12944|19448|Enchanting|300
 s23804|59|6|r|1|Formula: Enchant Weapon - Mighty Intellect|12944|19449|Enchanting|300
 s27837|576|4|r|1|Formula: Enchant 2H Weapon - Agility|11557|22392|Enchanting|290
+s1219580|2586|5|r||Formula: Enchant 2H Weapon - Spellblasting|256732|274394|Enchanting|300|a
+s1219580|2587|5|r||Formula: Enchant 2H Weapon - Spellblasting|248199|274394|Enchanting|300|h
+s1328948|2586|5|r||Formula: Enchant Boots - Speed|256732|289560|Enchanting|280|a
+s1328948|2587|5|r||Formula: Enchant Boots - Speed|248199|289560|Enchanting|280|h
 ]==],
 }

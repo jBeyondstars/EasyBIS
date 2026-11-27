@@ -8,6 +8,7 @@ BUILD = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(BUILD))
 
 import fdb
+import ladders as generator
 import notes
 import situational_gear as gear
 from test_addon import CLASSES, Game, lupa, strip_colors
@@ -56,6 +57,24 @@ class SituationalGearTest(unittest.TestCase):
         self.assertEqual((drop["side"], drop["groups"]), ("", frozenset("d")))
         self.assertEqual(drop["sources"][0][:3], ["d", "329", "Ramstein the Gorger"])
 
+    def test_target_bonuses_use_the_effect_rather_than_permanent_item_stats(self):
+        cases = (
+            ("DRUID", 4, {11815, 249470, 280071}, {13954, 22268, 249469}),
+            ("DRUID", 1, {13954, 22268}, {11815, 249469, 249470, 280071}),
+            ("DRUID", 3, set(), {13954, 22268}),
+            ("HUNTER", 2, {11628, 249470}, {11815, 249469}),
+            ("MAGE", 3, {22268, 249469}, {249470}),
+            ("PRIEST", 3, {22268, 249469}, {249470}),
+        )
+        for player_class, index, shown, hidden in cases:
+            spec = self.db.classes[player_class]["specs"][index]
+            for profile in ("raid", "pvp"):
+                with self.subTest(player_class=player_class, index=index, profile=profile):
+                    eligible = gear.target_options(spec["weights"][profile], spec["role"])
+                    self.assertTrue(shown <= eligible)
+                    self.assertTrue(hidden.isdisjoint(eligible))
+                    self.assertIn(13382, eligible)
+
     def test_import_leaves_native_gear_pools_and_upstream_facts_intact(self):
         db = fdb.Database()
         db.classes["WARRIOR"] = {"pools": {"trinket": []}}
@@ -87,6 +106,14 @@ class SituationalGearTest(unittest.TestCase):
 
 @unittest.skipIf(lupa is None, "lupa is not installed")
 class SituationalGearClientTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.db = fdb.load(BUILD / "cache" / "ForeverDB")
+
+    def target_options(self, cls, index, mode):
+        spec = self.db.classes[cls]["specs"][index]
+        return gear.target_options(spec["weights"][generator.MODES[mode]], spec["role"])
+
     def test_lua_keeps_the_requested_number_of_picks_alongside_pre_raid_options(self):
         game = Game()
         ladders = game.ns.Ladders
@@ -95,6 +122,7 @@ class SituationalGearClientTest(unittest.TestCase):
             data = ladders.Decode(cls)
             for spec in data.order.values():
                 for mode in ("pve", "pvp"):
+                    audited = self.target_options(cls, spec, mode) | {22321}
                     for side in ("a", "h"):
                         for count in (2, 6):
                             for phase in (0, 1):
@@ -130,7 +158,6 @@ class SituationalGearClientTest(unittest.TestCase):
                                         if slot == "trinket":
                                             self.assertEqual(len(ordinary), 1 + count)
                                         if phase == 0:
-                                            audited = gear.target_options() | {22321}
                                             self.assertCountEqual((item for item in extras if item not in audited and item != 12583),
                                                                   expected)
                                             self.assertTrue((audited - promoted).isdisjoint(ordinary))
@@ -148,6 +175,24 @@ class SituationalGearClientTest(unittest.TestCase):
                                                            271903 if side == "a" else 272060]
                                             self.assertEqual(ordinary, regular_ids[:1 + count])
                                             self.assertEqual(rows[3].id, 11810)
+
+    def test_verdant_footpads_are_absent_from_feral_cat_pvp(self):
+        game = Game(cls="DRUID")
+        ladders = game.ns.Ladders
+        data = ladders.Decode("DRUID")
+        for side in ("a", "h"):
+            for count in (2, 6):
+                for rewards in (False, True):
+                    with self.subTest(side=side, count=count, rewards=rewards):
+                        flt = game.lua.table(side=side, phase=0, alternatives=count, pvpRewards=rewards)
+                        cat = ladders.Compute(data, 4, "pvp", flt).feet
+                        self.assertNotIn(13954, {pick.id for pick in ladders.DisplayPicks(cat, True).values()})
+                        balance = ladders.Compute(data, 1, "pvp", flt).feet
+                        boots = next(pick for pick in balance.alts.values() if pick.id == 13954)
+                        self.assertTrue(ladders.HasFlag(boots.entry, "j"))
+                        restoration = ladders.Compute(data, 3, "pve", flt).feet.best[1]
+                        self.assertEqual(restoration.id, 13954)
+                        self.assertFalse(ladders.HasFlag(restoration.entry, "k"))
 
     def test_combat_rogue_hand_of_justice_is_bis_only_with_a_comparable_score(self):
         for faction in ("Alliance", "Horde"):
@@ -297,7 +342,7 @@ class SituationalGearClientTest(unittest.TestCase):
                     game.ns.SetAlternatives(game.ns, count)
                     browser.ShowSlot("trinket")
                     rows = [row for row in browser.window.rowData.values() if row.kind == "item"]
-                    added = gear.target_options() | {22321}
+                    added = self.target_options("DRUID", 2, "pve") | {22321}
                     self.assertTrue(all(row.level and not row.bis for row in rows if row.id in added))
                     # The measured Threat option joins the two existing situational recommendations.
                     self.assertEqual(sum(row.id not in added for row in rows), 1 + count + 3)

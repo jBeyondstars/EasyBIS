@@ -80,7 +80,6 @@ Words, for the frames to show:
   Reputation.BattlegroundText(factionID)   "Battleground: Alterac Valley", "Battleground" when the game does not
                                            name it, or nil
   Reputation.StateText(requirement)        "Earned" in gold, "You: Honored", "Not met", "Unknown"...
-  Reputation.TooltipLines(itemId)          { { text, r, g, b }, ... }
 
 Fires REPUTATION_CHANGED (ns:On) once after a burst of the game's UPDATE_FACTION or SKILL_LINES_CHANGED.
 
@@ -100,7 +99,6 @@ local NEUTRAL_REACTION = 4        -- the game counts from 1 Hated; the data from
 local NEUTRAL, EXALTED = 3, 7
 local GOLD, GREY, WHITE = "|cffffd100", "|cffa8a8b0", "|cffffffff"
 local UNSURE = "|cff808080"        -- the colour of the signs the data wears when it is less than sure
-local MUTED = { 0.66, 0.66, 0.70 }
 local QUIET_DELAY = 0.25          -- the game sends UPDATE_FACTION in bursts
 -- The game's class numbers: a quest's classes are a mask of 2 ^ (number - 1).
 local CLASS_NUMBERS = { WARRIOR = 1, PALADIN = 2, HUNTER = 3, ROGUE = 4, PRIEST = 5, SHAMAN = 7, MAGE = 8,
@@ -162,11 +160,14 @@ local function Catalog()
     end
     for line in (data.enchants or ""):gmatch("[^\n]+") do
         local f = Fields(line)
-        catalog.enchants[f[1]] = {
-            enchant = f[1], side = "", factionID = tonumber(f[2]), standing = tonumber(f[3]), kind = f[4],
+        local id, side = f[1], f[11] or ""
+        local rows = catalog.enchants[id] or {}
+        rows[side] = {
+            enchant = id, side = side, factionID = tonumber(f[2]), standing = tonumber(f[3]), kind = f[4],
             scroll = f[5] == "1", via = Text(f[6]), vendor = tonumber(f[7]), recipe = tonumber(f[8]),
             profession = Text(f[9]), skill = tonumber(f[10]),
         }
+        catalog.enchants[id] = rows
     end
     return catalog
 end
@@ -183,8 +184,9 @@ function Reputation.Requirement(itemId, side)
     return shared
 end
 
-function Reputation.EnchantRequirement(id)
-    return Catalog().enchants[id]
+function Reputation.EnchantRequirement(id, side)
+    local rows = Catalog().enchants[id]
+    return rows and (rows[side or ns.PlayerSide()] or rows[""]) or nil
 end
 
 function Reputation.Factions()
@@ -552,14 +554,18 @@ function Reputation.Needs(class, spec, list, phase, side)
         end
     end
     local formulas = {}   -- an enchant the one-handed and two-handed weapons share counts once, at the first
+    local function AddEnchant(id, key, role)
+        local requirement = not formulas[id] and Reputation.EnchantRequirement(id, side)
+        if requirement then
+            formulas[id] = true
+            Add(requirement, { enchant = id, slot = key, role = role })
+        end
+    end
     for _, group in ipairs(ns.Enchants.For(class, spec, phase)) do
         for index, id in ipairs(group.ids) do
-            local requirement = not formulas[id] and Reputation.EnchantRequirement(id)
-            if requirement then
-                formulas[id] = true
-                Add(requirement, { enchant = id, slot = group.key, role = index == 1 and "best" or "alt" })
-            end
+            AddEnchant(id, group.key, index == 1 and "best" or "alt")
         end
+        for _, id in ipairs(group.unranked) do AddEnchant(id, group.key, "alt") end
     end
 
     local function Order(a, b)
@@ -735,54 +741,6 @@ function Reputation.Sellers(group)
         Add(L.REP_SELLER_REST:format(unknown))
     end
     return sellers
-end
-
-local function Money(copper)
-    if GetCoinTextureString then return GetCoinTextureString(copper) end
-    local gold, silver, rest = math.floor(copper / 10000), math.floor(copper / 100) % 100, copper % 100
-    local parts = {}
-    if gold > 0 then parts[#parts + 1] = L.REP_GOLD:format(gold) end
-    if silver > 0 then parts[#parts + 1] = L.REP_SILVER:format(silver) end
-    if rest > 0 or not parts[1] then parts[#parts + 1] = L.REP_COPPER:format(rest) end
-    return table.concat(parts, " ")
-end
-
--- Where the requirement is met, for a tooltip.
-local function SourceLine(requirement)
-    if requirement.kind == QUEST then return L.REP_TIP_QUEST:format(requirement.via or L.REP_UNKNOWN) end
-    if requirement.kind == RECIPE then
-        local profession = requirement.profession and ns.ProfessionName(requirement.profession)
-        local name = Reputation.RecipeName(requirement) or L.REP_UNKNOWN
-        return L.REP_TIP_RECIPE:format(profession and (name .. " (" .. profession .. ")") or name)
-    end
-    return L.REP_TIP_VENDOR:format(VendorLine(requirement.vendor) or L.REP_UNKNOWN)
-end
-
-function Reputation.TooltipLines(itemId)
-    local requirement = Reputation.Requirement(itemId)
-    if not requirement then return {} end
-    -- a recipe of another profession: the player's own standing says nothing of the piece
-    local crafter = Reputation.Crafter(requirement)
-    local earned = Reputation.Status(requirement) == "met" and crafter ~= "other"
-    local lines = { {
-        text = L.REP_TIP_NEED:format(Reputation.NeedText(requirement)),
-        r = 1, g = earned and 0.82 or 1, b = earned and 0 or 1,
-    } }
-    local function Quiet(text) lines[#lines + 1] = { text = text, r = MUTED[1], g = MUTED[2], b = MUTED[3] } end
-    if crafter == "other" then
-        Quiet(L.REP_CRAFT_NOT_YOURS:format(ns.ProfessionName(requirement.profession)))
-    else
-        Quiet(L.REP_YOU:format(Reputation.ProgressText(requirement.factionID)))
-    end
-    Quiet(SourceLine(requirement))
-    if requirement.kind == WEAR then
-        Quiet(L.REP_TIP_PRICE:format(requirement.price and Money(requirement.price) or L.REP_UNKNOWN))
-    elseif requirement.kind == RECIPE then
-        Quiet(L.REP_TIP_RECIPE_VENDOR:format(VendorLine(requirement.vendor) or L.REP_UNKNOWN))
-    end
-    local faction = Catalog().factions[requirement.factionID]
-    Quiet(faction and faction.quests > 0 and L.REP_TIP_FARM or L.REP_TIP_FARM_UNKNOWN)
-    return lines
 end
 
 local function TakesClass(classes, class)

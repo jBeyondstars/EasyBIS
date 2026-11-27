@@ -53,11 +53,11 @@ CATEGORIES = (*SCORED, *RESTORED, SITUATIONAL)   # the order the tab shows them 
 UNRANKED_IN = ("flask", "elixir", "combat")      # where an effect the weights do not cover is listed without rank
 
 NO_MANA = frozenset({"WARRIOR", "ROGUE"})
+_PVP_ONLY = frozenset({"PvP Battlegrounds", "Warsong Gulch", "Alterac Valley", "Arathi Basin", "Darkspear Islands"})
 CASTERS = frozenset({"Caster DPS", "Healer"})
 MELEE = frozenset({"Melee DPS", "Tank"})
 NOT_FOR_THE_CAP = frozenset({"Level boosts"})   # a family of no use to a character of the lists' level
 UNKNOWN_WHERE = "where it comes from isn't known yet"
-ORIGIN = "f"   # read from the game client
 ORIGINS_FILE = Path(__file__).resolve().parent / "corrections" / "recipe_origins.json"
 _ORIGIN_SAID = {"sold": "recipe sold by", "quest": "recipe from the quest", "drops": "recipe drops from",
                 "found": "recipe found in"}
@@ -67,8 +67,25 @@ _RESISTANCES = frozenset(consumables.RESISTANCES.values())
 _MOLTEN_CORE = ("Lucifron", "Magmadar", "Gehennas", "Garr", "Shazzrah", "Baron Geddon", "Golemagg the Incinerator",
                 "Sulfuron Harbinger", "Majordomo Executus", "Ragnaros")
 _ON_A_MELEE_WEAPON = re.compile(r"\b(?:melee|blunt|sharp|sharpened) weapon\b", re.I)
+_MELEE_POWER = re.compile(r"\bmelee attack power\b", re.I)
 _EDGE = re.compile(r"\b(sharp|blunt) weapon\b", re.I)
 _RANK = re.compile(r" (?:II|III|IV|V|VI)$")
+_UTILITY_ITEMS = frozenset({9088, 12217, 21151})  # Gift of Arthas, Dragonbreath Chili, Rumsey Rum Black Label
+_FIREWATERS = frozenset({12820, 246948})
+
+# Effects from the Forever item tooltips and WoWSims evidence in the 2026-11-25 audit.
+# The recipes and quest sources are recorded separately in recipe_origins.json.
+_MANA_RUNES = frozenset({12662, 20520})
+_RUNE_EFFECT = {"restores": {"mana": 1200}, "ranges": {"mana": (900, 1500)},
+                "utility": ["Costs 600 to 1000 health", "Shares the conjured item cooldown"]}
+_SUPPLEMENTAL = {
+    8410: {"name": "R.O.I.D.S.", "stats": {"4": 25}, "utility": ["Lasts 1 hour"]},
+    8412: {"name": "Ground Scorpok Assay", "stats": {"3": 25}, "utility": ["Lasts 1 hour"]},
+    12451: {"name": "Juju Power", "stats": {"4": 30}, "utility": ["Lasts 30 min"]},
+    12460: {"name": "Juju Might", "stats": {"38": 40}, "utility": ["Lasts 10 min"]},
+    12662: {"name": "Demonic Rune", **_RUNE_EFFECT},
+    20520: {"name": "Dark Rune", **_RUNE_EFFECT},
+}
 
 
 @dataclass
@@ -88,7 +105,10 @@ def score(record: dict, weights: dict, role: str) -> float:
     melee_only = bool(_ON_A_MELEE_WEAPON.search(record.get("text", "")))
     if melee_only and role not in MELEE:
         return 0.0
-    total = sum(weights.get(_key(stat), 0) * value for stat, value in record.get("stats", {}).items())
+    stats = record.get("stats", {})
+    total = sum(weights.get(_key(stat), 0) * value for stat, value in stats.items())
+    if role not in MELEE and _MELEE_POWER.search(record.get("text", "")):
+        total -= weights.get(consumables.ATTACK_POWER, 0) * stats.get(str(consumables.ATTACK_POWER), 0)
     if role in CASTERS:
         total += sum(weights.get(_key(stat), 0) * value for stat, value in record.get("spell_stats", {}).items())
     damage = record.get("extras", {}).get(consumables.WEAPON_DAMAGE, 0)
@@ -135,12 +155,15 @@ def _recipe_phase(facts: dict, bosses: dict) -> int:
 
 def item_phase(item: int, data, bosses: dict) -> int:
     """The content phase of a consumable (phases.enchant_phase's rule, for what recipes and sources say)."""
+    origin = load_origins().get(item, {})
+    if "phase" in origin:
+        return origin["phase"]
     facts = data.facts.get(item) or {}
     if facts.get("vendors") or facts.get("quests") or facts.get("drops"):
         return phases.PRE_RAID
     recipes = data.recipes.get(item, ())
     if not recipes:
-        return phases.PRE_RAID if item in load_origins() else phases.LATER
+        return phases.PRE_RAID if origin else phases.LATER
     return min(_recipe_phase(data.facts.get(_recipe_item(recipe)) or {}, bosses) for recipe in recipes)
 
 
@@ -180,6 +203,9 @@ def where(item: int, data, origins=None) -> str:
     """Where a consumable comes from, in the sentence Consumables.lua reads.
 
     A recipe nobody can place does not hide a vendor, a quest or a drop that gives the item itself."""
+    origin = (origins or {}).get(item, {})
+    if "source" in origin:
+        return origin["source"]
     facts = data.facts.get(item) or {}
     recipes = data.recipes.get(item, ())
     lead = ""
@@ -187,7 +213,7 @@ def where(item: int, data, origins=None) -> str:
         recipe = recipes[0]
         made = max((skill for _, skill in facts.get("made", ())), default=0)
         lead = f"{recipe['profession']} {recipe['skill'] or made}: "
-        learned = _learned(recipe, data, (origins or {}).get(item, {}))
+        learned = _learned(recipe, data, origin)
         if learned:
             return lead + learned
     if facts.get("vendors"):
@@ -199,7 +225,7 @@ def where(item: int, data, origins=None) -> str:
         return f"Drop: {facts['drops'][0]}"
     if recipes:
         return lead + "recipe, source unknown"
-    container = (origins or {}).get(item, {}).get("container")
+    container = origin.get("container")
     return f"Container: {container}" if container else UNKNOWN_WHERE
 
 
@@ -256,6 +282,9 @@ def _restored(record: dict) -> list:
 def effect(record: dict) -> str:
     """What a consumable does, with the condition its bonus depends on."""
     parts = [*_stat_parts(record.get("stats", {})), *_stat_parts(record.get("spell_stats", {}), spells=True)]
+    if _MELEE_POWER.search(record.get("text", "")):
+        parts = [part.replace(" Attack Power", " Melee Attack Power") if part.endswith(" Attack Power") else part
+                 for part in parts]
     parts += [f"{value:+g} {_EXTRAS[name]}" for name, value in record.get("extras", {}).items() if name in _EXTRAS]
     if record.get("conditional"):
         condition = record.get("condition") or {}
@@ -313,7 +342,7 @@ def _for_class(record: dict, cls: str) -> bool:
 
 
 def _usable(record: dict, mode: str, cls: str) -> bool:
-    return (mode == "pvp" or not record.get("only")) and _for_class(record, cls)
+    return _for_class(record, cls) and (not record.get("only") or (mode == "pvp" and record["only"] in _PVP_ONLY))
 
 
 def _distinct(entries: list, records: dict) -> list:
@@ -372,7 +401,10 @@ def _shelf(cls: str, role: str, weights: dict, mode: str, category: str, records
     shelf.ranked = _keep(ordered, twins)
     shelf.twins = twins & {entry[0] for entry in shelf.ranked}
     listed = {entry[0] for entry in shelf.ranked}
-    shelf.unranked = [(item, item_phases[item]) for item in sorted({item for _, item in strongest.values()}) if item not in listed]
+    unranked = {item for _, item in strongest.values()}
+    if category == "elixir" and role in MELEE:
+        unranked.update(item for item in _FIREWATERS & records.keys() if _usable(records[item], mode, cls))
+    shelf.unranked = [(item, item_phases[item]) for item in sorted(unranked - listed)]
     return shelf
 
 
@@ -386,6 +418,12 @@ def _kept_readings(db) -> tuple:
     records = consumables.load().get("items", {}) if data is not None else {}
     if not records:
         return data, {}, {}
+    records = {item: {**record, "category": SITUATIONAL} if item in _UTILITY_ITEMS else record
+               for item, record in records.items()}
+    for item, record in _SUPPLEMENTAL.items():
+        if item in load_origins():
+            records.setdefault(item, record)
+            records[item] = {**records[item], "category": SITUATIONAL}
     bosses = _raid_bosses(db)
     return data, _readable(records), {item: item_phase(item, data, bosses) for item in (*records, *_waiting(data, records))}
 
@@ -416,6 +454,7 @@ def situational(db, cls: str | None = None) -> list:
         return []
     found = {item: record["name"] for item, record in records.items() if record["category"] == SITUATIONAL
              and data.catalogue.get(item, {}).get("family") not in NOT_FOR_THE_CAP
+             and (item not in _MANA_RUNES or cls not in NO_MANA)
              and (cls is None or _for_class(record, cls))}
     found.update({item: data.catalogue[item]["name"] for item in _waiting(data, records)})
     return [(item, item_phases[item]) for item in sorted(found, key=lambda item: (found[item], item))]
@@ -429,7 +468,8 @@ def info_rows(db, ids) -> dict:
     for item in ids:
         record = records.get(item)
         name = record["name"] if record else data.catalogue[item]["name"]
-        rows[item] = (name, effect(record) if record else "", where(item, data, origins), ORIGIN,
+        rows[item] = (name, effect(record) if record else "", where(item, data, origins),
+                      origins.get(item, {}).get("origin", ""),
                       zone_rule(record) if record else "")
     return rows
 

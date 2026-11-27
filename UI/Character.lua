@@ -325,12 +325,24 @@ local function SummaryLine(index)
 end
 
 local function ShowSummary(cells)
+    local lines = {}
+    for index, owed in ipairs(ns.Sources.ToPay(cells)) do lines[index] = ns.Sources.ToPayLine(owed) end
+    view.cost:SetText(table.concat(lines, "\n"))
+    view.cost:SetShown(lines[1] ~= nil)
+    local extra = math.max(0, #lines - 1) * COST_LINE
+    local bottom = SUMMARY_BOTTOM + extra
+    if view.model then
+        view.model:ClearAllPoints()
+        view.model:SetPoint("TOPLEFT", view, "TOPLEFT", COLUMN + GAP, -HEAD)
+        view.model:SetPoint("BOTTOMRIGHT", view, "BOTTOMRIGHT", -(COLUMN + GAP), WEAPONS + COST_LINE + extra)
+    end
+
     local summary = ns.Reputation.Summary(cells)
     for index, entry in ipairs(summary) do
         local line = SummaryLine(index)
         line.factionID = entry.factionID
         line:ClearAllPoints()
-        line:SetPoint("BOTTOM", view, "BOTTOM", 0, SUMMARY_BOTTOM + (#summary - index) * SUMMARY_LINE)
+        line:SetPoint("BOTTOM", view, "BOTTOM", 0, bottom + (#summary - index) * SUMMARY_LINE)
         line.label:SetText(entry.name)
         local done = entry.met == entry.total
         if entry.state == "unknown" then
@@ -345,21 +357,13 @@ local function ShowSummary(cells)
     for index = #summary + 1, #view.reputations do view.reputations[index]:Hide() end
     view.reputationTitle:SetShown(summary[1] ~= nil)
     view.reputationTitle:ClearAllPoints()
-    view.reputationTitle:SetPoint("BOTTOM", view, "BOTTOM", 0, SUMMARY_BOTTOM + #summary * SUMMARY_LINE + 2)
+    view.reputationTitle:SetPoint("BOTTOM", view, "BOTTOM", 0, bottom + #summary * SUMMARY_LINE + 2)
     view.reputationData = summary
 end
 
 ---------------------------------------------------------------------------
 -- The view
 ---------------------------------------------------------------------------
-
--- What is left to pay for the set; nothing when it asks for no currency, or all of it is owned.
-local function ShowCost(cells)
-    local lines = {}
-    for index, owed in ipairs(ns.Sources.ToPay(cells)) do lines[index] = ns.Sources.ToPayLine(owed) end
-    view.cost:SetText(table.concat(lines, "  "))
-    view.cost:SetShown(lines[1] ~= nil)
-end
 
 function Character.Create(parent)
     if view then return view end
@@ -389,10 +393,7 @@ function Character.Create(parent)
     view.line:SetPoint("BOTTOMRIGHT", view, "BOTTOMRIGHT", 0, WEAPONS - 8)
 
     view.model = CreateModel(view)
-    if view.model then
-        view.model:SetPoint("TOPLEFT", view, "TOPLEFT", COLUMN + GAP, -HEAD)
-        view.model:SetPoint("BOTTOMRIGHT", view, "BOTTOMRIGHT", -(COLUMN + GAP), WEAPONS + COST_LINE)
-    else
+    if not view.model then
         view.crest = view:CreateTexture(nil, "ARTWORK")
         view.crest:SetSize(96, 96)
         view.crest:SetPoint("CENTER", view, "CENTER", 0, (WEAPONS - HEAD) / 2)
@@ -406,11 +407,11 @@ function Character.Create(parent)
     view.reputationTitle:SetText(L.REP_SHEET_TITLE)
     view.reputationTitle:SetTextColor(MUTED[1], MUTED[2], MUTED[3])
     -- what the player buys or loots while the sheet is open; a client without one of these events does without it
-    for _, event in ipairs({ "BAG_UPDATE_DELAYED", "CURRENCY_DISPLAY_UPDATE", "PLAYER_EQUIPMENT_CHANGED" }) do
+    for _, event in ipairs({ "BAG_UPDATE_DELAYED", "CURRENCY_DISPLAY_UPDATE", "PLAYER_EQUIPMENT_CHANGED", "PLAYER_MONEY" }) do
         pcall(view.RegisterEvent, view, event)
     end
     view:SetScript("OnEvent", function(self)
-        if self:IsShown() and self.cellData then ShowCost(self.cellData) end
+        if self:IsShown() and self.cellData then ShowSummary(self.cellData) end
     end)
     return view
 end
@@ -461,7 +462,6 @@ function Character.Update(state, room)
     for index = #cells + 1, #view.cells do view.cells[index]:Hide() end
     view.cellData = cells
     ShowSummary(cells)
-    ShowCost(cells)
 
     if view.model then Dress(cells, state.class) else ShowCrest(state.class) end
 end

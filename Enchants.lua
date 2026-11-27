@@ -4,9 +4,9 @@ local L = ns.L
 --[[
 The best enchants, armor kits and scopes per spec (Data\Enchants.lua).
 
-  Enchants.For(class, spec, phase)   { { key = "chest", ids = { "i273593", "s20025", ... } }, ... } best first:
-                                     the first PER_KEY of each key that the content phase has (ns.Phase when
-                                     none is given)
+  Enchants.For(class, spec, phase, allowed)
+                                     groups with ids (best first, up to PER_KEY) and unranked options. The
+                                     phase defaults to ns.Phase. An optional allowed(id) filters both lists.
   Enchants.Info(id)                  { id, kind = "spell"|"item", number, name, effect, where, origin } or nil,
                                      plus what the "where" sentence says: profession, skill, recipe, seller,
                                      drop, trainer, scroll; or category, detail, place for an item to apply
@@ -87,14 +87,14 @@ end
 -- The lists
 ---------------------------------------------------------------------------
 
-local decoded = {}   -- [class] = { [spec] = { [key] = { { id, phase }, ... } } }
+local decoded = {}   -- [class][spec][key] = { E = ranked entries, U = unranked entries }
 
 local function Decode(class)
     if decoded[class] then return decoded[class] end
     local perSpec = {}
     local text = ns.data and ns.data.enchants and ns.data.enchants[class] or ""
     for line in text:gmatch("[^\n]+") do
-        local spec, key, list = line:match("^E\t(%d+)\t(%w+)\t(.*)$")
+        local kind, spec, key, list = line:match("^([EU])\t(%d+)\t(%w+)\t(.*)$")
         if spec then
             spec = tonumber(spec)
             perSpec[spec] = perSpec[spec] or {}
@@ -104,24 +104,35 @@ local function Decode(class)
                 local id, phase = token:match("^([si]%d+):?(%d*)$")
                 if id then entries[#entries + 1] = { id = id, phase = tonumber(phase) or 0 } end
             end
-            perSpec[spec][key] = entries
+            local group = perSpec[spec][key] or {}
+            group[kind] = entries
+            perSpec[spec][key] = group
         end
     end
     decoded[class] = perSpec
     return perSpec
 end
 
-function Enchants.For(class, spec, phase)
+local function Available(entries, phase, allowed, limit)
+    local ids = {}
+    for _, entry in ipairs(entries or {}) do
+        if limit and #ids >= limit then break end
+        if entry.phase <= phase and (not allowed or allowed(entry.id)) then ids[#ids + 1] = entry.id end
+    end
+    return ids
+end
+
+function Enchants.For(class, spec, phase, allowed)
     phase = phase or ns.Phase()
     local perKey = Decode(class)[spec] or {}
     local list = {}
     for _, key in ipairs(Enchants.KEYS) do
-        local ids = {}
-        for _, entry in ipairs(perKey[key] or {}) do
-            if #ids >= Enchants.PER_KEY then break end
-            if entry.phase <= phase then ids[#ids + 1] = entry.id end
+        local entries = perKey[key]
+        if entries then
+            local ids = Available(entries.E, phase, allowed, Enchants.PER_KEY)
+            local unranked = Available(entries.U, phase, allowed)
+            if ids[1] or unranked[1] then list[#list + 1] = { key = key, ids = ids, unranked = unranked } end
         end
-        if ids[1] then list[#list + 1] = { key = key, ids = ids } end
     end
     return list
 end
@@ -159,8 +170,13 @@ local function ReadWhere(record)
         rest = alone
         record.scroll = true
     end
+    rest = rest:match("^(.-); ") or rest
     if rest == "from a trainer" then
         record.trainer = true
+        return
+    end
+    if rest == "learned with the profession" then
+        record.learned = true
         return
     end
     local recipe, tail = rest:match("^recipe (%a+): (.*)$")
@@ -168,6 +184,7 @@ local function ReadWhere(record)
     record.recipe = recipe
     record.seller = tail:match(", sold by (.+)$")
     record.drop = tail:match(", drops in (.+)$")
+    record.quest = tail:match(", from the quest (.+)$")
 end
 
 local info   -- [id] = line, split on first use
@@ -253,6 +270,8 @@ function Enchants.Detail(record)
         return ns.Sources.Line({ detail = record.detail, zone = record.place, percent = "" })
     elseif record.trainer then
         text = L.ENCH_TRAINER
+    elseif record.learned then
+        text = L.ENCH_LEARNED
     elseif record.recipe then
         local recipe = L["RECIPE_" .. record.recipe]
         if recipe == "RECIPE_" .. record.recipe then recipe = record.recipe end
@@ -260,6 +279,8 @@ function Enchants.Detail(record)
             text = L.ENCH_SOLD:format(recipe, record.seller)
         elseif record.drop then
             text = L.ENCH_DROPS:format(recipe, record.drop)
+        elseif record.quest then
+            text = L.ENCH_QUEST:format(recipe, record.quest)
         else
             text = L.ENCH_RECIPE:format(recipe)
         end

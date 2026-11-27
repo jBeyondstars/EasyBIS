@@ -99,7 +99,8 @@ local function PassesReputation(row, wanted)
 end
 
 local function AddItem(all, facets, slot, id, row)
-    local source = row.custom and not ns.Items.Get(id) and ns.Sources.Manual() or ns.Sources.Describe(id)
+    local source = ns.Sources.Describe(id)
+    if row.custom and not source.cost and not ns.Items.Get(id) then source = ns.Sources.Manual() end
     facets.sources[source.category] = true
     if source.zone then facets.zones[source.zone] = true end
     row.kind, row.id, row.slot, row.source = "item", id, slot, source
@@ -377,18 +378,23 @@ end
 function Rows.Enchants(state)
     local rows = {}
     local withAlts = ns:GetOption("listAlts")
-    for _, group in ipairs(ns.Enchants.For(state.class, state.spec)) do
+    local function Allowed(id)
+        return PassesReputation({ reputation = ns.Reputation.EnchantRequirement(id) }, state.reputation)
+    end
+    local function Add(id, key, best, unranked)
+        local enchant = ns.Enchants.Info(id)
+        if enchant then
+            rows[#rows + 1] = { kind = "enchant", key = key, bis = best, unranked = unranked, enchant = enchant,
+                reputation = ns.Reputation.EnchantRequirement(id) }
+        end
+    end
+    for _, group in ipairs(ns.Enchants.For(state.class, state.spec, nil, state.reputation and Allowed)) do
         if not state.slot or ns.Enchants.SlotOf(group.key) == state.slot then
-            local first = true
-            for _, id in ipairs(group.ids) do
-                local enchant = ns.Enchants.Info(id)
-                if enchant and (first or withAlts) then
-                    local row = { kind = "enchant", key = group.key, bis = first, enchant = enchant,
-                        reputation = ns.Reputation.EnchantRequirement(id) }
-                    if PassesReputation(row, state.reputation) then rows[#rows + 1] = row end
-                    first = false
-                end
+            for index, id in ipairs(group.ids) do
+                if index > 1 and not withAlts then break end
+                Add(id, group.key, index == 1)
             end
+            for _, id in ipairs(group.unranked) do Add(id, group.key, false, true) end
         end
     end
     return rows

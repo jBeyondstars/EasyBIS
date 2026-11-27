@@ -1,3 +1,12 @@
+# Easy BIS 1.10.8
+
+- **PvP gear costs.** Premier gear and faction insignia show their Honor, battleground mark and gold costs where applicable, along with your current balances. Epic armor tooltips break down the rare piece and Emboldened Seal. The Character tab totals the currencies still needed for the selected set.
+- **Weekly PvP rank cap.** Restored the in-game PvP panel as the source for Available Now. Gear and tooltip rankings refresh when the cap changes.
+- **Consumables.** Updated recipe sources and phase requirements for Zandalar oils, flasks and other late-content recipes. Added situational options including Free Action Potion, Jujus and mana runes. Tooltips explain overlapping buffs and shared potion cooldowns. Ranged Hunter rankings no longer count melee-only attack power.
+- **Enchants.** Zul’Gurub head and leg enchants now respect class restrictions. Added unranked options for boot speed and weapon effects such as Revelation, Insight and Recovery. Spellblasting and Speed show the appropriate faction vendor and reputation. The Enchants tab promotes the best eligible choice when filtering by reputation.
+- **Situational gear.** Raid and PvP lists recommend target-specific bonuses only to specializations that benefit from them.
+- **Item tooltips.** Removed the extra reputation lines from standard item tooltips. Easy BIS gear comparisons show percentage scores for items evaluated with a partner.
+
 # Easy BIS 1.10.7
 
 - **Item tooltips.** Alternatives show their rank within the slot by default, for example “Alt 2 PvE”. Clear **Show alternative ranks in tooltips** under Options to hide the numbers. **Alternatives per slot** also limits which alternatives appear in item tooltips.
@@ -10,6 +19,7 @@
 
 - **Pre-raid rankings.** Situational items keep their place in the Raid and PvP rankings. An item that earns BiS with its base score shows the BiS badge. Situational alternatives remain outside the configured alternative count.
 - **Class recommendations.** Removed Hand of Justice from ranged Hunter recommendations in Raid, PvP and AoE / Dungeons. Removed King Mosh’s Tooth from both Combat Rogue weapon slots in Raid and PvP.
+- **Weekly PvP rank cap.** Available Now follows the cap shown in the in-game PvP panel. Rank 8 bracers and belts enter the gear lists when that rank opens.
 - **Interface.** The notice can be dismissed for the account. Item tooltips show custom list names directly. Removed the “New” badge from the Reputations tab.
 
 # Easy BIS 1.10.4
