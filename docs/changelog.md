@@ -1,3 +1,8 @@
+# Easy BIS 1.10.9
+
+- **Ranged Survival Hunter PvP.** Gear and consumable scores use 1.10 for Agility, 0.40 for Attack Power, 0.17 for Intellect and zero weight for Armor. Legionite Glaive is the top pre-raid weapon for both factions with Available Now enabled.
+- **Score tooltip.** The Ranged Survival PvP list explains its stat priorities.
+
 # Easy BIS 1.10.8
 
 - **PvP gear costs.** Premier gear and faction insignia show their Honor, battleground mark and gold costs where applicable, along with your current balances. Epic armor tooltips break down the rare piece and Emboldened Seal. The Character tab totals the currencies still needed for the selected set.

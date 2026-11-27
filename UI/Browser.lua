@@ -681,7 +681,8 @@ function Browser.ScoreInfo(class, spec, list)
         return { L.SCORE_INFO_SIM, L.SCORE_INFO_FIGHT, L.SCORE_INFO_GAP_SIM }
     end
     if class == "HUNTER" and ns.Index.SpecName(class, spec) == "Survival (Ranged)" then
-        return { L.SCORE_INFO_SURVIVAL_RANGED, L.SCORE_INFO_GAP }
+        local description = list == "pvp" and L.SCORE_INFO_SURVIVAL_RANGED_PVP or L.SCORE_INFO_SURVIVAL_RANGED
+        return { description, L.SCORE_INFO_GAP }
     end
     return { L.SCORE_INFO_WEIGHTS, L.SCORE_INFO_GAP }
 end

@@ -1479,6 +1479,13 @@ class SpecsTest(unittest.TestCase):
         marksman = {entry.item_id: entry.score for entry in self.ladder("HUNTER", 2, "pvp")}
         self.assertLess(marksman[sunderer], 100)
 
+    def test_ranged_survival_uses_its_pvp_stat_weights(self):
+        weights = self.db.classes["HUNTER"]["specs"][4]["weights"]
+        expected = {specs.AGILITY: 1.10, specs.ATTACK_POWER: 0.40, specs.RANGED_ATTACK_POWER: 0.40,
+                    specs.INTELLECT: 0.17, "armor": 0}
+        self.assertEqual({stat: weights["pvp"][stat] for stat in expected}, expected)
+        self.assertEqual({stat: weights["raid"][stat] for stat in specs.SURVIVAL_TURRET}, specs.SURVIVAL_TURRET)
+
     def test_an_assassination_rogue_s_pvp_weapons_are_daggers(self):
         """Mutilate asks for a dagger in each hand: the Assassination PvP list holds no sword, mace or fist weapon.
         Subtlety has Hemorrhage, which any weapon deals: its list keeps them."""

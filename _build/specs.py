@@ -269,6 +269,8 @@ def split_survival(db) -> None:
         weights[profile] = dict(SURVIVAL_TURRET)
         if profile != "raid":
             weights[profile].update({stat: previous[stat] for stat in (STAMINA, "armor") if stat in previous})
+        if profile == "pvp":
+            weights[profile].update({AGILITY: 1.10, RANGED_ATTACK_POWER: 0.40, INTELLECT: 0.17, "armor": 0})
     hunters[ranged] = {"name": "Survival (Ranged)", "slug": "survival-ranged", "role": "Ranged DPS", "style": "any",
                        "added": True, "weights": weights, "dungeon_profile": melee}
     per_spec = db.enchants.setdefault(HUNTER, {})

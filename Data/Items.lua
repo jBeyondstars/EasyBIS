@@ -377,7 +377,6 @@ ns.data.items = [==[
 11925|Ghostshroud|w||o^Chest of The Seven^25^k
 11926|Deathdealer Breastplate|w||o^Chest of The Seven^25^k
 11928|Thaurissan's Royal Scepter|d||d^230^Emperor Dagran Thaurissan^23^0^w
-11930|The Emperor's New Cape|d||d^230^Emperor Dagran Thaurissan^19.7^0^w
 11931|Dreadforge Retaliator|d||d^230^Emperor Dagran Thaurissan^17.3^0^w
 11932|Guiding Stave of Wisdom|d||d^230^Emperor Dagran Thaurissan^14.7^0^w
 11933|Imperial Jewel|d||d^230^Emperor Dagran Thaurissan^20.6^0^w
@@ -1506,7 +1505,6 @@ ns.data.items = [==[
 20212|Defiler's Plate Spaulders|ev|U|v^15126^Rutherford Twing^1417^73.4^29.7^127540^h^k
 20213|Belt of Shrunken Heads|Q||q^8201^A Collection of Heads^58^^k
 20214|Mindfang|ev||v^15126^Rutherford Twing^1417^73.4^29.7^428268^h^k
-20215|Belt of Shriveled Heads|Q||q^8201^A Collection of Heads^58^^k
 20216|Belt of Preserved Heads|Q||q^8201^A Collection of Heads^58^^k
 20219|Tattered Hakkari Cape|Q||q^8181^Confront Yeh'kinya^53^^k
 20220|Ironbark Staff|ev||v^15126^Rutherford Twing^1417^73.4^29.7^504598^h^k
@@ -2405,6 +2403,7 @@ ns.data.items = [==[
 270072|Alterac Assassin's Gloves|q|sn|q^504^Quest 504^35^a^s
 270074|Doomcaller's Pants|Q|sn|q^709^Solution to Doom^35^^s
 270075|Fists of Impending Doom|Q|sn|q^709^Solution to Doom^35^^s
+270078|Guardian Staff|Q|sn|q^2240^Quest 2240^35^a^s
 270079|Witchdoctor's Dress|q|sn|q^680^The Real Threat^35^h^s
 270080|Arathi Armbands|q|sn|q^685^WANTED: Otto and Falconcrest^35^a^s
 270081|Purified Ring|Q|sn|q^3636^Bring the Light^39^a^s~q^3341^Quest 3341^37^h^s
@@ -3286,7 +3285,6 @@ ns.data.items = [==[
 279831|Fatebound Buckler|q|n|q^95264^Shaw Needs To Know^48^a^t~q^95483^Thrall Needs to Know^48^h^t
 279833|Courier's Clasp|q|n|q^95264^Shaw Needs To Know^48^a^t~q^95483^Thrall Needs to Know^48^h^t
 279836|Thorn Protecting Girdle|Q|sn|q^92456^A Green Sample^28^a^s
-279839|Spellguard Pauldrons|Q|sn|q^92458^Heart of Disruption^28^^s
 279840|Renewing Footpads|Q|sn|q^92458^Heart of Disruption^28^^s
 279841|Defender of Dalaran|Q|sn|q^92458^Heart of Disruption^28^^s
 279843|Enchanted Sandals|Q|sn|q^96984^Heart of Disruption^28^h^s
@@ -3318,7 +3316,6 @@ ns.data.items = [==[
 280013|Frostfang Mail Vest|d|n|d^3001^Izha'Rel and Tor'Rel^25^0^w
 280014|Raptorscale Bulwark|d|n|d^3001^Izha'Rel and Tor'Rel^37.5^0^w
 280015|Venomvessel Ring|d|n|d^3001^Venomridge^33.1^0^w
-280017|Octoclaw Chain Boots|d||d^3001^Venomridge^29.4^0^w
 280018|Hammer of Thundering Hooves|d|n|d^3001^Thunderhoof^25.9^0^w
 280019|Dinofrill Casque|d|n|d^3001^Thunderhoof^32.8^0^w
 280020|Deep Jungle Rifle|d|n|d^3001^Thunderhoof^35.3^0^w
