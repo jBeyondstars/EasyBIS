@@ -192,9 +192,9 @@ end
 
 function Browser.AddTarget()
     local class, spec, list = Browser.Target()
-    if state.page == "lists" and state.tab == "items" and list == "pve"
-        and ns.Custom.GearList(class, spec, ns.char.gearList) then
-        return class, spec, ns.char.gearList
+    if state.page == "lists" and state.tab == "items" and list == "pve" then
+        if ns.Custom.GearList(class, spec, ns.char.gearList) then return class, spec, ns.char.gearList end
+        if ns.char.weave and ns.Ladders.HasList(class, spec, "weave") then return class, spec, "weave" end
     end
     return class, spec, list
 end
@@ -1216,6 +1216,7 @@ local function OptionEntries()
                     pick = function() ns:SetListShown(key, not ns:ListShown(key)) end }
             end
             AddList("pve", L.LIST_RAID)
+            AddList("weave", L.LIST_WEAVE)
             AddList("aoe", L.LIST_AOE)
             AddList("pvp", L.LIST_PVP)
             for _, gear in ipairs(ns.db.gearLists) do
@@ -1291,10 +1292,15 @@ function Browser.ListFilter(parent)
 end
 
 local TABS_PER_PAGE = 3
+local SCENARIOS = {
+    { value = "pve", text = L.LIST_RAID },
+    { value = "weave", text = L.LIST_WEAVE },
+    { value = "aoe", text = L.LIST_AOE },
+}
 
 local function GearDropTarget(source)
     local group = window.scenario
-    for i = 3, #group.buttons do
+    for i = #SCENARIOS + 1, #group.buttons do
         local tab = group.buttons[i]
         if tab ~= source and tab:IsShown() and tab:IsMouseOver() then return tab, tab.value, i > source.tabIndex end
     end
@@ -1388,7 +1394,7 @@ local function LayoutScenarios(selected)
         arrow:SetEnabled(arrow.target ~= nil)
     end
     for i = 1, TABS_PER_PAGE do
-        local option, button = choices[first + i - 1], group.buttons[i + 2]
+        local option, button = choices[first + i - 1], group.buttons[i + #SCENARIOS]
         if option then
             if not button then
                 button = group:AddOption(option)
@@ -1403,7 +1409,8 @@ local function LayoutScenarios(selected)
             button:Hide()
         end
     end
-    group.buttons[2]:SetShown(ns.Rows.AoeList(state.class, state.spec) ~= nil)
+    group.buttons[2]:SetShown(ns.Ladders.HasList(state.class, state.spec, "weave"))
+    group.buttons[3]:SetShown(ns.Rows.AoeList(state.class, state.spec) ~= nil)
     group:Layout(nil, 20)
     group:Refresh()
 end
@@ -1478,17 +1485,17 @@ local function Build()
     local inset = CreateInset(window)
     window.inset = inset
     PlaceNotice()
-    window.scenario = Widgets.Segmented(inset,
-        { { value = "pve", text = L.LIST_RAID }, { value = "aoe", text = L.LIST_AOE } },
+    window.scenario = Widgets.Segmented(inset, SCENARIOS,
         function() return ItemList(state.list) end,
         function(value)
             local previous = state.itemList
+            local gear = ns.Custom.GearList(state.class, state.spec, value)
             local slot, offset
-            if (previous == "pve" and value == "aoe") or (previous == "aoe" and value == "pve") then
+            if not gear and not ns.Custom.GearList(state.class, state.spec, previous) then
                 slot, offset = ScenarioScrollAnchor()
             end
-            ns.char.gearList = ns.Custom.GearList(state.class, state.spec, value) and value or nil
-            ns.char.aoe = value == "aoe"
+            ns.char.gearList = gear and value or nil
+            ns.char.aoe, ns.char.weave = value == "aoe", value == "weave"
             Refresh()
             if slot then RestoreScenarioScroll(slot, offset) end
         end)
@@ -1634,12 +1641,12 @@ Refresh = function()
             state.slot = "main"
         end
         local itemRows = gear and ns.Rows.Gear or aoe and ns.Rows.Aoe or ns.Rows.Items
-        rows, facets = itemRows(state)
+        rows, facets = itemRows(state, nil, state.itemList)
         -- a source or a zone the new spec, list or slot does not have: back to "all"
         if (state.source and not facets.sources[state.source]) or (state.zone and not facets.zones[state.zone]) then
             if state.source and not facets.sources[state.source] then state.source = nil end
             if state.zone and not facets.zones[state.zone] then state.zone = nil end
-            rows, facets = itemRows(state)
+            rows, facets = itemRows(state, nil, state.itemList)
         end
     elseif consumables then
         -- a category the new spec or list does not have: back to "all"
@@ -1728,14 +1735,14 @@ Refresh = function()
     else
         ns.DungeonView.Hide()
     end
-    if listed then LayoutRows(ns.Rows.Grouped(rows)) end
+    if listed then LayoutRows(ns.Rows.Grouped(rows, state.itemList)) end
 end
 
 local function ShowRankedItems(slot, source, list)
     ns.char.gearList = ns.Custom.GearList(state.class, state.spec, list) and list or nil
     -- A link from the character sheet or dungeon rankings opens its matching list.
     if list then state.list = list == "pvp" and "pvp" or "pve" end
-    if state.list == "pve" then ns.char.aoe = list == "aoe" end
+    if state.list == "pve" then ns.char.aoe, ns.char.weave = list == "aoe", list == "weave" end
     state.page, state.tab, state.slot, state.source, state.zone, state.reputation = "lists", "items", slot, source, nil, nil
     if list then SaveState() end
     Refresh()

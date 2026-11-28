@@ -66,7 +66,8 @@ end
 function Ladders.Decode(class)
     local text = ns.data and ns.data.lists and ns.data.lists[class]
     if not text then return nil end
-    local data = { specs = {}, order = {}, lists = {}, measured = {}, contexts = {}, weaponSets = {}, tankDuels = {} }
+    local data = { specs = {}, order = {}, lists = {}, measured = {}, contexts = {}, weaponSets = {},
+        rangedPairs = {}, tankDuels = {} }
     for line in text:gmatch("[^\n]+") do
         local kind, index, first, second, rest = line:match("^(%a)\t(%d+)\t([^\t]*)\t([^\t]*)\t?(.*)$")
         index = tonumber(index)
@@ -88,6 +89,14 @@ function Ladders.Decode(class)
             data.weaponSets[index] = data.weaponSets[index] or {}
             data.weaponSets[index][first] = data.weaponSets[index][first] or {}
             data.weaponSets[index][first][second] = true
+        elseif kind == "R" then
+            local pairs = {}
+            for main, ranged in rest:gmatch("(%d+):(%d+)") do
+                pairs[#pairs + 1] = { main = tonumber(main), ranged = tonumber(ranged) }
+            end
+            data.rangedPairs[index] = data.rangedPairs[index] or {}
+            data.rangedPairs[index][first] = data.rangedPairs[index][first] or {}
+            data.rangedPairs[index][first][second] = pairs
         elseif kind == "L" or kind == "F" then
             local context
             if kind == "F" then context, rest = rest:match("^([^\t]+)\t(.*)$") end
@@ -128,7 +137,7 @@ end
 -- the list does not follow it. A list that follows it counts the Premier pieces it allows, source known or not.
 local function Visible(entries, filter, list, extras)
     local rewards = filter.pvpRewards
-    if type(rewards) == "table" then rewards = rewards[list] end
+    if type(rewards) == "table" then rewards = rewards[list == "weave" and "pve" or list] end
     local cap = filter.rankCap
     local visible, options, conditional, placed = {}, nil, {}, {}
     if filter.phase == 0 and extras then
@@ -235,17 +244,39 @@ local function First(picks, count)
     return first
 end
 
+-- Keep each weapon at its first appearance in the ranked pairs that pass the filters.
+local function RangedPairs(visible, pairs)
+    local melee, ranged = {}, {}
+    for _, pick in ipairs(visible.main) do melee[pick.id] = pick end
+    for _, pick in ipairs(visible.ranged) do ranged[pick.id] = pick end
+    visible.main, visible.ranged = {}, {}
+    local seen = {}
+    local function Add(slot, pick)
+        if seen[pick.id] then return end
+        seen[pick.id] = true
+        local picks = visible[slot]
+        picks[#picks + 1] = pick
+    end
+    for _, pair in ipairs(pairs or {}) do
+        local main, shot = melee[pair.main], ranged[pair.ranged]
+        if main and shot then
+            Add("main", main)
+            Add("ranged", shot)
+        end
+    end
+end
+
 -- best, alternatives. Rings and trinkets have two best picks: the second is the
 -- next one that can be worn with the first. That second pick is one of the count
 -- asked for: a slot lists the best pick and at most count items after it. A placed
 -- item (flag e) is never a best pick.
-local function Picks(slot, visible, count)
+local function Picks(slot, visible, count, recommendations)
     local best, alts = {}, {}
     local first = Ladders.Lead(visible)
     best[1] = first
     if first and ns.PAIRED[slot] then
         for _, pick in ipairs(visible) do
-            if pick ~= first and CanBeBest(pick)
+            if pick ~= first and (CanBeBest(pick) or recommendations and Ladders.HasFlag(pick.entry, "c"))
                 and not (first.entry.limit and pick.entry.limit == first.entry.limit) then
                 best[2] = pick
                 break
@@ -386,6 +417,9 @@ function Ladders.Compute(data, spec, list, filter)
             if selected then visible.off = Visible(selected, filter, list, offSets.situational) end
         end
     end
+    local rangedSets = data.rangedPairs and data.rangedPairs[spec]
+    local pairsBySide = rangedSets and rangedSets[list]
+    if pairsBySide then RangedPairs(visible, pairsBySide[filter.side]) end
     local twoHand, otherMain, otherOff, measuredWeaponSet
     local measuredSets = filter.phase == 0 and data.weaponSets and data.weaponSets[spec]
     visible.main, visible.off, twoHand, otherMain, otherOff, measuredWeaponSet =
@@ -395,7 +429,7 @@ function Ladders.Compute(data, spec, list, filter)
     local result = { twoHand = twoHand, measuredWeaponSet = measuredWeaponSet }
     local duels = list == "pve" and filter.phase == 0 and data.tankDuels and data.tankDuels[spec]
     for _, slot in ipairs(ns.SLOTS) do
-        local best, alts = Picks(slot, visible[slot], count)
+        local best, alts = Picks(slot, visible[slot], count, pairsBySide ~= nil)
         result[slot] = { best = best, alts = alts, other = {} }
         if duels and duels[slot] then TankOptions(result[slot], visible[slot], duels[slot], filter.side) end
     end
@@ -452,6 +486,12 @@ function Ladders.Measured(class, spec, list)
     local data = Load(class)
     local lists = data and data.measured[spec]
     return lists and lists[list] or nil
+end
+
+function Ladders.HasList(class, spec, list)
+    local data = Load(class)
+    local modes = data and data.lists[spec]
+    return modes ~= nil and modes[list] ~= nil
 end
 
 function Ladders.For(class, spec, list)

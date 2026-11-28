@@ -55,7 +55,9 @@ local function ReadClass(class, filter)
                 Add(aoeByItem, sample[1], { class = class, spec = spec, slot = slot, bis = rank == 1, position = rank })
             end
         end
-        for _, list in ipairs(ns.LISTS) do
+        local modes = data.lists[spec]
+        local lists = modes and modes.weave and { "pve", "pvp", "weave" } or ns.LISTS
+        for _, list in ipairs(lists) do
             local slots = ns.Ladders.Compute(data, spec, list, filter)
             for _, slot in ipairs(ns.SLOTS) do
                 local picks = slots[slot]
@@ -66,7 +68,7 @@ local function ReadClass(class, filter)
                     Add(byItem, pick.id, { class = class, spec = spec, list = list, slot = slot, position = position,
                         beyondAltLimit = position > lastAltPosition or nil,
                         bis = best or ns.Ladders.IsTie(picks, pick), option = pick.option,
-                        recommended = best and ns.Ladders.HasFlag(pick.entry, "c") or nil })
+                        recommended = best and list ~= "weave" and ns.Ladders.HasFlag(pick.entry, "c") or nil })
                 end
                 -- the weapons of the other style (a one-hander when a two-hander is best) are alternatives too
                 for index, pick in ipairs(picks.other) do

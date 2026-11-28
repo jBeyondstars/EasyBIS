@@ -73,6 +73,7 @@ function ns.PhaseName(phase)
 end
 
 function ns.ListName(list)
+    if list == "weave" then return ns.L.LIST_WEAVE end
     return list == "pvp" and ns.L.LIST_PVP or ns.L.LIST_PVE
 end
 

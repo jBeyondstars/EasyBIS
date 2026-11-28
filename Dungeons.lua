@@ -117,6 +117,9 @@ end
 
 function Dungeons.Lists(state)
     local lists = { { key = "pve", name = ns.L.LIST_RAID } }
+    if ns.Ladders.HasList(state.class, state.spec, "weave") then
+        lists[#lists + 1] = { key = "weave", name = ns.L.LIST_WEAVE }
+    end
     if ns.Rows.AoeList(state.class, state.spec) then
         lists[#lists + 1] = { key = "aoe", name = ns.L.LIST_AOE }
     end

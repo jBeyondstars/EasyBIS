@@ -1,3 +1,9 @@
+# Easy BIS 1.10.10
+
+- **Survival Hunter.** The specialization menu displays Survival. The **Melee Weaving** tab under **Items → PvE** offers a pre-raid set with weapon pairs measured in WoWSims Forever for both factions.
+- **Weapon pairs.** Arcanite Reaper and Deep Jungle Rifle lead the list. The dungeon alternative pairs The Blackrock Slicer with Carapace Spine Crossbow. Allowing PvP rewards in PvE adds Bloodseeker as an option.
+- **BiS and dungeon tracking.** The top Melee Weaving picks show their BiS badge in the list and in item tooltips. Select **Melee Weaving** under **Tracked lists** in **Dungeons** to find their drops.
+
 # Easy BIS 1.10.9
 
 - **Ranged Survival Hunter PvP.** Gear and consumable scores use 1.10 for Agility, 0.40 for Attack Power, 0.17 for Intellect and zero weight for Armor. Legionite Glaive is the top pre-raid weapon for both factions with Available Now enabled.

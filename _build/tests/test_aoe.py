@@ -436,11 +436,11 @@ class AoeTest(unittest.TestCase):
             game.stub.run(button, "OnClick")
         self.assertEqual(gains(), [])
         self.assertEqual([b.Text.text for b in window.list.buttons.values()], ["PvE", "PvP"])
-        self.assertEqual([b.Text.text for b in window.scenario.buttons.values()], ["Raid", "AoE / Dungeons"])
+        self.assertEqual([b.Text.text for b in window.scenario.buttons.values() if b.shown], ["Raid", "AoE / Dungeons"])
         self.assertTrue(window.scenario.buttons[1].highlightLocked)
         self.assertIsNone(window.scenario.summary)
         raid_titles = {r.group: r.text for r in window.rowData.values() if r.kind == "header"}
-        click(window.scenario.buttons[2])
+        click(window.scenario.buttons[3])
         self.assertIsNone(window.scenario.summary)
         expected = combined_rankings()["MAGE 3"]
         for side, command in (("a", "alliance"), ("h", "horde")):
@@ -485,7 +485,7 @@ class AoeTest(unittest.TestCase):
         click(window.scenario.buttons[1])
         self.assertEqual(ns.Browser.state.slot, "back")
         self.assertEqual(gains(), [])
-        click(window.scenario.buttons[2])
+        click(window.scenario.buttons[3])
         self.assert_scores(gains(), items[:3])
         ns.SetAlternatives(ns, 6)
         self.assert_scores(gains(), items[:7])
@@ -499,7 +499,7 @@ class AoeTest(unittest.TestCase):
         self.assertFalse(window.scenario.shown)
         self.assertTrue(window.list.buttons[1].highlightLocked)
         click(window.tabs.buttons[1])
-        self.assertTrue(window.scenario.buttons[2].highlightLocked)
+        self.assertTrue(window.scenario.buttons[3].highlightLocked)
         self.assertEqual(len(gains()), len(expected_rows))
         game.slash("seen")
         self.assertTrue(gains())
@@ -510,7 +510,7 @@ class AoeTest(unittest.TestCase):
         self.assertFalse(window.scenario.shown)
         click(window.list.buttons[1])
         self.assertTrue(window.scenario.shown)
-        self.assertTrue(window.scenario.buttons[2].highlightLocked)
+        self.assertTrue(window.scenario.buttons[3].highlightLocked)
         self.assertTrue(gains())
         click(window.scenario.buttons[1])
         self.assertEqual(gains(), [])
@@ -533,7 +533,7 @@ class AoeTest(unittest.TestCase):
             open_dropdown(game, window.spec.button)
             find(find(game.stub.menu, cls.title()), ns.SpecName(ns.Index.SpecName(cls, spec))).pick()
             eligible = (cls, spec) in (("DRUID", 4), ("PALADIN", 4))
-            self.assertEqual(bool(window.scenario.shown and window.scenario.buttons[2].shown), eligible)
+            self.assertEqual(bool(window.scenario.shown and window.scenario.buttons[3].shown), eligible)
             self.assertEqual(any(r.gain is not None for r in window.rowData.values()), eligible)
             self.assertEqual(ns.Rows.AoeList(cls, spec) is not None, eligible)
             self.assertTrue(game.lua.globals().EasyBISCharDB.aoe)
@@ -752,7 +752,7 @@ class AoeTest(unittest.TestCase):
             label = game.ns.SpecName(game.ns.Index.SpecName(cls, spec))
             open_dropdown(game, window.spec.button)
             find(find(game.stub.menu, cls.title()), label).pick()
-            self.assertTrue(window.scenario.buttons[2].highlightLocked)
+            self.assertTrue(window.scenario.buttons[3].highlightLocked)
             for side, command in (("a", "alliance"), ("h", "horde")):
                 game.slash("faction " + command)
                 block = archive[key][side]["hands"]

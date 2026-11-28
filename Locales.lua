@@ -38,6 +38,7 @@ local enUS = {
     TAB_PVP = "PvP",
     LIST_AOE = "AoE / Dungeons",
     LIST_RAID = "Raid",
+    LIST_WEAVE = "Melee Weaving",
     GEAR_NEW = "New list",
     GEAR_RENAME = "Rename",
     GEAR_DELETE = "Delete",
@@ -508,6 +509,7 @@ local frFR = {
     TAB_PVP = "PvP",
     LIST_AOE = "AoE / Dungeons",
     LIST_RAID = "Raid",
+    LIST_WEAVE = "Melee Weaving",
     GEAR_NEW = "Nouvelle liste",
     GEAR_RENAME = "Renommer",
     GEAR_DELETE = "Supprimer",
@@ -954,7 +956,7 @@ local SPECS_frFR = {
     ["Marksmanship"] = "Précision",
     ["Survival"] = "Survie",
     ["Survival (Melee)"] = "Survie (mêlée)",
-    ["Survival (Ranged)"] = "Survie (distance)",
+    ["Survival (Ranged)"] = "Survie",
     ["Arcane"] = "Arcanes",
     ["Fire"] = "Feu",
     ["Frost"] = "Givre",
@@ -1010,7 +1012,7 @@ ns.L = setmetatable({}, {
 
 -- A spec's name in the game's language (the English one when it has no translation).
 function ns.SpecName(english)
-    return (activeSpecs and activeSpecs[english]) or english
+    return (activeSpecs and activeSpecs[english]) or (english == "Survival (Ranged)" and "Survival" or english)
 end
 
 function ns.ProfessionName(english)

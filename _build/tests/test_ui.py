@@ -90,9 +90,9 @@ class ItemScenarioTest(unittest.TestCase):
                 game.ns.Browser.Open()
                 scenario = game.ns.Browser.window.scenario
                 self.assertTrue(scenario.shown)
-                self.assertEqual([button.Text.text for button in scenario.buttons.values()], ["Raid", "AoE / Dungeons"])
+                self.assertEqual([button.Text.text for button in scenario.buttons.values() if button.shown], ["Raid", "AoE / Dungeons"])
                 self.assertIsNone(scenario.summary)
-                button = scenario.buttons[2]
+                button = scenario.buttons[3]
                 self.assertGreater(button.width, button.Text.GetStringWidth(button.Text))
 
     def test_switching_scenario_keeps_the_gear_section_at_the_same_height(self):
@@ -112,7 +112,7 @@ class ItemScenarioTest(unittest.TestCase):
         for offset in (-8, 0, HEADER + 12):
             with self.subTest(offset=offset):
                 scroll.SetVerticalScroll(scroll, raid_top + offset)
-                game.stub.run(window.scenario.buttons[2], "OnClick")
+                game.stub.run(window.scenario.buttons[3], "OnClick")
                 aoe_top = legs_top()
                 aoe_scroll = scroll.GetVerticalScroll(scroll)
                 game.stub.run(window.scenario.buttons[1], "OnClick")
@@ -165,7 +165,7 @@ class CustomGearListTest(unittest.TestCase):
         stub.run(dialog.submit, "OnClick")
         gear = game.ns.db.gearLists[1]
         self.assertTrue(window.empty.shown)
-        self.assertEqual(window.scenario.buttons[3].Text.text, "My setup")
+        self.assertEqual(window.scenario.buttons[4].Text.text, "My setup")
         stub.equipLocs[990001] = "INVTYPE_HEAD"
         stub.run(window.add, "OnClick")
         self.assertTrue(game.ns.AddItem.Submit("990001")[0])
@@ -205,7 +205,7 @@ class CustomGearListTest(unittest.TestCase):
         self.assertEqual(gear.slots.main[1].id, 1728)
         stub.run(window.scenario.buttons[1], "OnClick")
         self.assertFalse(window["import"].shown)
-        stub.run(window.scenario.buttons[3], "OnClick")
+        stub.run(window.scenario.buttons[4], "OnClick")
         self.assertTrue(window["import"].shown)
         self.assertIn("My setup", game.slash("add 990001")[0])
         self.assertEqual(gear.slots.head[2].id, 990001)
@@ -220,10 +220,10 @@ class CustomGearListTest(unittest.TestCase):
             game.ns.Custom.CreateList(browser.state["class"], browser.state.spec, name)
         browser.Open()
         window = browser.window
-        self.assertEqual(window.scenario.buttons[4].Text.text, "Second")
-        self.assertEqual(window.scenario.buttons[5].Text.text, "Third")
+        self.assertEqual(window.scenario.buttons[5].Text.text, "Second")
+        self.assertEqual(window.scenario.buttons[6].Text.text, "Third")
         game.stub.run(window.scenario.next, "OnClick")
-        self.assertEqual(window.scenario.buttons[3].Text.text, "Fourth")
+        self.assertEqual(window.scenario.buttons[4].Text.text, "Fourth")
         self.assertEqual(browser.state.itemList, "gear4")
         game.stub.run(window.scenario.previous, "OnClick")
         self.assertEqual(browser.state.itemList, "gear1")
@@ -254,16 +254,16 @@ class CustomGearListTest(unittest.TestCase):
             if target is not None:
                 target.IsMouseOver = None
 
-        drag(tabs[3])
+        drag(tabs[4])
         self.assertEqual(names(), ["A", "Other", "B", "C", "D"])
-        drag(tabs[3], tabs[5])
+        drag(tabs[4], tabs[6])
         self.assertEqual(names(), ["B", "Other", "C", "A", "D"])
         self.assertEqual(browser.state.itemList, "gear1")
-        drag(tabs[5], group.next)
+        drag(tabs[6], group.next)
         self.assertEqual(names(), ["B", "Other", "C", "D", "A"])
-        self.assertEqual(tabs[3].Text.text, "A")
-        drag(tabs[3], group.previous)
-        drag(tabs[5], tabs[3])
+        self.assertEqual(tabs[4].Text.text, "A")
+        drag(tabs[4], group.previous)
+        drag(tabs[6], tabs[4])
         self.assertEqual(names(), ["A", "Other", "B", "C", "D"])
 
     def test_dungeons_track_multiple_lists_in_both_views(self):
@@ -361,30 +361,30 @@ class CustomGearListTest(unittest.TestCase):
             stub.run(row, "OnClick")
 
         self.assertEqual(browser.state.itemList, "gear3")
-        choose(tabs[4], "Move left")
-        self.assertEqual([tab.Text.text for tab in (tabs[3], tabs[4])], ["Last", "First"])
+        choose(tabs[5], "Move left")
+        self.assertEqual([tab.Text.text for tab in (tabs[4], tabs[5])], ["Last", "First"])
         self.assertEqual(browser.state.itemList, "gear3")
         self.assertEqual(game.ns.db.gearLists[2].name, "Other")
-        choose(tabs[3], "Move right")
-        choose(tabs[4], "Rename")
+        choose(tabs[4], "Move right")
+        choose(tabs[5], "Rename")
         dialog = game.lua.globals().EasyBISGearDialog
         self.assertEqual(dialog.box.text, "Last")
         dialog.box.SetText(dialog.box, "First")
         stub.run(dialog.submit, "OnClick")
         self.assertTrue(dialog.shown)
-        self.assertEqual(tabs[4].Text.text, "Last")
+        self.assertEqual(tabs[5].Text.text, "Last")
         dialog.box.SetText(dialog.box, "New name")
         stub.run(dialog.submit, "OnClick")
-        self.assertEqual(tabs[4].Text.text, "New name")
+        self.assertEqual(tabs[5].Text.text, "New name")
         self.assertIn("New name", game.lines(990001)[0][1])
-        choose(tabs[4], "Delete")
+        choose(tabs[5], "Delete")
         self.assertIn("New name", dialog.hint.text)
         stub.run(dialog.cancel, "OnClick")
         self.assertEqual(browser.state.itemList, "gear3")
-        choose(tabs[4], "Delete")
+        choose(tabs[5], "Delete")
         stub.run(dialog.submit, "OnClick")
         self.assertFalse(game.lines(990001))
-        self.assertFalse(tabs[4].shown)
+        self.assertFalse(tabs[5].shown)
         self.assertEqual(browser.state.itemList, "pve")
         self.assertEqual(game.ns.Custom.CreateList("ROGUE", 1, "Replacement"), "gear4")
 

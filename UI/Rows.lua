@@ -4,7 +4,7 @@ local L = ns.L
 --[[
 What the window lists, as plain tables: the frames only draw them.
 
-  Rows.Items(state, withAlts)      rows, facets. Omit withAlts to follow the browser option.
+  Rows.Items(state, withAlts, list)  rows, facets. Omit withAlts to follow the browser option, list to use state.list.
       state    { class, spec, list, slot, source, zone, reputation }   slot, source, zone and reputation are nil
                for "all"; reputation "ok": what is within the player's reach, "todo": what is still to earn
       a row    { kind = "item", id, slot, bis, tie, gap, ratio, source, other, custom, reputation, why }
@@ -31,7 +31,7 @@ What the window lists, as plain tables: the frames only draw them.
                    gap, ratio  as for an item, against the best of the category
                    unranked    true for what is listed without a rank
                    twin        true for the sharp or blunt version of the row before it; of the best, it is the best too
-  Rows.Grouped(rows)     the same rows with a { kind = "header", group, text, scored } row before each slot's
+  Rows.Grouped(rows, list)  the same rows with a { kind = "header", group, text, scored } row before each slot's
                          rows, so the window can set the slots apart
   Rows.Character(state)  cells: the best pick of every slot, in the order of the game's character sheet
       a cell   { place = "left"|"right"|"bottom", slot, rank, id, source, ties, enchant, twoHand, reputation }
@@ -190,14 +190,16 @@ function Rows.Gear(state)
     return FilterItems(all, facets, state)
 end
 
-function Rows.Items(state, withAlts)
+function Rows.Items(state, withAlts, list)
     local all, facets = {}, { sources = {}, zones = {} }
-    local slots = ns.Ladders.For(state.class, state.spec, state.list)
+    list = list or state.list
+    local weave = list == "weave"
+    local slots = ns.Ladders.For(state.class, state.spec, list)
     if not slots then return all, facets end
     if withAlts == nil then withAlts = ns:GetOption("listAlts") end
 
     local function Add(slot, id, row)
-        row.why = ns.Notes.For(id, state.class, state.spec, state.list, slot)
+        if not weave then row.why = ns.Notes.For(id, state.class, state.spec, list, slot) end
         AddItem(all, facets, slot, id, row)
     end
 
@@ -213,7 +215,7 @@ function Rows.Items(state, withAlts)
                     Add(slot, pick.id, { bis = bis, option = pick.option })
                 elseif bis then
                     if ns.Ladders.HasFlag(pick.entry, "c") then
-                        Add(slot, pick.id, { bis = true, recommended = true })
+                        Add(slot, pick.id, { bis = true, recommended = not weave or nil })
                     else
                         Add(slot, pick.id, { bis = true, gap = 0, ratio = 1 })
                     end
@@ -254,10 +256,10 @@ function Rows.Items(state, withAlts)
                         })
                     end
                 end
-            elseif slot == "off" and slots.twoHand then
+            elseif not weave and slot == "off" and slots.twoHand then
                 all[#all + 1] = { kind = "note", slot = slot, text = L.LIST_TWO_HAND }
             end
-            for _, id in ipairs(ns.Custom.List(state.class, state.spec, state.list, slot)) do
+            for _, id in ipairs(ns.Custom.List(state.class, state.spec, list, slot)) do
                 if not listed[id] then   -- the data may list it by now, under another phase or option
                     listed[id] = true
                     Add(slot, id, { bis = false, custom = true })
@@ -269,7 +271,7 @@ function Rows.Items(state, withAlts)
     return FilterItems(all, facets, state)
 end
 
-function Rows.Grouped(rows)
+function Rows.Grouped(rows, list)
     local grouped, last = {}, nil
     for _, row in ipairs(rows) do
         local enchant, consumable = row.kind == "enchant", row.kind == "consumable"
@@ -277,7 +279,8 @@ function Rows.Grouped(rows)
         if group ~= last then
             last = group
             grouped[#grouped + 1] = {
-                kind = "header", group = group, scored = not (enchant or consumable or row.gearIndex or row.gain) or nil,
+                kind = "header", group = group,
+                scored = not (list == "weave" or enchant or consumable or row.gearIndex or row.gain) or nil,
                 text = (consumable and ns.Consumables.KeyName(group))
                     or (enchant and ns.Enchants.KeyName(group)) or ns.SlotName(group),
             }

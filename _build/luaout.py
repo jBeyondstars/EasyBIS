@@ -19,6 +19,7 @@ import json
 import math
 
 import hunter_bm
+import hunter_weave
 import ladders
 import notes
 import phases
@@ -231,14 +232,15 @@ def _enchants_note(db) -> list:
     return lines
 
 
-def lists_file(db, all_ladders) -> str:
+def lists_file(db, all_ladders, weave=None) -> str:
     contextual = any(hasattr(entries, "contexts") for specs in all_ladders.values() for modes in specs.values()
                      for slots in modes.values() for entries in slots.values())
     lines = _header(db, f"Best-in-slot ladders at level {db.meta['cap']}, one text block per class.", (
         *_corrections_note(db),
         "  S <spec> <name> <role> <style>      style: any, 2h, dw (dual wield), shield; the S lines of a class are in",
         "                                      the order the addon lists its specs, which is not always the numbers'",
-        "  L <spec> <list> <slot> <entries>    list: pve, pvp; entries best first, separated by spaces",
+        "  L <spec> <list> <slot> <entries>    list: pve, pvp, weave; entries best first, separated by spaces",
+        "  R <spec> weave <faction> <pairs>   melee:ranged, highest measured DPS first (corrections/hunter_weave.json)",
         "  T <spec> pve <slot> <duel>          threat and mitigation IDs, then DPS, threat/s, damage taken/s deltas",
         "                                      for Alliance and Horde when equipping the threat item in pre-raid",
         "  F <spec> <list> <slot> pre <entries>   pre-raid recommendations for both factions",
@@ -305,6 +307,14 @@ def lists_file(db, all_ladders) -> str:
                     for (side, companion), rows in getattr(entries, "pre_contexts", {}).items():
                         context = f"pre:{side}:{companion}" if companion else f"pre:{side}"
                         block.append("\t".join(("F", str(spec), mode, slot, context, " ".join(map(encode_entry, rows)))))
+            if weave and cls == "HUNTER" and spec == weave[0]:
+                _, slots, pairs = weave
+                for slot, entries in slots.items():
+                    block.append("\t".join(("L", str(spec), "weave", slot, " ".join(map(encode_entry, entries)))))
+                for side in ("a", "h"):
+                    ordered = sorted(pairs, key=lambda pair: pair[side], reverse=True)
+                    tokens = (f"{pair['main']}:{pair['ranged']}" for pair in ordered)
+                    block.append("\t".join(("R", str(spec), "weave", side, " ".join(tokens))))
         lines.append(f"{cls} = {_block(block)},")
     lines.append("}")
     return "\n".join(lines) + "\n"
@@ -1015,16 +1025,19 @@ def write_all(db, all_ladders, out_dir) -> dict[str, int]:
     out_dir.mkdir(parents=True, exist_ok=True)
     archive = json.loads((Path(__file__).parent / "corrections" / "aoe.json").read_text(encoding="utf-8"))
     dungeon = json.loads((Path(__file__).parent / "corrections" / "aoe_dungeon.json").read_text(encoding="utf-8"))
-    aoe, aoe_items = combined_aoe_file(db, archive, dungeon)
+    aoe, extra_items = combined_aoe_file(db, archive, dungeon)
+    weave = hunter_weave.load(db)
+    if weave:
+        extra_items.update(entry.item_id for entries in weave[1].values() for entry in entries)
     files = {
         "Meta.lua": meta_file(db),
-        "Lists.lua": lists_file(db, all_ladders),
+        "Lists.lua": lists_file(db, all_ladders, weave),
         "Aoe.lua": aoe,
-        "Items.lua": items_file(db, all_ladders, aoe_items),
+        "Items.lua": items_file(db, all_ladders, extra_items),
         "Enchants.lua": enchants_file(db, all_ladders),
         "Consumables.lua": consumables_file(db),
         "Names.lua": names_file(db),
-        "Reputation.lua": reputation_file(db, all_ladders, reputations.load(), aoe_items),
+        "Reputation.lua": reputation_file(db, all_ladders, reputations.load(), extra_items),
         "Notes.lua": notes_file(db, all_ladders),
     }
     sizes = {}

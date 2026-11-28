@@ -25,7 +25,8 @@
 -- MIT License, with ForeverDB's stamina and armor for a Paladin in PvP, which is a guess. See _build/shockadin.py.
 --   S <spec> <name> <role> <style>      style: any, 2h, dw (dual wield), shield; the S lines of a class are in
 --                                       the order the addon lists its specs, which is not always the numbers'
---   L <spec> <list> <slot> <entries>    list: pve, pvp; entries best first, separated by spaces
+--   L <spec> <list> <slot> <entries>    list: pve, pvp, weave; entries best first, separated by spaces
+--   R <spec> weave <faction> <pairs>   melee:ranged, highest measured DPS first (corrections/hunter_weave.json)
 --   T <spec> pve <slot> <duel>          threat and mitigation IDs, then DPS, threat/s, damage taken/s deltas
 --                                       for Alliance and Horde when equipping the threat item in pre-raid
 --   F <spec> <list> <slot> pre <entries>   pre-raid recommendations for both factions
@@ -402,6 +403,22 @@ F	4	pvp	trinket	situational	13515:0:Uxj 22321:0:xj
 L	4	pvp	main	21273:718:uUt9 250619:518:nt 18715:503:uUt9 18830:491:atp:18831::99 18869:491:atp:18871::99 18876:491:atp:18877::99 279910:488:ntk 18520:454:tkq 274419:453:nt 18502:447:tkq 272840:437:asntpv:272593::14 272849:437:asntpv:272602::14 272851:437:asntpv:272604::14 20069:431:astp:20220 19106:411:tp 21244:383:u9 18759:382:t 13052:378:t 12784:365:t 250615:365:nt 11931:362:t 22314:330:tk 281588:326:hsnt 275001:307:snt 21650:301:u9 9416:300:st 12584:297:ap:16345::99 18827:297:ap:18828::99 18838:297:ap:18840::99 18843:297:ap:18844::99 276203:290:snt 21242:276:u9 21401:269:9 21522:269:U9 22383:262 23451:261:ap:23466::99 21622:260:uU9 19570:244:astp:19566 273037:236:snt 272693:236:asnpv:272452::14 272839:236:asnpv:272592::14 272843:236:asnpv:272596::14 272844:236:asnpv:272597::14 279259:234:n 21520:225:U9 287025:225:snt 7713:222:st 12940:222 270078:220:asnt 280029:207:n 272856:206:asnpv:272683::14 18347:202 280085:201:n 5267:200:U 20070:194:asp:20214 18737:188:k 19546:188:asUp:19542 286613:173:snk 19547:166:asUp:19543 280077:130:sn 19548:115:asUp:19544 276903:113:asn 19040:111:s 7683:108:s 279887:105:hsn 274753:97:sn 281314:95:sn 271928:91:asn 272083:91:hsn
 L	4	pvp	off	21244:383:u9 21650:301:u9 12584:297:ap:16345::99 18827:297:ap:18828::99 18838:297:ap:18840::99 18847:297:ap:18848::99 21242:276:u9 21401:269:9 21522:269:U9 21126:242:uU9 272693:236:asnpv:272452::14 272839:236:asnpv:272592::14 272843:236:asnpv:272596::14 272845:236:asnpv:272598::14 279259:234:n 21520:225:U9 280029:207:n 18347:202 280085:201:n 5267:200:U 18737:188:k 19546:188:asUp:19542 250618:188:n 2163:181 275007:181:n 286613:173:snk 19547:166:asUp:19543 280077:130:sn 19548:115:asUp:19544 19040:111:s 7683:108:s 279887:105:hsn 19549:104:asUp:19545 274753:97:sn 281314:95:sn 10823:88:s 4987:81:as 6829:81:as 285346:79:hsn
 L	4	pvp	ranged	23557:1812:u9 21272:1770:uU9 18836:1734:ap:18837::99 18855:1734:ap:18860::99 18833:1724:ap:18835::99 21616:1721:u9 18713:1637:uU9 18282:1425:9 272841:1396:asnpv:272594::14 272842:1396:asnpv:272595::14 272846:1396:asnpv:272599::14 279273:1367:n 22347:1266:9 280020:1227:n 13023:1205 19562:1197:asp:19558 18388:1169 18738:1162 16996:1160 18680:1151 18323:1122:k 280083:1093:sn 287026:1039:sn 19563:1010:asp:19559 11628:943:k 19564:834:asp:19560 9412:809:s 274604:773:sn 11308:750:s 13020:745:s 11307:724:s
+L	4	weave	head	252605:0:nc
+L	4	weave	neck	15411:0:c
+L	4	weave	shoulder	18686:0:c
+L	4	weave	back	13340:0:c
+L	4	weave	chest	252483:0:nc
+L	4	weave	wrist	18375:0:c
+L	4	weave	hands	15063:0:c
+L	4	weave	waist	272397:0:nc
+L	4	weave	legs	15062:0:c
+L	4	weave	feet	13967:0:c
+L	4	weave	finger	272408:0:snUc 18500:0:c
+L	4	weave	trinket	13965:0:Uc 22321:0:c
+L	4	weave	main	12784:0:tc 13285:0:tc
+L	4	weave	ranged	280020:0:nc 19107:0:pc 18738:0:c
+R	4	weave	a	12784:280020 13285:19107 13285:18738
+R	4	weave	h	12784:280020 13285:19107 13285:18738
 ]==],
 MAGE = [==[
 S	1	Arcane	Caster DPS	any

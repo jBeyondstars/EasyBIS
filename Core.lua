@@ -63,7 +63,7 @@ local DEFAULTS = {
     minimap = true,        -- the button on the minimap
     minimapAngle = 215,    -- where it sits around the minimap, in degrees
     auctionTab = true,     -- the EasyBis tab of the auction house
-    lists = { pve = true, pvp = true, aoe = true }, -- tooltip visibility, also keyed by "gearN" for named lists
+    lists = { pve = true, pvp = true, aoe = true, weave = true }, -- tooltip visibility, also keyed by "gearN" for named lists
     compact = true,        -- the window: an item or a consumable on one line instead of two
     listAlts = true,       -- the window: the alternatives too, not only the best picks
     dungeonGrid = false,   -- the Dungeons tab: a line per piece and a column per dungeon, instead of a band per dungeon

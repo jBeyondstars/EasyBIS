@@ -736,7 +736,7 @@ class AddonTest(unittest.TestCase):
 
     # -- the index and the tooltip ----------------------------------------------------------
 
-    def test_index_knows_who_wants_every_item(self):
+    def test_index_knows_who_wants_every_raid_and_pvp_item(self):
         for faction, side in (("Alliance", "a"), ("Horde", "h")):
             for unsourced in (False, True):
                 game = Game(faction=faction)
@@ -745,7 +745,8 @@ class AddonTest(unittest.TestCase):
                 for item_id, wanted in expected.items():
                     hits = game.ns.Index.ForItem(item_id)
                     self.assertIsNotNone(hits, f"{item_id} is in a list but not in the index")
-                    got = {(hit["class"], hit.spec, hit.list, hit.slot, bool(hit.bis)) for hit in hits.values()}
+                    got = {(hit["class"], hit.spec, hit.list, hit.slot, bool(hit.bis))
+                           for hit in hits.values() if hit.list in ("pve", "pvp")}
                     self.assertEqual(got, wanted, f"item {item_id}, {faction}, unsourced={unsourced}")
                 self.assertIsNone(game.ns.Index.ForItem(1), "an item in no list has hits")
 

@@ -56,7 +56,7 @@ end
 
 local function StatusText(status, lists)
     local first, second = status[lists[1]], status[lists[2]]
-    if not status.aoe and not (first and first.position or second and second.position) then
+    if not (status.aoe or status.weave) and not (first and first.position or second and second.position) then
         if not lists[2] or (first and second and first.rank == second.rank) then
             return first and RankText(first) or nil
         end
@@ -64,10 +64,11 @@ local function StatusText(status, lists)
     local parts = {}
     for _, list in ipairs(lists) do
         if status[list] ~= nil then
-            local label = status.aoe and list == "pve" and L.LIST_RAID or ns.ListName(list)
+            local label = (status.aoe or status.weave) and list == "pve" and L.LIST_RAID or ns.ListName(list)
             parts[#parts + 1] = RankText(status[list]) .. " " .. label
         end
     end
+    if status.weave then parts[#parts + 1] = RankText(status.weave) .. " " .. L.LIST_WEAVE end
     if status.aoe then parts[#parts + 1] = RankText(status.aoe) .. " AoE/Dung" end
     return parts[1] and table.concat(parts, SEPARATOR) or nil
 end
